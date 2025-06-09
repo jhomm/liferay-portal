@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.web.internal.servlet.taglib.util;
@@ -21,27 +12,28 @@ import com.liferay.item.selector.ItemSelectorCriterion;
 import com.liferay.item.selector.criteria.FileEntryItemSelectorReturnType;
 import com.liferay.item.selector.criteria.upload.criterion.UploadItemSelectorCriterion;
 import com.liferay.petra.function.UnsafeConsumer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.upload.UploadServletRequestConfigurationHelperUtil;
+import com.liferay.portal.kernel.upload.configuration.UploadServletRequestConfigurationProviderUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.style.book.constants.StyleBookPortletKeys;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.service.StyleBookEntryLocalServiceUtil;
+import com.liferay.style.book.util.DefaultStyleBookEntryUtil;
+import com.liferay.style.book.util.StyleBookUtil;
 import com.liferay.style.book.web.internal.constants.StyleBookWebKeys;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -63,6 +55,37 @@ public class StyleBookEntryActionDropdownItemsProvider {
 	}
 
 	public List<DropdownItem> getActionDropdownItems() {
+		if (_styleBookEntry.getStyleBookEntryId() <= 0) {
+			return DropdownItemListBuilder.add(
+				() -> !_styleBookEntry.isDefaultStyleBookEntry(),
+				_getMarkAsDefaultStyleBookEntryActionUnsafeConsumer()
+			).build();
+		}
+
+		if (FeatureFlagManagerUtil.isEnabled(
+				_themeDisplay.getCompanyId(), "LPD-30204") &&
+			StyleBookUtil.isThemeInactive(
+				_styleBookEntry.getCompanyId(), _styleBookEntry.getThemeId())) {
+
+			return DropdownItemListBuilder.addGroup(
+				dropdownGroupItem -> {
+					dropdownGroupItem.setDropdownItems(
+						DropdownItemListBuilder.add(
+							_getExportStyleBookEntryActionUnsafeConsumer()
+						).build());
+					dropdownGroupItem.setSeparator(true);
+				}
+			).addGroup(
+				dropdownGroupItem -> {
+					dropdownGroupItem.setDropdownItems(
+						DropdownItemListBuilder.add(
+							_getDeleteStyleBookEntryActionUnsafeConsumer()
+						).build());
+					dropdownGroupItem.setSeparator(true);
+				}
+			).build();
+		}
+
 		return DropdownItemListBuilder.addGroup(
 			dropdownGroupItem -> {
 				dropdownGroupItem.setDropdownItems(
@@ -93,6 +116,7 @@ public class StyleBookEntryActionDropdownItemsProvider {
 						},
 						_getDiscardDraftStyleBookEntryActionUnsafeConsumer()
 					).add(
+						() -> !_styleBookEntry.isDefaultStyleBookEntry(),
 						_getMarkAsDefaultStyleBookEntryActionUnsafeConsumer()
 					).add(
 						_getRenameStyleBookEntrytActionUnsafeConsumer()
@@ -136,6 +160,7 @@ public class StyleBookEntryActionDropdownItemsProvider {
 				).setParameter(
 					"styleBookEntryIds", _styleBookEntry.getStyleBookEntryId()
 				).buildString());
+			dropdownItem.setIcon("copy");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "make-a-copy"));
 		};
@@ -157,6 +182,7 @@ public class StyleBookEntryActionDropdownItemsProvider {
 				).setParameter(
 					"styleBookEntryId", _styleBookEntry.getStyleBookEntryId()
 				).buildString());
+			dropdownItem.setIcon("trash");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "delete"));
 		};
@@ -215,6 +241,7 @@ public class StyleBookEntryActionDropdownItemsProvider {
 				_renderResponse.createRenderURL(), "mvcRenderCommandName",
 				"/style_book/edit_style_book_entry", "styleBookEntryId",
 				_styleBookEntry.getStyleBookEntryId());
+			dropdownItem.setIcon("pencil");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "edit"));
 		};
@@ -234,6 +261,7 @@ public class StyleBookEntryActionDropdownItemsProvider {
 
 		return dropdownItem -> {
 			dropdownItem.setHref(exportStyleBookEntryURL);
+			dropdownItem.setIcon("upload");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "export"));
 		};
@@ -241,27 +269,32 @@ public class StyleBookEntryActionDropdownItemsProvider {
 
 	private String _getItemSelectorURL() {
 		ItemSelectorCriterion itemSelectorCriterion =
-			new UploadItemSelectorCriterion(
-				StyleBookPortletKeys.STYLE_BOOK,
+			UploadItemSelectorCriterion.builder(
+			).desiredItemSelectorReturnTypes(
+				new FileEntryItemSelectorReturnType()
+			).extensions(
+				new String[] {".bmp", ".jpeg", ".jpg", ".png", ".tiff"}
+			).maxFileSize(
+				UploadServletRequestConfigurationProviderUtil.getMaxSize()
+			).portletId(
+				StyleBookPortletKeys.STYLE_BOOK
+			).repositoryName(
+				LanguageUtil.get(_httpServletRequest, "style-book")
+			).url(
 				PortletURLBuilder.createActionURL(
 					_renderResponse
 				).setActionName(
 					"/style_book/upload_style_book_entry_preview"
 				).setParameter(
 					"styleBookEntryId", _styleBookEntry.getStyleBookEntryId()
-				).buildString(),
-				LanguageUtil.get(_httpServletRequest, "style-book"),
-				UploadServletRequestConfigurationHelperUtil.getMaxSize());
+				).buildString()
+			).build();
 
-		itemSelectorCriterion.setDesiredItemSelectorReturnTypes(
-			new FileEntryItemSelectorReturnType());
-
-		PortletURL itemSelectorURL = _itemSelector.getItemSelectorURL(
-			RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
-			_renderResponse.getNamespace() + "changePreview",
-			itemSelectorCriterion);
-
-		return itemSelectorURL.toString();
+		return String.valueOf(
+			_itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
+				_renderResponse.getNamespace() + "changePreview",
+				itemSelectorCriterion));
 	}
 
 	private UnsafeConsumer<DropdownItem, Exception>
@@ -282,40 +315,61 @@ public class StyleBookEntryActionDropdownItemsProvider {
 					!_styleBookEntry.isDefaultStyleBookEntry()
 				).setParameter(
 					"styleBookEntryId", _styleBookEntry.getStyleBookEntryId()
+				).setParameter(
+					"themeId", _styleBookEntry.getThemeId()
 				).buildString());
 
-			String message = StringPool.BLANK;
+			StyleBookEntry defaultStyleBookEntry =
+				DefaultStyleBookEntryUtil.getDefaultStyleBookEntry(
+					_themeDisplay.getLayout());
 
-			StyleBookEntry defaultLStyleBookEntry =
-				StyleBookEntryLocalServiceUtil.fetchDefaultStyleBookEntry(
-					_styleBookEntry.getGroupId());
+			String defaultStyleBookEntryName = LanguageUtil.get(
+				_httpServletRequest, "styles-from-theme");
 
-			if (defaultLStyleBookEntry != null) {
-				long defaultLStyleBookEntryId =
-					defaultLStyleBookEntry.getStyleBookEntryId();
-				long styleBookEntryId = _styleBookEntry.getStyleBookEntryId();
+			if (FeatureFlagManagerUtil.isEnabled(
+					_themeDisplay.getCompanyId(), "LPD-30204")) {
 
-				if (defaultLStyleBookEntryId != styleBookEntryId) {
-					message = LanguageUtil.format(
-						_httpServletRequest,
-						"do-you-want-to-replace-x-for-x-as-the-default-style-" +
-							"book",
-						new String[] {
-							_styleBookEntry.getName(),
-							defaultLStyleBookEntry.getName()
-						});
-				}
+				defaultStyleBookEntry =
+					StyleBookEntryLocalServiceUtil.fetchDefaultStyleBookEntry(
+						_styleBookEntry.getGroupId(),
+						_styleBookEntry.getThemeId());
+
+				defaultStyleBookEntryName = LanguageUtil.format(
+					_themeDisplay.getLocale(), "styles-from-x",
+					StyleBookUtil.getThemeName(
+						_styleBookEntry.getCompanyId(),
+						_themeDisplay.getLocale(),
+						_styleBookEntry.getThemeId()));
 			}
 
-			dropdownItem.putData("message", message);
-
-			String label = "mark-as-default";
-
-			if (_styleBookEntry.isDefaultStyleBookEntry()) {
-				label = "unmark-as-default";
+			if (defaultStyleBookEntry != null) {
+				defaultStyleBookEntryName = defaultStyleBookEntry.getName();
 			}
 
-			dropdownItem.setLabel(LanguageUtil.get(_httpServletRequest, label));
+			dropdownItem.putData(
+				"message",
+				LanguageUtil.format(
+					_httpServletRequest,
+					"do-you-want-to-replace-x-for-x-as-the-default-style-book",
+					new String[] {
+						defaultStyleBookEntryName, _styleBookEntry.getName()
+					}));
+
+			if (FeatureFlagManagerUtil.isEnabled(
+					_themeDisplay.getCompanyId(), "LPD-30204")) {
+
+				dropdownItem.setLabel(
+					LanguageUtil.format(
+						_httpServletRequest, "mark-as-default-for-x",
+						StyleBookUtil.getThemeName(
+							_themeDisplay.getCompanyId(),
+							_themeDisplay.getLocale(),
+							_styleBookEntry.getThemeId())));
+			}
+			else {
+				dropdownItem.setLabel(
+					LanguageUtil.get(_httpServletRequest, "mark-as-default"));
+			}
 		};
 	}
 
@@ -354,6 +408,7 @@ public class StyleBookEntryActionDropdownItemsProvider {
 			dropdownItem.putData(
 				"styleBookEntryId",
 				String.valueOf(_styleBookEntry.getStyleBookEntryId()));
+			dropdownItem.setIcon("change");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "change-thumbnail"));
 		};

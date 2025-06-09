@@ -1,40 +1,42 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/info_box/init.jsp" %>
 
 <%
-String linkId = PortalUtil.generateRandomKey(request, "info-box") + "_action-link";
+String linkId = HtmlUtil.escape(PortalUtil.generateRandomKey(request, "info-box") + "_action-link");
 %>
 
-<div class="<%= "info-box" + (Validator.isNotNull(elementClasses) ? StringPool.SPACE + elementClasses : StringPool.BLANK) %>">
-	<header class="header pb-2">
+<div class="info-box<%= Validator.isNotNull(elementClasses) ? StringPool.SPACE + elementClasses : StringPool.BLANK %>">
+	<header class="align-items-center d-flex header justify-content-between pb-2">
 		<c:if test="<%= Validator.isNotNull(title) %>">
-			<h5 class="mb-0 title"><%= HtmlUtil.escape(title) %></h5>
+			<div class="h5 mb-0 title"><%= HtmlUtil.escape(title) %></div>
 		</c:if>
 
 		<c:if test="<%= Validator.isNotNull(actionLabel) %>">
+
+			<%
+			String href = Validator.isNotNull(actionUrl) ? actionUrl : "#";
+			%>
+
 			<c:if test="<%= Validator.isNotNull(actionTargetId) %>">
-				<aui:script require="commerce-frontend-js/utilities/eventsDefinitions as eventsDefinitions">
-					var link = document.getElementById('<%= HtmlUtil.escapeJS(linkId) %>');
+
+				<%
+				href = "#";
+				%>
+
+				<aui:script>
+					var link = document.getElementById('<%= linkId %>');
 
 					if (link) {
 						link.addEventListener('click', (e) => {
 							e.preventDefault();
-							Liferay.fire(eventsDefinitions.OPEN_MODAL, {
+
+							Liferay.fire('open-modal', {
 								id: '<%= HtmlUtil.escapeJS(actionTargetId) %>',
 							});
 						});
@@ -42,9 +44,31 @@ String linkId = PortalUtil.generateRandomKey(request, "info-box") + "_action-lin
 				</aui:script>
 			</c:if>
 
+			<c:if test="<%= Validator.isNotNull(actionContext) %>">
+
+				<%
+				href = "#";
+				%>
+
+				<liferay-frontend:component
+					context='<%=
+						HashMapBuilder.<String, Object>put(
+							"title", title
+						).put(
+							"url", actionUrl
+						).putAll(
+							actionContext
+						).put(
+							"linkId", linkId
+						).build()
+					%>'
+					module="{ModalActionContextHandler} from commerce-frontend-taglib"
+				/>
+			</c:if>
+
 			<clay:link
-				href='<%= Validator.isNotNull(actionUrl) ? actionUrl : "#" %>'
-				id="<%= HtmlUtil.escape(linkId) %>"
+				href="<%= href %>"
+				id="<%= linkId %>"
 				label="<%= HtmlUtil.escape(actionLabel) %>"
 			/>
 		</c:if>

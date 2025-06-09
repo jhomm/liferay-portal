@@ -6,135 +6,156 @@ definition {
 	property testray.main.component.name = "Order Management";
 
 	setUp {
-		TestCase.setUpPortalInstance();
+		CommerceConfiguration.commerceSetUp();
 
-		User.firstLoginPG();
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
 	}
 
 	tearDown {
-		Navigator.openURL();
-
-		if (IsElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE")) {
-			User.logoutPG();
-		}
-
-		User.firstLoginPG();
-
-		CommerceConfiguration.commerceAdminTearDown();
-
-		CommerceConfiguration.commerceInitializersTearDown();
+		CommerceConfiguration.commerceTearDown();
 	}
 
-	@description = "This is a test for COMMERCE-5839. As a system admin i want to be able to create / update and delete a new currency"
-	@priority = "3"
-	test CreateAndUpdateNewCurrency {
-		property portal.acceptance = "Intern Test";
+	@description = "This is a test for COMMERCE-11393. Can update currency format for Indian Rupee"
+	@priority = 3
+	test CanUpdateCurrencyFormatForINR {
+		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
+		property portal.acceptance = "false";
 
-		// TODO Review
+		task ("Given a Minium site with a buyer user is created") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Currencies");
+			CommerceEntry.addAccountEntryUser(
+				accountName = "Commerce Account",
+				accountType = "Business",
+				agreeToTermsAndAnswerReminderQuery = "true",
+				createNewAccount = "true",
+				requireReset = "false",
+				userEmailAddress = "buyer@liferay.com",
+				userFirstName = "Buyer",
+				userLastName = "User",
+				userRole = "Buyer",
+				userScreenName = "buyeruser",
+				userSiteMembership = "Minium");
+		}
 
-		Click(locator1 = "Button#PLUS");
+		task ("When the format pattern for Indian Rupee currency is updated to '₹ ##,##,##0.00'") {
+			CommerceNavigator.goToCurrenciesAdmin();
 
-		CommerceEntry.addNewCurrenciesEntry(
-			code = "TCY",
-			entryName = "Test Currency",
-			exchangeRate = "1.5",
-			formatPattern = "$ ###,##0.00",
-			isPrimary = "false",
-			symbol = "&");
-
-		Button.clickSave();
-
-		CommerceNavigator.gotoEntry(entryName = "Test Currency");
-
-		for (var current : list "Name/Test Currency Edited,Code/TCYE,Exchange Rate with US Dollar/1") {
-			var fieldLabel = StringUtil.extractFirst("${current}","/");
-			var value = StringUtil.extractLast("${current}","/");
+			CommerceNavigator.gotoEntry(entryName = "Indian Rupee");
 
 			Type(
-				key_fieldLabel = "${fieldLabel}",
+				key_fieldLabel = "Format Pattern",
 				locator1 = "TextInput#GENERIC_TEXT_INPUT",
-				value1 = "${value}");
+				value1 = "₹ ##,##,##0.00");
+
+			Button.clickSave();
 		}
 
-		Button.clickSave();
+		task ("And a simple product with base price '1000000' is created") {
+			CommerceJSONProductsAPI._addCommerceProduct(
+				catalogName = "Minium",
+				price = 1000000,
+				productName = "Simple Product",
+				productType = "Simple");
+		}
 
-		AssertTextEquals.assertPartialText(
-			key_columnClassName = "exchange-rate",
-			key_entryName = "Test Currency Edited",
-			locator1 = "CommerceEntry#CURRENCY_COLUMN_VALUE",
-			value1 = "1");
+		task ("And Minium Portal channel currency is updated to 'Indian Rupee'") {
+			CommerceChannels.openChannelsAdmin();
 
-		Click(
-			key_itemName = "Test Currency Edited",
-			locator1 = "CommerceEntry#SPECIFIC_MENU_ITEM");
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
 
-		MenuItem.clickNoError(menuItem = "Delete");
+			Select(
+				key_fieldLabel = "Currency",
+				locator1 = "Select#GENERIC_SELECT_FIELD",
+				value1 = "Indian Rupee");
 
-		AssertConfirm(value1 = "Are you sure you want to delete this? It will be deleted immediately.");
-	}
+			Button.clickSave();
+		}
 
-	@description = "This is a test for COMMERCE-5843. As a system administrator I want disabled currencies not to be available in Price Lists, Catalogs and Channels"
-	@ignore = "true"
-	@priority = "3"
-	test DeactivateCurrency {
-		property portal.acceptance = "false";
+		task ("And the buyer user logs in") {
+			User.logoutPG();
 
-		// TODO COMMERCE-5843 DeactivateCurrency Pending Implementation
+			CommerceLogin.miniumLogin(
+				password = PropsUtil.get("default.admin.password"),
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
+		}
 
-	}
+		task ("Then the Simple Product's price is changed to '₹ ##,##,##0.00' applied to the currency format in product card") {
+			var productPrice = selenium.getText("//p[@title='Simple Product']/..//span[@class='price-value']");
 
-	@description = "This is a test for COMMERCE-5842. As a system administrator I want currencies to be sorted by priority"
-	@priority = "3"
-	test SortCurrenciesByPriority {
-		property portal.acceptance = "false";
+			var match = StringUtil.matches(${productPrice}, "₹\s\d{1,2},\d\d,\d\d,\d\d0.00");
 
-		// TODO Review
+			if (${match} == "true") {
+				echo("The product price ${productPrice} is applied to '₹ ##,##,##0.00' format");
+			}
+			else {
+				fail("The product price ${productPrice} is not applied to '₹ ##,##,##0.00' format");
+			}
+		}
 
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		task ("And the Simple Product's price is changed to '₹ ##,##,##0.00' applied to the currency format in product details") {
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/p/simple-product");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Currencies");
+			var productPrice = selenium.getText("CommerceAccelerators#PRODUCT_DETAILS_LIST_PRICE");
 
-		ClickNoError(
-			key_entryName = "US Dollar",
-			locator1 = "CommerceNavigation#ENTRY_NAME");
+			var match = StringUtil.matches(${productPrice}, "₹\s\d{1,2},\d\d,\d\d,\d\d0.00");
 
-		Type(
-			locator1 = "CommerceEntry#PRIORITY_FIELD",
-			value1 = "1");
+			if (${match} == "true") {
+				echo("The product price ${productPrice} is applied to '₹ ##,##,##0.00' format");
+			}
+			else {
+				fail("The product price ${productPrice} is not applied to '₹ ##,##,##0.00' format");
+			}
+		}
 
-		Button.clickSave();
+		task ("And the Simple Product's price is changed to '₹ ##,##,##0.00' applied to the currency format in mini-cart") {
+			Click(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE");
 
-		AssertElementPresent(locator1 = "CommerceEntry#FIRST_CURRENCY_ELEMENT");
+			CommerceNavigator.gotoMiniCart();
 
-		ClickNoError(
-			key_entryName = "US Dollar",
-			locator1 = "CommerceNavigation#ENTRY_NAME");
+			WaitForElementPresent(locator1 = "//p[@class='item-sku' and contains(.,'Simple Product')]/../../../..//span[@class='price-value']");
 
-		Type(
-			locator1 = "CommerceEntry#PRIORITY_FIELD",
-			value1 = "12");
+			var productPrice = selenium.getText("//p[@class='item-sku' and contains(.,'Simple Product')]/../../../..//span[@class='price-value']");
 
-		Button.clickSave();
+			var match = StringUtil.matches(${productPrice}, "₹\s\d{1,2},\d\d,\d\d,\d\d0.00");
 
-		AssertElementPresent(locator1 = "CommerceEntry#LAST_CURRENCY_ELEMENT");
-	}
+			if (${match} == "true") {
+				echo("The product price ${productPrice} is applied to '₹ ##,##,##0.00' format");
+			}
+			else {
+				fail("The product price ${productPrice} is not applied to '₹ ##,##,##0.00' format");
+			}
+		}
 
-	test ViewInstanceCurrenciesAvailable {
-		property environment.acceptance = "true";
-		property portal.acceptance = "true";
-		property portal.upstream = "true";
+		task ("And the Simple Product's price is changed to '₹ ##,##,##0.00' applied to the currency format in order pages") {
+			CommerceCheckout.gotoCheckoutViaMiniCart();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Currencies");
+			CommerceCheckout.setAddress(
+				newAddressAddress = "Test Address",
+				newAddressCity = "Test City",
+				newAddressCountry = "United States",
+				newAddressName = "Address Name",
+				newAddressZipCode = "Test Zip Code",
+				shippingMethod = "Standard");
 
-		CommerceEntry.viewCurrenciesEntry(currenciesList = "US Dollar,Australian Dollar,British Pound,Canadian Dollar,Chinese Yuan Renminbi,Euro,Hong Kong Dollar,Japanese Yen,Indian Rupee,Brazilian Real");
+			Click(locator1 = "Button#CONTINUE");
+
+			CommerceCheckout.setStandardShippingOption();
+
+			var productPrice = selenium.getText("//td[contains(@class,'lfr-price-column')]");
+
+			var match = StringUtil.matches(${productPrice}, "₹\s\d{1,2},\d\d,\d\d,\d\d0.00");
+
+			if (${match} == "true") {
+				echo("The product price ${productPrice} is applied to '₹ ##,##,##0.00' format");
+			}
+			else {
+				fail("The product price ${productPrice} is not applied to '₹ ##,##,##0.00' format");
+			}
+		}
 	}
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.microblogs.service.impl;
@@ -37,14 +28,16 @@ import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserNotificationDeliveryConstants;
-import com.liferay.portal.kernel.process.ProcessCallable;
-import com.liferay.portal.kernel.process.ProcessException;
 import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.UserNotificationEventLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
@@ -83,11 +76,11 @@ public class MicroblogsEntryLocalServiceImpl
 
 		// Microblogs entry
 
-		User user = userLocalService.getUser(userId);
+		User user = _userLocalService.getUser(userId);
 
 		Date date = new Date();
 
-		validate(type, parentMicroblogsEntryId);
+		_validate(type, parentMicroblogsEntryId);
 
 		long microblogsEntryId = counterLocalService.increment();
 
@@ -114,7 +107,8 @@ public class MicroblogsEntryLocalServiceImpl
 
 		// Resources
 
-		resourceLocalService.addModelResources(microblogsEntry, serviceContext);
+		_resourceLocalService.addModelResources(
+			microblogsEntry, serviceContext);
 
 		// Asset
 
@@ -133,11 +127,11 @@ public class MicroblogsEntryLocalServiceImpl
 
 		// Microblogs entry
 
-		User user = userLocalService.getUser(userId);
+		User user = _userLocalService.getUser(userId);
 
 		Date date = new Date();
 
-		validate(type, parentMicroblogsEntryId);
+		_validate(type, parentMicroblogsEntryId);
 
 		long microblogsEntryId = counterLocalService.increment();
 
@@ -154,7 +148,7 @@ public class MicroblogsEntryLocalServiceImpl
 		microblogsEntry.setCreateDate(date);
 		microblogsEntry.setModifiedDate(date);
 		microblogsEntry.setCreatorClassNameId(
-			classNameLocalService.getClassNameId(User.class));
+			_classNameLocalService.getClassNameId(User.class));
 		microblogsEntry.setCreatorClassPK(user.getUserId());
 		microblogsEntry.setContent(content);
 		microblogsEntry.setType(type);
@@ -165,7 +159,8 @@ public class MicroblogsEntryLocalServiceImpl
 
 		// Resources
 
-		resourceLocalService.addModelResources(microblogsEntry, serviceContext);
+		_resourceLocalService.addModelResources(
+			microblogsEntry, serviceContext);
 
 		// Asset
 
@@ -196,9 +191,9 @@ public class MicroblogsEntryLocalServiceImpl
 
 		// Notification
 
-		subscribeUsers(microblogsEntry, serviceContext);
+		_subscribeUsers(microblogsEntry, serviceContext);
 
-		sendNotificationEvent(microblogsEntry, serviceContext);
+		_sendNotificationEvent(microblogsEntry, serviceContext);
 
 		return microblogsEntry;
 	}
@@ -241,6 +236,14 @@ public class MicroblogsEntryLocalServiceImpl
 			// Microblogs entry
 
 			microblogsEntryPersistence.remove(curMicroblogsEntry);
+
+			// Resource
+
+			_resourceLocalService.deleteResource(
+				curMicroblogsEntry.getCompanyId(),
+				MicroblogsEntry.class.getName(),
+				ResourceConstants.SCOPE_INDIVIDUAL,
+				curMicroblogsEntry.getMicroblogsEntryId());
 
 			// Asset
 
@@ -368,7 +371,7 @@ public class MicroblogsEntryLocalServiceImpl
 
 		return microblogsEntryPersistence.findByT_P(
 			type, parentMicroblogsEntryId, start, end,
-			new EntryCreateDateComparator(true));
+			EntryCreateDateComparator.getInstance(true));
 	}
 
 	@Override
@@ -454,7 +457,31 @@ public class MicroblogsEntryLocalServiceImpl
 		return microblogsEntry;
 	}
 
-	protected long getSubscriptionId(
+	private List<MicroblogsEntry> _getAllRelatedMicroblogsEntries(
+		long microblogsEntryId) {
+
+		List<MicroblogsEntry> microblogsEntries = new ArrayList<>();
+
+		microblogsEntries.addAll(
+			microblogsEntryPersistence.findByT_P(
+				MicroblogsEntryConstants.TYPE_REPLY, microblogsEntryId));
+
+		List<MicroblogsEntry> repostMicroblogsEntries =
+			microblogsEntryPersistence.findByT_P(
+				MicroblogsEntryConstants.TYPE_REPOST, microblogsEntryId);
+
+		for (MicroblogsEntry microblogsEntry : repostMicroblogsEntries) {
+			microblogsEntries.add(microblogsEntry);
+
+			microblogsEntries.addAll(
+				_getAllRelatedMicroblogsEntries(
+					microblogsEntry.getMicroblogsEntryId()));
+		}
+
+		return microblogsEntries;
+	}
+
+	private long _getSubscriptionId(
 		long userId, MicroblogsEntry microblogsEntry) {
 
 		try {
@@ -468,14 +495,14 @@ public class MicroblogsEntryLocalServiceImpl
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
 		return 0;
 	}
 
-	protected void sendNotificationEvent(
+	private void _sendNotificationEvent(
 			final MicroblogsEntry microblogsEntry,
 			ServiceContext serviceContext)
 		throws PortalException {
@@ -497,7 +524,7 @@ public class MicroblogsEntryLocalServiceImpl
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -526,7 +553,7 @@ public class MicroblogsEntryLocalServiceImpl
 				Message message = new Message();
 
 				message.setPayload(
-					new NotificationProcessCallable(
+					new NotificationCallable(
 						receiverUserIds, microblogsEntry,
 						notificationEventJSONObject));
 
@@ -541,7 +568,7 @@ public class MicroblogsEntryLocalServiceImpl
 		TransactionCommitCallbackUtil.registerCallback(callable);
 	}
 
-	protected void subscribeUsers(
+	private void _subscribeUsers(
 			MicroblogsEntry microblogsEntry, ServiceContext serviceContext)
 		throws PortalException {
 
@@ -556,7 +583,7 @@ public class MicroblogsEntryLocalServiceImpl
 			microblogsEntry.getContent());
 
 		for (String screenName : screenNames) {
-			long userId = userLocalService.getUserIdByScreenName(
+			long userId = _userLocalService.getUserIdByScreenName(
 				serviceContext.getCompanyId(), screenName);
 
 			_subscriptionLocalService.addSubscription(
@@ -565,7 +592,7 @@ public class MicroblogsEntryLocalServiceImpl
 		}
 	}
 
-	protected void validate(int type, long parentMicroblogsEntryId)
+	private void _validate(int type, long parentMicroblogsEntryId)
 		throws PortalException {
 
 		if (parentMicroblogsEntryId == 0) {
@@ -587,35 +614,14 @@ public class MicroblogsEntryLocalServiceImpl
 		}
 	}
 
-	private List<MicroblogsEntry> _getAllRelatedMicroblogsEntries(
-		long microblogsEntryId) {
-
-		List<MicroblogsEntry> microblogsEntries = new ArrayList<>();
-
-		microblogsEntries.addAll(
-			microblogsEntryPersistence.findByT_P(
-				MicroblogsEntryConstants.TYPE_REPLY, microblogsEntryId));
-
-		List<MicroblogsEntry> repostMicroblogsEntries =
-			microblogsEntryPersistence.findByT_P(
-				MicroblogsEntryConstants.TYPE_REPOST, microblogsEntryId);
-
-		for (MicroblogsEntry microblogsEntry : repostMicroblogsEntries) {
-			microblogsEntries.add(microblogsEntry);
-
-			microblogsEntries.addAll(
-				_getAllRelatedMicroblogsEntries(
-					microblogsEntry.getMicroblogsEntryId()));
-		}
-
-		return microblogsEntries;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		MicroblogsEntryLocalServiceImpl.class);
 
 	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
 
 	@Reference
 	private GroupLocalService _groupLocalService;
@@ -624,19 +630,24 @@ public class MicroblogsEntryLocalServiceImpl
 	private MessageBus _messageBus;
 
 	@Reference
+	private ResourceLocalService _resourceLocalService;
+
+	@Reference
 	private SocialActivityLocalService _socialActivityLocalService;
 
 	@Reference
 	private SubscriptionLocalService _subscriptionLocalService;
 
 	@Reference
+	private UserLocalService _userLocalService;
+
+	@Reference
 	private UserNotificationEventLocalService
 		_userNotificationEventLocalService;
 
-	private class NotificationProcessCallable
-		implements ProcessCallable<Serializable> {
+	private class NotificationCallable implements Callable<Serializable> {
 
-		public NotificationProcessCallable(
+		public NotificationCallable(
 			List<Long> receiverUserIds, MicroblogsEntry microblogsEntry,
 			JSONObject notificationEventJSONObject) {
 
@@ -646,14 +657,14 @@ public class MicroblogsEntryLocalServiceImpl
 		}
 
 		@Override
-		public Serializable call() throws ProcessException {
+		public Serializable call() throws Exception {
 			try {
 				sendUserNotifications(
 					_receiverUserIds, _microblogsEntry,
 					_notificationEventJSONObject);
 			}
 			catch (Exception exception) {
-				throw new ProcessException(exception);
+				throw new Exception(exception);
 			}
 
 			return null;
@@ -678,11 +689,10 @@ public class MicroblogsEntryLocalServiceImpl
 				}
 
 				for (int j = start; j < end; j++) {
-					long subscriptionId = getSubscriptionId(
-						receiverUserIds.get(j), microblogsEntry);
-
 					notificationEventJSONObject.put(
-						"subscriptionId", subscriptionId);
+						"subscriptionId",
+						_getSubscriptionId(
+							receiverUserIds.get(j), microblogsEntry));
 
 					int notificationType = MicroblogsUtil.getNotificationType(
 						microblogsEntry, receiverUserIds.get(j),

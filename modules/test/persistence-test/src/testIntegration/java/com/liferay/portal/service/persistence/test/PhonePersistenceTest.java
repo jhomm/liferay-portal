@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.test;
@@ -21,11 +12,14 @@ import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.exception.DuplicatePhoneExternalReferenceCodeException;
 import com.liferay.portal.kernel.exception.NoSuchPhoneException;
 import com.liferay.portal.kernel.model.Phone;
 import com.liferay.portal.kernel.service.PhoneLocalServiceUtil;
 import com.liferay.portal.kernel.service.persistence.PhonePersistence;
 import com.liferay.portal.kernel.service.persistence.PhoneUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -123,7 +117,11 @@ public class PhonePersistenceTest {
 
 		newPhone.setMvccVersion(RandomTestUtil.nextLong());
 
+		newPhone.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newPhone.setUuid(RandomTestUtil.randomString());
+
+		newPhone.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		newPhone.setCompanyId(RandomTestUtil.nextLong());
 
@@ -143,7 +141,7 @@ public class PhonePersistenceTest {
 
 		newPhone.setExtension(RandomTestUtil.randomString());
 
-		newPhone.setTypeId(RandomTestUtil.nextLong());
+		newPhone.setListTypeId(RandomTestUtil.nextLong());
 
 		newPhone.setPrimary(RandomTestUtil.randomBoolean());
 
@@ -154,7 +152,12 @@ public class PhonePersistenceTest {
 
 		Assert.assertEquals(
 			existingPhone.getMvccVersion(), newPhone.getMvccVersion());
+		Assert.assertEquals(
+			existingPhone.getCtCollectionId(), newPhone.getCtCollectionId());
 		Assert.assertEquals(existingPhone.getUuid(), newPhone.getUuid());
+		Assert.assertEquals(
+			existingPhone.getExternalReferenceCode(),
+			newPhone.getExternalReferenceCode());
 		Assert.assertEquals(existingPhone.getPhoneId(), newPhone.getPhoneId());
 		Assert.assertEquals(
 			existingPhone.getCompanyId(), newPhone.getCompanyId());
@@ -173,8 +176,28 @@ public class PhonePersistenceTest {
 		Assert.assertEquals(existingPhone.getNumber(), newPhone.getNumber());
 		Assert.assertEquals(
 			existingPhone.getExtension(), newPhone.getExtension());
-		Assert.assertEquals(existingPhone.getTypeId(), newPhone.getTypeId());
+		Assert.assertEquals(
+			existingPhone.getListTypeId(), newPhone.getListTypeId());
 		Assert.assertEquals(existingPhone.isPrimary(), newPhone.isPrimary());
+	}
+
+	@Test(expected = DuplicatePhoneExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		Phone phone = addPhone();
+
+		Phone newPhone = addPhone();
+
+		newPhone.setCompanyId(phone.getCompanyId());
+
+		newPhone = _persistence.update(newPhone);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newPhone);
+
+		newPhone.setExternalReferenceCode(phone.getExternalReferenceCode());
+
+		_persistence.update(newPhone);
 	}
 
 	@Test
@@ -236,6 +259,15 @@ public class PhonePersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		Phone newPhone = addPhone();
 
@@ -260,10 +292,12 @@ public class PhonePersistenceTest {
 
 	protected OrderByComparator<Phone> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"Phone", "mvccVersion", true, "uuid", true, "phoneId", true,
-			"companyId", true, "userId", true, "userName", true, "createDate",
-			true, "modifiedDate", true, "classNameId", true, "classPK", true,
-			"number", true, "extension", true, "typeId", true, "primary", true);
+			"Phone", "mvccVersion", true, "ctCollectionId", true, "uuid", true,
+			"externalReferenceCode", true, "phoneId", true, "companyId", true,
+			"userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "classNameId", true, "classPK", true,
+			"number", true, "extension", true, "listTypeId", true, "primary",
+			true);
 	}
 
 	@Test
@@ -464,6 +498,67 @@ public class PhonePersistenceTest {
 		Assert.assertEquals(0, result.size());
 	}
 
+	@Test
+	public void testResetOriginalValues() throws Exception {
+		Phone newPhone = addPhone();
+
+		_persistence.clearCache();
+
+		_assertOriginalValues(
+			_persistence.findByPrimaryKey(newPhone.getPrimaryKey()));
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromDatabase()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(true);
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromSession()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(false);
+	}
+
+	private void _testResetOriginalValuesWithDynamicQuery(boolean clearSession)
+		throws Exception {
+
+		Phone newPhone = addPhone();
+
+		if (clearSession) {
+			Session session = _persistence.openSession();
+
+			session.flush();
+
+			session.clear();
+		}
+
+		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
+			Phone.class, _dynamicQueryClassLoader);
+
+		dynamicQuery.add(
+			RestrictionsFactoryUtil.eq("phoneId", newPhone.getPhoneId()));
+
+		List<Phone> result = _persistence.findWithDynamicQuery(dynamicQuery);
+
+		_assertOriginalValues(result.get(0));
+	}
+
+	private void _assertOriginalValues(Phone phone) {
+		Assert.assertEquals(
+			phone.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				phone, "getColumnOriginalValue", new Class<?>[] {String.class},
+				"externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(phone.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				phone, "getColumnOriginalValue", new Class<?>[] {String.class},
+				"companyId"));
+	}
+
 	protected Phone addPhone() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
@@ -471,7 +566,11 @@ public class PhonePersistenceTest {
 
 		phone.setMvccVersion(RandomTestUtil.nextLong());
 
+		phone.setCtCollectionId(RandomTestUtil.nextLong());
+
 		phone.setUuid(RandomTestUtil.randomString());
+
+		phone.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		phone.setCompanyId(RandomTestUtil.nextLong());
 
@@ -491,7 +590,7 @@ public class PhonePersistenceTest {
 
 		phone.setExtension(RandomTestUtil.randomString());
 
-		phone.setTypeId(RandomTestUtil.nextLong());
+		phone.setListTypeId(RandomTestUtil.nextLong());
 
 		phone.setPrimary(RandomTestUtil.randomBoolean());
 

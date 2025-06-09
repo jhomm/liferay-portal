@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.item.selector.web.internal.display.context;
 
-import com.liferay.commerce.product.display.context.util.CPRequestHelper;
+import com.liferay.commerce.product.display.context.helper.CPRequestHelper;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.RowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
@@ -23,13 +14,14 @@ import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -58,10 +50,12 @@ public abstract class BaseCPItemSelectorViewDisplayContext<T> {
 	}
 
 	public String getDisplayStyle() {
-		if (_displayStyle == null) {
-			_displayStyle = getDisplayStyle(
-				httpServletRequest, portalPreferences);
+		if (Validator.isNotNull(_displayStyle)) {
+			return _displayStyle;
 		}
+
+		_displayStyle = SearchDisplayStyleUtil.getDisplayStyle(
+			httpServletRequest, _portalPreferenceNamespace, "list", true);
 
 		return _displayStyle;
 	}
@@ -81,50 +75,24 @@ public abstract class BaseCPItemSelectorViewDisplayContext<T> {
 	}
 
 	public String getOrderByCol() {
-		if (_orderByCol != null) {
+		if (Validator.isNotNull(_orderByCol)) {
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(httpServletRequest, "orderByCol");
-
-		if (Validator.isNull(_orderByCol)) {
-			_orderByCol = portalPreferences.getValue(
-				_portalPreferenceNamespace, "order-by-col", _defaultOrderByCol);
-		}
-		else {
-			boolean saveOrderBy = ParamUtil.getBoolean(
-				httpServletRequest, "saveOrderBy");
-
-			if (saveOrderBy) {
-				portalPreferences.setValue(
-					_portalPreferenceNamespace, "order-by-col", _orderByCol);
-			}
-		}
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			httpServletRequest, _portalPreferenceNamespace, _defaultOrderByCol);
 
 		return _orderByCol;
 	}
 
 	public String getOrderByType() {
-		if (_orderByType != null) {
+		if (Validator.isNotNull(_orderByType)) {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(httpServletRequest, "orderByType");
-
-		if (Validator.isNull(_orderByType)) {
-			_orderByType = portalPreferences.getValue(
-				_portalPreferenceNamespace, "order-by-type",
-				_defaultOrderByType);
-		}
-		else {
-			boolean saveOrderBy = ParamUtil.getBoolean(
-				httpServletRequest, "saveOrderBy");
-
-			if (saveOrderBy) {
-				portalPreferences.setValue(
-					_portalPreferenceNamespace, "order-by-type", _orderByType);
-			}
-		}
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			httpServletRequest, _portalPreferenceNamespace,
+			_defaultOrderByType);
 
 		return _orderByType;
 	}
@@ -141,19 +109,11 @@ public abstract class BaseCPItemSelectorViewDisplayContext<T> {
 		throws PortalException;
 
 	public boolean isSearch() {
-		if (Validator.isNotNull(getKeywords())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(getKeywords());
 	}
 
 	public boolean isShowInfoPanel() {
-		if (isSearch()) {
-			return false;
-		}
-
-		return true;
+		return !isSearch();
 	}
 
 	public void setDefaultOrderByCol(String defaultOrderByCol) {
@@ -162,28 +122,6 @@ public abstract class BaseCPItemSelectorViewDisplayContext<T> {
 
 	public void setDefaultOrderByType(String defaultOrderByType) {
 		_defaultOrderByType = defaultOrderByType;
-	}
-
-	protected String getDisplayStyle(
-		HttpServletRequest httpServletRequest,
-		PortalPreferences portalPreferences) {
-
-		String displayStyle = ParamUtil.getString(
-			httpServletRequest, "displayStyle");
-
-		if (Validator.isNull(displayStyle)) {
-			displayStyle = portalPreferences.getValue(
-				_portalPreferenceNamespace, "display-style", "list");
-		}
-		else {
-			portalPreferences.setValue(
-				_portalPreferenceNamespace, "display-style", displayStyle);
-
-			httpServletRequest.setAttribute(
-				WebKeys.SINGLE_PAGE_APPLICATION_CLEAR_CACHE, Boolean.TRUE);
-		}
-
-		return displayStyle;
 	}
 
 	protected RowChecker getRowChecker() {

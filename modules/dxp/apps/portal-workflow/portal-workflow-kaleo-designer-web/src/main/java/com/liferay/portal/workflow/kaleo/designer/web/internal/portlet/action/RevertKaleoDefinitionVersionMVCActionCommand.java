@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.designer.web.internal.portlet.action;
 
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
@@ -31,24 +22,24 @@ import com.liferay.portal.workflow.kaleo.designer.web.internal.constants.KaleoDe
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinition;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.text.DateFormat;
 
 import java.util.Date;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Jeyvison Nascimento
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + KaleoDesignerPortletKeys.KALEO_DESIGNER,
+		"jakarta.portlet.name=" + KaleoDesignerPortletKeys.KALEO_DESIGNER,
 		"mvc.command.name=/kaleo_designer/revert_kaleo_definition_version"
 	},
 	service = MVCActionCommand.class
@@ -91,14 +82,14 @@ public class RevertKaleoDefinitionVersionMVCActionCommand
 
 			workflowDefinition =
 				workflowDefinitionManager.deployWorkflowDefinition(
-					themeDisplay.getCompanyId(), themeDisplay.getUserId(),
+					null, themeDisplay.getCompanyId(), themeDisplay.getUserId(),
 					kaleoDefinitionVersion.getTitle(), name,
 					content.getBytes());
 		}
 		else {
 			workflowDefinition =
 				workflowDefinitionManager.saveWorkflowDefinition(
-					themeDisplay.getCompanyId(), themeDisplay.getUserId(),
+					null, themeDisplay.getCompanyId(), themeDisplay.getUserId(),
 					kaleoDefinitionVersion.getTitle(), name,
 					content.getBytes());
 		}
@@ -135,7 +126,7 @@ public class RevertKaleoDefinitionVersionMVCActionCommand
 				WorkflowWebKeys.WORKFLOW_DEFINITION_MODIFIED_DATE),
 			dateFormat);
 
-		return LanguageUtil.format(
+		return _language.format(
 			resourceBundle, "restored-to-revision-from-x",
 			dateFormat.format(workflowDefinitionModifiedDate));
 	}
@@ -151,7 +142,7 @@ public class RevertKaleoDefinitionVersionMVCActionCommand
 		catch (WorkflowException workflowException) {
 			DateFormat dateFormat = _getDateFormat(locale);
 
-			String message = LanguageUtil.format(
+			String message = _language.format(
 				getResourceBundle(actionRequest),
 				"the-version-from-x-is-not-valid-for-publication",
 				dateFormat.format(previousDateModification));
@@ -170,5 +161,8 @@ public class RevertKaleoDefinitionVersionMVCActionCommand
 		return DateFormatFactoryUtil.getSimpleDateFormat(
 			"MMM d, yyyy, HH:mm", locale);
 	}
+
+	@Reference
+	private Language _language;
 
 }

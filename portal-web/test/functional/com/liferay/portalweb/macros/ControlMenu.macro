@@ -1,10 +1,31 @@
 definition {
 
-	@summary = "View the header title in control menu"
-	macro viewHeaderTitle {
+	@summary = "Default summary"
+	macro viewHeaderDraftTitle(headerTitle = null) {
+		AssertVisible(
+			key_headerTitle = ${headerTitle},
+			locator1 = "ControlMenu#HEADING_DRAFT");
+	}
+
+	@summary = "Default summary"
+	macro viewHeaderTitle(headerTitle = null) {
 		AssertTextEquals(
 			locator1 = "ControlMenu#HEADING",
-			value1 = "${headerTitle}");
+			value1 = ${headerTitle});
+	}
+
+	@summary = "Default summary"
+	macro viewHeaderTitleLabel(headerTitleLabel = null) {
+		AssertTextEquals(
+			locator1 = "ControlMenu#HEADING_LABEL",
+			value1 = ${headerTitleLabel});
+	}
+
+	@summary = "Default summary"
+	macro viewHeaderTitleNotPresent(headerTitle = null) {
+		AssertTextNotEquals(
+			locator1 = "ControlMenu#HEADING",
+			value1 = ${headerTitle});
 	}
 
 }

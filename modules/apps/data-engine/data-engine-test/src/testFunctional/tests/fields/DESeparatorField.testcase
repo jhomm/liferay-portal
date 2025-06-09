@@ -1,4 +1,4 @@
-@component-name = "data-engine"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -10,15 +10,15 @@ definition {
 
 		User.firstLoginPG();
 
-		JSONGroup.addGroup(groupName = "Test Site Name");
+		HeadlessSite.addSite(siteName = "Test Site Name");
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -27,7 +27,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68681. This test verifies that is possible to delete the field"
-	@priority = "5"
+	@priority = 5
 	test CanBeDeleted {
 		NavItem.gotoStructures();
 
@@ -55,7 +55,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68681. This test verifies that is possible to duplicate the field"
-	@priority = "4"
+	@priority = 4
 	test CanBeDuplicated {
 		NavItem.gotoStructures();
 
@@ -81,7 +81,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-70166. This test verifies that Styles are applied to the Separator"
-	@priority = "4"
+	@priority = 4
 	test CanBeStyled {
 		NavItem.gotoStructures();
 
@@ -93,7 +93,7 @@ definition {
 
 		DataEngine.editStyle(
 			fieldLabel = "Separator",
-			index = "1",
+			index = 1,
 			styleValue = "border-top: 10px dashed #9D60EB");
 
 		WebContentStructures.saveCP();
@@ -104,19 +104,19 @@ definition {
 
 		PortletEntry.inputTitle(title = "Web Content Title");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		for (var style : list "style-dashed,width-10px") {
-			var styleName = StringUtil.extractFirst("${style}","-");
-			var styleValue = StringUtil.extractLast("${style}","-");
+			var styleName = StringUtil.extractFirst(${style}, "-");
+			var styleValue = StringUtil.extractLast(${style}, "-");
 
 			AssertCssValue(
 				key_styleValue = "border-top: 10px dashed #9D60EB",
 				locator1 = "DataEngineRenderer#SEPARATOR_STYLE",
 				locator2 = "border-top-${styleName}",
-				value1 = "${styleValue}");
+				value1 = ${styleValue});
 		}
 
 		AssertCssValue(
@@ -127,7 +127,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68681. This test verifies that Label and Help text can be edited"
-	@priority = "5"
+	@priority = 5
 	test CanEditLabelAndHelpText {
 		NavItem.gotoStructures();
 
@@ -164,7 +164,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-70166. This test verifies that is possible to remove a duplicated field (repeatable)"
-	@priority = "4"
+	@priority = 4
 	test CanRemoveDuplicatedField {
 		NavItem.gotoStructures();
 
@@ -186,23 +186,23 @@ definition {
 
 		DataEngine.addRepeatableField(fieldLabel = "Separator");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		DERenderer.removeRepeatableField(fieldLabel = "Separator");
 
-		Button.clickPublish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		DEBuilder.assertFieldNotPresent(
 			fieldLabel = "Separator",
-			index = "2");
+			index = 2);
 	}
 
 	@description = "This is a test for LRQA-68681. This test verifies that Label and Help text can be set"
-	@priority = "5"
+	@priority = 5
 	test CanSetLabelAndHelpText {
 		NavItem.gotoStructures();
 
@@ -227,7 +227,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68681. This test verifies that Label can be shown or hidden"
-	@priority = "3"
+	@priority = 3
 	test CanSetLabelToShownOrHidden {
 		NavItem.gotoStructures();
 
@@ -254,6 +254,57 @@ definition {
 		DataEngine.viewField(
 			fieldFieldLabel = "Separator",
 			fieldName = "Separator");
+	}
+
+	@description = "Check if Separator Field details can be seen."
+	@priority = 4
+	test ViewSeparatorFieldDetails {
+		property portal.acceptance = "true";
+		property portal.upstream = "true";
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "Separator Structure");
+
+		DEBuilder.addField(
+			fieldLabel = "Separator",
+			fieldName = "Separator");
+
+		DEBuilder.openField(
+			fieldLabel = "Separator",
+			index = 1);
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		AssertElementPresent(locator1 = "FormViewBuilder#SIDEBAR_ADVANCED_FIELD_REFERENCE");
+
+		AssertElementPresent(
+			key_fieldFieldLabel = "Style",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER");
+
+		DataEngine.assertShowLabelField(fieldFieldLabel = "Separator");
+
+		DataEngine.assertRepeatableField(fieldFieldLabel = "Separator");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "Separator Structure");
+
+		DEBuilder.openField(
+			fieldLabel = "Separator",
+			index = 1);
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		AssertElementPresent(locator1 = "FormViewBuilder#SIDEBAR_ADVANCED_FIELD_REFERENCE");
+
+		AssertElementPresent(
+			key_fieldFieldLabel = "Style",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER");
+
+		DataEngine.assertShowLabelField(fieldFieldLabel = "Separator");
+
+		DataEngine.assertRepeatableField(fieldFieldLabel = "Separator");
 	}
 
 }

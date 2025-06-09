@@ -1,24 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.servlet.filters.invoker;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.servlet.LiferayFilter;
 import com.liferay.portal.kernel.servlet.PluginContextListener;
 import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.util.AggregateClassLoader;
@@ -34,6 +28,13 @@ import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.InputStream;
 
 import java.util.ArrayList;
@@ -47,13 +48,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
@@ -64,6 +58,12 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
  * @author Brian Wing Shun Chan
  */
 public class InvokerFilterHelper {
+
+	public void clearFilterChainsCache() {
+		for (InvokerFilter invokerFilter : _invokerFilters) {
+			invokerFilter.clearFilterChainsCache();
+		}
+	}
 
 	public void destroy() {
 		_serviceTracker.close();
@@ -77,14 +77,12 @@ public class InvokerFilterHelper {
 				filter.destroy();
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 
 		_filterMappingsMap.clear();
 		_filterNames.clear();
-
-		clearFilterChainsCache();
 	}
 
 	public void init(FilterConfig filterConfig) throws ServletException {
@@ -115,7 +113,7 @@ public class InvokerFilterHelper {
 			_serviceTracker.open();
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			throw new ServletException(exception);
 		}
@@ -211,7 +209,7 @@ public class InvokerFilterHelper {
 				filter.destroy();
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 
@@ -254,12 +252,6 @@ public class InvokerFilterHelper {
 		_invokerFilters.add(invokerFilter);
 	}
 
-	protected void clearFilterChainsCache() {
-		for (InvokerFilter invokerFilter : _invokerFilters) {
-			invokerFilter.clearFilterChainsCache();
-		}
-	}
-
 	protected InvokerFilterChain createInvokerFilterChain(
 		HttpServletRequest httpServletRequest, Dispatcher dispatcher,
 		String uri, FilterChain filterChain) {
@@ -278,7 +270,17 @@ public class InvokerFilterHelper {
 				if (filterMapping.isMatch(
 						httpServletRequest, dispatcher, uri)) {
 
-					invokerFilterChain.addFilter(filterMapping.getFilter());
+					Filter filter = filterMapping.getFilter();
+
+					if (filter instanceof LiferayFilter) {
+						LiferayFilter liferayFilter = (LiferayFilter)filter;
+
+						if (!liferayFilter.isFilterEnabled()) {
+							continue;
+						}
+					}
+
+					invokerFilterChain.addFilter(filter);
 				}
 			}
 		}
@@ -294,12 +296,10 @@ public class InvokerFilterHelper {
 			(ClassLoader)servletContext.getAttribute(
 				PluginContextListener.PLUGIN_CLASS_LOADER);
 
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
 		if (pluginClassLoader == null) {
-			pluginClassLoader = contextClassLoader;
+			Thread currentThread = Thread.currentThread();
+
+			pluginClassLoader = currentThread.getContextClassLoader();
 		}
 
 		ClassLoader portalClassLoader = PortalClassLoaderUtil.getClassLoader();
@@ -309,11 +309,9 @@ public class InvokerFilterHelper {
 				portalClassLoader, pluginClassLoader);
 		}
 
-		if (contextClassLoader != pluginClassLoader) {
-			currentThread.setContextClassLoader(pluginClassLoader);
-		}
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				pluginClassLoader)) {
 
-		try {
 			Filter filter = (Filter)InstanceFactory.newInstance(
 				pluginClassLoader, filterClassName);
 
@@ -326,11 +324,6 @@ public class InvokerFilterHelper {
 				"Unable to initialize filter " + filterClassName, exception);
 
 			return null;
-		}
-		finally {
-			if (contextClassLoader != pluginClassLoader) {
-				currentThread.setContextClassLoader(contextClassLoader);
-			}
 		}
 	}
 
@@ -473,7 +466,7 @@ public class InvokerFilterHelper {
 			Map<String, String> initParameterMap = new HashMap<>();
 
 			for (String key : serviceReference.getPropertyKeys()) {
-				if (!key.startsWith("init.param.")) {
+				if (!key.startsWith("init-param.")) {
 					continue;
 				}
 
@@ -481,7 +474,7 @@ public class InvokerFilterHelper {
 					serviceReference.getProperty(key));
 
 				initParameterMap.put(
-					StringUtil.removeSubstring(key, "init.param."), value);
+					StringUtil.removeSubstring(key, "init-param."), value);
 			}
 
 			ServletContext servletContext = ServletContextPool.get(
@@ -496,7 +489,7 @@ public class InvokerFilterHelper {
 				filter.init(filterConfig);
 			}
 			catch (ServletException servletException) {
-				_log.error(servletException, servletException);
+				_log.error(servletException);
 
 				_bundleContext.ungetService(serviceReference);
 

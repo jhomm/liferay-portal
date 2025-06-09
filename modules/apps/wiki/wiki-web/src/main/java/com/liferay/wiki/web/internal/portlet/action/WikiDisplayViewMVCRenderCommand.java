@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.web.internal.portlet.action;
@@ -37,10 +28,10 @@ import com.liferay.wiki.service.WikiNodeService;
 import com.liferay.wiki.service.WikiPageService;
 import com.liferay.wiki.web.internal.util.WikiWebComponentProvider;
 
-import javax.portlet.PortletException;
-import javax.portlet.PortletPreferences;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,9 +40,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + WikiPortletKeys.WIKI_DISPLAY,
+		"jakarta.portlet.name=" + WikiPortletKeys.WIKI_DISPLAY,
 		"mvc.command.name=/", "mvc.command.name=/wiki_display/view"
 	},
 	service = MVCRenderCommand.class
@@ -108,14 +98,14 @@ public class WikiDisplayViewMVCRenderCommand implements MVCRenderCommand {
 		}
 		catch (NoSuchNodeException noSuchNodeException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchNodeException, noSuchNodeException);
+				_log.debug(noSuchNodeException);
 			}
 
 			return "/wiki_display/portlet_not_setup.jsp";
 		}
 		catch (NoSuchPageException noSuchPageException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchPageException, noSuchPageException);
+				_log.debug(noSuchPageException);
 			}
 
 			return "/wiki_display/portlet_not_setup.jsp";

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.definitions.web.internal.portlet.action;
@@ -22,7 +13,6 @@ import com.liferay.commerce.product.model.CPAttachmentFileEntry;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.service.CPAttachmentFileEntryService;
 import com.liferay.commerce.product.service.CPDefinitionService;
-import com.liferay.commerce.product.util.DDMFormValuesHelper;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
@@ -31,18 +21,18 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,43 +42,14 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
 		"mvc.command.name=/cp_definitions/edit_cp_attachment_file_entry"
 	},
 	service = MVCActionCommand.class
 )
 public class EditCPAttachmentFileEntryMVCActionCommand
 	extends BaseMVCActionCommand {
-
-	protected void deleteCPAttachmentFileEntry(ActionRequest actionRequest)
-		throws Exception {
-
-		long[] deleteCPAttachmentFileEntryIds = null;
-
-		long cpAttachmentFileEntryId = ParamUtil.getLong(
-			actionRequest, "cpAttachmentFileEntryId");
-
-		if (cpAttachmentFileEntryId > 0) {
-			deleteCPAttachmentFileEntryIds = new long[] {
-				cpAttachmentFileEntryId
-			};
-		}
-		else {
-			deleteCPAttachmentFileEntryIds = StringUtil.split(
-				ParamUtil.getString(
-					actionRequest, "deleteCPAttachmentFileEntryIds"),
-				0L);
-		}
-
-		for (long deleteCPAttachmentFileEntryId :
-				deleteCPAttachmentFileEntryIds) {
-
-			_cpAttachmentFileEntryService.deleteCPAttachmentFileEntry(
-				deleteCPAttachmentFileEntryId);
-		}
-	}
 
 	@Override
 	protected void doProcessAction(
@@ -101,10 +62,10 @@ public class EditCPAttachmentFileEntryMVCActionCommand
 
 		try {
 			if (cmd.equals(Constants.ADD) || cmd.equals(Constants.UPDATE)) {
-				updateCPAttachmentFileEntry(actionRequest);
+				_updateCPAttachmentFileEntry(actionRequest);
 			}
 			else if (cmd.equals(Constants.DELETE)) {
-				deleteCPAttachmentFileEntry(actionRequest);
+				_deleteCPAttachmentFileEntry(actionRequest);
 			}
 
 			sendRedirect(actionRequest, actionResponse, redirect);
@@ -136,7 +97,35 @@ public class EditCPAttachmentFileEntryMVCActionCommand
 		}
 	}
 
-	protected void updateCPAttachmentFileEntry(ActionRequest actionRequest)
+	private void _deleteCPAttachmentFileEntry(ActionRequest actionRequest)
+		throws Exception {
+
+		long[] deleteCPAttachmentFileEntryIds = null;
+
+		long cpAttachmentFileEntryId = ParamUtil.getLong(
+			actionRequest, "cpAttachmentFileEntryId");
+
+		if (cpAttachmentFileEntryId > 0) {
+			deleteCPAttachmentFileEntryIds = new long[] {
+				cpAttachmentFileEntryId
+			};
+		}
+		else {
+			deleteCPAttachmentFileEntryIds = StringUtil.split(
+				ParamUtil.getString(
+					actionRequest, "deleteCPAttachmentFileEntryIds"),
+				0L);
+		}
+
+		for (long deleteCPAttachmentFileEntryId :
+				deleteCPAttachmentFileEntryIds) {
+
+			_cpAttachmentFileEntryService.deleteCPAttachmentFileEntry(
+				deleteCPAttachmentFileEntryId);
+		}
+	}
+
+	private void _updateCPAttachmentFileEntry(ActionRequest actionRequest)
 		throws Exception {
 
 		long cpAttachmentFileEntryId = ParamUtil.getLong(
@@ -184,11 +173,13 @@ public class EditCPAttachmentFileEntryMVCActionCommand
 			expirationDateHour += 12;
 		}
 
+		boolean galleryEnabled = ParamUtil.getBoolean(
+			actionRequest, "galleryEnabled");
 		boolean neverExpire = ParamUtil.getBoolean(
 			actionRequest, "neverExpire");
-		String ddmFormValues = ParamUtil.getString(
-			actionRequest, "ddmFormValues");
-		Map<Locale, String> titleMap = LocalizationUtil.getLocalizationMap(
+		String cpInstanceOptions = ParamUtil.getString(
+			actionRequest, "cpInstanceOptions");
+		Map<Locale, String> titleMap = _localization.getLocalizationMap(
 			actionRequest, "title");
 		double priority = ParamUtil.getDouble(actionRequest, "priority");
 		int type = ParamUtil.getInteger(actionRequest, "type");
@@ -207,8 +198,8 @@ public class EditCPAttachmentFileEntryMVCActionCommand
 				displayDateMonth, displayDateDay, displayDateYear,
 				displayDateHour, displayDateMinute, expirationDateMonth,
 				expirationDateDay, expirationDateYear, expirationDateHour,
-				expirationDateMinute, neverExpire, titleMap, ddmFormValues,
-				priority, type, serviceContext);
+				expirationDateMinute, neverExpire, galleryEnabled, titleMap,
+				cpInstanceOptions, priority, type, serviceContext);
 		}
 		else {
 			_cpAttachmentFileEntryService.addCPAttachmentFileEntry(
@@ -218,8 +209,8 @@ public class EditCPAttachmentFileEntryMVCActionCommand
 				displayDateDay, displayDateYear, displayDateHour,
 				displayDateMinute, expirationDateMonth, expirationDateDay,
 				expirationDateYear, expirationDateHour, expirationDateMinute,
-				neverExpire, titleMap, ddmFormValues, priority, type,
-				serviceContext);
+				neverExpire, galleryEnabled, titleMap, cpInstanceOptions,
+				priority, type, serviceContext);
 		}
 	}
 
@@ -230,7 +221,7 @@ public class EditCPAttachmentFileEntryMVCActionCommand
 	private CPDefinitionService _cpDefinitionService;
 
 	@Reference
-	private DDMFormValuesHelper _ddmFormValuesHelper;
+	private Localization _localization;
 
 	@Reference
 	private Portal _portal;

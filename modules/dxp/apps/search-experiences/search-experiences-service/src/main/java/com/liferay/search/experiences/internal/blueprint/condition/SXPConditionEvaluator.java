@@ -1,19 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.internal.blueprint.condition;
 
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.search.experiences.blueprint.exception.InvalidParameterException;
 import com.liferay.search.experiences.blueprint.parameter.SXPParameter;
 import com.liferay.search.experiences.internal.blueprint.parameter.SXPParameterData;
 import com.liferay.search.experiences.rest.dto.v1_0.Condition;
@@ -22,6 +16,8 @@ import com.liferay.search.experiences.rest.dto.v1_0.Equals;
 import com.liferay.search.experiences.rest.dto.v1_0.Exists;
 import com.liferay.search.experiences.rest.dto.v1_0.In;
 import com.liferay.search.experiences.rest.dto.v1_0.Range;
+
+import java.util.Objects;
 
 /**
  * @author Petteri Karttunen
@@ -88,8 +84,7 @@ public class SXPConditionEvaluator {
 		SXPParameter sxpParameter = _getSXPParameter(
 			contains.getParameterName());
 
-		return sxpParameter.evaluateContains(
-			contains.getValue(), contains.getValues());
+		return sxpParameter.evaluateContains(_getValue(contains.getValue()));
 	}
 
 	private boolean _evaluateEquals(Equals equals) {
@@ -101,10 +96,10 @@ public class SXPConditionEvaluator {
 
 		if (equals.getFormat() != null) {
 			return sxpParameter.evaluateEquals(
-				equals.getFormat(), equals.getValue());
+				equals.getFormat(), _getValue(equals.getValue()));
 		}
 
-		return sxpParameter.evaluateEquals(equals.getValue());
+		return sxpParameter.evaluateEquals(_getValue(equals.getValue()));
 	}
 
 	private boolean _evaluateExists(Exists exists) {
@@ -112,13 +107,8 @@ public class SXPConditionEvaluator {
 			return true;
 		}
 
-		SXPParameter sxpParameter = _getSXPParameter(exists.getParameterName());
-
-		if (sxpParameter != null) {
-			return true;
-		}
-
-		return false;
+		return Objects.nonNull(
+			_sxpParameterData.getSXPParameterByName(exists.getParameterName()));
 	}
 
 	private boolean _evaluateIn(In in) {
@@ -128,7 +118,7 @@ public class SXPConditionEvaluator {
 
 		SXPParameter sxpParameter = _getSXPParameter(in.getParameterName());
 
-		return sxpParameter.evaluateIn(in.getValues());
+		return sxpParameter.evaluateIn(_getValue(in.getValue()));
 	}
 
 	private boolean _evaluateNot(Condition condition) {
@@ -136,11 +126,7 @@ public class SXPConditionEvaluator {
 			return true;
 		}
 
-		if (evaluate(condition)) {
-			return false;
-		}
-
-		return true;
+		return !evaluate(condition);
 	}
 
 	private boolean _evaluateRange(Range range) {
@@ -160,9 +146,23 @@ public class SXPConditionEvaluator {
 			range.getGt(), range.getGte(), range.getLt(), range.getLte());
 	}
 
-	private SXPParameter _getSXPParameter(String templateVariable) {
-		return _sxpParameterData.getSXPParameterByTemplateVariable(
-			templateVariable);
+	private SXPParameter _getSXPParameter(String name) {
+		SXPParameter sxpParameter = _sxpParameterData.getSXPParameterByName(
+			name);
+
+		if (sxpParameter != null) {
+			return sxpParameter;
+		}
+
+		throw InvalidParameterException.with(name);
+	}
+
+	private Object _getValue(Object value) {
+		if (value instanceof JSONArray) {
+			return JSONUtil.toObjectArray((JSONArray)value);
+		}
+
+		return value;
 	}
 
 	private final SXPParameterData _sxpParameterData;

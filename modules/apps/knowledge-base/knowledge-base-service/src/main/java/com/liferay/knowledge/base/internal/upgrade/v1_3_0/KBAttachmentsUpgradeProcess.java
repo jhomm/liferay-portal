@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.internal.upgrade.v1_3_0;
@@ -23,7 +14,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Repository;
-import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
+import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -41,27 +32,29 @@ import java.sql.ResultSet;
 public class KBAttachmentsUpgradeProcess extends UpgradeProcess {
 
 	public KBAttachmentsUpgradeProcess(
-		CompanyLocalService companyLocalService, Store store) {
+		CompanyLocalService companyLocalService,
+		PortletFileRepository portletFileRepository, Store store) {
 
 		_companyLocalService = companyLocalService;
+		_portletFileRepository = portletFileRepository;
 		_store = store;
 	}
 
-	protected void deleteEmptyDirectories() throws Exception {
+	@Override
+	protected void doUpgrade() throws Exception {
+		_updateAttachments();
+
+		_deleteEmptyDirectories();
+	}
+
+	private void _deleteEmptyDirectories() throws Exception {
 		_companyLocalService.forEachCompanyId(
 			companyId -> _store.deleteDirectory(
 				companyId, CompanyConstants.SYSTEM,
 				"knowledgebase/kbarticles"));
 	}
 
-	@Override
-	protected void doUpgrade() throws Exception {
-		updateAttachments();
-
-		deleteEmptyDirectories();
-	}
-
-	protected String[] getAttachments(long companyId, long resourcePrimKey)
+	private String[] _getAttachments(long companyId, long resourcePrimKey)
 		throws Exception {
 
 		String dirName = "knowledgebase/kbarticles/" + resourcePrimKey;
@@ -70,9 +63,9 @@ public class KBAttachmentsUpgradeProcess extends UpgradeProcess {
 	}
 
 	/**
-	 * @see KBArticleAttachmentsUtil#getFolderId(long, long, long)
+	 * @see KBArticleAttachmentsUtil#_getFolderId(long, long, long)
 	 */
-	protected long getFolderId(long groupId, long userId, long resourcePrimKey)
+	private long _getFolderId(long groupId, long userId, long resourcePrimKey)
 		throws PortalException {
 
 		ServiceContext serviceContext = new ServiceContext();
@@ -80,10 +73,10 @@ public class KBAttachmentsUpgradeProcess extends UpgradeProcess {
 		serviceContext.setAddGroupPermissions(true);
 		serviceContext.setAddGuestPermissions(true);
 
-		Repository repository = PortletFileRepositoryUtil.addPortletRepository(
+		Repository repository = _portletFileRepository.addPortletRepository(
 			groupId, _PORTLET_ID, serviceContext);
 
-		Folder folder = PortletFileRepositoryUtil.addPortletFolder(
+		Folder folder = _portletFileRepository.addPortletFolder(
 			userId, repository.getRepositoryId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			String.valueOf(resourcePrimKey), serviceContext);
@@ -91,7 +84,7 @@ public class KBAttachmentsUpgradeProcess extends UpgradeProcess {
 		return folder.getFolderId();
 	}
 
-	protected void updateAttachments() throws Exception {
+	private void _updateAttachments() throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select kbArticleId, resourcePrimKey, groupId, companyId, " +
 					"userId, status from KBArticle");
@@ -111,16 +104,16 @@ public class KBAttachmentsUpgradeProcess extends UpgradeProcess {
 
 				long userId = resultSet.getLong("userId");
 
-				updateAttachments(companyId, groupId, classPK, userId);
+				_updateAttachments(companyId, groupId, classPK, userId);
 			}
 		}
 	}
 
-	protected void updateAttachments(
+	private void _updateAttachments(
 			long companyId, long groupId, long resourcePrimKey, long userId)
 		throws Exception {
 
-		for (String attachment : getAttachments(companyId, resourcePrimKey)) {
+		for (String attachment : _getAttachments(companyId, resourcePrimKey)) {
 			try {
 				if (!_store.hasFile(
 						companyId, CompanyConstants.SYSTEM, attachment,
@@ -129,7 +122,7 @@ public class KBAttachmentsUpgradeProcess extends UpgradeProcess {
 					continue;
 				}
 
-				long folderId = getFolderId(groupId, userId, resourcePrimKey);
+				long folderId = _getFolderId(groupId, userId, resourcePrimKey);
 
 				byte[] bytes = StreamUtil.toByteArray(
 					_store.getFileAsStream(
@@ -141,7 +134,7 @@ public class KBAttachmentsUpgradeProcess extends UpgradeProcess {
 				String mimeType = MimeTypesUtil.getExtensionContentType(
 					FileUtil.getExtension(title));
 
-				PortletFileRepositoryUtil.addPortletFileEntry(
+				_portletFileRepository.addPortletFileEntry(
 					groupId, userId, _CLASS_NAME_KB_ARTICLE, resourcePrimKey,
 					_PORTLET_ID, folderId, bytes, title, mimeType, false);
 
@@ -173,6 +166,7 @@ public class KBAttachmentsUpgradeProcess extends UpgradeProcess {
 		KBAttachmentsUpgradeProcess.class);
 
 	private final CompanyLocalService _companyLocalService;
+	private final PortletFileRepository _portletFileRepository;
 	private final Store _store;
 
 }

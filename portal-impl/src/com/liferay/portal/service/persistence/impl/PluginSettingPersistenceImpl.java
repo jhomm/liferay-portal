@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -44,7 +35,6 @@ import com.liferay.portal.model.impl.PluginSettingModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.HashMap;
@@ -182,7 +172,7 @@ public class PluginSettingPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<PluginSetting>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (PluginSetting pluginSetting : list) {
@@ -541,7 +531,8 @@ public class PluginSettingPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -582,7 +573,6 @@ public class PluginSettingPersistenceImpl
 		"pluginSetting.companyId = ?";
 
 	private FinderPath _finderPathFetchByC_P_P;
-	private FinderPath _finderPathCountByC_P_P;
 
 	/**
 	 * Returns the plugin setting where companyId = &#63; and pluginId = &#63; and pluginType = &#63; or throws a <code>NoSuchPluginSettingException</code> if it could not be found.
@@ -669,7 +659,7 @@ public class PluginSettingPersistenceImpl
 
 		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_P_P, finderArgs);
+				_finderPathFetchByC_P_P, finderArgs, this);
 		}
 
 		if (result instanceof PluginSetting) {
@@ -796,78 +786,14 @@ public class PluginSettingPersistenceImpl
 	public int countByC_P_P(
 		long companyId, String pluginId, String pluginType) {
 
-		pluginId = Objects.toString(pluginId, "");
-		pluginType = Objects.toString(pluginType, "");
+		PluginSetting pluginSetting = fetchByC_P_P(
+			companyId, pluginId, pluginType);
 
-		FinderPath finderPath = _finderPathCountByC_P_P;
-
-		Object[] finderArgs = new Object[] {companyId, pluginId, pluginType};
-
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_COUNT_PLUGINSETTING_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_P_P_COMPANYID_2);
-
-			boolean bindPluginId = false;
-
-			if (pluginId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_P_P_PLUGINID_3);
-			}
-			else {
-				bindPluginId = true;
-
-				sb.append(_FINDER_COLUMN_C_P_P_PLUGINID_2);
-			}
-
-			boolean bindPluginType = false;
-
-			if (pluginType.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_P_P_PLUGINTYPE_3);
-			}
-			else {
-				bindPluginType = true;
-
-				sb.append(_FINDER_COLUMN_C_P_P_PLUGINTYPE_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				if (bindPluginId) {
-					queryPos.add(pluginId);
-				}
-
-				if (bindPluginType) {
-					queryPos.add(pluginType);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (pluginSetting == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_C_P_P_COMPANYID_2 =
@@ -998,8 +924,6 @@ public class PluginSettingPersistenceImpl
 			pluginSettingModelImpl.getPluginType()
 		};
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByC_P_P, args, Long.valueOf(1));
 		FinderCacheUtil.putResult(
 			_finderPathFetchByC_P_P, args, pluginSettingModelImpl);
 	}
@@ -1298,7 +1222,7 @@ public class PluginSettingPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<PluginSetting>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1368,7 +1292,7 @@ public class PluginSettingPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)FinderCacheUtil.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1464,37 +1388,13 @@ public class PluginSettingPersistenceImpl
 			},
 			new String[] {"companyId", "pluginId", "pluginType"}, true);
 
-		_finderPathCountByC_P_P = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_P_P",
-			new String[] {
-				Long.class.getName(), String.class.getName(),
-				String.class.getName()
-			},
-			new String[] {"companyId", "pluginId", "pluginType"}, false);
-
-		_setPluginSettingUtilPersistence(this);
+		PluginSettingUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setPluginSettingUtilPersistence(null);
+		PluginSettingUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(PluginSettingImpl.class.getName());
-	}
-
-	private void _setPluginSettingUtilPersistence(
-		PluginSettingPersistence pluginSettingPersistence) {
-
-		try {
-			Field field = PluginSettingUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, pluginSettingPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_PLUGINSETTING =

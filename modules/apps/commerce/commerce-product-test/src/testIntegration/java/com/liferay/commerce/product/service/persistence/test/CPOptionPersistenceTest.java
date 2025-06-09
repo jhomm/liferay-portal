@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.product.exception.DuplicateCPOptionExternalReferenceCodeException;
 import com.liferay.commerce.product.exception.NoSuchCPOptionException;
 import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.service.CPOptionLocalServiceUtil;
@@ -124,6 +116,10 @@ public class CPOptionPersistenceTest {
 
 		CPOption newCPOption = _persistence.create(pk);
 
+		newCPOption.setMvccVersion(RandomTestUtil.nextLong());
+
+		newCPOption.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newCPOption.setUuid(RandomTestUtil.randomString());
 
 		newCPOption.setExternalReferenceCode(RandomTestUtil.randomString());
@@ -142,7 +138,7 @@ public class CPOptionPersistenceTest {
 
 		newCPOption.setDescription(RandomTestUtil.randomString());
 
-		newCPOption.setDDMFormFieldTypeName(RandomTestUtil.randomString());
+		newCPOption.setCommerceOptionTypeKey(RandomTestUtil.randomString());
 
 		newCPOption.setFacetable(RandomTestUtil.randomBoolean());
 
@@ -159,6 +155,11 @@ public class CPOptionPersistenceTest {
 		CPOption existingCPOption = _persistence.findByPrimaryKey(
 			newCPOption.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCPOption.getMvccVersion(), newCPOption.getMvccVersion());
+		Assert.assertEquals(
+			existingCPOption.getCtCollectionId(),
+			newCPOption.getCtCollectionId());
 		Assert.assertEquals(existingCPOption.getUuid(), newCPOption.getUuid());
 		Assert.assertEquals(
 			existingCPOption.getExternalReferenceCode(),
@@ -181,8 +182,8 @@ public class CPOptionPersistenceTest {
 		Assert.assertEquals(
 			existingCPOption.getDescription(), newCPOption.getDescription());
 		Assert.assertEquals(
-			existingCPOption.getDDMFormFieldTypeName(),
-			newCPOption.getDDMFormFieldTypeName());
+			existingCPOption.getCommerceOptionTypeKey(),
+			newCPOption.getCommerceOptionTypeKey());
 		Assert.assertEquals(
 			existingCPOption.isFacetable(), newCPOption.isFacetable());
 		Assert.assertEquals(
@@ -194,6 +195,26 @@ public class CPOptionPersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingCPOption.getLastPublishDate()),
 			Time.getShortTimestamp(newCPOption.getLastPublishDate()));
+	}
+
+	@Test(expected = DuplicateCPOptionExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CPOption cpOption = addCPOption();
+
+		CPOption newCPOption = addCPOption();
+
+		newCPOption.setCompanyId(cpOption.getCompanyId());
+
+		newCPOption = _persistence.update(newCPOption);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCPOption);
+
+		newCPOption.setExternalReferenceCode(
+			cpOption.getExternalReferenceCode());
+
+		_persistence.update(newCPOption);
 	}
 
 	@Test
@@ -231,12 +252,12 @@ public class CPOptionPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_ERC() throws Exception {
-		_persistence.countByC_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
 
-		_persistence.countByC_ERC(0L, "null");
+		_persistence.countByERC_C("null", 0L);
 
-		_persistence.countByC_ERC(0L, (String)null);
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -264,12 +285,12 @@ public class CPOptionPersistenceTest {
 
 	protected OrderByComparator<CPOption> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CPOption", "uuid", true, "externalReferenceCode", true,
-			"CPOptionId", true, "companyId", true, "userId", true, "userName",
-			true, "createDate", true, "modifiedDate", true, "name", true,
-			"description", true, "DDMFormFieldTypeName", true, "facetable",
-			true, "required", true, "skuContributor", true, "key", true,
-			"lastPublishDate", true);
+			"CPOption", "mvccVersion", true, "ctCollectionId", true, "uuid",
+			true, "externalReferenceCode", true, "CPOptionId", true,
+			"companyId", true, "userId", true, "userName", true, "createDate",
+			true, "modifiedDate", true, "name", true, "description", true,
+			"commerceOptionTypeKey", true, "facetable", true, "required", true,
+			"skuContributor", true, "key", true, "lastPublishDate", true);
 	}
 
 	@Test
@@ -541,21 +562,25 @@ public class CPOptionPersistenceTest {
 				new Class<?>[] {String.class}, "key_"));
 
 		Assert.assertEquals(
-			Long.valueOf(cpOption.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				cpOption, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
 			cpOption.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				cpOption, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(cpOption.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				cpOption, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CPOption addCPOption() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
 		CPOption cpOption = _persistence.create(pk);
+
+		cpOption.setMvccVersion(RandomTestUtil.nextLong());
+
+		cpOption.setCtCollectionId(RandomTestUtil.nextLong());
 
 		cpOption.setUuid(RandomTestUtil.randomString());
 
@@ -575,7 +600,7 @@ public class CPOptionPersistenceTest {
 
 		cpOption.setDescription(RandomTestUtil.randomString());
 
-		cpOption.setDDMFormFieldTypeName(RandomTestUtil.randomString());
+		cpOption.setCommerceOptionTypeKey(RandomTestUtil.randomString());
 
 		cpOption.setFacetable(RandomTestUtil.randomBoolean());
 

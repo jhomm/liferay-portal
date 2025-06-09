@@ -1,18 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {fetch} from 'frontend-js-web';
+import {createResourceURL, fetch} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 import ReactFlow, {Controls, ReactFlowProvider} from 'react-flow-renderer';
 
@@ -27,15 +18,32 @@ import {
 	nodeTypes,
 } from '../util/util';
 import CurrentNodes from './CurrentNodes';
+import ErrorFeedback from './ErrorFeedback';
 
 const eventObserver = new EventObserver();
 
-export default function WorkflowInstanceTracker({workflowInstanceId}) {
+let ReactFlowDefault = ReactFlow;
+
+// `react-flow-renderer` provides both a commonjs and ESM version.
+// We need this logic here so that both work. Unit tests rely on commonjs and
+// our DXP runtime uses ESM.
+
+if (ReactFlowDefault.default) {
+	ReactFlowDefault = ReactFlowDefault.default;
+}
+
+export default function WorkflowInstanceTracker({
+	baseResourceURL,
+	workflowInstanceId,
+}) {
 	const [currentNodes, setCurrentNodes] = useState([]);
+	const [definitionElements, setDefinitionElements] = useState({});
+	const [filteredCurrentNodes, setFilteredCurrentNodes] = useState([]);
 	const [nodes, setNodes] = useState([]);
 	const [transitions, setTransitions] = useState([]);
 	const [visitedNodes, setVisitedNodes] = useState([]);
-	const [definitionElements, setDefinitionElements] = useState({});
+
+	const languageId = themeDisplay.getLanguageId().replaceAll('_', '-');
 
 	useEffect(() => {
 		fetch(
@@ -47,21 +55,26 @@ export default function WorkflowInstanceTracker({workflowInstanceId}) {
 				setCurrentNodes(data.currentNodeNames);
 
 				fetch(
-					`/o/headless-admin-workflow/v1.0/workflow-definitions/by-name/${data.workflowDefinitionName}`,
+					createResourceURL(baseResourceURL, {
+						p_p_resource_id:
+							'/workflow_instance_tracker/get_workflow_definition_info',
+						workflowDefinitionName: data.workflowDefinitionName,
+						workflowDefinitionVersion:
+							data.workflowDefinitionVersion,
+					}),
 					{
-						method: 'GET',
-						params: {
-							version: data.workflowDefinitionVersion,
+						headers: {
+							'Accept-Language': languageId,
 						},
 					}
 				)
 					.then((response) => response.json())
-					.then((data) =>
+					.then((data) => {
 						setDefinitionElements({
 							nodes: data.nodes,
 							transitions: data.transitions,
-						})
-					);
+						});
+					});
 			});
 
 		fetch(
@@ -81,18 +94,20 @@ export default function WorkflowInstanceTracker({workflowInstanceId}) {
 	useEffect(() => {
 		if (definitionElements && visitedNodes) {
 			const position = {x: 0, y: 0};
-			const {
-				nodes: nodeElements,
-				transitions: transitionElements,
-			} = definitionElements;
+			const {nodes: nodeElements, transitions: transitionElements} =
+				definitionElements;
 
 			if (nodeElements?.length && transitionElements?.length) {
 				const nodes = nodeElements.map((node) => {
 					return {
 						data: {
 							current: isCurrent(currentNodes, node),
-							done: isVisited(visitedNodes, node),
-							initial: node.type == 'INITIAL_STATE',
+							done: isVisited(
+								visitedNodes,
+								transitionElements,
+								node
+							),
+							initial: node.type === 'INITIAL_STATE',
 							label: node.label,
 							notifyVisibilityChange: (visible) => () => {
 								eventObserver.notify(node.name, () => visible);
@@ -127,6 +142,18 @@ export default function WorkflowInstanceTracker({workflowInstanceId}) {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [definitionElements, visitedNodes]);
 
+	useEffect(() => {
+		const filteredCurrentNodes = [];
+
+		nodes.map((node) => {
+			if (node.data.current) {
+				filteredCurrentNodes.push(node.id);
+			}
+		});
+
+		setFilteredCurrentNodes(filteredCurrentNodes);
+	}, [nodes]);
+
 	const elements = nodes.concat(transitions);
 
 	const layoutedElements = getLayoutedElements(elements);
@@ -135,11 +162,15 @@ export default function WorkflowInstanceTracker({workflowInstanceId}) {
 		reactFlowInstance.fitView();
 	};
 
+	if (!layoutedElements.length) {
+		return <ErrorFeedback />;
+	}
+
 	return (
 		<div className="workflow-instance-tracker">
 			{!!layoutedElements.length && (
 				<ReactFlowProvider>
-					<ReactFlow
+					<ReactFlowDefault
 						edgeTypes={edgeTypes}
 						elements={layoutedElements}
 						minZoom="0.1"
@@ -149,7 +180,7 @@ export default function WorkflowInstanceTracker({workflowInstanceId}) {
 
 					<Controls showInteractive={false} />
 
-					<CurrentNodes nodesNames={currentNodes} />
+					<CurrentNodes nodesNames={filteredCurrentNodes} />
 				</ReactFlowProvider>
 			)}
 		</div>

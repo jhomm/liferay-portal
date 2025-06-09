@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -31,9 +22,9 @@ List<Map<String, Object>> vocabularies = (List<Map<String, Object>>)data.get("vo
 		%>
 
 			<div class="field-content">
-				<div class="form-group" id="<%= "namespace_assetCategoriesSelector_" + vocabularyId %>">
+				<div class="form-group" id="namespace_assetCategoriesSelector_<%= vocabularyId %>">
 					<c:if test='<%= Validator.isNotNull(vocabulary.get("title")) %>'>
-						<label>
+						<label for="namespace_assetCategoriesSelector_<%= vocabularyId %>_MultiSelect">
 							<%= HtmlUtil.escape(GetterUtil.getString(vocabulary.get("title"))) %>
 
 							<c:if test='<%= GetterUtil.getBoolean(vocabulary.get("required")) %>'>
@@ -42,7 +33,7 @@ List<Map<String, Object>> vocabularies = (List<Map<String, Object>>)data.get("vo
 										symbol="asterisk"
 									/>
 
-									<span class="hide-accessible">
+									<span class="hide-accessible sr-only">
 										<liferay-ui:message key="required" />
 									</span>
 								</span>
@@ -78,7 +69,7 @@ List<Map<String, Object>> vocabularies = (List<Map<String, Object>>)data.get("vo
 
 									</c:if>
 
-									<input class="form-control-inset" type="text" value="" />
+									<input class="form-control-inset" id="namespace_assetCategoriesSelector_<%= vocabularyId %>_MultiSelect" type="text" value="" />
 								</div>
 							</div>
 						</div>
@@ -99,7 +90,7 @@ List<Map<String, Object>> vocabularies = (List<Map<String, Object>>)data.get("vo
 	</div>
 
 	<react:component
-		module="asset_categories_selector/AssetCategoriesSelectorTag.es"
+		module="{AssetCategoriesSelectorTag} from asset-taglib"
 		props="<%= data %>"
 	/>
 </div>

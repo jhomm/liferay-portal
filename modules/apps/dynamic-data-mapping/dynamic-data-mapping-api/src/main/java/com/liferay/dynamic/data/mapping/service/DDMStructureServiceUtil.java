@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service;
 
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -92,7 +84,7 @@ public class DDMStructureServiceUtil {
 	 * extracted from the original one. The new structure supports a new name
 	 * and description.
 	 *
-	 * @param structureId the primary key of the structure to be copied
+	 * @param sourceStructureId the primary key of the structure to be copied
 	 * @param nameMap the new structure's locales and localized names
 	 * @param descriptionMap the new structure's locales and localized
 	 descriptions
@@ -102,21 +94,21 @@ public class DDMStructureServiceUtil {
 	 * @return the new structure
 	 */
 	public static DDMStructure copyStructure(
-			long structureId, Map<java.util.Locale, String> nameMap,
+			long sourceStructureId, Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().copyStructure(
-			structureId, nameMap, descriptionMap, serviceContext);
+			sourceStructureId, nameMap, descriptionMap, serviceContext);
 	}
 
 	public static DDMStructure copyStructure(
-			long structureId,
+			long sourceStructureId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
-		return getService().copyStructure(structureId, serviceContext);
+		return getService().copyStructure(sourceStructureId, serviceContext);
 	}
 
 	/**
@@ -160,6 +152,14 @@ public class DDMStructureServiceUtil {
 
 		return getService().fetchStructure(
 			groupId, classNameId, structureKey, includeAncestorStructures);
+	}
+
+	public static DDMStructure fetchStructureByExternalReferenceCode(
+			String externalReferenceCode, long groupId, long classNameId)
+		throws PortalException {
+
+		return getService().fetchStructureByExternalReferenceCode(
+			externalReferenceCode, groupId, classNameId);
 	}
 
 	/**
@@ -230,6 +230,14 @@ public class DDMStructureServiceUtil {
 			groupId, classNameId, structureKey, includeAncestorStructures);
 	}
 
+	public static DDMStructure getStructureByExternalReferenceCode(
+			String externalReferenceCode, long groupId, long classNameId)
+		throws PortalException {
+
+		return getService().getStructureByExternalReferenceCode(
+			externalReferenceCode, groupId, classNameId);
+	}
+
 	public static List<DDMStructure> getStructures(
 		long companyId, long[] groupIds, long classNameId, int status) {
 
@@ -285,6 +293,17 @@ public class DDMStructureServiceUtil {
 		throws PortalException {
 
 		getService().revertStructure(structureId, version, serviceContext);
+	}
+
+	public static List<DDMStructure> search(
+			long companyId, long[] groupIds, long classNameId, long classPK,
+			String keywords, int status, int start, int end,
+			OrderByComparator<DDMStructure> orderByComparator)
+		throws PortalException {
+
+		return getService().search(
+			companyId, groupIds, classNameId, classPK, keywords, status, start,
+			end, orderByComparator);
 	}
 
 	/**
@@ -410,6 +429,15 @@ public class DDMStructureServiceUtil {
 			type, status, andOperator, start, end, orderByComparator);
 	}
 
+	public static int searchCount(
+			long companyId, long[] groupIds, long classNameId, long classPK,
+			String keywords, int status)
+		throws PortalException {
+
+		return getService().searchCount(
+			companyId, groupIds, classNameId, classPK, keywords, status);
+	}
+
 	/**
 	 * Returns the number of structures matching the groups and class name IDs,
 	 * and matching the keywords in the structure names and descriptions.
@@ -512,9 +540,11 @@ public class DDMStructureServiceUtil {
 	}
 
 	public static DDMStructureService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile DDMStructureService _service;
+	private static final Snapshot<DDMStructureService> _serviceSnapshot =
+		new Snapshot<>(
+			DDMStructureServiceUtil.class, DDMStructureService.class);
 
 }

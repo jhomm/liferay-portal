@@ -1,46 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
+
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.TimeZone;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 /**
  * @author Alexander Chow
  * @author Manuel de la Peña
  * @author Raymond Augé
  */
-@PrepareForTest({CalendarFactoryUtil.class, DateFormatFactoryUtil.class})
-@RunWith(PowerMockRunner.class)
-public class DateUtilTest extends PowerMockito {
+public class DateUtilTest {
 
 	@Test
 	public void testEquals() throws Exception {
@@ -123,88 +103,27 @@ public class DateUtilTest extends PowerMockito {
 
 	@Test
 	public void testGetUTCFormat() {
-		_testGetUTCFormat("19721223", "yyyyMMdd");
-	}
+		DateFormat utcDateFormat = DateUtil.getUTCFormat("19721223");
 
-	private void _mockDateUtilPattern(String pattern) {
-		mockStatic(DateFormatFactoryUtil.class);
+		Assert.assertNotNull(utcDateFormat);
+		Assert.assertTrue(utcDateFormat instanceof SimpleDateFormat);
 
-		when(
-			DateFormatFactoryUtil.getSimpleDateFormat(pattern)
-		).thenReturn(
-			new SimpleDateFormat(pattern, LocaleUtil.SPAIN)
-		);
+		Assert.assertEquals(
+			"yyyyMMdd",
+			ReflectionTestUtil.getFieldValue(utcDateFormat, "pattern"));
 	}
 
 	private void _testGetDaysBetween(Date date1, Date date2, int expected) {
-		mockStatic(CalendarFactoryUtil.class);
-
-		when(
-			CalendarFactoryUtil.getCalendar()
-		).thenReturn(
-			new GregorianCalendar()
-		);
-
 		Assert.assertEquals(
 			expected, DateUtil.getDaysBetween(date1, date2, null));
 	}
 
 	private void _testGetISOFormat(String text, String pattern) {
-		_mockDateUtilPattern(pattern);
-
 		DateFormat dateFormat = DateUtil.getISOFormat(text);
 
 		SimpleDateFormat simpleDateFormat = (SimpleDateFormat)dateFormat;
 
 		Assert.assertEquals(pattern, simpleDateFormat.toPattern());
-	}
-
-	private void _testGetUTCFormat(String date, String pattern) {
-		mockStatic(DateFormatFactoryUtil.class);
-
-		when(
-			DateFormatFactoryUtil.getSimpleDateFormat(
-				Mockito.anyString(), Mockito.any(TimeZone.class))
-		).thenAnswer(
-			new Answer<SimpleDateFormat>() {
-
-				@Override
-				public SimpleDateFormat answer(
-						InvocationOnMock invocationOnMock)
-					throws Throwable {
-
-					return new TestSimpleDateFormat(
-						(String)invocationOnMock.getArguments()[0]);
-				}
-
-			}
-		);
-
-		DateFormat utcDateFormat = DateUtil.getUTCFormat(date);
-
-		Assert.assertNotNull(utcDateFormat);
-		Assert.assertTrue(utcDateFormat instanceof SimpleDateFormat);
-
-		TestSimpleDateFormat testSimpleDateFormat =
-			(TestSimpleDateFormat)utcDateFormat;
-
-		Assert.assertEquals(testSimpleDateFormat.getPattern(), pattern);
-	}
-
-	private static class TestSimpleDateFormat extends SimpleDateFormat {
-
-		public TestSimpleDateFormat(String pattern) {
-			super(pattern);
-
-			_pattern = pattern;
-		}
-
-		public String getPattern() {
-			return _pattern;
-		}
-
-		private final String _pattern;
-
 	}
 
 }

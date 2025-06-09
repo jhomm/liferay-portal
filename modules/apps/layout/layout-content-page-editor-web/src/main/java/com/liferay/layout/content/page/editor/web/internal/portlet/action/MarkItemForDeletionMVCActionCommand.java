@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.portlet.action;
@@ -21,13 +12,13 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.segments.constants.SegmentsExperienceConstants;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.Arrays;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -35,9 +26,8 @@ import org.osgi.service.component.annotations.Component;
  * @author Víctor Galán
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/mark_item_for_deletion"
 	},
 	service = MVCActionCommand.class
@@ -54,9 +44,21 @@ public class MarkItemForDeletionMVCActionCommand
 			WebKeys.THEME_DISPLAY);
 
 		long segmentsExperienceId = ParamUtil.getLong(
-			actionRequest, "segmentsExperienceId",
-			SegmentsExperienceConstants.ID_DEFAULT);
+			actionRequest, "segmentsExperienceId");
+
+		String[] itemIds = null;
+
 		String itemId = ParamUtil.getString(actionRequest, "itemId");
+
+		if (Validator.isNotNull(itemId)) {
+			itemIds = new String[] {itemId};
+		}
+		else {
+			itemIds = ParamUtil.getStringValues(actionRequest, "itemIds");
+		}
+
+		String[] finalItemIds = itemIds;
+
 		String[] portletIds = ParamUtil.getStringValues(
 			actionRequest, "portletIds");
 
@@ -67,7 +69,8 @@ public class MarkItemForDeletionMVCActionCommand
 				themeDisplay.getPlid(),
 				layoutStructure ->
 					layoutStructure.markLayoutStructureItemForDeletion(
-						itemId, Arrays.asList(portletIds))));
+						Arrays.asList(finalItemIds),
+						Arrays.asList(portletIds))));
 	}
 
 }

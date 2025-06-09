@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.web.internal.frontend.taglib.form.navigator;
@@ -17,11 +8,12 @@ package com.liferay.asset.publisher.web.internal.frontend.taglib.form.navigator;
 import com.liferay.asset.publisher.constants.AssetPublisherConstants;
 import com.liferay.asset.publisher.web.internal.constants.AssetPublisherSelectionStyleConstants;
 import com.liferay.frontend.taglib.form.navigator.FormNavigatorEntry;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.User;
 
-import java.util.Objects;
+import jakarta.servlet.ServletContext;
 
-import javax.servlet.ServletContext;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,21 +39,23 @@ public class AssetListFormNavigatorEntry
 	}
 
 	@Override
+	public ServletContext getServletContext() {
+		return _servletContext;
+	}
+
+	@Override
 	public boolean isVisible(User user, Object object) {
 		if (isAssetListSelection() || _isAssetListProviderSelection()) {
 			return true;
 		}
 
-		return false;
-	}
+		if ((isDynamicAssetSelection() || isManualSelection()) &&
+			!FeatureFlagManagerUtil.isEnabled("LPD-39304")) {
 
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.asset.publisher.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override
@@ -70,15 +64,14 @@ public class AssetListFormNavigatorEntry
 	}
 
 	private boolean _isAssetListProviderSelection() {
-		if (Objects.equals(
-				getSelectionStyle(),
-				AssetPublisherSelectionStyleConstants.
-					TYPE_ASSET_LIST_PROVIDER)) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			getSelectionStyle(),
+			AssetPublisherSelectionStyleConstants.TYPE_ASSET_LIST_PROVIDER);
 	}
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.asset.publisher.web)"
+	)
+	private ServletContext _servletContext;
 
 }

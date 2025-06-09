@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.4.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_4_0.dtd">
 
-<service-builder auto-namespace-tables="false" mvcc-enabled="false" package-path="com.liferay.commerce.product.type.grouped">
+<service-builder auto-import-default-references="false" auto-namespace-tables="false" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.commerce.product.type.grouped">
 	<author>Andrea Di Giorgi</author>
 	<namespace>Commerce</namespace>
 	<entity local-service="true" name="CPDefinitionGroupedEntry" remote-service="true" uuid="true">
@@ -40,6 +40,9 @@
 		<finder name="CPDefinitionId" return-type="Collection">
 			<finder-column name="CPDefinitionId" />
 		</finder>
+		<finder name="EntryCProductId" return-type="Collection">
+			<finder-column name="entryCProductId" />
+		</finder>
 		<finder name="C_E" return-type="CPDefinitionGroupedEntry" unique="true">
 			<finder-column name="CPDefinitionId" />
 			<finder-column name="entryCProductId" />
@@ -47,5 +50,6 @@
 	</entity>
 	<exceptions>
 		<exception>CPDefinitionGroupedEntryQuantity</exception>
+		<exception>DuplicateCPDefinitionGroupedEntry</exception>
 	</exceptions>
 </service-builder>

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.test.util;
@@ -22,6 +13,7 @@ import com.liferay.dynamic.data.mapping.service.DDMFormInstanceLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.storage.StorageType;
 import com.liferay.dynamic.data.mapping.util.DDMFormFactory;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -40,9 +32,18 @@ public class DDMFormInstanceTestUtil {
 		throws Exception {
 
 		return addDDMFormInstance(
+			ddmForm, group, settingsDDMFormValues,
+			DDMFormInstance.class.getName(), userId);
+	}
+
+	public static DDMFormInstance addDDMFormInstance(
+			DDMForm ddmForm, Group group, DDMFormValues settingsDDMFormValues,
+			String className, long userId)
+		throws Exception {
+
+		return addDDMFormInstance(
 			DDMStructureTestUtil.addStructure(
-				group.getGroupId(), DDMFormInstance.class.getName(), ddmForm,
-				LocaleUtil.US),
+				group.getGroupId(), className, ddmForm, LocaleUtil.US),
 			group, settingsDDMFormValues, userId);
 	}
 
@@ -52,6 +53,14 @@ public class DDMFormInstanceTestUtil {
 
 		return addDDMFormInstance(
 			ddmForm, group, createSettingsDDMFormValues(), userId);
+	}
+
+	public static DDMFormInstance addDDMFormInstance(
+			DDMForm ddmForm, Group group, String className, long userId)
+		throws Exception {
+
+		return addDDMFormInstance(
+			ddmForm, group, createSettingsDDMFormValues(), className, userId);
 	}
 
 	public static DDMFormInstance addDDMFormInstance(
@@ -80,6 +89,12 @@ public class DDMFormInstanceTestUtil {
 	}
 
 	public static DDMFormValues createSettingsDDMFormValues() {
+		return createSettingsDDMFormValues(true);
+	}
+
+	public static DDMFormValues createSettingsDDMFormValues(
+		boolean requireCaptcha) {
+
 		DDMForm ddmForm = DDMFormFactory.create(DDMFormInstanceSettings.class);
 
 		DDMFormValues ddmFormValues = new DDMFormValues(ddmForm);
@@ -107,13 +122,13 @@ public class DDMFormInstanceTestUtil {
 				"published", "Joe Bloggs"));
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
-				"redirectURL", "http://www.google.com"));
+				"redirectURL", StringPool.BLANK));
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"requireAuthentication", "false"));
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
-				"requireCaptcha", "true"));
+				"requireCaptcha", String.valueOf(requireCaptcha)));
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"sendEmailNotification", "false"));
@@ -127,8 +142,10 @@ public class DDMFormInstanceTestUtil {
 		return ddmFormValues;
 	}
 
-	public static void deleteDDMFormInstance(DDMFormInstance ddmFormInstance) {
-		DDMFormInstanceLocalServiceUtil.deleteDDMFormInstance(ddmFormInstance);
+	public static void deleteFormInstance(DDMFormInstance ddmFormInstance)
+		throws PortalException {
+
+		DDMFormInstanceLocalServiceUtil.deleteFormInstance(ddmFormInstance);
 	}
 
 	public static DDMFormInstance updateDDMFormInstance(

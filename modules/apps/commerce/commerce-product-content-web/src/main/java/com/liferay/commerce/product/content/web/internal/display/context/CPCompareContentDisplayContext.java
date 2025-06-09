@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.display.context;
 
-import com.liferay.commerce.account.model.CommerceAccount;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.product.catalog.CPCatalogEntry;
@@ -25,27 +15,30 @@ import com.liferay.commerce.product.content.render.list.entry.CPContentListEntry
 import com.liferay.commerce.product.content.render.list.entry.CPContentListEntryRendererRegistry;
 import com.liferay.commerce.product.content.web.internal.configuration.CPCompareContentPortletInstanceConfiguration;
 import com.liferay.commerce.product.data.source.CPDataSourceResult;
-import com.liferay.commerce.product.display.context.util.CPRequestHelper;
+import com.liferay.commerce.product.display.context.helper.CPRequestHelper;
+import com.liferay.commerce.product.helper.CPCompareHelper;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
 import com.liferay.commerce.product.type.CPType;
-import com.liferay.commerce.product.type.CPTypeServicesTracker;
-import com.liferay.commerce.product.util.CPCompareHelper;
-import com.liferay.commerce.product.util.CPDefinitionHelper;
+import com.liferay.commerce.product.type.CPTypeRegistry;
+import com.liferay.commerce.util.CommerceUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.theme.PortletDisplay;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.CookieKeys;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -53,50 +46,43 @@ import javax.servlet.http.HttpServletRequest;
 public class CPCompareContentDisplayContext {
 
 	public CPCompareContentDisplayContext(
+			ConfigurationProvider configurationProvider,
 			CPCompareHelper cpCompareHelper,
 			CPContentListEntryRendererRegistry
 				cpContentListEntryRendererRegistry,
 			CPContentListRendererRegistry cpContentListRendererRegistry,
 			CPDefinitionHelper cpDefinitionHelper,
-			CPTypeServicesTracker cpTypeServicesTracker,
+			CPTypeRegistry cpTypeRegistry, GroupLocalService groupLocalService,
 			HttpServletRequest httpServletRequest)
 		throws PortalException {
 
+		_configurationProvider = configurationProvider;
 		_cpContentListEntryRendererRegistry =
 			cpContentListEntryRendererRegistry;
 		_cpContentListRendererRegistry = cpContentListRendererRegistry;
 		_cpDefinitionHelper = cpDefinitionHelper;
-		_cpTypeServicesTracker = cpTypeServicesTracker;
+		_cpTypeRegistry = cpTypeRegistry;
+		_groupLocalService = groupLocalService;
 
 		_cpRequestHelper = new CPRequestHelper(httpServletRequest);
 
-		ThemeDisplay themeDisplay = _cpRequestHelper.getThemeDisplay();
-
-		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
-
 		_cpCompareContentPortletInstanceConfiguration =
-			portletDisplay.getPortletInstanceConfiguration(
-				CPCompareContentPortletInstanceConfiguration.class);
-
-		CommerceContext commerceContext =
-			(CommerceContext)httpServletRequest.getAttribute(
-				CommerceWebKeys.COMMERCE_CONTEXT);
-
-		CommerceAccount commerceAccount = commerceContext.getCommerceAccount();
-
-		long commerceAccountId = 0;
-
-		if (commerceAccount != null) {
-			commerceAccountId = commerceAccount.getCommerceAccountId();
-		}
+			configurationProvider.getPortletInstanceConfiguration(
+				CPCompareContentPortletInstanceConfiguration.class,
+				_cpRequestHelper.getThemeDisplay());
 
 		if (hasCommerceChannel()) {
+			CommerceContext commerceContext =
+				(CommerceContext)httpServletRequest.getAttribute(
+					CommerceWebKeys.COMMERCE_CONTEXT);
+
 			_cpDefinitionIds = cpCompareHelper.getCPDefinitionIds(
-				commerceContext.getCommerceChannelGroupId(), commerceAccountId,
-				CookieKeys.getCookie(
-					httpServletRequest,
+				commerceContext.getCommerceChannelGroupId(),
+				CommerceUtil.getCommerceAccountId(commerceContext),
+				CookiesManagerUtil.getCookieValue(
 					cpCompareHelper.getCPDefinitionIdsCookieKey(
-						commerceContext.getCommerceChannelGroupId())));
+						commerceContext.getCommerceChannelGroupId()),
+					httpServletRequest));
 		}
 		else {
 			_cpDefinitionIds = new ArrayList<>();
@@ -167,18 +153,10 @@ public class CPCompareContentDisplayContext {
 			(CommerceContext)httpServletRequest.getAttribute(
 				CommerceWebKeys.COMMERCE_CONTEXT);
 
-		CommerceAccount commerceAccount = commerceContext.getCommerceAccount();
-
-		long commerceAccountId = 0;
-
-		if (commerceAccount != null) {
-			commerceAccountId = commerceAccount.getCommerceAccountId();
-		}
-
 		for (Long cpDefinitionId : _cpDefinitionIds) {
 			cpCatalogEntries.add(
 				_cpDefinitionHelper.getCPCatalogEntry(
-					commerceAccountId,
+					CommerceUtil.getCommerceAccountId(commerceContext),
 					commerceContext.getCommerceChannelGroupId(), cpDefinitionId,
 					_cpRequestHelper.getLocale()));
 		}
@@ -221,7 +199,7 @@ public class CPCompareContentDisplayContext {
 	}
 
 	public List<CPType> getCPTypes() {
-		return _cpTypeServicesTracker.getCPTypes();
+		return _cpTypeRegistry.getCPTypes();
 	}
 
 	public String getDisplayStyle() {
@@ -229,8 +207,61 @@ public class CPCompareContentDisplayContext {
 	}
 
 	public long getDisplayStyleGroupId() {
-		return _cpCompareContentPortletInstanceConfiguration.
-			displayStyleGroupId();
+		if (_displayStyleGroupId != null) {
+			return _displayStyleGroupId;
+		}
+
+		String displayStyleGroupExternalReferenceCode =
+			_cpCompareContentPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode();
+
+		ThemeDisplay themeDisplay = _cpRequestHelper.getThemeDisplay();
+
+		Group group = themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = _groupLocalService.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupId = group.getGroupId();
+		}
+		else {
+			_displayStyleGroupId = themeDisplay.getScopeGroupId();
+		}
+
+		return _displayStyleGroupId;
+	}
+
+	public String getDisplayStyleGroupKey() {
+		if (Validator.isNotNull(_displayStyleGroupKey)) {
+			return _displayStyleGroupKey;
+		}
+
+		String displayStyleGroupExternalReferenceCode =
+			_cpCompareContentPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode();
+
+		ThemeDisplay themeDisplay = _cpRequestHelper.getThemeDisplay();
+
+		Group group = themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = _groupLocalService.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupKey = group.getGroupKey();
+		}
+		else {
+			_displayStyleGroupKey = StringPool.BLANK;
+		}
+
+		return _displayStyleGroupKey;
 	}
 
 	public int getProductsLimit() {
@@ -248,6 +279,10 @@ public class CPCompareContentDisplayContext {
 			(CommerceContext)httpServletRequest.getAttribute(
 				CommerceWebKeys.COMMERCE_CONTEXT);
 
+		if (commerceContext == null) {
+			return false;
+		}
+
 		long commerceChannelId = commerceContext.getCommerceChannelId();
 
 		if (commerceChannelId > 0) {
@@ -260,23 +295,16 @@ public class CPCompareContentDisplayContext {
 	public boolean isSelectionStyleADT() {
 		String selectionStyle = getSelectionStyle();
 
-		if (selectionStyle.equals("adt")) {
-			return true;
-		}
-
-		return false;
+		return selectionStyle.equals("adt");
 	}
 
 	public boolean isSelectionStyleCustomRenderer() {
 		String selectionStyle = getSelectionStyle();
 
-		if (selectionStyle.equals("custom")) {
-			return true;
-		}
-
-		return false;
+		return selectionStyle.equals("custom");
 	}
 
+	private final ConfigurationProvider _configurationProvider;
 	private final CPCompareContentPortletInstanceConfiguration
 		_cpCompareContentPortletInstanceConfiguration;
 	private final CPContentListEntryRendererRegistry
@@ -285,6 +313,9 @@ public class CPCompareContentDisplayContext {
 	private final CPDefinitionHelper _cpDefinitionHelper;
 	private final List<Long> _cpDefinitionIds;
 	private final CPRequestHelper _cpRequestHelper;
-	private final CPTypeServicesTracker _cpTypeServicesTracker;
+	private final CPTypeRegistry _cpTypeRegistry;
+	private Long _displayStyleGroupId;
+	private String _displayStyleGroupKey;
+	private final GroupLocalService _groupLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.file.install.internal;
@@ -17,6 +8,7 @@ package com.liferay.portal.file.install.internal;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.petra.concurrent.DefaultNoticeableFuture;
+import com.liferay.petra.io.BigEndianCodec;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
@@ -24,21 +16,23 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.file.install.FileInstaller;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.ModuleFrameworkPropsValues;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.util.PropsValues;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.RandomAccessFile;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,7 +58,6 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
-import org.osgi.framework.VersionRange;
 import org.osgi.framework.startlevel.BundleStartLevel;
 import org.osgi.framework.startlevel.FrameworkStartLevel;
 import org.osgi.framework.wiring.BundleRevision;
@@ -76,72 +69,79 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
  */
 public class DirectoryWatcher extends Thread implements BundleListener {
 
-	public static final String ACTIVE_LEVEL = "file.install.active.level";
-
-	public static final String CONFIG_ENCODING = "file.install.configEncoding";
-
-	public static final String DIR = "file.install.dir";
-
-	public static final String FILENAME = "felix.fileinstall.filename";
-
-	public static final String FILTER = "file.install.filter";
-
-	public static final String NO_INITIAL_DELAY = "file.install.noInitialDelay";
-
-	public static final String POLL = "file.install.poll";
-
-	public static final String START_LEVEL = "file.install.start.level";
-
-	public static final String START_NEW_BUNDLES =
-		"file.install.bundles.new.start";
-
-	public static final String SUBDIR_MODE = "file.install.subdir.mode";
-
-	public static final String USE_START_ACTIVATION_POLICY =
-		"file.install.bundles.startActivationPolicy";
-
-	public static final String USE_START_TRANSIENT =
-		"file.install.bundles.startTransient";
-
-	public static final String WEB_START_LEVEL = "file.install.web.start.level";
-
-	public DirectoryWatcher(BundleContext bundleContext) {
+	public DirectoryWatcher(BundleContext bundleContext) throws IOException {
 		super("fileinstall-directory-watcher");
 
 		setDaemon(true);
 
 		_bundleContext = bundleContext;
 
-		_activeLevel = GetterUtil.getInteger(
-			bundleContext.getProperty(ACTIVE_LEVEL));
-		_filter = bundleContext.getProperty(FILTER);
-		_noInitialDelay = GetterUtil.getBoolean(
-			bundleContext.getProperty(NO_INITIAL_DELAY));
-		_poll = GetterUtil.getLong(bundleContext.getProperty(POLL), 2000);
-		_startBundles = GetterUtil.getBoolean(
-			bundleContext.getProperty(START_NEW_BUNDLES), true);
-		_startLevel = GetterUtil.getInteger(
-			bundleContext.getProperty(START_LEVEL));
-		_systemBundle = bundleContext.getBundle(
-			Constants.SYSTEM_BUNDLE_LOCATION);
-		_useStartActivationPolicy = GetterUtil.getBoolean(
-			bundleContext.getProperty(USE_START_ACTIVATION_POLICY), true);
-		_useStartTransient = GetterUtil.getBoolean(
-			bundleContext.getProperty(USE_START_TRANSIENT));
+		Bundle bundle = bundleContext.getBundle();
 
-		Set<String> dirs = new LinkedHashSet<>(
-			Arrays.asList(
-				StringUtil.split(
-					bundleContext.getProperty(DirectoryWatcher.DIR))));
+		_checksumRandomAccessFile = new RandomAccessFile(
+			bundle.getDataFile("bundles.checksum"), "rw");
 
-		_watchedDirs = new ArrayList<>(dirs.size());
+		long length = _checksumRandomAccessFile.length();
 
-		for (String dir : dirs) {
-			_watchedDirs.add(new File(dir));
+		if (length > 0) {
+			int entryCount = (int)(length / 16);
+
+			byte[] bytes = new byte[entryCount * 16];
+
+			_checksumRandomAccessFile.readFully(bytes);
+
+			int index = 0;
+
+			for (int i = 0; i < entryCount; i++) {
+				_bundleChecksums.put(
+					BigEndianCodec.getLong(bytes, index),
+					BigEndianCodec.getLong(bytes, index + 8));
+
+				index += 16;
+			}
+
+			List<Long> currentBundleIds = new ArrayList<>();
+
+			for (Bundle currentBundle : bundleContext.getBundles()) {
+				currentBundleIds.add(currentBundle.getBundleId());
+			}
+
+			Set<Long> checksumBundleIds = _bundleChecksums.keySet();
+
+			checksumBundleIds.retainAll(currentBundleIds);
+
+			int actualEntryCount = _bundleChecksums.size();
+
+			if (actualEntryCount < entryCount) {
+				index = 0;
+
+				for (Map.Entry<Long, Long> entry :
+						_bundleChecksums.entrySet()) {
+
+					BigEndianCodec.putLong(bytes, index, entry.getKey());
+					BigEndianCodec.putLong(bytes, index + 8, entry.getValue());
+
+					index += 16;
+				}
+
+				_checksumRandomAccessFile.seek(0);
+
+				int fileSize = actualEntryCount * 16;
+
+				_checksumRandomAccessFile.write(bytes, 0, fileSize);
+				_checksumRandomAccessFile.setLength(fileSize);
+			}
 		}
 
-		_webStartLevel = GetterUtil.getInteger(
-			bundleContext.getProperty(WEB_START_LEVEL), _startLevel);
+		_systemBundle = bundleContext.getBundle(
+			Constants.SYSTEM_BUNDLE_LOCATION);
+
+		for (String dir : PropsValues.MODULE_FRAMEWORK_AUTO_DEPLOY_DIRS) {
+			String filePath = Util.getFilePath(dir);
+
+			_watchedDirPaths.add(filePath);
+			_watchedDirs.add(new File(filePath));
+		}
 
 		_fileInstallers = ServiceTrackerListFactory.open(
 			_bundleContext, FileInstaller.class, null,
@@ -182,8 +182,30 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 
 			});
 
+		if (!Validator.isBlank(
+				PropsValues.MODULE_FRAMEWORK_FILE_INSTALL_FILTER)) {
+
+			_filenameFilter = new FilenameFilter() {
+
+				@Override
+				public boolean accept(File dir, String name) {
+					Matcher matcher = _pattern.matcher(name);
+
+					return matcher.matches();
+				}
+
+				private final Pattern _pattern = Pattern.compile(
+					PropsValues.MODULE_FRAMEWORK_FILE_INSTALL_FILTER);
+
+			};
+		}
+		else {
+			_filenameFilter = (dir, name) -> true;
+		}
+
 		_scanner = new Scanner(
-			_watchedDirs, _filter, bundleContext.getProperty(SUBDIR_MODE));
+			_watchedDirs, _filenameFilter,
+			PropsValues.MODULE_FRAMEWORK_FILE_INSTALL_SUBDIR_MODE);
 
 		_bundleContext.addBundleListener(this);
 	}
@@ -220,7 +242,7 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 		}
 	}
 
-	public void close() {
+	public void close() throws IOException {
 		_bundleContext.removeBundleListener(this);
 
 		interrupt();
@@ -230,11 +252,13 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 		}
 		catch (InterruptedException interruptedException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(interruptedException, interruptedException);
+				_log.debug(interruptedException);
 			}
 		}
 
 		_fileInstallers.close();
+
+		_checksumRandomAccessFile.close();
 	}
 
 	public Scanner getScanner() {
@@ -243,13 +267,13 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 
 	@Override
 	public void run() {
-		if (!_noInitialDelay) {
+		if (!PropsValues.MODULE_FRAMEWORK_FILE_INSTALL_NO_INITIAL_DELAY) {
 			try {
-				Thread.sleep(_poll);
+				Thread.sleep(PropsValues.MODULE_FRAMEWORK_AUTO_DEPLOY_INTERVAL);
 			}
 			catch (InterruptedException interruptedException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(interruptedException, interruptedException);
+					_log.debug(interruptedException);
 				}
 
 				return;
@@ -263,7 +287,9 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 				FrameworkStartLevel frameworkStartLevel = _systemBundle.adapt(
 					FrameworkStartLevel.class);
 
-				if ((frameworkStartLevel.getStartLevel() >= _activeLevel) &&
+				if ((frameworkStartLevel.getStartLevel() >=
+						PropsValues.
+							MODULE_FRAMEWORK_FILE_INSTALL_ACTIVE_LEVEL) &&
 					(_systemBundle.getState() == Bundle.ACTIVE)) {
 
 					Set<File> files = _scanner.scan(false);
@@ -274,12 +300,12 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 				}
 
 				synchronized (this) {
-					wait(_poll);
+					wait(PropsValues.MODULE_FRAMEWORK_AUTO_DEPLOY_INTERVAL);
 				}
 			}
 			catch (InterruptedException interruptedException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(interruptedException, interruptedException);
+					_log.debug(interruptedException);
 				}
 
 				interrupt();
@@ -292,8 +318,7 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 				}
 				catch (IllegalStateException illegalStateException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(
-							illegalStateException, illegalStateException);
+						_log.debug(illegalStateException);
 					}
 
 					return;
@@ -306,7 +331,7 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 
 	@Override
 	public void start() {
-		if (_noInitialDelay) {
+		if (PropsValues.MODULE_FRAMEWORK_FILE_INSTALL_NO_INITIAL_DELAY) {
 			_initializeCurrentManagedBundles();
 
 			Set<File> files = _scanner.scan(true);
@@ -334,161 +359,33 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 		return false;
 	}
 
-	private void _findBundlesWithOptionalPackagesToRefresh(
-		Set<Bundle> refreshBundles) {
+	private void _findBundlesWithFragmentsToRefresh(Set<Bundle> bundles) {
+		Set<String> hostBundleSymbolicNames = new HashSet<>();
 
-		Set<Bundle> bundles = new HashSet<>();
+		for (Bundle bundle : bundles) {
+			if ((bundle.getState() != Bundle.UNINSTALLED) &&
+				_isFragment(bundle)) {
 
-		for (Artifact artifact : _getArtifacts()) {
-			long bundleId = artifact.getBundleId();
+				hostBundleSymbolicNames.add(_getFragmentHost(bundle));
+			}
+		}
 
-			if (bundleId > 0) {
-				Bundle bundle = _bundleContext.getBundle(bundleId);
+		if (hostBundleSymbolicNames.isEmpty()) {
+			return;
+		}
 
-				if (bundle != null) {
+		for (Bundle bundle : _bundleContext.getBundles()) {
+			if (hostBundleSymbolicNames.remove(bundle.getSymbolicName())) {
+				int hostBundleState = bundle.getState();
+
+				if ((hostBundleState == Bundle.ACTIVE) ||
+					(hostBundleState == Bundle.RESOLVED) ||
+					(hostBundleState == Bundle.STARTING)) {
+
 					bundles.add(bundle);
 				}
 			}
 		}
-
-		bundles.removeAll(refreshBundles);
-
-		if (bundles.isEmpty()) {
-			return;
-		}
-
-		Map<Bundle, Map<String, Map<String, String>>> importMap =
-			new HashMap<>();
-
-		Iterator<Bundle> iterator = bundles.iterator();
-
-		while (iterator.hasNext()) {
-			Bundle bundle = iterator.next();
-
-			Dictionary<String, String> header = bundle.getHeaders(
-				StringPool.BLANK);
-
-			String importHeader = header.get(Constants.IMPORT_PACKAGE);
-
-			Map<String, Map<String, String>> imports = _parseHeader(
-				importHeader);
-
-			Collection<Map<String, String>> set = imports.values();
-
-			Iterator<Map<String, String>> parameterIterator = set.iterator();
-
-			while (parameterIterator.hasNext()) {
-				Map<String, String> attributes = parameterIterator.next();
-
-				String resolution = attributes.get(
-					Constants.RESOLUTION_DIRECTIVE);
-
-				if (!Objects.equals(
-						Constants.RESOLUTION_OPTIONAL, resolution)) {
-
-					parameterIterator.remove();
-				}
-			}
-
-			if (imports.isEmpty()) {
-				iterator.remove();
-			}
-			else {
-				importMap.put(bundle, imports);
-			}
-		}
-
-		if (bundles.isEmpty()) {
-			return;
-		}
-
-		Map<String, Map<String, String>> exportMap = new HashMap<>();
-
-		for (Bundle bundle : refreshBundles) {
-			if (bundle.getState() != Bundle.UNINSTALLED) {
-				Dictionary<String, String> headers = bundle.getHeaders(
-					StringPool.BLANK);
-
-				String bundleExports = headers.get(Constants.EXPORT_PACKAGE);
-
-				if (bundleExports != null) {
-					exportMap.putAll(_parseHeader(bundleExports));
-				}
-			}
-		}
-
-		iterator = bundles.iterator();
-
-		while (iterator.hasNext()) {
-			Bundle bundle = iterator.next();
-
-			Map<String, Map<String, String>> imports = importMap.get(bundle);
-
-			Set<Map.Entry<String, Map<String, String>>> importSet =
-				imports.entrySet();
-
-			Iterator<Map.Entry<String, Map<String, String>>> importIterator =
-				importSet.iterator();
-
-			while (importIterator.hasNext()) {
-				Map.Entry<String, Map<String, String>> importEntry =
-					importIterator.next();
-
-				boolean matching = false;
-
-				for (Map.Entry<String, Map<String, String>> exportEntry :
-						exportMap.entrySet()) {
-
-					if (Objects.equals(
-							importEntry.getKey(), exportEntry.getKey())) {
-
-						Map<String, String> importAttributes =
-							importEntry.getValue();
-
-						String importVersionString = importAttributes.get(
-							Constants.VERSION_ATTRIBUTE);
-
-						if (importVersionString == null) {
-							matching = true;
-
-							break;
-						}
-
-						Version exportedVersion = Version.emptyVersion;
-
-						Map<String, String> exportAttributes =
-							exportEntry.getValue();
-
-						String exportVersionString = exportAttributes.get(
-							Constants.VERSION_ATTRIBUTE);
-
-						if (exportVersionString != null) {
-							exportedVersion = Version.parseVersion(
-								exportVersionString);
-						}
-
-						VersionRange importedVersionRange = new VersionRange(
-							importVersionString);
-
-						if (importedVersionRange.includes(exportedVersion)) {
-							matching = true;
-
-							break;
-						}
-					}
-				}
-
-				if (!matching) {
-					importIterator.remove();
-				}
-			}
-
-			if (imports.isEmpty()) {
-				iterator.remove();
-			}
-		}
-
-		refreshBundles.addAll(bundles);
 	}
 
 	private FileInstaller _findFileInstaller(
@@ -515,32 +412,42 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 		}
 	}
 
-	private List<String> _getWatchedDirPaths() {
-		List<String> watchedDirPaths = new ArrayList<>();
+	private long _getChecksum(Bundle bundle) {
+		Long checksum = _bundleChecksums.get(bundle.getBundleId());
 
-		for (File watchedDir : _watchedDirs) {
-			URI uri = watchedDir.toURI();
-
-			uri = uri.normalize();
-
-			watchedDirPaths.add(uri.getPath());
+		if (checksum == null) {
+			return Long.MIN_VALUE;
 		}
 
-		return watchedDirPaths;
+		return checksum;
+	}
+
+	/**
+	 * @see com.liferay.portal.fragment.bundle.watcher.internal.PortalFragmentBundleWatcher#_getFragmentHost
+	 */
+	private String _getFragmentHost(Bundle bundle) {
+		Dictionary<String, String> dictionary = bundle.getHeaders(
+			StringPool.BLANK);
+
+		String fragmentHost = dictionary.get(Constants.FRAGMENT_HOST);
+
+		if (fragmentHost == null) {
+			return null;
+		}
+
+		int index = fragmentHost.indexOf(CharPool.SEMICOLON);
+
+		if (index != -1) {
+			fragmentHost = fragmentHost.substring(0, index);
+		}
+
+		return fragmentHost;
 	}
 
 	private void _initializeCurrentManagedBundles() {
 		Bundle[] bundles = _bundleContext.getBundles();
 
 		Map<File, Long> checksums = new HashMap<>();
-
-		Pattern filePattern = null;
-
-		if ((_filter != null) && !_filter.isEmpty()) {
-			filePattern = Pattern.compile(_filter);
-		}
-
-		List<String> watchedDirPaths = _getWatchedDirPaths();
 
 		for (Bundle bundle : bundles) {
 			String location = bundle.getLocation();
@@ -553,7 +460,7 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 			}
 			catch (URISyntaxException uriSyntaxException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(uriSyntaxException, uriSyntaxException);
+					_log.debug(uriSyntaxException);
 				}
 
 				File file = new File(location);
@@ -572,7 +479,7 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 			String path = null;
 
 			if ((location != null) &&
-				_contains(locationPath, watchedDirPaths)) {
+				_contains(locationPath, _watchedDirPaths)) {
 
 				String schemeSpecificPart = uri.getSchemeSpecificPart();
 
@@ -610,21 +517,18 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 
 			int index = path.lastIndexOf(CharPool.SLASH);
 
-			if ((index != -1) && _startWith(path, watchedDirPaths)) {
-				String fileName = path.substring(index + 1);
+			if ((index != -1) && _startWith(path, _watchedDirPaths)) {
+				if (!_filenameFilter.accept(
+						new File(path.substring(0, index)),
+						path.substring(index + 1))) {
 
-				if (filePattern != null) {
-					Matcher matcher = filePattern.matcher(fileName);
-
-					if (!matcher.matches()) {
-						continue;
-					}
+					continue;
 				}
 
 				Artifact artifact = new Artifact();
 
 				artifact.setBundleId(bundle.getBundleId());
-				artifact.setChecksum(Util.loadChecksum(bundle, _bundleContext));
+				artifact.setChecksum(_getChecksum(bundle));
 				artifact.setFile(new File(path));
 
 				_setArtifact(new File(path), artifact);
@@ -670,8 +574,9 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 			if (url != null) {
 				String location = url.toString();
 
-				try (BufferedInputStream bufferedInputStream =
-						new BufferedInputStream(url.openStream())) {
+				try (InputStream inputStream = url.openStream();
+					BufferedInputStream bufferedInputStream =
+						new BufferedInputStream(inputStream)) {
 
 					bundle = _installOrUpdateBundle(
 						location, bufferedInputStream, checksum, modified);
@@ -717,12 +622,10 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 
 		Bundle bundle = _bundleContext.getBundle(location);
 
-		if ((bundle != null) &&
-			(Util.loadChecksum(bundle, _bundleContext) != checksum)) {
-
+		if ((bundle != null) && (_getChecksum(bundle) != checksum)) {
 			bundle.update(bufferedInputStream);
 
-			Util.storeChecksum(bundle, checksum, _bundleContext);
+			_putChecksum(bundle, checksum);
 
 			return bundle;
 		}
@@ -776,9 +679,7 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 					if (version.equals(currentVersion)) {
 						bufferedInputStream.reset();
 
-						if (Util.loadChecksum(currentBundle, _bundleContext) !=
-								checksum) {
-
+						if (_getChecksum(currentBundle) != checksum) {
 							if (_log.isWarnEnabled()) {
 								_log.warn(
 									StringBundler.concat(
@@ -791,8 +692,7 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 
 							_stopTransient(currentBundle);
 
-							Util.storeChecksum(
-								currentBundle, checksum, _bundleContext);
+							_putChecksum(currentBundle, checksum);
 
 							currentBundle.update(bufferedInputStream);
 
@@ -819,7 +719,7 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 				return bundle;
 			}
 
-			Util.storeChecksum(bundle, checksum, _bundleContext);
+			_putChecksum(bundle, checksum);
 
 			modified.set(true);
 
@@ -831,10 +731,16 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 				BundleStartLevel.class);
 
 			if (header != null) {
-				bundleStartLevel.setStartLevel(_webStartLevel);
+				bundleStartLevel.setStartLevel(
+					ModuleFrameworkPropsValues.
+						MODULE_FRAMEWORK_WEB_START_LEVEL);
 			}
-			else if (_startLevel != 0) {
-				bundleStartLevel.setStartLevel(_startLevel);
+			else if (ModuleFrameworkPropsValues.
+						MODULE_FRAMEWORK_DYNAMIC_INSTALL_START_LEVEL != 0) {
+
+				bundleStartLevel.setStartLevel(
+					ModuleFrameworkPropsValues.
+						MODULE_FRAMEWORK_DYNAMIC_INSTALL_START_LEVEL);
 			}
 
 			return bundle;
@@ -856,107 +762,6 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 
 	private boolean _isStateChanged() {
 		return _stateChanged.get();
-	}
-
-	private List<String> _parseDelimitedString(String value, char delimiter) {
-		if (value == null) {
-			return Collections.<String>emptyList();
-		}
-
-		List<String> strings = new ArrayList<>();
-
-		StringBundler sb = new StringBundler();
-
-		boolean inQuotes = false;
-
-		for (int i = 0; i < value.length(); i++) {
-			char c = value.charAt(i);
-
-			if ((c == delimiter) && !inQuotes) {
-				String string = sb.toString();
-
-				strings.add(string.trim());
-
-				sb = new StringBundler();
-			}
-			else if (c == CharPool.QUOTE) {
-				inQuotes = !inQuotes;
-			}
-			else {
-				sb.append(c);
-			}
-		}
-
-		String string = sb.toString();
-
-		string = string.trim();
-
-		if (string.length() > 0) {
-			strings.add(string);
-		}
-
-		return strings;
-	}
-
-	private Map<String, Map<String, String>> _parseHeader(String header) {
-		List<String> imports = _parseDelimitedString(header, CharPool.COMMA);
-
-		Map<String, Map<String, String>> headers = _parseImports(imports);
-
-		if (headers == null) {
-			return Collections.emptyMap();
-		}
-
-		return headers;
-	}
-
-	private Map<String, Map<String, String>> _parseImports(
-		List<String> imports) {
-
-		if (imports.isEmpty()) {
-			return null;
-		}
-
-		Map<String, Map<String, String>> finalImports = new HashMap<>();
-
-		for (String clause : imports) {
-			List<String> tokens = _parseDelimitedString(
-				clause, CharPool.SEMICOLON);
-
-			List<String> paths = new ArrayList<>();
-
-			Map<String, String> attributes = new HashMap<>();
-
-			for (String token : tokens) {
-				int index = token.indexOf(StringPool.EQUAL);
-
-				if (index == -1) {
-					paths.add(token);
-
-					continue;
-				}
-
-				String key = token.substring(0, index);
-
-				if (token.charAt(index - 1) == CharPool.COLON) {
-					key = key.substring(0, key.length() - 1);
-				}
-
-				key = key.trim();
-
-				String value = token.substring(index + 1);
-
-				value = value.trim();
-
-				attributes.put(key, value);
-			}
-
-			for (String path : paths) {
-				finalImports.put(path, attributes);
-			}
-		}
-
-		return finalImports;
 	}
 
 	private void _process(Set<File> files) throws InterruptedException {
@@ -1012,7 +817,7 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 
 			bundles.addAll(installedBundles);
 
-			_findBundlesWithOptionalPackagesToRefresh(bundles);
+			_findBundlesWithFragmentsToRefresh(bundles);
 
 			if (!bundles.isEmpty()) {
 				_refresh(bundles);
@@ -1021,7 +826,7 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 			}
 		}
 
-		if (_startBundles) {
+		if (PropsValues.MODULE_FRAMEWORK_FILE_INSTALL_BUNDLES_START_NEW) {
 			FrameworkStartLevel frameworkStartLevel = _systemBundle.adapt(
 				FrameworkStartLevel.class);
 
@@ -1043,6 +848,24 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 
 				_setStateChanged(false);
 			}
+		}
+	}
+
+	private void _putChecksum(Bundle bundle, long checksum) {
+		long bundleId = bundle.getBundleId();
+
+		_bundleChecksums.put(bundleId, checksum);
+
+		byte[] bytes = new byte[16];
+
+		BigEndianCodec.putLong(bytes, 0, bundleId);
+		BigEndianCodec.putLong(bytes, 8, checksum);
+
+		try {
+			_checksumRandomAccessFile.write(bytes);
+		}
+		catch (Exception exception) {
+			_log.error(exception);
 		}
 	}
 
@@ -1107,7 +930,8 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 
 					if ((state != Bundle.STARTING) &&
 						(state != Bundle.ACTIVE) &&
-						(_useStartTransient ||
+						(PropsValues.
+							MODULE_FRAMEWORK_FILE_INSTALL_BUNDLES_START_TRANSIENT ||
 						 bundleStartLevel.isPersistentlyStarted()) &&
 						(frameworkStartLevel.getStartLevel() >=
 							bundleStartLevel.getStartLevel())) {
@@ -1125,18 +949,22 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 		BundleStartLevel bundleStartLevel = bundle.adapt(
 			BundleStartLevel.class);
 
-		if (_startBundles && (bundle.getState() != Bundle.UNINSTALLED) &&
-			!_isFragment(bundle) &&
+		if (PropsValues.MODULE_FRAMEWORK_FILE_INSTALL_BUNDLES_START_NEW &&
+			(bundle.getState() != Bundle.UNINSTALLED) && !_isFragment(bundle) &&
 			(_frameworkStartLevel >= bundleStartLevel.getStartLevel())) {
 
 			try {
 				int options = 0;
 
-				if (_useStartTransient) {
+				if (PropsValues.
+						MODULE_FRAMEWORK_FILE_INSTALL_BUNDLES_START_TRANSIENT) {
+
 					options = Bundle.START_TRANSIENT;
 				}
 
-				if (_useStartActivationPolicy) {
+				if (PropsValues.
+						MODULE_FRAMEWORK_FILE_INSTALL_BUNDLES_START_ACTIVATION_POLICY) {
+
 					options |= Bundle.START_ACTIVATION_POLICY;
 				}
 
@@ -1190,7 +1018,9 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 	}
 
 	private void _stopTransient(Bundle bundle) throws BundleException {
-		if (_startBundles && !_isFragment(bundle)) {
+		if (PropsValues.MODULE_FRAMEWORK_FILE_INSTALL_BUNDLES_START_NEW &&
+			!_isFragment(bundle)) {
+
 			bundle.stop(Bundle.STOP_TRANSIENT);
 		}
 	}
@@ -1309,7 +1139,7 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 
 			_stopTransient(bundle);
 
-			Util.storeChecksum(bundle, artifact.getChecksum(), _bundleContext);
+			_putChecksum(bundle, artifact.getChecksum());
 
 			try (InputStream inputStream = url.openStream()) {
 				bundle.update(inputStream);
@@ -1343,27 +1173,22 @@ public class DirectoryWatcher extends Thread implements BundleListener {
 	private static final Log _log = LogFactoryUtil.getLog(
 		DirectoryWatcher.class);
 
-	private final int _activeLevel;
+	private final Map<Long, Long> _bundleChecksums = new HashMap<>();
 	private final BundleContext _bundleContext;
+	private final RandomAccessFile _checksumRandomAccessFile;
 	private final Set<Bundle> _consistentlyFailingBundles = new HashSet<>();
 	private final Map<File, Artifact> _currentManagedArtifacts =
 		new HashMap<>();
 	private final Set<Bundle> _delayedStart = new HashSet<>();
 	private final ServiceTrackerList<FileInstaller> _fileInstallers;
-	private final String _filter;
+	private final FilenameFilter _filenameFilter;
 	private int _frameworkStartLevel;
 	private final Map<File, Artifact> _installationFailures = new HashMap<>();
-	private final boolean _noInitialDelay;
-	private final long _poll;
 	private final Set<File> _processingFailures = new HashSet<>();
 	private final Scanner _scanner;
-	private final boolean _startBundles;
-	private final int _startLevel;
 	private final AtomicBoolean _stateChanged = new AtomicBoolean();
 	private final Bundle _systemBundle;
-	private final boolean _useStartActivationPolicy;
-	private final boolean _useStartTransient;
-	private final List<File> _watchedDirs;
-	private final int _webStartLevel;
+	private final List<String> _watchedDirPaths = new ArrayList<>();
+	private final List<File> _watchedDirs = new ArrayList<>();
 
 }

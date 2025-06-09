@@ -1,55 +1,46 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.display.context;
 
 import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
+import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderer;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderingContext;
 import com.liferay.dynamic.data.mapping.form.values.factory.DDMFormValuesFactory;
 import com.liferay.dynamic.data.mapping.form.web.internal.constants.DDMFormWebKeys;
-import com.liferay.dynamic.data.mapping.form.web.internal.display.context.util.DDMFormAdminRequestHelper;
+import com.liferay.dynamic.data.mapping.form.web.internal.display.context.helper.DDMFormAdminRequestHelper;
+import com.liferay.dynamic.data.mapping.form.web.internal.display.context.util.DDMFormDisplayContextUtil;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecord;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceVersion;
+import com.liferay.dynamic.data.mapping.model.DDMFormLayout;
 import com.liferay.dynamic.data.mapping.model.DDMStructureVersion;
 import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceVersionLocalService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.util.DDMFormValuesMerger;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.ResourceBundle;
 import java.util.Set;
-
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Marcellus Tavares
@@ -87,102 +78,128 @@ public class DDMFormViewFormInstanceRecordDisplayContext {
 			RenderRequest renderRequest, boolean readOnly)
 		throws Exception {
 
-		DDMFormInstanceRecord formInstanceRecord = getDDMFormInstanceRecord();
+		DDMFormInstanceRecord ddmFormInstanceRecord =
+			_getDDMFormInstanceRecord();
 
-		DDMFormInstance formInstance = formInstanceRecord.getFormInstance();
+		DDMFormInstance ddmFormInstance =
+			ddmFormInstanceRecord.getFormInstance();
 
-		DDMFormInstanceVersion formInstanceVersion =
-			formInstance.getFormInstanceVersion(
-				formInstanceRecord.getFormInstanceVersion());
-
-		DDMStructureVersion structureVersion =
-			formInstanceVersion.getStructureVersion();
-
-		DDMFormRenderingContext ddmFormRenderingContext =
-			createDDMFormRenderingContext(
-				structureVersion.getDDMForm(), readOnly);
-
-		DDMFormValues formValues = getDDMFormValues(
-			renderRequest, formInstanceRecord, structureVersion);
-
-		ddmFormRenderingContext.setContainerId(
-			"ddmForm".concat(StringUtil.randomString()));
-		ddmFormRenderingContext.setDDMFormValues(formValues);
-		ddmFormRenderingContext.setLocale(formValues.getDefaultLocale());
-
-		DDMForm ddmForm = structureVersion.getDDMForm();
-
-		DDMFormInstanceVersion latestApprovedFormInstanceVersion =
+		DDMFormInstanceVersion latestDDMFormInstanceVersion =
 			_ddmFormInstanceVersionLocalService.getLatestFormInstanceVersion(
-				formInstance.getFormInstanceId(),
+				ddmFormInstance.getFormInstanceId(),
 				WorkflowConstants.STATUS_APPROVED);
 
-		DDMStructureVersion latestApprovedStructureVersion =
-			latestApprovedFormInstanceVersion.getStructureVersion();
+		DDMStructureVersion latestDDMStructureVersion =
+			latestDDMFormInstanceVersion.getStructureVersion();
 
-		updateDDMFormFields(
-			ddmForm, latestApprovedStructureVersion.getDDMForm());
+		DDMForm latestDDMForm = latestDDMStructureVersion.getDDMForm();
 
-		Map<String, DDMFormField> ddmFormFieldsMap =
-			ddmForm.getDDMFormFieldsMap(true);
+		if (!readOnly) {
+			DDMFormDisplayContextUtil.addCaptchaDDMFormField(
+				latestDDMForm, ddmFormInstance.getSettingsModel(),
+				renderRequest);
 
-		for (DDMFormField ddmFormField : ddmFormFieldsMap.values()) {
-			if (readOnly) {
-				ddmFormField.setProperty("requireConfirmation", false);
-			}
+			DDMFormLayout latestDDMFormLayout =
+				latestDDMStructureVersion.getDDMFormLayout();
+
+			DDMFormDisplayContextUtil.addCaptchaDDMFormLayoutRow(
+				ddmFormInstance.getSettingsModel(), latestDDMFormLayout);
+
+			return _ddmFormRenderer.getDDMFormTemplateContext(
+				latestDDMForm, latestDDMFormLayout,
+				_createDDMFormRenderingContext(
+					latestDDMForm, ddmFormInstanceRecord,
+					_getDDMFormValues(
+						renderRequest, latestDDMForm,
+						ddmFormInstanceRecord.getDDMFormValues()),
+					false));
+		}
+
+		DDMFormInstanceVersion currentDDMFormInstanceVersion =
+			ddmFormInstance.getFormInstanceVersion(
+				ddmFormInstanceRecord.getFormInstanceVersion());
+
+		DDMStructureVersion currentDDMStructureVersion =
+			currentDDMFormInstanceVersion.getStructureVersion();
+
+		DDMForm currentDDMForm = currentDDMStructureVersion.getDDMForm();
+
+		DDMFormRenderingContext ddmFormRenderingContext =
+			_createDDMFormRenderingContext(
+				currentDDMForm, ddmFormInstanceRecord,
+				_getDDMFormValues(
+					renderRequest, currentDDMForm,
+					ddmFormInstanceRecord.getDDMFormValues()),
+				true);
+
+		if (!Objects.equals(currentDDMForm, latestDDMForm)) {
+			_updateDDMFormFields(
+				currentDDMForm.getDDMFormFieldsMap(true),
+				latestDDMForm.getDDMFormFieldsMap(true),
+				ddmFormRenderingContext.getLocale());
 		}
 
 		return _ddmFormRenderer.getDDMFormTemplateContext(
-			ddmForm, structureVersion.getDDMFormLayout(),
+			currentDDMForm, currentDDMStructureVersion.getDDMFormLayout(),
 			ddmFormRenderingContext);
 	}
 
-	protected DDMFormRenderingContext createDDMFormRenderingContext(
-		DDMForm ddmForm, boolean readOnly) {
+	private DDMFormRenderingContext _createDDMFormRenderingContext(
+		DDMForm ddmForm, DDMFormInstanceRecord ddmFormInstanceRecord,
+		DDMFormValues ddmFormValues, boolean readOnly) {
 
-		DDMFormRenderingContext formRenderingContext =
+		DDMFormRenderingContext ddmFormRenderingContext =
 			new DDMFormRenderingContext();
+
+		ddmFormRenderingContext.addProperty(
+			"ddmFormInstanceRecordId",
+			ddmFormInstanceRecord.getFormInstanceRecordId());
 
 		String redirectURL = ParamUtil.getString(
 			_ddmFormAdminRequestHelper.getRequest(), "redirect");
 
-		Locale locale = ddmForm.getDefaultLocale();
-
-		Set<Locale> availableLocales = ddmForm.getAvailableLocales();
-
-		if (availableLocales.contains(_ddmFormAdminRequestHelper.getLocale())) {
-			locale = _ddmFormAdminRequestHelper.getLocale();
-		}
-
 		if (Validator.isNotNull(redirectURL)) {
-			formRenderingContext.setCancelLabel(
+			Locale locale = ddmForm.getDefaultLocale();
+
+			Set<Locale> availableLocales = ddmForm.getAvailableLocales();
+
+			if (availableLocales.contains(
+					_ddmFormAdminRequestHelper.getLocale())) {
+
+				locale = _ddmFormAdminRequestHelper.getLocale();
+			}
+
+			ddmFormRenderingContext.setCancelLabel(
 				LanguageUtil.get(locale, "cancel"));
 		}
 
-		formRenderingContext.setHttpServletRequest(
+		ddmFormRenderingContext.setContainerId(
+			"ddmForm".concat(StringUtil.randomString()));
+		ddmFormRenderingContext.setDDMFormInstanceId(
+			ddmFormInstanceRecord.getFormInstanceId());
+		ddmFormRenderingContext.setDDMFormValues(ddmFormValues);
+		ddmFormRenderingContext.setHttpServletRequest(
 			_ddmFormAdminRequestHelper.getRequest());
-		formRenderingContext.setHttpServletResponse(_httpServletResponse);
-		formRenderingContext.setLocale(locale);
-		formRenderingContext.setPortletNamespace(
+		ddmFormRenderingContext.setHttpServletResponse(_httpServletResponse);
+		ddmFormRenderingContext.setLocale(ddmFormValues.getDefaultLocale());
+		ddmFormRenderingContext.setPortletNamespace(
 			PortalUtil.getPortletNamespace(
 				DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN));
-		formRenderingContext.setReadOnly(readOnly);
+		ddmFormRenderingContext.setReadOnly(readOnly);
 
 		if (Validator.isNotNull(redirectURL)) {
-			formRenderingContext.setRedirectURL(redirectURL);
+			ddmFormRenderingContext.setRedirectURL(redirectURL);
 		}
 		else {
-			formRenderingContext.setShowCancelButton(false);
+			ddmFormRenderingContext.setShowCancelButton(false);
 		}
 
-		formRenderingContext.setViewMode(true);
+		ddmFormRenderingContext.setViewMode(true);
 
-		return formRenderingContext;
+		return ddmFormRenderingContext;
 	}
 
-	protected DDMFormInstanceRecord getDDMFormInstanceRecord()
-		throws PortalException {
-
+	private DDMFormInstanceRecord _getDDMFormInstanceRecord() throws Exception {
 		HttpServletRequest httpServletRequest =
 			_ddmFormAdminRequestHelper.getRequest();
 
@@ -198,84 +215,49 @@ public class DDMFormViewFormInstanceRecordDisplayContext {
 			DDMFormWebKeys.DYNAMIC_DATA_MAPPING_FORM_INSTANCE_RECORD);
 	}
 
-	protected DDMFormValues getDDMFormValues(
-			RenderRequest renderRequest,
-			DDMFormInstanceRecord formInstanceRecord,
-			DDMStructureVersion structureVersion)
-		throws PortalException {
+	private DDMFormValues _getDDMFormValues(
+			RenderRequest renderRequest, DDMForm ddmForm,
+			DDMFormValues ddmFormValues)
+		throws Exception {
 
-		DDMFormValues formValues = formInstanceRecord.getDDMFormValues();
+		DDMFormValues mergedDDMFormValues = _ddmFormValuesMerger.merge(
+			ddmFormValues,
+			_ddmFormValuesFactory.create(renderRequest, ddmForm));
 
-		DDMFormValues mergedFormValues = _ddmFormValuesMerger.merge(
-			formValues,
-			_ddmFormValuesFactory.create(
-				renderRequest, structureVersion.getDDMForm()));
+		mergedDDMFormValues.setAvailableLocales(
+			ddmFormValues.getAvailableLocales());
+		mergedDDMFormValues.setDefaultLocale(ddmFormValues.getDefaultLocale());
 
-		mergedFormValues.setAvailableLocales(formValues.getAvailableLocales());
-		mergedFormValues.setDefaultLocale(formValues.getDefaultLocale());
-
-		return mergedFormValues;
+		return mergedDDMFormValues;
 	}
 
-	protected boolean isDDMFormFieldRemoved(
-		Map<String, DDMFormField> latestFormFieldMap, String fieldName) {
+	private void _updateDDMFormFields(
+		Map<String, DDMFormField> currentDDMFormFieldsMap,
+		Map<String, DDMFormField> latestDDMFormFielsMap, Locale locale) {
 
-		if (latestFormFieldMap.containsKey(fieldName)) {
-			return false;
-		}
+		for (DDMFormField ddmFormField : currentDDMFormFieldsMap.values()) {
+			if (Objects.equals(
+					DDMFormFieldTypeConstants.FIELDSET,
+					ddmFormField.getType())) {
 
-		return true;
-	}
+				continue;
+			}
 
-	protected void setDDMFormFieldRemovedLabel(DDMFormField formField) {
-		Locale locale = _ddmFormAdminRequestHelper.getLocale();
+			ddmFormField.setProperty("requireConfirmation", false);
 
-		LocalizedValue label = formField.getLabel();
+			if (latestDDMFormFielsMap.containsKey(ddmFormField.getName())) {
+				continue;
+			}
 
-		String labelString = label.getString(locale);
+			ddmFormField.setReadOnly(true);
 
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			"content.Language", locale, getClass());
+			LocalizedValue localizedValue = ddmFormField.getLabel();
 
-		label.addString(
-			locale,
-			LanguageUtil.format(
-				resourceBundle, "x-removed", labelString, false));
-	}
-
-	protected void updateDDMFormField(
-		Map<String, DDMFormField> latestFormFieldMap, DDMFormField formField) {
-
-		boolean removed = isDDMFormFieldRemoved(
-			latestFormFieldMap, formField.getName());
-
-		if (removed) {
-			setDDMFormFieldRemovedLabel(formField);
-		}
-
-		formField.setReadOnly(true);
-
-		// Nested fields
-
-		for (DDMFormField nestedFormField :
-				formField.getNestedDDMFormFields()) {
-
-			updateDDMFormField(latestFormFieldMap, nestedFormField);
-		}
-	}
-
-	protected void updateDDMFormFields(
-		DDMForm currentForm, DDMForm latestForm) {
-
-		if (Objects.equals(currentForm, latestForm)) {
-			return;
-		}
-
-		Map<String, DDMFormField> latestDDMFormFieldMap =
-			latestForm.getDDMFormFieldsMap(true);
-
-		for (DDMFormField formField : currentForm.getDDMFormFields()) {
-			updateDDMFormField(latestDDMFormFieldMap, formField);
+			localizedValue.addString(
+				locale,
+				LanguageUtil.format(
+					locale, "x-removed", localizedValue.getString(locale),
+					false));
 		}
 	}
 

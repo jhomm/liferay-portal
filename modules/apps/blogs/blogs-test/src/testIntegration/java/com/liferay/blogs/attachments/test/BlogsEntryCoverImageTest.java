@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.attachments.test;
@@ -19,7 +10,6 @@ import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.service.BlogsEntryLocalServiceUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.servlet.taglib.ui.ImageSelector;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -60,26 +50,21 @@ public class BlogsEntryCoverImageTest extends BaseBlogsEntryImageTestCase {
 	protected BlogsEntry addBlogsEntry(ImageSelector imageSelector)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				group.getGroupId(), user.getUserId());
-
 		return BlogsEntryLocalServiceUtil.addEntry(
 			user.getUserId(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), new Date(), true, true,
 			new String[0], StringPool.BLANK, imageSelector, null,
-			serviceContext);
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), user.getUserId()));
 	}
 
 	@Override
 	protected BlogsEntry addBlogsEntry(String imageTitle) throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				group.getGroupId(), user.getUserId());
-
 		FileEntry fileEntry = getTempFileEntry(
-			user.getUserId(), imageTitle, serviceContext);
+			user.getUserId(), imageTitle,
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), user.getUserId()));
 
 		ImageSelector imageSelector = new ImageSelector(
 			FileUtil.getBytes(fileEntry.getContentStream()),
@@ -105,28 +90,23 @@ public class BlogsEntryCoverImageTest extends BaseBlogsEntryImageTestCase {
 			long blogsEntryId, ImageSelector imageSelector)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				group.getGroupId(), user.getUserId());
-
 		return BlogsEntryLocalServiceUtil.updateEntry(
 			user.getUserId(), blogsEntryId, RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), new Date(), true, true,
 			new String[0], StringPool.BLANK, imageSelector, null,
-			serviceContext);
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), user.getUserId()));
 	}
 
 	@Override
 	protected BlogsEntry updateBlogsEntry(long blogsEntryId, String imageTitle)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				group.getGroupId(), user.getUserId());
-
 		FileEntry fileEntry = getTempFileEntry(
-			user.getUserId(), imageTitle, serviceContext);
+			user.getUserId(), imageTitle,
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), user.getUserId()));
 
 		ImageSelector imageSelector = new ImageSelector(
 			FileUtil.getBytes(fileEntry.getContentStream()),

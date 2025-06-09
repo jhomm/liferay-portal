@@ -21,8 +21,18 @@
 	<td></td>
 </tr>
 <tr>
+	<td>ORGANIZATION_AUTOCOMPLETE_SPECIFIC</td>
+	<td>//div[contains(@class,'autocomplete-dropdown-menu')]//ul/li//button[.='${key_organizationName}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>IN_FLOW_ACCOUNTS_MODAL_DESCRIPTION</td>
+	<td>//textarea[contains(@name,'accountDescription')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>ACCOUNT_ORDER_NAME</td>
-	<td>xpath=(//div[contains(@class,'dnd-td') and contains(text(),'${accountName}')])[1]</td>
+	<td>xpath=(//td[contains(text(),'${accountName}')])[1]</td>
 	<td></td>
 </tr>
 <tr>
@@ -32,7 +42,7 @@
 </tr>
 <tr>
 	<td>ACCOUNT_MANAGEMENT_ADDRESS_TYPE</td>
-	<td>//div[contains(@class,'dnd-td') and contains(text(),'${key_addressType}')]</td>
+	<td>//td[contains(text(),'${key_addressType}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -51,8 +61,23 @@
 	<td></td>
 </tr>
 <tr>
+	<td>ACCOUNT_MANAGEMENT_REVERSE_SORT_DIRECTION_BUTTON</td>
+	<td>//div//a[@class='nav-link nav-link-monospaced link-unstyled']/..//..//*[contains(@class, 'lexicon-icon lexicon-icon-order')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ACCOUNT_MANAGEMENT_REVERSE_SORT_DIRECTION_BUTTON_ICON</td>
+	<td>//nav[contains(@class,'management-bar')]//*[*[name()='svg'][contains(@class,'${key_icon}')] and contains(@title,'Reverse Order Direction')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>ACCOUNT_SELECTOR_ACCOUNT_LIST_ITEM</td>
 	<td>//ul[contains(@class,'accounts-list')]//button[@class='dropdown-item']/span[contains(.,'${key_accountName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ACCOUNT_SELECTOR_ACCOUNT_LIST_ITEM_N</td>
+	<td>//ul[contains(@class,'accounts-list')]//button[@class='dropdown-item']/span[contains(.,'${key_accountName}')][${key_index}]</td>
 	<td></td>
 </tr>
 <tr>
@@ -63,6 +88,11 @@
 <tr>
 	<td>ACCOUNT_SELECTOR_DROPDOWN_SHOW</td>
 	<td>//div[contains(@class,'account-selector-dropdown-menu show')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ACCOUNT_SELECTOR_ORDERS_LIST_ITEM</td>
+	<td>//div[contains(@class,'account-selector-dropdown')]//a[text()='${key_orderId}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -86,6 +116,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>ADD_TO_CART_BUTTON_INVALID</td>
+	<td>//p[@title='${key_productName}']//../..//button[contains(@class,'add-to-cart not-allowed')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE</td>
 	<td>//h2[@class='product-header-title']//../..//button[contains(@class,'add-to-cart')]</td>
 	<td></td>
@@ -93,6 +128,11 @@
 <tr>
 	<td>ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_DISABLED</td>
 	<td>//h2[@class='product-header-title']//../..//button[contains(@class,'add-to-cart') and @disabled]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE_INVALID</td>
+	<td>//h2[@class='product-header-title']//../..//button[contains(@class,'add-to-cart not-allowed')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -111,6 +151,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>GENERAL_ADD_TO_CART_BUTTON_ENABLED</td>
+	<td>//button[contains(@class,'add-to-cart') and not(@disabled)]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>ANY_BUTTON</td>
 	<td>//div/*[contains(@class,'commerce-button') and contains (.,'${key_button}')]</td>
 	<td></td>
@@ -123,6 +168,11 @@
 <tr>
 	<td>MINI_CART_BUTTON</td>
 	<td>//div[contains(@class,'mini-cart')]/button[contains(@class,'mini-cart-opener')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ENTRY_PRICE_ON_APPLICATION</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../../div[contains(@class,'mini-cart')]//span[contains(text(),'Price on Application')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -151,6 +201,26 @@
 	<td></td>
 </tr>
 <tr>
+	<td>PRODUCT_CARD_PRICE_FIELD</td>
+	<td>//p[@title='${key_productName}']/..//span[@class='price-value${key_element}'][normalize-space(text())='$ ${key_price}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PRODUCT_CARD_PRICE_ON_APPLICATION</td>
+	<td>//p[@title='${key_productName}']/..//span[(@class='price-value')][normalize-space(text())='Price on Application']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PRODUCT_CARD_PRICE_VALUE</td>
+	<td>//p[@title='${key_productName}']/..//span[@class='price-value'][normalize-space(text())='$ ${key_productPrice}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINIUM_PAGE_TITLE</td>
+	<td>//h1[contains(@class,'lfr-portal-tooltip') and contains(.,'${key_title}')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>MINIUM_SIDEBAR_USER_AVATAR</td>
 	<td>//div[contains(@class,'minium-user-nav__avatar')]</td>
 	<td></td>
@@ -161,33 +231,78 @@
 	<td></td>
 </tr>
 <tr>
+	<td>MINIUM_SIDEBAR_USER_NAME</td>
+	<td>//div[contains(@class,'minium-user-nav__name') and contains(.,'${key_userName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MODAL_DESCRIPTION</td>
+	<td>//div[contains(@class,'modal-body')]//div[contains(.,'${key_text}')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>PORTLET_LOADED</td>
 	<td>//div[contains(@class,'portlet-title-default') and contains(.,'${key_portletName}')]/../../../div[@data-qa-id='app-loaded']/span</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SEARCH_RESULT_OPTIONS</td>
-	<td>//section[contains(@id,'CPSearchResultsPortlet')]//div[@class='dropdown lfr-icon-menu portlet-options']</td>
+	<td>//section[contains(@id,'CPSearchResultsPortlet')]//header//menu//div[@class='dropdown']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PRODUCT_CARD_QUANTITY_SELECTOR_INPUT_FIELD_DISABLED</td>
+	<td>//p[@title='${key_productName}']//..//..//input[contains(@class,"quantity-selector") and @disabled]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PRODUCT_CARD_QUANTITY_SELECTOR_INPUT_FIELD_PRODUCT_DETAILS_PAGE_DISABLED</td>
+	<td>//h2[@class='product-header-title']//../..//input[contains(@class,"quantity-selector") and @disabled]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PRODUCT_CARD_QUANTITY_SELECTOR_INPUT_FIELD</td>
-	<td>//p[@title='${key_productName}']//../..//input[(@class='form-control quantity-selector')]</td>
+	<td>//p[@title='${key_productName}']//..//..//input[contains(@class,"quantity-selector")]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>GENERAL_QUANTITY_SELECTOR_INPUT_FIELD_ENABLED</td>
+	<td>//input[contains(@class,"quantity-selector") and not(@disabled)]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>GENERAL_QUANTITY_SELECTOR_INPUT_FIELD_OPTION_VALUE</td>
+	<td>//input[contains(@class,"quantity-selector") and @value='${key_optionValue}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>GENERAL_QUANTITY_SELECTOR_INPUT_FIELD_HAS_ERROR</td>
+	<td>//div[contains(@class,'has-error')]/input[contains(@class,"quantity-selector")]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PRODUCT_CARD_QUANTITY_SELECTOR_INPUT_FIELD_HAS_ERROR</td>
+	<td>//p[@title='${key_productName}']//..//..//div[contains(@class,'has-error')]/input[contains(@class,"quantity-selector")]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PRODUCT_CARD_QUANTITY_SELECTOR_SELECT_FIELD</td>
-	<td>//p[@title='${key_productName}']//../..//select[(@class='form-control quantity-selector')]</td>
+	<td>//p[@title='${key_productName}']//..//..//select[contains(@class,"quantity-selector")]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PRODUCT_CARD_QUANTITY_SELECTOR_SELECT_FIELD_DISABLED</td>
+	<td>//p[@title='${key_productName}']//..//..//select[contains(@class,"quantity-selector") and @disabled]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PRODUCT_CARD_QUANTITY_SELECTOR_INPUT_FIELD_OPTION_VALUE</td>
-	<td>//p[@title='${key_productName}']//../..//input[@class='form-control quantity-selector' and @value='${key_optionValue}']</td>
+	<td>//p[@title='${key_productName}']//..//..//input[contains(@class,"quantity-selector") and @value='${key_optionValue}']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PRODUCT_CARD_QUANTITY_SELECTOR_SELECT_FIELD_OPTION_VALUE</td>
-	<td>//p[@title='${key_productName}']//../..//select[(@class='form-control quantity-selector')]//option[@value='${key_optionValue}']</td>
+	<td>//p[@title='${key_productName}']//..//..//select[contains(@class,"quantity-selector")]//option[@value='${key_optionValue}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -216,8 +331,23 @@
 	<td></td>
 </tr>
 <tr>
+	<td>PRODUCT_DETAILS_PROMO_PRICE_INACTIVE</td>
+	<td>//div[contains(@class,'price')]//span[contains(@class,'price-value-promo price-value-inactive')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>PRODUCT_DETAILS_NET_PRICE</td>
 	<td>//div[contains(@class,'price')]//span[contains(@class,'price-value-final')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PRODUCT_DETAILS_PRICE_ON_APPLICATION</td>
+	<td>//div[contains(@class,'price')]//span[(@class='price-on-application price-value')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PRODUCT_DETAILS_QUANTITY_SELECTOR_INPUT_FIELD</td>
+	<td>//div[contains(@class,"product-detail")]//..//..//input[contains(@class,"quantity-selector")]</td>
 	<td></td>
 </tr>
 <tr>
@@ -226,8 +356,13 @@
 	<td></td>
 </tr>
 <tr>
+	<td>PRODUCT_DETAILS_SUBSCRIPTION_INFO</td>
+	<td>//div[contains(@class,'commerce-subscription-info')]/div/div[contains(.,'${key_subscriptionName} Subscription')]/..//span</td>
+	<td></td>
+</tr>
+<tr>
 	<td>PRODUCT_CARD_AVAILABILITY_LABEL</td>
-	<td>//a[contains(@href,'${key_productName}')]//span[contains(@class,'m-0')]</td>
+	<td>//a[contains(@href,'${key_productName}')]//span[contains(@class,'m-0') and not(contains(@class,'invisible'))]</td>
 	<td></td>
 </tr>
 <tr>
@@ -260,7 +395,9 @@
 	<td>//div[contains(@class,'table-responsive')]</td>
 	<td></td>
 </tr>
+
 <!--SPEEDWELL-->
+
 <tr>
 	<td>SPEEDWELL_ACCOUNT_DASHBOARD_ITEM</td>
 	<td>//div[contains(@class,'account-dashboard')]//h3[contains(.,'${key_dashboardItem}')]</td>
@@ -278,7 +415,7 @@
 </tr>
 <tr>
 	<td>SPEEDWELL_MY_ORDERS_ORDER_ACCOUNT</td>
-	<td>//div[contains(@class,'tr')]//div[contains(@class,'td') and text()='${key_accountName}']</td>
+	<td>//td[contains(@data-id, 'accountName') and contains(.,'${key_accountName}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -291,7 +428,9 @@
 	<td>//div[contains(@class,'speedwell-main-menu__links')]//a/div[contains(.,'${key_menuItem}')]</td>
 	<td></td>
 </tr>
+
 <!--CHECKOUT-->
+
 <tr>
 	<td>CHECKOUT_GENERIC_SELECT</td>
 	<td>//div[contains(@class,'form-group')]//select[contains(@title,'${key_fieldName}')]</td>
@@ -300,6 +439,11 @@
 <tr>
 	<td>CHECKOUT_GENERIC_TEXT_INPUT</td>
 	<td>//div[contains(@class,'form-group')]//input[contains(@placeholder,'${key_fieldName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CHECKOUT_GENERIC_TEXT_INPUT_DISABLED</td>
+	<td>//div[contains(@class,'form-group')]//input[contains(@placeholder,'${key_fieldName}') and contains(@class,'disabled')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -318,8 +462,33 @@
 	<td></td>
 </tr>
 <tr>
+	<td>CHECKOUT_SUMMARY_DELIVERY_DISCOUNT_VALUE</td>
+	<td>//li[contains(@class,'commerce-delivery-discount')]/div[@class='commerce-value'][normalize-space(text())='${key_currency} ${key_discountValue}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CHECKOUT_SUMMARY_DELIVERY_DISCOUNT_PERCENTAGE</td>
+	<td>//li[contains(@class,'commerce-delivery-discount')]/div[@class='commerce-value'][normalize-space(text())='${key_discountPercentage}%']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>CHECKOUT_SUMMARY_PAYMENT_METHOD</td>
 	<td>//div[contains(@class,'payment-method')]/div[contains(.,'${key_paymentMethod}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CHECKOUT_SUMMARY_DELIVERY_TERM</td>
+	<td>//div[contains(@class,'delivery-term')]//div[contains(@class,'shipping-description')]//a[text()='${key_deliveryTerm}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CHECKOUT_SUMMARY_PAYMENT_TERM</td>
+	<td>//div[contains(@class,'payment-term')]//div[contains(@class,'shipping-description')]//a[text()='${key_paymentTerm}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CHECKOUT_SUMMARY_PRODUCT_TABLE_VALUE</td>
+	<td>//td[contains(@class,'lfr-${key_column}-column')]//*/*[contains(.,'${key_value}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -338,8 +507,28 @@
 	<td></td>
 </tr>
 <tr>
+	<td>CHECKOUT_SUMMARY_PRODUCT_TABLE_UOM</td>
+	<td>//tr[${key_row}]//td[contains(@class,'uom-column')]//*/*[contains(.,'${key_uom}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CHECKOUT_SUMMARY_BILLING_ADDRESS</td>
+	<td>//address[@class='billing-address' and contains(.,'${key_addressInfo}')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>CHECKOUT_SUMMARY_SHIPPING_ADDRESS</td>
 	<td>//address[@class='shipping-address' and contains(.,'${key_addressInfo}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CHECKOUT_SUMMARY_SHIPPING_COST</td>
+	<td>//div[contains(@class,'shipping-method')]//div[contains(@class,'shipping-cost') and contains(.,'${key_shippingCost}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CHECKOUT_SUMMARY_SHIPPING_OPTION</td>
+	<td>//div[contains(@class,'shipping-method')]//div[contains(@class,'shipping-description') and contains(.,'${key_shippingOption}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -372,7 +561,9 @@
 	<td>//div[@class='multi-step-indicator-label' and contains(.,'${key_label}')]</td>
 	<td></td>
 </tr>
+
 <!--MINICART-->
+
 <tr>
 	<td>MINI_CART_BUTTON_DATA_BADGE_COUNT</td>
 	<td>//div[contains(@class,'mini-cart')]/button[@data-badge-count="${key_itemCount}"]</td>
@@ -390,37 +581,152 @@
 </tr>
 <tr>
 	<td>MINI_CART_ITEM_NAME_USING_SKU</td>
-	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSKU}')]/../h5</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../div[contains(@class,'h5')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_NAME_USING_SKU_2</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_UOM_NAME</td>
+	<td>//div[@class='ml-2' and contains(.,'${key_uom}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_SKU_UOM</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../../div[contains(@class,'mini-cart-item-quantity')]/div[contains(@class,'ml-2') and text()='${uomKey}']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>MINI_CART_ITEM_NAME</td>
-	<td>//div[@class="mini-cart-item"]//h5[@class="item-name" and contains(.,'${key_cartItemName}')]</td>
+	<td>//div[@class="mini-cart-item"]//div[contains(@class,'item-name') and contains(.,'${key_cartItemName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_NAME_H6</td>
+	<td>//div[@class='h6 item-name' and contains(.,'${key_cartItemName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_NAME_ACCORDION_SHOW</td>
+	<td>//div[contains(@class,'panel-collapse show')]//div[@class='item-name' and contains(.,'${key_cartItemName}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>MINI_CART_ITEM_SKU</td>
-	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSKU}')]</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_SKU_ACCORDION_SHOW</td>
+	<td>//div[contains(@class,'panel-collapse show')]//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_NAME_SKU</td>
+	<td>//div[@class='item-name' and contains(.,'${key_cartItemName}')]/..//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_NAME_SKU_INDEX</td>
+	<td>//div[contains(@class, 'item-name') and contains(.,'${key_cartItemName}')]/..//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>MINI_CART_ITEM_QUANTITY</td>
-	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSKU}')]/../../../../div[@class='mini-cart-item-quantity']//input</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../../div[contains(@class,'mini-cart-item-quantity')]//input</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_EDIT_ITEM_PRICE_ON_APPLICATION</td>
+	<td>//div[contains(@class,'mini-cart-prices')]//span[contains(@class,'price-on-application price-value')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_QUANTITY_N</td>
+	<td>xpath=(//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../../div[contains(@class,'mini-cart-item-quantity')]//input)[${key_index}]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_QUANTITY_SELECTOR_HAS_ERROR</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../../div[contains(@class,'mini-cart-item-quantity')]/div[contains(@class,'has-error')]/input</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_QUANTITY_SELECTOR_SELECT_FIELD</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../../div[contains(@class,'mini-cart-item-quantity')]//select</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_QUANTITY_SELECTOR_SELECT_FIELD_OPTION_VALUE</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../../div[contains(@class,'mini-cart-item-quantity')]//select/option[@value='${key_optionValue}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_QUANTITY_SELECTOR_INPUT_FIELD_OPTION_VALUE</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../../div[contains(@class,'mini-cart-item-quantity')]//input[@value='${key_optionValue}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_EDIT_ITEM_QUANTITY_SELECTOR_INPUT_FIELD</td>
+	<td>//label[contains(@for,'minicart-quantity-selector')]//..//..//input[contains(@class,"quantity-selector")]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_EDIT_ITEM_QUANTITY_SELECTOR_HAS_ERROR</td>
+	<td>//label[contains(@for,'minicart-quantity-selector')]//..//*[contains(@class,'has-error')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_EDIT_ITEM_UOM_SELECTOR</td>
+	<td>//label[contains(@for,'minicart-uom-selector')]//..//..//select[contains(@name,"uom-selector")]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_EDIT_ITEM_UOM_PRICE_VALUE</td>
+	<td>//span[contains(text(), '${key_priceValue}')]//..//span[contains(text(), '${key_priceField}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>MINI_CART_ITEM_PRICE_VALUE</td>
-	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSKU}')]/../../../..//span[@class='price-value']</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../..//span[@class='price-value']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_LIST_PRICE_VALUE</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../..//span[@class='price-value' and contains(.,'$ ${key_productPrice}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_PRICE_ON_APPLICATION</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]//../../../..//div[contains(@class,'price')]//span[(@class='price-on-application price-value')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_PRICE_ON_APPLICATION_N</td>
+	<td>xpath=(//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]//../../../..//div[contains(@class,'price')]//span[(@class='price-on-application price-value')])[${key_index}]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_ERROR_THE_PRODUCT_QUANTITY_IS_NOT_VALID</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../../div[contains(@class,'mini-cart-item-errors')]//div[text()='The product quantity is not valid.']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_GENERIC_ERROR</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../../div[contains(@class,'mini-cart-item-errors')]//div[contains(.,'${key_messageError}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>MINI_CART_ITEM_THUMBNAIL</td>
-	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSKU}')]/../../../div[@class='mini-cart-item-thumbnail']</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../div[@class='mini-cart-item-thumbnail']</td>
 	<td></td>
 </tr>
 <tr>
-	<td>MINI_CART_ITEM_THUMBNAIL_STYLE</td>
-	<td>//div[@class='mini-cart-item-thumbnail' and contains(@style, '${key_imageName}')]</td>
+	<td>MINI_CART_ITEM_DEFAULT_THUMBNAIL</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../div[@class='mini-cart-item-thumbnail']//img[contains(@src, 'default')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -430,12 +736,57 @@
 </tr>
 <tr>
 	<td>MINI_CART_ITEM_INFO_EXTRA</td>
-	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSKU}')]/../../div[@class='item-info-extra mt-3']/*</td>
+	<td>//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../..//div[@class='item-info-extra pt-2']/p</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_ITEM_INFO_EXTRA_N</td>
+	<td>xpath=(//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../..//div[@class='item-info-extra pt-2']/p)[${key_index}]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_SPECIFIC_ITEM_BUNDLED_ITEM_BODY_VERTICAL_ELLIPSIS</td>
+	<td>xpath=(//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]/../../../..//*[name()='svg'][contains(@class,'icon-ellipsis')])[${key_index}]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_SPECIFIC_ITEM_BUNDLED_ITEM_HIDE_OPTIONS_PANEL_EXPANDED</td>
+	<td>xpath=(//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]//../..//*[contains(@class,'panel')]//*[normalize-space()='Hide Options'][@aria-expanded='true'])[${key_index}]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_SPECIFIC_ITEM_BUNDLED_ITEM_SHOW_OPTIONS_PANEL_COLLAPSED</td>
+	<td>xpath=(//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]//../..//*[contains(@class,'panel')]//*[normalize-space()='Show Options'][@aria-expanded='false'])[${key_index}]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_SPECIFIC_ITEM_BUNDLED_ITEMS_N</td>
+	<td>xpath=(//p[@class='item-sku' and contains(.,'${key_cartItemSku}')]//../..//div[@class='child-item']//span)[${key_index}]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>MINI_CART_RESUME</td>
 	<td>//div[@class='mini-cart-header-resume']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_PRODUCT_OPTIONS_SELECT</td>
+	<td>//div[contains(@class,'mini-cart-edit-item')]//div/label[text()='${key_optionName}']/..//select | //div[contains(@class,'mini-cart-edit-item')]//div/label[text()='${key_optionName}']/..//button</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_EDIT_BUNDLED_PRODUCT_LIST_PRICE_INACTIVE</td>
+	<td>//div[contains(@class,'mini-cart-prices')]//span[text()='List Price']/following::span[contains(@class,'price-line-through')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_EDIT_BUNDLED_PRODUCT_PRICE_VALUE</td>
+	<td>//div[contains(@class,'mini-cart-prices')]//span[text()='${key_priceField}']/following::span</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MINI_CART_EDIT_ITEM_PANEL</td>
+	<td>//*[normalize-space()='Edit ${key_productName}']/../..//div[contains(@class,'mini-cart-edit-item')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -450,53 +801,113 @@
 </tr>
 <tr>
 	<td>MINI_CART_SUMMARY_TABLE_TOTAL</td>
-	<td>//div[contains(@class,'summary-table')]//*[contains(.,'Total')]/following::h4</td>
+	<td>//div[contains(@class,'summary-table')]//*[contains(.,'Total')]/following::div[contains(@class,'h4')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>MINI_CART_REMOVE_ITEM</td>
-	<td>//p[contains(text(),"${key_cartItemSKU}")]/../../../../div//*[name()='svg'][contains(@class,'lexicon-icon lexicon-icon-times-circle-full')]</td>
+	<td>//p[contains(text(),"${key_cartItemSku}")]/../../../../div//*[name()='svg'][contains(@class,'lexicon-icon lexicon-icon-times-circle-full')]</td>
 	<td></td>
 </tr>
+
+<!--QUICK_ADD_TO_CART-->
+
+<tr>
+	<td>QUICK_ADD_TO_CART_SEARCH_RESULT</td>
+	<td>//div[contains(@class, 'dropdown-menu autocomplete-dropdown-menu show')]//div[contains(@class,'autofit-col') and contains(.,"${key_productSku}")]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>QUICK_ADD_TO_CART_INFO_ICON</td>
+	<td>//span[contains(@data-tooltip-align,'left')]//*[contains(@class, 'lexicon-icon lexicon-icon-info-circle')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>QUICK_ADD_TO_CART_INFO_ICON_TITLE</td>
+	<td>//span[contains(@data-tooltip-align, 'left') and contains(@title,'${key_title}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>QUICK_ADD_TO_CART_EMPTY_SEARCH_BAR</td>
+	<td>//input[contains(@class,"form-control") and @placeholder= '${key_searchBarValue}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>QUICK_ADD_TO_CART_BUTTON</td>
+	<td>//div[contains(@class,'input-group-item-shrink')]//button[contains(@class,'btn-primary')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PRODUCT_CHIP_REMOVE_ICON</td>
+	<td>//span[contains(.,"${key_productSku}")]//button[contains(@class,'close')]</td>
+	<td></td>
+</tr>
+
 <!--ORDERS-->
+
 <tr>
 	<td>ACCOUNT_SELECTOR_ORDER_ID</td>
 	<td>//a[contains(@href,'commerceOrderId')]</td>
 	<td></td>
 </tr>
 <tr>
+	<td>ACCOUNT_SELECTOR_SPECIFIC_ORDER_ID</td>
+	<td>//a[contains(@href,'commerceOrderId') and contains(text(),'${key_orderID}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PORTLET_CONTENT</td>
+	<td>//div[@class='portlet-content']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ORDER_DETAILS_TERMS_AND_CONDITIONS</td>
+	<td>//div[contains (@class,'panel__title') and contains(.,'${key_termType}')]//..//a[contains(.,'${key_term}')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>ORDER_DETAILS_DISCOUNT</td>
-	<td>//div[contains(@class,'tbody')]/div/div[6]</td>
+	<td>//*[contains(@class,'table-list-title')]/a[text()='${key_productName}']/../../../../../td[6]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ORDER_DETAILS_NAME</td>
-	<td>//div[contains(@class,'tbody')]/div/div[1]</td>
+	<td>//*[contains(@class,'table-list-title')]/a[text()='${key_productName}']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ORDER_DETAILS_PRICE</td>
-	<td>//div[contains(@class,'tbody')]/div/div[8]</td>
+	<td>//*[contains(@class,'table-list-title')]/a[text()='${key_productName}']/../../../../../td[9]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ORDER_DETAILS_PRICE_2</td>
+	<td>//*[contains(@class,'table-list-title')]/a[text()='${key_productName}']/../../../../../td[10]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ORDER_DETAILS_QUANTITY</td>
-	<td>//div[contains(@class,'tbody')]/div/div[7]</td>
+	<td>//*[contains(@class,'table-list-title')]/a[text()='${key_productName}']/../../../../../td[7]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ORDER_DETAILS_SKU</td>
-	<td>//div[contains(@class,'tbody')]/div/div[3]</td>
+	<td>//*[contains(@class,'table-list-title')]/a[text()='${key_productName}']/../../../../../td[3]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ORDER_DETAILS_UNIT_PRICE</td>
-	<td>//div[contains(@class,'tbody')]/div/div[4]</td>
+	<td>//*[contains(@class,'table-list-title')]/a[text()='${key_productName}']/../../../../../td[4]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ORDER_DETAILS_UOM</td>
+	<td>//*[contains(@class,'table-list-title')]/a[text()='${key_productName}']/../../../../../td[8]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ORDERS_ENTRY_VIEW_BUTTON</td>
-	<td>//div[contains(.,'${key_orderAuthor}')]/..//following-sibling::div/a[contains(.,'View')]</td>
+	<td>//tr[contains(.,'${key_orderAuthor}')]/..//following-sibling::td/a[contains(.,'View')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -511,10 +922,37 @@
 </tr>
 <tr>
 	<td>PRODUCT_CARD_VIEW_ALL_VARIANTS</td>
-	<td>//div[contains(@class,'add-to-cart d-flex my-2 pt-5')]//a[contains(@href,'${key_productName}')]</td>
+	<td>//p[@class='card-title']//span[text()='${key_productName}']/ancestor::div[contains(@class,'card-body')]//div/a[normalize-space(text()='View All Variants')]</td>
 	<td></td>
 </tr>
+<tr>
+	<td>PRODUCT_CARD_VIEW_BUTTON</td>
+	<td>//p[@title='${key_productName}']//../..//a[normalize-space(text())='View']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PRODUCT_CARD_DESCRIPTION</td>
+	<td>//p[@title='${key_productName}']/..//following-sibling::p[@class='card-body']//span[contains(normalize-space(text()),'${key_productDescription}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CART_PORTLET_ORDER_QUANTITY</td>
+	<td>//input[@id='_com_liferay_commerce_cart_content_web_internal_portlet_CommerceCartContentPortlet_moil_column_2d_1_1_Quantity']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CART_PORTLET_ORDER_DESCRIPTION</td>
+	<td>//td[contains(@class, 'lfr-description-column')]//a[contains(text(),'${key_productName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CART_PORTLET_ORDER_UPDATE</td>
+	<td>//span[contains(text(),'Update')]</td>
+	<td></td>
+</tr>
+
 <!--COMPARE-->
+
 <tr>
 	<td>CHECK_ITEM_COMPARE</td>
 	<td>//div[contains(@class,'mini-compare active')]//div[contains(@style,'${key_productName}')]</td>

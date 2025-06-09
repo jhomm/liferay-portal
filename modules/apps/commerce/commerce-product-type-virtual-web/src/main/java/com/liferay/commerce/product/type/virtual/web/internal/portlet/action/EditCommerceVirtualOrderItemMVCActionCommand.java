@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.web.internal.portlet.action;
@@ -26,10 +17,10 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import java.util.concurrent.TimeUnit;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.concurrent.TimeUnit;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,9 +29,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_ORDER,
+		"jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_ORDER,
 		"mvc.command.name=/commerce_order/edit_commerce_virtual_order_item"
 	},
 	service = MVCActionCommand.class
@@ -57,7 +47,7 @@ public class EditCommerceVirtualOrderItemMVCActionCommand
 
 		try {
 			if (cmd.equals(Constants.UPDATE)) {
-				updateCommerceVirtualOrderItem(actionRequest);
+				_updateCommerceVirtualOrderItem(actionRequest);
 			}
 		}
 		catch (Exception exception) {
@@ -88,26 +78,23 @@ public class EditCommerceVirtualOrderItemMVCActionCommand
 		}
 	}
 
-	protected void updateCommerceVirtualOrderItem(ActionRequest actionRequest)
+	private void _updateCommerceVirtualOrderItem(ActionRequest actionRequest)
 		throws Exception {
 
 		long commerceVirtualOrderItemId = ParamUtil.getLong(
 			actionRequest, "commerceVirtualOrderItemId");
 
-		long fileEntryId = ParamUtil.getLong(actionRequest, "fileEntryId");
-		String url = ParamUtil.getString(actionRequest, "url");
 		int activationStatus = ParamUtil.getInteger(
 			actionRequest, "activationStatus");
 		long durationDays = ParamUtil.getLong(actionRequest, "durationDays");
-		int usages = ParamUtil.getInteger(actionRequest, "usages");
 		int maxUsages = ParamUtil.getInteger(actionRequest, "maxUsages");
 		boolean active = ParamUtil.getBoolean(actionRequest, "active");
 
 		long duration = TimeUnit.DAYS.toMillis(durationDays);
 
 		_commerceVirtualOrderItemService.updateCommerceVirtualOrderItem(
-			commerceVirtualOrderItemId, fileEntryId, url, activationStatus,
-			duration, usages, maxUsages, active);
+			commerceVirtualOrderItemId, activationStatus, duration, maxUsages,
+			active);
 	}
 
 	@Reference

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.planner.rest.resource.v1_0.test;
@@ -22,26 +13,33 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
-import com.liferay.batch.planner.rest.client.dto.v1_0.Log;
+import com.liferay.batch.planner.rest.client.dto.v1_0.Field;
 import com.liferay.batch.planner.rest.client.dto.v1_0.Plan;
 import com.liferay.batch.planner.rest.client.http.HttpInvoker;
 import com.liferay.batch.planner.rest.client.pagination.Page;
 import com.liferay.batch.planner.rest.client.pagination.Pagination;
 import com.liferay.batch.planner.rest.client.resource.v1_0.PlanResource;
 import com.liferay.batch.planner.rest.client.serdes.v1_0.PlanSerDes;
+import com.liferay.oauth2.provider.scope.ScopeChecker;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -49,26 +47,40 @@ import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegate;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegateBuilderRegistry;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import jakarta.annotation.Generated;
 
-import java.text.DateFormat;
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+
+import java.lang.reflect.Method;
+
+import java.net.URI;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtilsBean;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -77,6 +89,9 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * @author Matija Petanjek
@@ -87,12 +102,14 @@ public abstract class BasePlanResourceTestCase {
 
 	@ClassRule
 	@Rule
-	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
-		new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -106,10 +123,15 @@ public abstract class BasePlanResourceTestCase {
 
 		_planResource.setContextCompany(testCompany);
 
-		PlanResource.Builder builder = PlanResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		planResource = builder.authentication(
-			"test@liferay.com", "test"
+		planResource = PlanResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -123,7 +145,32 @@ public abstract class BasePlanResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		Plan plan1 = randomPlan();
+
+		String json = objectMapper.writeValueAsString(plan1);
+
+		Plan plan2 = PlanSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(plan1, plan2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		Plan plan = randomPlan();
+
+		String json1 = objectMapper.writeValueAsString(plan);
+		String json2 = PlanSerDes.toJSON(plan);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -138,40 +185,6 @@ public abstract class BasePlanResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		Plan plan1 = randomPlan();
-
-		String json = objectMapper.writeValueAsString(plan1);
-
-		Plan plan2 = PlanSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(plan1, plan2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		Plan plan = randomPlan();
-
-		String json1 = objectMapper.writeValueAsString(plan);
-		String json2 = PlanSerDes.toJSON(plan);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -183,6 +196,7 @@ public abstract class BasePlanResourceTestCase {
 		plan.setExternalType(regex);
 		plan.setExternalURL(regex);
 		plan.setInternalClassName(regex);
+		plan.setInternalClassNameKey(regex);
 		plan.setName(regex);
 		plan.setTaskItemDelegateName(regex);
 
@@ -195,87 +209,9 @@ public abstract class BasePlanResourceTestCase {
 		Assert.assertEquals(regex, plan.getExternalType());
 		Assert.assertEquals(regex, plan.getExternalURL());
 		Assert.assertEquals(regex, plan.getInternalClassName());
+		Assert.assertEquals(regex, plan.getInternalClassNameKey());
 		Assert.assertEquals(regex, plan.getName());
 		Assert.assertEquals(regex, plan.getTaskItemDelegateName());
-	}
-
-	@Test
-	public void testGetPlansPage() throws Exception {
-		Page<Plan> page = planResource.getPlansPage(Pagination.of(1, 10));
-
-		long totalCount = page.getTotalCount();
-
-		Plan plan1 = testGetPlansPage_addPlan(randomPlan());
-
-		Plan plan2 = testGetPlansPage_addPlan(randomPlan());
-
-		page = planResource.getPlansPage(Pagination.of(1, 10));
-
-		Assert.assertEquals(totalCount + 2, page.getTotalCount());
-
-		assertContains(plan1, (List<Plan>)page.getItems());
-		assertContains(plan2, (List<Plan>)page.getItems());
-		assertValid(page);
-
-		planResource.deletePlan(plan1.getId());
-
-		planResource.deletePlan(plan2.getId());
-	}
-
-	@Test
-	public void testGetPlansPageWithPagination() throws Exception {
-		Page<Plan> totalPage = planResource.getPlansPage(null);
-
-		int totalCount = GetterUtil.getInteger(totalPage.getTotalCount());
-
-		Plan plan1 = testGetPlansPage_addPlan(randomPlan());
-
-		Plan plan2 = testGetPlansPage_addPlan(randomPlan());
-
-		Plan plan3 = testGetPlansPage_addPlan(randomPlan());
-
-		Page<Plan> page1 = planResource.getPlansPage(
-			Pagination.of(1, totalCount + 2));
-
-		List<Plan> plans1 = (List<Plan>)page1.getItems();
-
-		Assert.assertEquals(plans1.toString(), totalCount + 2, plans1.size());
-
-		Page<Plan> page2 = planResource.getPlansPage(
-			Pagination.of(2, totalCount + 2));
-
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
-
-		List<Plan> plans2 = (List<Plan>)page2.getItems();
-
-		Assert.assertEquals(plans2.toString(), 1, plans2.size());
-
-		Page<Plan> page3 = planResource.getPlansPage(
-			Pagination.of(1, totalCount + 3));
-
-		assertContains(plan1, (List<Plan>)page3.getItems());
-		assertContains(plan2, (List<Plan>)page3.getItems());
-		assertContains(plan3, (List<Plan>)page3.getItems());
-	}
-
-	protected Plan testGetPlansPage_addPlan(Plan plan) throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testPostPlan() throws Exception {
-		Plan randomPlan = randomPlan();
-
-		Plan postPlan = testPostPlan_addPlan(randomPlan);
-
-		assertEquals(randomPlan, postPlan);
-		assertValid(postPlan);
-	}
-
-	protected Plan testPostPlan_addPlan(Plan plan) throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -288,7 +224,6 @@ public abstract class BasePlanResourceTestCase {
 
 		assertHttpResponseStatusCode(
 			404, planResource.getPlanHttpResponse(plan.getId()));
-
 		assertHttpResponseStatusCode(404, planResource.getPlanHttpResponse(0L));
 	}
 
@@ -307,7 +242,302 @@ public abstract class BasePlanResourceTestCase {
 		assertValid(getPlan);
 	}
 
+	@Test
+	public void testVulcanCRUDItemDelegateGetItem() throws Exception {
+		Plan postPlan = testGetPlan_addPlan();
+
+		Plan getPlan = planResource.getPlan(postPlan.getId());
+
+		VulcanCRUDItemDelegate vulcanCRUDItemDelegate =
+			_vulcanCRUDItemDelegateBuilderRegistry.builder(
+				testCompany, "com.liferay.batch.planner.rest.dto.v1_0.Plan"
+			).acceptLanguage(
+				new AcceptLanguage() {
+
+					@Override
+					public List<Locale> getLocales() {
+						return Arrays.asList(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public String getPreferredLanguageId() {
+						return LocaleUtil.toLanguageId(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public Locale getPreferredLocale() {
+						return LocaleUtil.getDefault();
+					}
+
+				}
+			).groupLocalService(
+				_groupLocalService
+			).httpServletRequest(
+				testVulcanCRUDItemDelegate_getHttpServletRequest()
+			).httpServletResponse(
+				new MockHttpServletResponse()
+			).resourceActionLocalService(
+				_resourceActionLocalService
+			).resourcePermissionLocalService(
+				_resourcePermissionLocalService
+			).roleLocalService(
+				_roleLocalService
+			).scopeChecker(
+				_scopeChecker
+			).uriInfo(
+				testVulcanCRUDItemDelegate_getUriInfo()
+			).user(
+				testVulcanCRUDItemDelegate_getUser()
+			).build();
+
+		Object item = vulcanCRUDItemDelegate.getItem(postPlan.getId());
+
+		assertEquals(getPlan, PlanSerDes.toDTO(item.toString()));
+	}
+
+	protected HttpServletRequest
+		testVulcanCRUDItemDelegate_getHttpServletRequest() {
+
+		return new MockHttpServletRequest() {
+
+			@Override
+			public StringBuffer getRequestURL() {
+				return new StringBuffer(
+					StringBundler.concat(
+						"http://localhost:8080/o/v1.0/",
+						RandomTestUtil.randomString(), "/",
+						RandomTestUtil.randomString()));
+			}
+
+		};
+	}
+
+	protected UriInfo testVulcanCRUDItemDelegate_getUriInfo() {
+		String applicationPath = RandomTestUtil.randomString() + "/";
+		String resourcePath = RandomTestUtil.randomString();
+
+		return new UriInfo() {
+
+			@Override
+			public String getPath() {
+				return resourcePath;
+			}
+
+			@Override
+			public String getPath(boolean decode) {
+				return getPath();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments(boolean decode) {
+				return getPathSegments();
+			}
+
+			@Override
+			public URI getRequestUri() {
+				return URI.create(
+					"http://localhost:8080/o/" + applicationPath +
+						resourcePath);
+			}
+
+			@Override
+			public UriBuilder getRequestUriBuilder() {
+				return UriBuilder.fromUri(getRequestUri());
+			}
+
+			@Override
+			public URI getAbsolutePath() {
+				return getRequestUri();
+			}
+
+			@Override
+			public UriBuilder getAbsolutePathBuilder() {
+				return getRequestUriBuilder();
+			}
+
+			@Override
+			public URI getBaseUri() {
+				return URI.create("http://localhost:8080/o/" + applicationPath);
+			}
+
+			@Override
+			public UriBuilder getBaseUriBuilder() {
+				return UriBuilder.fromUri(getBaseUri());
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters(
+				boolean decode) {
+
+				return getPathParameters();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters(
+				boolean decode) {
+
+				return getQueryParameters();
+			}
+
+			@Override
+			public List<String> getMatchedURIs() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<String> getMatchedURIs(boolean decode) {
+				return getMatchedURIs();
+			}
+
+			@Override
+			public List<Object> getMatchedResources() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public URI resolve(URI requestUri) {
+				return getBaseUri().resolve(requestUri);
+			}
+
+			@Override
+			public URI relativize(URI uri) {
+				return getBaseUri().relativize(uri);
+			}
+
+		};
+	}
+
+	protected com.liferay.portal.kernel.model.User
+		testVulcanCRUDItemDelegate_getUser() {
+
+		return _testCompanyAdminUser;
+	}
+
 	protected Plan testGetPlan_addPlan() throws Exception {
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGetPlanTemplate() throws Exception {
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testGetPlansPage() throws Exception {
+		Page<Plan> page = planResource.getPlansPage(Pagination.of(1, 10));
+
+		long totalCount = page.getTotalCount();
+
+		Plan plan1 = testGetPlansPage_addPlan(randomPlan());
+
+		Plan plan2 = testGetPlansPage_addPlan(randomPlan());
+
+		page = planResource.getPlansPage(Pagination.of(1, 10));
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(plan1, (List<Plan>)page.getItems());
+		assertContains(plan2, (List<Plan>)page.getItems());
+		assertValid(page, testGetPlansPage_getExpectedActions());
+
+		planResource.deletePlan(plan1.getId());
+
+		planResource.deletePlan(plan2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetPlansPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	@Test
+	public void testGetPlansPageWithPagination() throws Exception {
+		Page<Plan> plansPage = planResource.getPlansPage(null);
+
+		int totalCount = GetterUtil.getInteger(plansPage.getTotalCount());
+
+		Plan plan1 = testGetPlansPage_addPlan(randomPlan());
+
+		Plan plan2 = testGetPlansPage_addPlan(randomPlan());
+
+		Plan plan3 = testGetPlansPage_addPlan(randomPlan());
+
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
+
+		int pageSizeLimit = 500;
+
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<Plan> page1 = planResource.getPlansPage(
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit));
+
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
+
+			assertContains(plan1, (List<Plan>)page1.getItems());
+
+			Page<Plan> page2 = planResource.getPlansPage(
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit));
+
+			assertContains(plan2, (List<Plan>)page2.getItems());
+
+			Page<Plan> page3 = planResource.getPlansPage(
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit));
+
+			assertContains(plan3, (List<Plan>)page3.getItems());
+		}
+		else {
+			Page<Plan> page1 = planResource.getPlansPage(
+				Pagination.of(1, totalCount + 2));
+
+			List<Plan> plans1 = (List<Plan>)page1.getItems();
+
+			Assert.assertEquals(
+				plans1.toString(), totalCount + 2, plans1.size());
+
+			Page<Plan> page2 = planResource.getPlansPage(
+				Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<Plan> plans2 = (List<Plan>)page2.getItems();
+
+			Assert.assertEquals(plans2.toString(), 1, plans2.size());
+
+			Page<Plan> page3 = planResource.getPlansPage(
+				Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(plan1, (List<Plan>)page3.getItems());
+			assertContains(plan2, (List<Plan>)page3.getItems());
+			assertContains(plan3, (List<Plan>)page3.getItems());
+		}
+	}
+
+	protected Plan testGetPlansPage_addPlan(Plan plan) throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
@@ -324,7 +554,7 @@ public abstract class BasePlanResourceTestCase {
 
 		Plan expectedPatchPlan = postPlan.clone();
 
-		_beanUtilsBean.copyProperties(expectedPatchPlan, randomPatchPlan);
+		BeanTestUtil.copyProperties(randomPatchPlan, expectedPatchPlan);
 
 		Plan getPlan = planResource.getPlan(patchPlan.getId());
 
@@ -333,6 +563,21 @@ public abstract class BasePlanResourceTestCase {
 	}
 
 	protected Plan testPatchPlan_addPlan() throws Exception {
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostPlan() throws Exception {
+		Plan randomPlan = randomPlan();
+
+		Plan postPlan = testPostPlan_addPlan(randomPlan);
+
+		assertEquals(randomPlan, postPlan);
+		assertValid(postPlan);
+	}
+
+	protected Plan testPostPlan_addPlan(Plan plan) throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
@@ -452,6 +697,16 @@ public abstract class BasePlanResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"internalClassNameKey", additionalAssertFieldName)) {
+
+				if (plan.getInternalClassNameKey() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("mappings", additionalAssertFieldName)) {
 				if (plan.getMappings() == null) {
 					valid = false;
@@ -476,10 +731,42 @@ public abstract class BasePlanResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("size", additionalAssertFieldName)) {
+				if (plan.getSize() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("status", additionalAssertFieldName)) {
+				if (plan.getStatus() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals(
 					"taskItemDelegateName", additionalAssertFieldName)) {
 
 				if (plan.getTaskItemDelegateName() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("template", additionalAssertFieldName)) {
+				if (plan.getTemplate() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("total", additionalAssertFieldName)) {
+				if (plan.getTotal() == null) {
 					valid = false;
 				}
 
@@ -495,6 +782,12 @@ public abstract class BasePlanResourceTestCase {
 	}
 
 	protected void assertValid(Page<Plan> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Plan> page, Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Plan> plans = page.getItems();
@@ -509,6 +802,25 @@ public abstract class BasePlanResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -633,6 +945,19 @@ public abstract class BasePlanResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"internalClassNameKey", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						plan1.getInternalClassNameKey(),
+						plan2.getInternalClassNameKey())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("mappings", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						plan1.getMappings(), plan2.getMappings())) {
@@ -661,6 +986,22 @@ public abstract class BasePlanResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("size", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(plan1.getSize(), plan2.getSize())) {
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("status", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(plan1.getStatus(), plan2.getStatus())) {
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals(
 					"taskItemDelegateName", additionalAssertFieldName)) {
 
@@ -668,6 +1009,24 @@ public abstract class BasePlanResourceTestCase {
 						plan1.getTaskItemDelegateName(),
 						plan2.getTaskItemDelegateName())) {
 
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("template", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						plan1.getTemplate(), plan2.getTemplate())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("total", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(plan1.getTotal(), plan2.getTotal())) {
 					return false;
 				}
 
@@ -711,14 +1070,20 @@ public abstract class BasePlanResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
+
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -735,6 +1100,10 @@ public abstract class BasePlanResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -744,18 +1113,18 @@ public abstract class BasePlanResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -782,17 +1151,93 @@ public abstract class BasePlanResourceTestCase {
 		}
 
 		if (entityFieldName.equals("externalType")) {
-			sb.append("'");
-			sb.append(String.valueOf(plan.getExternalType()));
-			sb.append("'");
+			Object object = plan.getExternalType();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("externalURL")) {
-			sb.append("'");
-			sb.append(String.valueOf(plan.getExternalURL()));
-			sb.append("'");
+			Object object = plan.getExternalURL();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -803,9 +1248,93 @@ public abstract class BasePlanResourceTestCase {
 		}
 
 		if (entityFieldName.equals("internalClassName")) {
-			sb.append("'");
-			sb.append(String.valueOf(plan.getInternalClassName()));
-			sb.append("'");
+			Object object = plan.getInternalClassName();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("internalClassNameKey")) {
+			Object object = plan.getInternalClassNameKey();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -816,9 +1345,47 @@ public abstract class BasePlanResourceTestCase {
 		}
 
 		if (entityFieldName.equals("name")) {
-			sb.append("'");
-			sb.append(String.valueOf(plan.getName()));
-			sb.append("'");
+			Object object = plan.getName();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -828,10 +1395,71 @@ public abstract class BasePlanResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("size")) {
+			sb.append(String.valueOf(plan.getSize()));
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("status")) {
+			sb.append(String.valueOf(plan.getStatus()));
+
+			return sb.toString();
+		}
+
 		if (entityFieldName.equals("taskItemDelegateName")) {
-			sb.append("'");
-			sb.append(String.valueOf(plan.getTaskItemDelegateName()));
-			sb.append("'");
+			Object object = plan.getTaskItemDelegateName();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("template")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("total")) {
+			sb.append(String.valueOf(plan.getTotal()));
 
 			return sb.toString();
 		}
@@ -850,7 +1478,8 @@ public abstract class BasePlanResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -889,9 +1518,15 @@ public abstract class BasePlanResourceTestCase {
 				id = RandomTestUtil.randomLong();
 				internalClassName = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
+				internalClassNameKey = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				name = StringUtil.toLowerCase(RandomTestUtil.randomString());
+				size = RandomTestUtil.randomInt();
+				status = RandomTestUtil.randomInt();
 				taskItemDelegateName = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
+				template = RandomTestUtil.randomBoolean();
+				total = RandomTestUtil.randomInt();
 			}
 		};
 	}
@@ -907,9 +1542,131 @@ public abstract class BasePlanResourceTestCase {
 	}
 
 	protected PlanResource planResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = source.getClass();
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					_getAllDeclaredFields(sourceClass)) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
+
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -985,22 +1742,34 @@ public abstract class BasePlanResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BasePlanResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
+	private static Format _format;
 
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
-	private static DateFormat _dateFormat;
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.batch.planner.rest.resource.v1_0.PlanResource
 		_planResource;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private ScopeChecker _scopeChecker;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
+	@Inject
+	private VulcanCRUDItemDelegateBuilderRegistry
+		_vulcanCRUDItemDelegateBuilderRegistry;
 
 }

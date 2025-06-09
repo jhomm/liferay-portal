@@ -1,0 +1,81 @@
+<html>
+<head>
+<title>ObjectRelationships</title>
+</head>
+
+<body>
+<table border="1" cellpadding="1" cellspacing="1">
+<thead>
+<tr><td rowspan="1" colspan="3">ObjectRelationships</td></tr>
+</thead>
+
+<tbody>
+	<tr>
+		<td>SELECT_PARAMETER_FORM</td>
+		<td>//label[contains(text(),'Parameter')]/..//div[contains(@aria-controls,'clay-dropdown-menu')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_PARAMETER_OPTION</td>
+		<td>//button[@class = 'dropdown-item']//div[contains(@class, 'd-flex')][contains(text(),'${key_parameterOption}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>OPTIONS_TAB_RELATIONSHIPS_LABEL_AND_RELATED_OBJECT</td>
+		<td>//tr[contains(.,'${key_label}')and contains(.,'${key_relatedObject}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>OPTIONS_TAB_RELATIONSHIPS_TYPE_AND_HIERARCHY</td>
+		<td>//tr[contains(.,'${key_relationType}')and contains(.,'${key_relationHierarchy}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_RELATIONSHIP_DETAILS_HIERARCHY_AND_LABEL</td>
+		<td>//td[contains(., '${key_relationHierarchy}')]//preceding-sibling::td//*[contains(text(), '${key_labelName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>OPTIONS_TAB_RELATIONSHIPS_DISABLED_NAME_OR_TYPE</td>
+		<td>//button[@disabled][contains(@class,'form-control') and contains(.,'${key_relation}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>OPTIONS_TAB_RELATIONSHIPS_DISABLED_OBJECT</td>
+		<td>//div[contains(@class,'custom-select__content--disabled') and contains(.,'${key_relationObject}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>OPTIONS_TAB_RELATIONSHIPS_HIERARCHY</td>
+		<td>//span[contains(@class,'label-item') and contains(.,'${key_relationHierarchy}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>OPTIONS_TAB_EXPANDED_RELATIONSHIPS_HIERARCHY</td>
+		<td>//div[contains(@class, 'lfr-objects')]//span[contains(text(), '${key_relationHierarchy}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>OPTIONS_TAB_RELATIONSHIPS_LAYOUT_TAB</td>
+		<td>//div[contains(@class,'object-admin-panel__header') and contains(.,'${key_layout}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>RELATIONSHIPS_FIELD</td>
+		<td>//*[contains(text(),'${field} Type')]/..//input</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECTED_OBJECT_IN_MODAL</td>
+		<td>//label[contains(.,'${key_relationType}')]/../button[.='${key_relationObject}'] | //label[contains(.,'${key_relationType}')]//..//input[@value='${key_relationObject}']</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_VALUE_DISABLED</td>
+		<td>//input[@disabled and contains(@value,'${key_valueName}')]</td>
+		<td></td>
+	</tr>
+</tbody>
+</table>
+</body>
+</html>

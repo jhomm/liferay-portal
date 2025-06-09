@@ -42,7 +42,7 @@
 			<finder-column name="banUserId" />
 		</finder>
 	</entity>
-	<entity human-name="message boards category" local-service="true" name="MBCategory" remote-service="true" trash-enabled="true" uuid="true">
+	<entity external-reference-code="group" human-name="message boards category" local-service="true" name="MBCategory" remote-service="true" trash-enabled="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -66,6 +66,7 @@
 		<column name="name" type="String" uad-nonanonymizable="true" />
 		<column name="description" type="String" uad-nonanonymizable="true" />
 		<column name="displayStyle" type="String" />
+		<column name="friendlyURL" type="String" />
 		<column name="lastPublishDate" type="Date" />
 		<column name="status" type="int" />
 		<column name="statusByUserId" type="long" />
@@ -90,6 +91,10 @@
 		<finder name="G_P" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column arrayable-operator="OR" name="parentCategoryId" />
+		</finder>
+		<finder name="G_F" return-type="MBCategory" unique="true">
+			<finder-column name="groupId" />
+			<finder-column name="friendlyURL" />
 		</finder>
 		<finder name="G_S" return-type="Collection">
 			<finder-column name="groupId" />
@@ -376,6 +381,48 @@
 	</entity>
 	<entity human-name="message boards stats user" local-service="true" name="MBStatsUser" remote-service="false">
 	</entity>
+	<entity human-name="message boards suspicious activity" local-service="true" name="MBSuspiciousActivity" remote-service="true" uuid="true">
+
+		<!-- PK fields -->
+
+		<column container-model="true" name="suspiciousActivityId" primary="true" type="long" />
+
+		<!-- Group instance -->
+
+		<column name="groupId" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+
+		<!-- Other fields -->
+
+		<column name="messageId" type="long" />
+		<column name="threadId" type="long" />
+		<column name="reason" type="String" />
+		<column name="validated" type="boolean" />
+
+		<!-- Finder methods -->
+
+		<finder name="MessageId" return-type="Collection">
+			<finder-column name="messageId" />
+		</finder>
+		<finder name="ThreadId" return-type="Collection">
+			<finder-column name="threadId" />
+		</finder>
+		<finder name="U_M" return-type="MBSuspiciousActivity">
+			<finder-column name="userId" />
+			<finder-column name="messageId" />
+		</finder>
+		<finder name="U_T" return-type="MBSuspiciousActivity">
+			<finder-column name="userId" />
+			<finder-column name="threadId" />
+		</finder>
+	</entity>
 	<entity human-name="message boards thread" local-service="true" name="MBThread" remote-service="true" trash-enabled="true" uuid="true">
 
 		<!-- PK fields -->
@@ -511,7 +558,6 @@
 		<exception>BannedUser</exception>
 		<exception>CategoryName</exception>
 		<exception>DiscussionMaxComments</exception>
-		<exception>DuplicateMessageExternalReferenceCode</exception>
 		<exception>LockedThread</exception>
 		<exception>MailingListEmailAddress</exception>
 		<exception>MailingListInServerName</exception>
@@ -522,6 +568,7 @@
 		<exception>MessageBody</exception>
 		<exception>MessageSubject</exception>
 		<exception>RequiredMessage</exception>
+		<exception>RequiredThread</exception>
 		<exception>SplitThread</exception>
 	</exceptions>
 </service-builder>

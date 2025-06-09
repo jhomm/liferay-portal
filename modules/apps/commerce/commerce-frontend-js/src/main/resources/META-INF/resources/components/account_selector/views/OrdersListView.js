@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
@@ -17,9 +8,7 @@ import ClayDropDown from '@clayui/drop-down';
 import React, {useMemo, useRef} from 'react';
 
 import ServiceProvider from '../../../ServiceProvider/index';
-import {OPEN_MODAL} from '../../../utilities/eventsDefinitions';
-import {liferayNavigate} from '../../../utilities/index';
-import Modal from '../../modal/Modal';
+import {createCommerceCart} from '../../../utilities/createCommerceCart';
 import OrdersTable from '../OrdersTable';
 import {VIEWS} from '../util/constants';
 import EmptyListView from './EmptyListView';
@@ -28,11 +17,12 @@ import ListView from './ListView';
 function OrdersListView({
 	commerceChannelId,
 	createOrderURL,
+	currencyCode,
 	currentAccount,
 	disabled,
+	hasAddCommerceOrderPermission,
 	selectOrderURL,
 	setCurrentView,
-	showOrderTypeModal,
 }) {
 	const CartResource = useMemo(
 		() => ServiceProvider.DeliveryCartAPI('v1'),
@@ -90,31 +80,30 @@ function OrdersListView({
 
 			<ClayDropDown.Divider />
 
-			<li>
-				<div ref={ordersListRef} />
-			</li>
+			<ClayDropDown.ItemList className="orders-list">
+				<ClayDropDown.Section>
+					<div ref={ordersListRef} />
+				</ClayDropDown.Section>
+			</ClayDropDown.ItemList>
 
 			<ClayDropDown.Section>
 				<ClayButton
-					className="m-auto w-100"
-					displayType="primary"
-					onClick={() =>
-						showOrderTypeModal
-							? Liferay.fire(OPEN_MODAL, {id: 'add-order-modal'})
-							: liferayNavigate(createOrderURL)
-					}
+					block
+					disabled={!hasAddCommerceOrderPermission}
+					onClick={(event) => {
+						event.preventDefault();
+
+						createCommerceCart({
+							accountId: currentAccount.id,
+							commerceChannelId,
+							currencyCode,
+							orderDetailURL: createOrderURL,
+						});
+					}}
 				>
 					{Liferay.Language.get('create-new-order')}
 				</ClayButton>
 			</ClayDropDown.Section>
-
-			{showOrderTypeModal ? (
-				<Modal
-					id="add-order-modal"
-					refreshPageOnClose={true}
-					url={createOrderURL}
-				/>
-			) : null}
 		</ClayDropDown.ItemList>
 	);
 }

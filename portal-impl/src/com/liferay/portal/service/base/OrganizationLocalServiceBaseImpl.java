@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.base;
@@ -24,8 +15,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -35,6 +25,8 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
@@ -43,7 +35,6 @@ import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.OrganizationLocalServiceUtil;
-import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.GroupPersistence;
 import com.liferay.portal.kernel.service.persistence.OrganizationFinder;
@@ -56,7 +47,7 @@ import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import java.util.List;
 
@@ -270,48 +261,21 @@ public abstract class OrganizationLocalServiceBaseImpl
 			uuid, companyId, null);
 	}
 
-	/**
-	 * Returns the organization with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the organization's external reference code
-	 * @return the matching organization, or <code>null</code> if a matching organization could not be found
-	 */
 	@Override
 	public Organization fetchOrganizationByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
+		String externalReferenceCode, long companyId) {
 
-		return organizationPersistence.fetchByC_ERC(
-			companyId, externalReferenceCode);
+		return organizationPersistence.fetchByERC_C(
+			externalReferenceCode, companyId);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchOrganizationByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public Organization fetchOrganizationByReferenceCode(
-		long companyId, String externalReferenceCode) {
-
-		return fetchOrganizationByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	/**
-	 * Returns the organization with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the organization's external reference code
-	 * @return the matching organization
-	 * @throws PortalException if a matching organization could not be found
-	 */
 	@Override
 	public Organization getOrganizationByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
-		return organizationPersistence.findByC_ERC(
-			companyId, externalReferenceCode);
+		return organizationPersistence.findByERC_C(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -454,6 +418,11 @@ public abstract class OrganizationLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement OrganizationLocalServiceImpl#deleteOrganization(Organization) to avoid orphaned data");
+		}
+
 		return organizationLocalService.deleteOrganization(
 			(Organization)persistedModel);
 	}
@@ -535,31 +504,33 @@ public abstract class OrganizationLocalServiceBaseImpl
 	/**
 	 */
 	@Override
-	public void addGroupOrganization(long groupId, long organizationId) {
-		groupPersistence.addOrganization(groupId, organizationId);
+	public boolean addGroupOrganization(long groupId, long organizationId) {
+		return groupPersistence.addOrganization(groupId, organizationId);
 	}
 
 	/**
 	 */
 	@Override
-	public void addGroupOrganization(long groupId, Organization organization) {
-		groupPersistence.addOrganization(groupId, organization);
+	public boolean addGroupOrganization(
+		long groupId, Organization organization) {
+
+		return groupPersistence.addOrganization(groupId, organization);
 	}
 
 	/**
 	 */
 	@Override
-	public void addGroupOrganizations(long groupId, long[] organizationIds) {
-		groupPersistence.addOrganizations(groupId, organizationIds);
+	public boolean addGroupOrganizations(long groupId, long[] organizationIds) {
+		return groupPersistence.addOrganizations(groupId, organizationIds);
 	}
 
 	/**
 	 */
 	@Override
-	public void addGroupOrganizations(
+	public boolean addGroupOrganizations(
 		long groupId, List<Organization> organizations) {
 
-		groupPersistence.addOrganizations(groupId, organizations);
+		return groupPersistence.addOrganizations(groupId, organizations);
 	}
 
 	/**
@@ -670,31 +641,31 @@ public abstract class OrganizationLocalServiceBaseImpl
 	/**
 	 */
 	@Override
-	public void addUserOrganization(long userId, long organizationId) {
-		userPersistence.addOrganization(userId, organizationId);
+	public boolean addUserOrganization(long userId, long organizationId) {
+		return userPersistence.addOrganization(userId, organizationId);
 	}
 
 	/**
 	 */
 	@Override
-	public void addUserOrganization(long userId, Organization organization) {
-		userPersistence.addOrganization(userId, organization);
+	public boolean addUserOrganization(long userId, Organization organization) {
+		return userPersistence.addOrganization(userId, organization);
 	}
 
 	/**
 	 */
 	@Override
-	public void addUserOrganizations(long userId, long[] organizationIds) {
-		userPersistence.addOrganizations(userId, organizationIds);
+	public boolean addUserOrganizations(long userId, long[] organizationIds) {
+		return userPersistence.addOrganizations(userId, organizationIds);
 	}
 
 	/**
 	 */
 	@Override
-	public void addUserOrganizations(
+	public boolean addUserOrganizations(
 		long userId, List<Organization> organizations) {
 
-		userPersistence.addOrganizations(userId, organizations);
+		return userPersistence.addOrganizations(userId, organizations);
 	}
 
 	/**
@@ -882,18 +853,11 @@ public abstract class OrganizationLocalServiceBaseImpl
 	}
 
 	public void afterPropertiesSet() {
-		persistedModelLocalServiceRegistry.register(
-			"com.liferay.portal.kernel.model.Organization",
-			organizationLocalService);
-
-		_setLocalServiceUtilService(organizationLocalService);
+		OrganizationLocalServiceUtil.setService(organizationLocalService);
 	}
 
 	public void destroy() {
-		persistedModelLocalServiceRegistry.unregister(
-			"com.liferay.portal.kernel.model.Organization");
-
-		_setLocalServiceUtilService(null);
+		OrganizationLocalServiceUtil.setService(null);
 	}
 
 	/**
@@ -935,37 +899,26 @@ public abstract class OrganizationLocalServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource = organizationPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource = organizationPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
-		}
-	}
-
-	private void _setLocalServiceUtilService(
-		OrganizationLocalService organizationLocalService) {
-
-		try {
-			Field field = OrganizationLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, organizationLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
 		}
 	}
 
@@ -990,8 +943,7 @@ public abstract class OrganizationLocalServiceBaseImpl
 	@BeanReference(type = UserPersistence.class)
 	protected UserPersistence userPersistence;
 
-	@BeanReference(type = PersistedModelLocalServiceRegistry.class)
-	protected PersistedModelLocalServiceRegistry
-		persistedModelLocalServiceRegistry;
+	private static final Log _log = LogFactoryUtil.getLog(
+		OrganizationLocalServiceBaseImpl.class);
 
 }

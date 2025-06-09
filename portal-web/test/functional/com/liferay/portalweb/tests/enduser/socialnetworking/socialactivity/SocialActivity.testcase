@@ -1,7 +1,9 @@
-@component-name = "portal-social-networking"
+@component-name = "portal-content-management"
 definition {
 
-	property portal.release = "true";
+	property custom.properties = "feature.flag.LPD-35013=false";
+	property osgi.modules.includes = "wiki";
+	property portal.release = "false";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Social Networking";
 
@@ -9,12 +11,14 @@ definition {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		WikiPortlet.enableWiki();
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -22,15 +26,16 @@ definition {
 
 			BlogsEntry.tearDownCP();
 
-			Page.tearDownPG();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
 	@description = "It ensures that the user statistics are counted when social tracking is enabled."
-	@priority = "5"
+	@priority = 3
 	@refactorneeded
 	test CountUserStatisticsAfterEnablingSocialTracking {
-		property test.name.skip.portal.instance = "SocialActivity#CountUserStatisticsAfterEnablingSocialTracking";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		ApplicationsMenu.gotoPortlet(
 			category = "Configuration",
@@ -44,15 +49,21 @@ definition {
 
 		FormFields.viewCheckboxChecked(fieldName = "enableUserSocialActivityTracking");
 
+		HeadlessSite.addSite(siteName = "Site Name");
+
 		JSONLayout.addPublicLayout(
-			groupName = "Guest",
+			groupName = "Site Name",
 			layoutName = "Activities Page");
 
-		Navigator.gotoPage(pageName = "Activities Page");
+		Navigator.openSitePage(
+			pageName = "Activities Page",
+			siteName = "Site Name");
 
 		Portlet.addPG(portletName = "Activities");
 
-		Navigator.gotoPage(pageName = "Activities Page");
+		Navigator.openSitePage(
+			pageName = "Activities Page",
+			siteName = "Site Name");
 
 		AssertTextEquals.assertPartialText(
 			key_portletName = "Activities",
@@ -62,11 +73,13 @@ definition {
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM Document Description",
 			dmDocumentTitle = "DM Document Title",
-			groupName = "Guest",
+			groupName = "Site Name",
 			mimeType = "application/msword",
 			sourceFileName = "Document_1.doc");
 
-		Navigator.gotoPage(pageName = "Activities Page");
+		Navigator.openSitePage(
+			pageName = "Activities Page",
+			siteName = "Site Name");
 
 		AssertTextEquals(
 			key_assetName = "DM Document Title",
@@ -75,10 +88,11 @@ definition {
 	}
 
 	@description = "It ensures that the user statistics are not counted when social tracking is disabled."
-	@priority = "5"
+	@priority = 3
 	@refactorneeded
 	test DisableSocialTracking {
-		property test.name.skip.portal.instance = "SocialActivity#DisableSocialTracking";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		ApplicationsMenu.gotoPortlet(
 			category = "Configuration",
@@ -96,15 +110,21 @@ definition {
 
 		FormFields.viewCheckboxNotChecked(fieldName = "enable");
 
+		HeadlessSite.addSite(siteName = "Site Name");
+
 		JSONLayout.addPublicLayout(
-			groupName = "Guest",
+			groupName = "Site Name",
 			layoutName = "Activities Page");
 
-		Navigator.gotoPage(pageName = "Activities Page");
+		Navigator.openSitePage(
+			pageName = "Activities Page",
+			siteName = "Site Name");
 
 		Portlet.addPG(portletName = "Activities");
 
-		Navigator.gotoPage(pageName = "Activities Page");
+		Navigator.openSitePage(
+			pageName = "Activities Page",
+			siteName = "Site Name");
 
 		AssertTextEquals.assertPartialText(
 			key_portletName = "Activities",
@@ -114,11 +134,13 @@ definition {
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM Document Description",
 			dmDocumentTitle = "DM Document Title",
-			groupName = "Guest",
+			groupName = "Site Name",
 			mimeType = "application/msword",
 			sourceFileName = "Document_1.doc");
 
-		Navigator.gotoPage(pageName = "Activities Page");
+		Navigator.openSitePage(
+			pageName = "Activities Page",
+			siteName = "Site Name");
 
 		AssertTextEquals.assertPartialText(
 			key_portletName = "Activities",
@@ -131,7 +153,7 @@ definition {
 	}
 
 	@description = "This is a use case for LPS-50602"
-	@priority = "5"
+	@priority = 3
 	@refactorneeded
 	test ViewDraftWikiPageViaActivities {
 		JSONLayout.addPublicLayout(
@@ -182,7 +204,7 @@ definition {
 			locator1 = "Portlet#BODY",
 			value1 = "Test wrote a new wiki page, Wiki Page Title.");
 
-		AssertTextNotEquals.assertNotPartialText(
+		AssertTextNotEquals.assertNotPartialMatch(
 			key_portletName = "Activities",
 			locator1 = "Portlet#BODY",
 			value1 = "Test updated a wiki page, Wiki Page Title.");

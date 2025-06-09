@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.internal.exportimport.data.handler;
@@ -23,13 +14,16 @@ import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.xml.Element;
+import com.liferay.segments.constants.SegmentsEntryConstants;
 import com.liferay.segments.constants.SegmentsPortletKeys;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.service.SegmentsEntryLocalService;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 
 import java.util.Map;
 
@@ -39,7 +33,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Eduardo García
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class SegmentsExperienceStagedModelDataHandler
 	extends BaseStagedModelDataHandler<SegmentsExperience> {
 
@@ -139,15 +133,15 @@ public class SegmentsExperienceStagedModelDataHandler
 
 		long segmentsEntryId = MapUtil.getLong(
 			segmentsEntryIds, segmentsExperience.getSegmentsEntryId(),
-			segmentsExperience.getSegmentsEntryId());
+			SegmentsEntryConstants.ID_DEFAULT);
 
 		Map<Long, Long> referenceClassPKs =
 			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
-				segmentsExperience.getClassName());
+				Layout.class.getName());
 
 		long referenceClassPK = MapUtil.getLong(
-			referenceClassPKs, segmentsExperience.getClassPK(),
-			segmentsExperience.getClassPK());
+			referenceClassPKs, segmentsExperience.getPlid(),
+			segmentsExperience.getPlid());
 
 		SegmentsExperience importedSegmentsExperience =
 			(SegmentsExperience)segmentsExperience.clone();
@@ -157,12 +151,20 @@ public class SegmentsExperienceStagedModelDataHandler
 		importedSegmentsExperience.setCompanyId(
 			portletDataContext.getCompanyId());
 		importedSegmentsExperience.setSegmentsEntryId(segmentsEntryId);
-		importedSegmentsExperience.setClassPK(referenceClassPK);
+		importedSegmentsExperience.setPlid(referenceClassPK);
 
 		SegmentsExperience existingSegmentsExperience =
 			_stagedModelRepository.fetchStagedModelByUuidAndGroupId(
 				segmentsExperience.getUuid(),
 				portletDataContext.getScopeGroupId());
+
+		if (existingSegmentsExperience == null) {
+			existingSegmentsExperience =
+				_segmentsExperienceLocalService.fetchSegmentsExperience(
+					portletDataContext.getScopeGroupId(),
+					importedSegmentsExperience.getSegmentsExperienceKey(),
+					importedSegmentsExperience.getPlid());
+		}
 
 		if ((existingSegmentsExperience == null) ||
 			!portletDataContext.isDataStrategyMirror()) {
@@ -175,6 +177,8 @@ public class SegmentsExperienceStagedModelDataHandler
 				existingSegmentsExperience.getMvccVersion());
 			importedSegmentsExperience.setSegmentsExperienceId(
 				existingSegmentsExperience.getSegmentsExperienceId());
+			importedSegmentsExperience.setSegmentsExperienceKey(
+				existingSegmentsExperience.getSegmentsExperienceKey());
 
 			importedSegmentsExperience =
 				_stagedModelRepository.updateStagedModel(
@@ -197,6 +201,9 @@ public class SegmentsExperienceStagedModelDataHandler
 
 	@Reference
 	private SegmentsEntryLocalService _segmentsEntryLocalService;
+
+	@Reference
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.segments.model.SegmentsExperience)",

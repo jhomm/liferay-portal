@@ -1,18 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.core.selenium;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Brian Wing Shun Chan
@@ -26,7 +20,8 @@ public interface LiferaySelenium {
 
 	public void antCommand(String fileName, String target) throws Exception;
 
-	public void assertAccessible() throws Exception;
+	public void assertAccessible(List<String> ignorableImpacts)
+		throws Exception;
 
 	public void assertAlert(String pattern) throws Exception;
 
@@ -59,6 +54,14 @@ public interface LiferaySelenium {
 		throws Exception;
 
 	public void assertEditable(String locator) throws Exception;
+
+	public void assertElementAccessible(
+			String locator, List<String> ignorableImpacts)
+		throws Exception;
+
+	public void assertElementFocused(String locator) throws Exception;
+
+	public void assertElementNotFocused(String locator) throws Exception;
 
 	public void assertElementNotPresent(String locator) throws Exception;
 
@@ -134,9 +137,15 @@ public interface LiferaySelenium {
 	public void assertSelectedLabel(String selectLocator, String pattern)
 		throws Exception;
 
+	public void assertTable(String locator, String tableString)
+		throws Exception;
+
 	public void assertText(String locator, String pattern) throws Exception;
 
 	public void assertTextCaseInsensitive(String locator, String pattern)
+		throws Exception;
+
+	public void assertTextMatches(String locator, String regex)
 		throws Exception;
 
 	public void assertTextNotPresent(String pattern) throws Exception;
@@ -144,6 +153,9 @@ public interface LiferaySelenium {
 	public void assertTextPresent(String pattern) throws Exception;
 
 	public void assertValue(String locator, String pattern) throws Exception;
+
+	public void assertValueMatches(String locator, String regex)
+		throws Exception;
 
 	public void assertVisible(String locator) throws Exception;
 
@@ -180,7 +192,13 @@ public interface LiferaySelenium {
 		String locatorOfObjectToBeDragged,
 		String locatorOfDragDestinationObject);
 
+	public void dragAtAndDrop(
+		String locator, String coordString, String movementsString);
+
 	public void echo(String message);
+
+	public void executeCDPCommand(
+		String commandName, Map<String, Object> commandParameters);
 
 	public void executeJavaScript(
 		String javaScript, String argument1, String argument2);
@@ -193,11 +211,11 @@ public interface LiferaySelenium {
 
 	public String getConfirmation(String value);
 
-	public int getElementHeight(String locator);
+	public long getElementHeight(String locator);
 
 	public String getElementValue(String locator) throws Exception;
 
-	public int getElementWidth(String locator);
+	public long getElementWidth(String locator);
 
 	public String getEmailBody(String index) throws Exception;
 
@@ -208,6 +226,8 @@ public interface LiferaySelenium {
 	public String getFirstNumber(String locator);
 
 	public String getFirstNumberIncrement(String locator);
+
+	public String getHtmlNodeText(String locator) throws Exception;
 
 	public String getHtmlSource();
 
@@ -220,9 +240,9 @@ public interface LiferaySelenium {
 
 	public String getNumberIncrement(String value);
 
-	public String getOcularResultImageDirName();
+	public String getOcularBaselineImageDirName();
 
-	public String getOcularSnapImageDirName();
+	public String getOcularResultImageDirName();
 
 	public String getOutputDirName();
 
@@ -242,6 +262,8 @@ public interface LiferaySelenium {
 
 	public String getTitle();
 
+	public String getWebElementAttribute(String locator, String attributeName);
+
 	public void goBack();
 
 	public boolean isAlertPresent();
@@ -259,6 +281,8 @@ public interface LiferaySelenium {
 	public boolean isConsoleTextPresent(String text) throws Exception;
 
 	public boolean isEditable(String locator) throws Exception;
+
+	public boolean isElementFocused(String locator) throws Exception;
 
 	public boolean isElementNotPresent(String locator) throws Exception;
 
@@ -331,6 +355,8 @@ public interface LiferaySelenium {
 
 	public void javaScriptMouseDown(String locator);
 
+	public void javaScriptMouseOver(String locator);
+
 	public void javaScriptMouseUp(String locator);
 
 	public void keyDown(String locator, String keySequence);
@@ -340,6 +366,8 @@ public interface LiferaySelenium {
 	public void keyUp(String locator, String keySequence);
 
 	public void makeVisible(String locator);
+
+	public void maximizeWindow();
 
 	public void mouseDown(String locator);
 
@@ -359,7 +387,8 @@ public interface LiferaySelenium {
 
 	public void mouseUpAt(String locator, String coordString);
 
-	public void ocularAssertElementImage(String locator, String fileName)
+	public void ocularAssertElementImage(
+			String locator, String fileName, String match)
 		throws Exception;
 
 	public void open(String url) throws Exception;
@@ -376,6 +405,9 @@ public interface LiferaySelenium {
 
 	public void replyToEmail(String to, String body) throws Exception;
 
+	public Map<String, Object> returnCDPCommand(
+		String commandName, Map<String, Object> commandParameters);
+
 	public void rightClick(String locator);
 
 	public void robotType(String script);
@@ -385,11 +417,6 @@ public interface LiferaySelenium {
 	public void runScript(String script);
 
 	public void saveScreenshot(String fileName) throws Exception;
-
-	public void saveScreenshotAndSource() throws Exception;
-
-	public void saveScreenshotBeforeAction(boolean actionFailed)
-		throws Exception;
 
 	public void scrollBy(String coordString);
 
@@ -405,10 +432,6 @@ public interface LiferaySelenium {
 
 	public void selectWindow(String windowID);
 
-	public void sendActionDescriptionLogger(String description);
-
-	public boolean sendActionLogger(String command, String[] params);
-
 	public void sendEmail(String to, String subject, String body)
 		throws Exception;
 
@@ -417,19 +440,13 @@ public interface LiferaySelenium {
 	public void sendKeysAceEditor(String locator, String value)
 		throws Exception;
 
-	public void sendLogger(String id, String status);
-
-	public void sendMacroDescriptionLogger(String description);
-
-	public void sendTestCaseCommandLogger(String command);
-
-	public void sendTestCaseHeaderLogger(String command);
-
 	public void setDefaultTimeout();
 
 	public void setDefaultTimeoutImplicit();
 
 	public void setPrimaryTestSuiteName(String primaryTestSuiteName);
+
+	public void setTestName(String testName);
 
 	public void setTimeout(String timeout);
 
@@ -469,12 +486,6 @@ public interface LiferaySelenium {
 	public void sikuliUploadTempFile(String image, String value)
 		throws Exception;
 
-	public void startLogger();
-
-	public void stop();
-
-	public void stopLogger();
-
 	public void tripleClick(String locator);
 
 	public void type(String locator, String value) throws Exception;
@@ -482,8 +493,6 @@ public interface LiferaySelenium {
 	public void typeAceEditor(String locator, String value);
 
 	public void typeAlert(String value);
-
-	public void typeAlloyEditor(String locator, String value);
 
 	public void typeCKEditor(String locator, String value);
 
@@ -574,6 +583,9 @@ public interface LiferaySelenium {
 	public void waitForText(String locator, String value) throws Exception;
 
 	public void waitForTextCaseInsensitive(String locator, String pattern)
+		throws Exception;
+
+	public void waitForTextMatches(String locator, String regex)
 		throws Exception;
 
 	public void waitForTextNotPresent(String value) throws Exception;

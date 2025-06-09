@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {act, cleanup, fireEvent, render} from '@testing-library/react';
@@ -85,7 +79,7 @@ describe('The instance list item should', () => {
 	afterEach(cleanup);
 
 	it('Be rendered with "User 1", "Jan 01, 2019, 12:00 AM", and "Review, Update" columns', () => {
-		const {getByText} = render(
+		const {queryByText} = render(
 			<table>
 				<tbody>
 					<Table.Item {...instance} />
@@ -96,9 +90,9 @@ describe('The instance list item should', () => {
 			}
 		);
 
-		const creatorCell = getByText('User 1');
-		const dateCreatedCell = getByText('Jan 01, 2019, 12:00 AM');
-		const taskNamesCell = getByText('Review, Update');
+		const creatorCell = queryByText('User 1');
+		const dateCreatedCell = queryByText('Jan 01, 2019, 12:00 AM');
+		const taskNamesCell = queryByText('Review, Update');
 
 		expect(creatorCell).toBeTruthy();
 		expect(dateCreatedCell).toBeTruthy();
@@ -174,7 +168,7 @@ describe('The instance list item should', () => {
 			status: 'RUNNING',
 		};
 
-		const {baseElement, container, getByText} = render(
+		const {baseElement, container, queryByText} = render(
 			<table>
 				<tbody>
 					<Table.Item
@@ -201,7 +195,7 @@ describe('The instance list item should', () => {
 
 		expect(dueDateBadge).toBeTruthy();
 
-		const dateText = getByText('Apr 16');
+		const dateText = queryByText('Apr 16, 2021');
 
 		expect(dateText).toBeTruthy();
 
@@ -217,15 +211,15 @@ describe('The instance list item should', () => {
 
 		fireEvent.mouseEnter(popoverElement);
 
-		const slaNamePopoverText = getByText('SLA Test:');
+		const slaNamePopoverText = queryByText('SLA Test:');
 
 		expect(slaNamePopoverText).toBeTruthy();
 
-		const slaDateTimeRemaingTime = getByText(
-			'Apr 16, 12:44 PM (1d 03h 46min left)'
+		const slaDateTimeRemainingTime = queryByText(
+			'Apr 16, 2021, 12:44 PM (1d 3h 46min left)'
 		);
 
-		expect(slaDateTimeRemaingTime).toBeTruthy();
+		expect(slaDateTimeRemainingTime).toBeTruthy();
 
 		fireEvent.mouseLeave(popoverElement);
 		fireEvent.mouseOut(dateText);
@@ -244,7 +238,7 @@ describe('The instance list item should', () => {
 			status: 'RUNNING',
 		};
 
-		const {baseElement, container, getByText} = render(
+		const {baseElement, container, queryByText} = render(
 			<table>
 				<tbody>
 					<Table.Item
@@ -267,7 +261,7 @@ describe('The instance list item should', () => {
 
 		expect(dueDateBadge).toBeTruthy();
 
-		const dateText = getByText('Apr 16');
+		const dateText = queryByText('Apr 16, 2021');
 
 		expect(dateText).toBeTruthy();
 
@@ -281,15 +275,15 @@ describe('The instance list item should', () => {
 
 		expect(popoverElement).toBeTruthy();
 
-		const slaNamePopoverText = getByText('SLA Test:');
+		const slaNamePopoverText = queryByText('SLA Test:');
 
 		expect(slaNamePopoverText).toBeTruthy();
 
-		const slaDateTimeRemaingTime = getByText(
-			'Apr 16, 12:44 PM (1d 03h 46min overdue)'
+		const slaDateTimeRemainingTime = queryByText(
+			'Apr 16, 2021, 12:44 PM (1d 3h 46min overdue)'
 		);
 
-		expect(slaDateTimeRemaingTime).toBeTruthy();
+		expect(slaDateTimeRemainingTime).toBeTruthy();
 
 		fireEvent.mouseOut(dateText);
 
@@ -304,7 +298,7 @@ describe('The instance list item should', () => {
 			status: 'RUNNING',
 		};
 
-		const {getByText} = render(
+		const {queryByText} = render(
 			<table>
 				<tbody>
 					<Table.Item
@@ -319,12 +313,12 @@ describe('The instance list item should', () => {
 			}
 		);
 
-		const dateText = getByText('Apr 16, 2020');
+		const dateText = queryByText('Apr 16, 2020');
 
 		expect(dateText).toBeTruthy();
 	});
 
-	it('Be rendered with remaining time when the SLA is less than a minute.', () => {
+	it('Be rendered with remaining time when the SLA is less than a minute.', async () => {
 		const slaResult = {
 			dateOverdue: '2021-04-16T12:44:25Z',
 			name: 'SLA Test',
@@ -333,7 +327,7 @@ describe('The instance list item should', () => {
 			status: 'RUNNING',
 		};
 
-		const {baseElement, getByText} = render(
+		const {baseElement, queryByText} = render(
 			<table>
 				<tbody>
 					<Table.Item
@@ -348,7 +342,7 @@ describe('The instance list item should', () => {
 			}
 		);
 
-		const dateText = getByText('Apr 16');
+		const dateText = queryByText('Apr 16, 2021');
 
 		expect(dateText).toBeTruthy();
 
@@ -362,11 +356,11 @@ describe('The instance list item should', () => {
 
 		expect(popoverElement).toBeTruthy();
 
-		const slaDateTimeRemaingTime = getByText(
-			'Apr 16, 12:44 PM (10sec left)'
+		const slaDateTimeRemainingTime = queryByText(
+			'Apr 16, 2021, 12:44 PM (10sec left)'
 		);
 
-		expect(slaDateTimeRemaingTime).toBeTruthy();
+		expect(slaDateTimeRemainingTime).toBeTruthy();
 	});
 
 	it('Be rendered with due date when the slaResults is empty', () => {

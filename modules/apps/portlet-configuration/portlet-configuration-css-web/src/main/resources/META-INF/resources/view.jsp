@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -24,6 +15,8 @@
 
 		<liferay-frontend:edit-form
 			action="<%= updateLookAndFeelURL %>"
+			cssClass="pt-0"
+			fluid="<%= true %>"
 			method="post"
 			name="fm"
 		>
@@ -38,31 +31,42 @@
 			</liferay-frontend:edit-form-body>
 
 			<liferay-frontend:edit-form-footer>
-				<aui:button type="submit" />
-
-				<aui:button type="cancel" />
+				<liferay-frontend:edit-form-buttons />
 			</liferay-frontend:edit-form-footer>
 		</liferay-frontend:edit-form>
 
-		<aui:script require="frontend-js-web/liferay/delegate/delegate.es as delegateModule">
-			var delegate = delegateModule.default;
-
-			delegate(
+		<aui:script sandbox="<%= true %>">
+			Liferay.Util.delegate(
 				document.getElementById('<portlet:namespace />fm'),
 				'change',
 				'input[type=checkbox]',
 				(event) => {
 					var toggle = event.delegateTarget;
 
-					var disableOnChecked = toggle.dataset.disableonchecked;
+					var disableOnChecked =
+						toggle.dataset.disableonchecked === undefined ||
+						toggle.dataset.disableonchecked === 'true';
 					var inputs = document.querySelectorAll(toggle.dataset.inputselector);
 
 					for (var i = 0; i < inputs.length; i++) {
 						var input = inputs[i];
 
 						input.disabled = disableOnChecked
-							? !toggle.checked
-							: toggle.checked;
+							? toggle.checked
+							: !toggle.checked;
+
+						if (!input.disabled) {
+							input.classList.remove('disabled');
+
+							if (input.labels && input.labels.length > 0) {
+								input.labels[0].classList.remove('disabled');
+							}
+						}
+						else {
+							if (input.labels && input.labels.length > 0) {
+								input.labels[0].classList.add('disabled');
+							}
+						}
 					}
 				}
 			);

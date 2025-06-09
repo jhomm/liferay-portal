@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service.impl;
@@ -18,6 +9,7 @@ import com.liferay.dynamic.data.mapping.exception.NoSuchStructureLinkException;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMStructureLink;
 import com.liferay.dynamic.data.mapping.service.base.DDMStructureLinkLocalServiceBaseImpl;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
@@ -28,7 +20,6 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -169,16 +160,9 @@ public class DDMStructureLinkLocalServiceImpl
 			long classNameId, long classPK)
 		throws PortalException {
 
-		List<DDMStructure> structures = new ArrayList<>();
-
-		List<DDMStructureLink> structureLinks = getStructureLinks(
-			classNameId, classPK);
-
-		for (DDMStructureLink structureLink : structureLinks) {
-			structures.add(structureLink.getStructure());
-		}
-
-		return structures;
+		return TransformUtil.transform(
+			getStructureLinks(classNameId, classPK),
+			structureLink -> structureLink.getStructure());
 	}
 
 	@Override
@@ -186,16 +170,9 @@ public class DDMStructureLinkLocalServiceImpl
 			long classNameId, long classPK, int start, int end)
 		throws PortalException {
 
-		List<DDMStructure> structures = new ArrayList<>();
-
-		List<DDMStructureLink> structureLinks = getStructureLinks(
-			classNameId, classPK, start, end);
-
-		for (DDMStructureLink structureLink : structureLinks) {
-			structures.add(structureLink.getStructure());
-		}
-
-		return structures;
+		return TransformUtil.transform(
+			getStructureLinks(classNameId, classPK, start, end),
+			structureLink -> structureLink.getStructure());
 	}
 
 	@Override
@@ -223,17 +200,10 @@ public class DDMStructureLinkLocalServiceImpl
 			OrderByComparator<DDMStructureLink> orderByComparator)
 		throws PortalException {
 
-		List<DDMStructure> structures = new ArrayList<>();
-
-		List<DDMStructureLink> structureLinks =
+		return TransformUtil.transform(
 			ddmStructureLinkFinder.findByKeywords(
-				classNameId, classPK, keywords, start, end, orderByComparator);
-
-		for (DDMStructureLink structureLink : structureLinks) {
-			structures.add(structureLink.getStructure());
-		}
-
-		return structures;
+				classNameId, classPK, keywords, start, end, orderByComparator),
+			structureLink -> structureLink.getStructure());
 	}
 
 	@Override

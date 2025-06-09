@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {cleanup, fireEvent, render} from '@testing-library/react';
@@ -23,17 +14,19 @@ import CommentForm from '../../../../../../src/main/resources/META-INF/resources
 
 jest.mock(
 	'../../../../../../src/main/resources/META-INF/resources/page_editor/common/components/Editor',
-	() => ({autoFocus, id, initialValue, onChange, placeholder}) => {
-		return (
-			<textarea
-				autoFocus={autoFocus}
-				defaultValue={initialValue}
-				id={id}
-				onChange={onChange}
-				placeholder={placeholder}
-			></textarea>
-		);
-	}
+	() =>
+		({autoFocus, id, initialValue, label, onChange, placeholder}) => {
+			return (
+				<textarea
+					aria-label={label}
+					autoFocus={autoFocus}
+					defaultValue={initialValue}
+					id={id}
+					onChange={onChange}
+					placeholder={placeholder}
+				></textarea>
+			);
+		}
 );
 
 const renderForm = (props) =>
@@ -172,14 +165,14 @@ describe('CommentForm', () => {
 		expect(onSubmit).toHaveBeenCalled();
 	});
 
-	it('calls onTextareaChange callback when textare is changed', () => {
+	it('calls onTextareaChange callback when textare is changed', async () => {
 		const onChange = jest.fn();
 
 		const {getByPlaceholderText} = renderForm({
 			onTextareaChange: onChange,
 		});
 
-		userEvent.type(
+		await userEvent.type(
 			getByPlaceholderText('type-your-comment-here'),
 			'This is my comment'
 		);

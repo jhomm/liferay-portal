@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,24 +11,21 @@
 boolean advancedSearch = displayTerms.isAdvancedSearch();
 %>
 
-<div class="taglib-search-toggle">
-	<div class="form-search">
-		<div class="advanced-search input-group" id="<%= id %>simple">
-			<div class="input-group-item input-group-prepend">
-				<input class="form-control search-query" <%= advancedSearch ? "disabled" : StringPool.BLANK %> id="<%= id + DisplayTerms.KEYWORDS %>" name="<portlet:namespace /><%= DisplayTerms.KEYWORDS %>" placeholder="<liferay-ui:message key="keywords" />" title="keywords" type="text" value="<%= HtmlUtil.escapeAttribute(displayTerms.getKeywords()) %>" />
-			</div>
+<div class="input-group lfr-search-toggle">
+	<div class="input-group-item input-group-prepend" id="<%= id %>simple">
+		<input class="form-control search-query" <%= advancedSearch ? "disabled" : StringPool.BLANK %> id="<%= id + DisplayTerms.KEYWORDS %>" name="<portlet:namespace /><%= DisplayTerms.KEYWORDS %>" placeholder="<liferay-ui:message key="search" />..." title="search" type="text" value="<%= HtmlUtil.escapeAttribute(displayTerms.getKeywords()) %>" />
+	</div>
 
-			<div class="input-group-append input-group-item input-group-item-shrink">
-				<button class="btn btn-secondary" type="submit">
-					<%= LanguageUtil.get(resourceBundle, buttonLabel, "search") %>
-				</button>
-			</div>
-		</div>
-
-		<a class="toggle-advanced" href="javascript:;" id="<%= id %>toggleAdvanced">
+	<div class="input-group-append input-group-item input-group-item-shrink">
+		<button class="btn btn-monospaced btn-secondary" type="submit">
 			<aui:icon image="search" markupView="lexicon" />
+		</button>
+	</div>
+
+	<div class="input-group-append input-group-item input-group-item-shrink">
+		<button class="btn btn-monospaced btn-secondary toggle-advanced" id="<%= id %>toggleAdvanced" type="button">
 			<aui:icon image="caret-bottom" markupView="lexicon" />
-		</a>
+		</button>
 	</div>
 </div>
 

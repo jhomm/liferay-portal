@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import React, {
@@ -27,6 +18,8 @@ import {AddPanelContext, updateUsedWidget} from './AddPanel';
 import addPortlet from './addPortlet';
 import {LAYOUT_DATA_ITEM_TYPES} from './constants/layoutDataItemTypes';
 import {POSITIONS} from './constants/positions';
+
+const DROP_ACTIVE_VALID_CLASS = 'yui3-dd-drop-active-valid';
 
 const DROP_CLASS = 'yui3-dd-drop';
 
@@ -48,7 +41,7 @@ const initialDragDrop = {
 const DragAndDropContext = React.createContext(initialDragDrop);
 export const DragAndDropProvider = DragAndDropContext.Provider;
 
-export const useDragItem = (sourceItem) => {
+export function useDragItem(sourceItem) {
 	const getSourceItem = useCallback(() => sourceItem, [sourceItem]);
 	const sourceRef = useRef(null);
 
@@ -77,9 +70,9 @@ export const useDragItem = (sourceItem) => {
 		isDraggingSource,
 		sourceRef,
 	};
-};
+}
 
-export const useDragSymbol = ({data, icon, label, portletId, type}) => {
+export function useDragSymbol({data, icon, label, portletId, type}) {
 	const sourceItem = useMemo(
 		() => ({
 			data,
@@ -103,12 +96,11 @@ export const useDragSymbol = ({data, icon, label, portletId, type}) => {
 		isDraggingSource,
 		sourceRef: symbolRef,
 	};
-};
+}
 
-export const useDropClear = (targetItem) => {
-	const {dropTargetColumn, setDropTargetColumn} = useContext(
-		DragAndDropContext
-	);
+export function useDropClear(targetItem) {
+	const {dropTargetColumn, setDropTargetColumn} =
+		useContext(DragAndDropContext);
 
 	const [, setDropClearRef] = useDrop({
 		accept: Object.values(LAYOUT_DATA_ITEM_TYPES),
@@ -119,6 +111,7 @@ export const useDropClear = (targetItem) => {
 
 			if (dropTargetColumn) {
 				dropTargetColumn.classList.remove(DROP_OVER_CLASS);
+				dropTargetColumn.classList.remove(DROP_ACTIVE_VALID_CLASS);
 			}
 
 			setDropTargetColumn(null);
@@ -126,7 +119,7 @@ export const useDropClear = (targetItem) => {
 	});
 
 	setDropClearRef(targetItem);
-};
+}
 
 const getHoverPosition = (monitor, targetItem) => {
 	const clientOffset = monitor.getClientOffset();
@@ -150,11 +143,8 @@ const getDropIndicatorPosition = ({
 	targetItem,
 	windowScrollPosition,
 }) => {
-	const {
-		hoverClientY,
-		hoverTopLimit,
-		targetItemBoundingRect,
-	} = getHoverPosition(monitor, targetItem);
+	const {hoverClientY, hoverTopLimit, targetItemBoundingRect} =
+		getHoverPosition(monitor, targetItem);
 
 	const positionY =
 		hoverClientY < hoverTopLimit
@@ -168,7 +158,7 @@ const getDropIndicatorPosition = ({
 	};
 };
 
-export const useDropTarget = (targetItem) => {
+export function useDropTarget(targetItem) {
 	const {
 		dropTargetColumn,
 		dropTargetItem,
@@ -198,8 +188,11 @@ export const useDropTarget = (targetItem) => {
 		item.classList.contains(DROP_ZONE_CLASS) &&
 		!item.classList.contains(DROP_ZONE_DISABLED_CLASS);
 
-	const [, setDropTargetRef] = useDrop({
+	const [{validDrop}, setDropTargetRef] = useDrop({
 		accept: Object.values(LAYOUT_DATA_ITEM_TYPES),
+		collect: (monitor) => ({
+			validDrop: monitor.canDrop(),
+		}),
 		drop(item, monitor) {
 			setDropTargetColumn(null);
 
@@ -213,6 +206,7 @@ export const useDropTarget = (targetItem) => {
 
 			if (!item.disabled) {
 				dropTargetColumn.classList.remove(DROP_OVER_CLASS);
+				dropTargetColumn.classList.remove(DROP_ACTIVE_VALID_CLASS);
 
 				addPortlet({item, plid, targetItem, targetPosition});
 
@@ -243,11 +237,15 @@ export const useDropTarget = (targetItem) => {
 			if (dropTargetColumn !== parentTargetItem) {
 				if (dropTargetColumn) {
 					dropTargetColumn.classList.remove(DROP_OVER_CLASS);
+					dropTargetColumn.classList.remove(DROP_ACTIVE_VALID_CLASS);
 				}
 				setDropTargetColumn(parentTargetItem);
 
 				if (targetItemIsDropzone) {
 					parentTargetItem.classList.add(DROP_OVER_CLASS);
+				}
+				else if (validDrop) {
+					parentTargetItem.classList.add(DROP_ACTIVE_VALID_CLASS);
 				}
 			}
 
@@ -275,4 +273,4 @@ export const useDropTarget = (targetItem) => {
 	});
 
 	setDropTargetRef(targetItem);
-};
+}

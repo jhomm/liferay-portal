@@ -1,42 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.suggestions.portlet;
 
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.util.Html;
-import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.search.web.internal.portlet.shared.task.PortletSharedRequestHelper;
 import com.liferay.portal.search.web.internal.suggestions.constants.SuggestionsPortletKeys;
-import com.liferay.portal.search.web.internal.suggestions.display.context.SuggestionsPortletDisplayBuilder;
 import com.liferay.portal.search.web.internal.suggestions.display.context.SuggestionsPortletDisplayContext;
+import com.liferay.portal.search.web.internal.suggestions.display.context.builder.SuggestionsPortletDisplayContextBuilder;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
 import com.liferay.portal.search.web.search.request.SearchSettings;
 
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.io.IOException;
-
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +29,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author André de Oliveira
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-suggestions",
@@ -59,13 +42,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.restore-current-view=false",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Suggestions",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/suggestions/view.jsp",
-		"javax.portlet.name=" + SuggestionsPortletKeys.SUGGESTIONS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user"
+		"jakarta.portlet.display-name=Suggestions",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/suggestions/view.jsp",
+		"jakarta.portlet.name=" + SuggestionsPortletKeys.SUGGESTIONS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=guest,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -78,13 +62,13 @@ public class SuggestionsPortlet extends MVCPortlet {
 
 		SuggestionsPortletPreferences suggestionsPortletPreferences =
 			new SuggestionsPortletPreferencesImpl(
-				Optional.ofNullable(renderRequest.getPreferences()));
+				renderRequest.getPreferences());
 
 		PortletSharedSearchResponse portletSharedSearchResponse =
 			portletSharedSearchRequest.search(renderRequest);
 
 		SuggestionsPortletDisplayContext suggestionsPortletDisplayContext =
-			buildDisplayContext(
+			_buildDisplayContext(
 				suggestionsPortletPreferences, portletSharedSearchResponse,
 				renderRequest);
 
@@ -101,61 +85,59 @@ public class SuggestionsPortlet extends MVCPortlet {
 		super.render(renderRequest, renderResponse);
 	}
 
-	protected static <T> void copy(Supplier<Optional<T>> from, Consumer<T> to) {
-		Optional<T> optional = from.get();
-
-		optional.ifPresent(to);
-	}
-
-	protected SuggestionsPortletDisplayContext buildDisplayContext(
-		SuggestionsPortletPreferences suggestionsPortletPreferences,
-		PortletSharedSearchResponse portletSharedSearchResponse,
-		RenderRequest renderRequest) {
-
-		SuggestionsPortletDisplayBuilder suggestionsPortletDisplayBuilder =
-			new SuggestionsPortletDisplayBuilder(html, http);
-
-		copy(
-			portletSharedSearchResponse::getKeywordsOptional,
-			suggestionsPortletDisplayBuilder::setKeywords);
-
-		SearchSettings searchSettings =
-			portletSharedSearchResponse.getSearchSettings();
-
-		copy(
-			searchSettings::getKeywordsParameterName,
-			suggestionsPortletDisplayBuilder::setKeywordsParameterName);
-
-		suggestionsPortletDisplayBuilder.setRelatedQueriesSuggestions(
-			portletSharedSearchResponse.getRelatedQueriesSuggestions());
-		suggestionsPortletDisplayBuilder.setRelatedQueriesSuggestionsEnabled(
-			suggestionsPortletPreferences.isRelatedQueriesSuggestionsEnabled());
-		suggestionsPortletDisplayBuilder.setSearchURL(
-			portletSharedRequestHelper.getCompleteURL(renderRequest));
-
-		copy(
-			portletSharedSearchResponse::getSpellCheckSuggestionOptional,
-			suggestionsPortletDisplayBuilder::setSpellCheckSuggestion);
-
-		suggestionsPortletDisplayBuilder.setSpellCheckSuggestionEnabled(
-			suggestionsPortletPreferences.isSpellCheckSuggestionEnabled());
-
-		return suggestionsPortletDisplayBuilder.build();
-	}
-
-	@Reference
-	protected Html html;
-
-	@Reference
-	protected Http http;
-
 	@Reference
 	protected Portal portal;
 
 	@Reference
-	protected PortletSharedRequestHelper portletSharedRequestHelper;
-
-	@Reference
 	protected PortletSharedSearchRequest portletSharedSearchRequest;
+
+	private SuggestionsPortletDisplayContext _buildDisplayContext(
+		SuggestionsPortletPreferences suggestionsPortletPreferences,
+		PortletSharedSearchResponse portletSharedSearchResponse,
+		RenderRequest renderRequest) {
+
+		SuggestionsPortletDisplayContextBuilder
+			suggestionsPortletDisplayContextBuilder =
+				new SuggestionsPortletDisplayContextBuilder();
+
+		String keywords = portletSharedSearchResponse.getKeywords();
+
+		if (keywords != null) {
+			suggestionsPortletDisplayContextBuilder.setKeywords(keywords);
+		}
+
+		SearchSettings searchSettings =
+			portletSharedSearchResponse.getSearchSettings();
+
+		String keywordsParameterName =
+			searchSettings.getKeywordsParameterName();
+
+		if (keywordsParameterName != null) {
+			suggestionsPortletDisplayContextBuilder.setKeywordsParameterName(
+				keywordsParameterName);
+		}
+
+		suggestionsPortletDisplayContextBuilder.setRelatedQueriesSuggestions(
+			portletSharedSearchResponse.getRelatedQueriesSuggestions());
+		suggestionsPortletDisplayContextBuilder.
+			setRelatedQueriesSuggestionsEnabled(
+				suggestionsPortletPreferences.
+					isRelatedQueriesSuggestionsEnabled());
+		suggestionsPortletDisplayContextBuilder.setSearchURL(
+			portal.getCurrentURL(renderRequest));
+
+		String spellCheckSuggestion =
+			portletSharedSearchResponse.getSpellCheckSuggestion();
+
+		if (spellCheckSuggestion != null) {
+			suggestionsPortletDisplayContextBuilder.setSpellCheckSuggestion(
+				spellCheckSuggestion);
+		}
+
+		suggestionsPortletDisplayContextBuilder.setSpellCheckSuggestionEnabled(
+			suggestionsPortletPreferences.isSpellCheckSuggestionEnabled());
+
+		return suggestionsPortletDisplayContextBuilder.build();
+	}
 
 }

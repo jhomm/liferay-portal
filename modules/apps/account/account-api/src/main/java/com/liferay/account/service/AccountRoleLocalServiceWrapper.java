@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link AccountRoleLocalService}.
@@ -26,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class AccountRoleLocalServiceWrapper
 	implements AccountRoleLocalService,
 			   ServiceWrapper<AccountRoleLocalService> {
+
+	public AccountRoleLocalServiceWrapper() {
+		this(null);
+	}
 
 	public AccountRoleLocalServiceWrapper(
 		AccountRoleLocalService accountRoleLocalService) {
@@ -52,13 +48,14 @@ public class AccountRoleLocalServiceWrapper
 
 	@Override
 	public com.liferay.account.model.AccountRole addAccountRole(
-			long userId, long accountEntryId, String name,
-			java.util.Map<java.util.Locale, String> titleMap,
+			String externalReferenceCode, long userId, long accountEntryId,
+			String name, java.util.Map<java.util.Locale, String> titleMap,
 			java.util.Map<java.util.Locale, String> descriptionMap)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _accountRoleLocalService.addAccountRole(
-			userId, accountEntryId, name, titleMap, descriptionMap);
+			externalReferenceCode, userId, accountEntryId, name, titleMap,
+			descriptionMap);
 	}
 
 	@Override
@@ -77,13 +74,6 @@ public class AccountRoleLocalServiceWrapper
 
 		_accountRoleLocalService.associateUser(
 			accountEntryId, accountRoleIds, userId);
-	}
-
-	@Override
-	public void checkCompanyAccountRoles(long companyId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		_accountRoleLocalService.checkCompanyAccountRoles(companyId);
 	}
 
 	/**
@@ -149,7 +139,9 @@ public class AccountRoleLocalServiceWrapper
 	}
 
 	@Override
-	public void deleteAccountRolesByCompanyId(long companyId) {
+	public void deleteAccountRolesByCompanyId(long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
 		_accountRoleLocalService.deleteAccountRolesByCompanyId(companyId);
 	}
 
@@ -274,6 +266,15 @@ public class AccountRoleLocalServiceWrapper
 	}
 
 	@Override
+	public com.liferay.account.model.AccountRole
+		fetchAccountRoleByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return _accountRoleLocalService.fetchAccountRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	@Override
 	public com.liferay.account.model.AccountRole fetchAccountRoleByRoleId(
 		long roleId) {
 
@@ -293,6 +294,16 @@ public class AccountRoleLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _accountRoleLocalService.getAccountRole(accountRoleId);
+	}
+
+	@Override
+	public com.liferay.account.model.AccountRole
+			getAccountRoleByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountRoleLocalService.getAccountRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -331,6 +342,15 @@ public class AccountRoleLocalServiceWrapper
 
 	@Override
 	public java.util.List<com.liferay.account.model.AccountRole>
+		getAccountRolesByAccountEntryIds(
+			long companyId, long[] accountEntryIds) {
+
+		return _accountRoleLocalService.getAccountRolesByAccountEntryIds(
+			companyId, accountEntryIds);
+	}
+
+	@Override
+	public java.util.List<com.liferay.account.model.AccountRole>
 		getAccountRolesByAccountEntryIds(long[] accountEntryIds) {
 
 		return _accountRoleLocalService.getAccountRolesByAccountEntryIds(
@@ -359,6 +379,16 @@ public class AccountRoleLocalServiceWrapper
 		getIndexableActionableDynamicQuery() {
 
 		return _accountRoleLocalService.getIndexableActionableDynamicQuery();
+	}
+
+	@Override
+	public com.liferay.account.model.AccountRole getOrAddIncompleteAccountRole(
+			String externalReferenceCode, long companyId, long userId,
+			long accountEntryId, String name)
+		throws Exception {
+
+		return _accountRoleLocalService.getOrAddIncompleteAccountRole(
+			externalReferenceCode, companyId, userId, accountEntryId, name);
 	}
 
 	/**
@@ -405,6 +435,15 @@ public class AccountRoleLocalServiceWrapper
 	}
 
 	@Override
+	public void setUserAccountRoles(
+			long accountEntryId, long[] accountRoleIds, long userId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_accountRoleLocalService.setUserAccountRoles(
+			accountEntryId, accountRoleIds, userId);
+	}
+
+	@Override
 	public void unassociateUser(
 			long accountEntryId, long accountRoleId, long userId)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -428,6 +467,11 @@ public class AccountRoleLocalServiceWrapper
 		com.liferay.account.model.AccountRole accountRole) {
 
 		return _accountRoleLocalService.updateAccountRole(accountRole);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _accountRoleLocalService.getBasePersistence();
 	}
 
 	@Override

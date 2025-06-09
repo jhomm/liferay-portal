@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.frontend.internal.address;
@@ -19,14 +10,13 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import com.liferay.commerce.context.CommerceContextFactory;
 import com.liferay.commerce.country.CommerceCountryManager;
 import com.liferay.commerce.frontend.internal.address.model.CountryModel;
 import com.liferay.commerce.frontend.internal.address.model.RegionModel;
 import com.liferay.commerce.model.CommerceAddress;
 import com.liferay.commerce.service.CommerceAddressService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Country;
@@ -35,17 +25,17 @@ import com.liferay.portal.kernel.service.CountryService;
 import com.liferay.portal.kernel.service.RegionService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -53,7 +43,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(enabled = false, service = AddressResource.class)
+@Component(service = AddressResource.class)
 public class AddressResource {
 
 	@GET
@@ -68,7 +58,7 @@ public class AddressResource {
 
 			if (commerceAddress != null) {
 				String json = _OBJECT_MAPPER.writeValueAsString(
-					JSONFactoryUtil.looseSerialize(commerceAddress));
+					_jsonFactory.looseSerialize(commerceAddress));
 
 				return Response.ok(
 					json, MediaType.APPLICATION_JSON
@@ -76,7 +66,7 @@ public class AddressResource {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return Response.status(
@@ -108,7 +98,7 @@ public class AddressResource {
 			).build();
 		}
 		catch (JsonProcessingException jsonProcessingException) {
-			_log.error(jsonProcessingException, jsonProcessingException);
+			_log.error(jsonProcessingException);
 		}
 
 		return Response.status(
@@ -174,7 +164,7 @@ public class AddressResource {
 			).build();
 		}
 		catch (JsonProcessingException jsonProcessingException) {
-			_log.error(jsonProcessingException, jsonProcessingException);
+			_log.error(jsonProcessingException);
 		}
 
 		return Response.status(
@@ -196,13 +186,13 @@ public class AddressResource {
 	private CommerceAddressService _commerceAddressService;
 
 	@Reference
-	private CommerceContextFactory _commerceContextFactory;
-
-	@Reference
 	private CommerceCountryManager _commerceCountryManager;
 
 	@Reference
 	private CountryService _countryService;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private RegionService _regionService;

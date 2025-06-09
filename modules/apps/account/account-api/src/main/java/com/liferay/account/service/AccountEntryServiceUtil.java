@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service;
 
 import com.liferay.account.model.AccountEntry;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -52,15 +44,31 @@ public class AccountEntryServiceUtil {
 	}
 
 	public static AccountEntry addAccountEntry(
-			long userId, long parentAccountEntryId, String name,
-			String description, String[] domains, String email,
-			byte[] logoBytes, String taxIdNumber, String type, int status,
+			String externalReferenceCode, long userId,
+			long parentAccountEntryId, String name, String description,
+			String[] domains, String email, byte[] logoBytes,
+			String taxIdNumber, String type, int status,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addAccountEntry(
-			userId, parentAccountEntryId, name, description, domains, email,
-			logoBytes, taxIdNumber, type, status, serviceContext);
+			externalReferenceCode, userId, parentAccountEntryId, name,
+			description, domains, email, logoBytes, taxIdNumber, type, status,
+			serviceContext);
+	}
+
+	public static AccountEntry addOrUpdateAccountEntry(
+			String externalReferenceCode, long userId,
+			long parentAccountEntryId, String name, String description,
+			String[] domains, String emailAddress, byte[] logoBytes,
+			String taxIdNumber, String type, int status,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addOrUpdateAccountEntry(
+			externalReferenceCode, userId, parentAccountEntryId, name,
+			description, domains, emailAddress, logoBytes, taxIdNumber, type,
+			status, serviceContext);
 	}
 
 	public static void deactivateAccountEntries(long[] accountEntryIds)
@@ -93,6 +101,14 @@ public class AccountEntryServiceUtil {
 		return getService().fetchAccountEntry(accountEntryId);
 	}
 
+	public static AccountEntry fetchAccountEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().fetchAccountEntryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static List<AccountEntry> getAccountEntries(
 			long companyId, int status, int start, int end,
 			OrderByComparator<AccountEntry> orderByComparator)
@@ -106,6 +122,22 @@ public class AccountEntryServiceUtil {
 		throws PortalException {
 
 		return getService().getAccountEntry(accountEntryId);
+	}
+
+	public static AccountEntry getAccountEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getAccountEntryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	public static AccountEntry getOrAddIncompleteAccountEntry(
+			String externalReferenceCode, String name, String type)
+		throws Exception {
+
+		return getService().getOrAddIncompleteAccountEntry(
+			externalReferenceCode, name, type);
 	}
 
 	/**
@@ -134,17 +166,40 @@ public class AccountEntryServiceUtil {
 	}
 
 	public static AccountEntry updateAccountEntry(
-			long accountEntryId, long parentAccountEntryId, String name,
-			String description, boolean deleteLogo, String[] domains,
-			String emailAddress, byte[] logoBytes, String taxIdNumber,
-			int status,
+			String externalReferenceCode, long accountEntryId,
+			long parentAccountEntryId, String name, String description,
+			boolean deleteLogo, String[] domains, String emailAddress,
+			byte[] logoBytes, String taxIdNumber, int status,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateAccountEntry(
-			accountEntryId, parentAccountEntryId, name, description, deleteLogo,
-			domains, emailAddress, logoBytes, taxIdNumber, status,
-			serviceContext);
+			externalReferenceCode, accountEntryId, parentAccountEntryId, name,
+			description, deleteLogo, domains, emailAddress, logoBytes,
+			taxIdNumber, status, serviceContext);
+	}
+
+	public static AccountEntry updateDefaultBillingAddressId(
+			long accountEntryId, long addressId)
+		throws PortalException {
+
+		return getService().updateDefaultBillingAddressId(
+			accountEntryId, addressId);
+	}
+
+	public static AccountEntry updateDefaultShippingAddressId(
+			long accountEntryId, long addressId)
+		throws PortalException {
+
+		return getService().updateDefaultShippingAddressId(
+			accountEntryId, addressId);
+	}
+
+	public static AccountEntry updateDomains(
+			long accountEntryId, String[] domains)
+		throws PortalException {
+
+		return getService().updateDomains(accountEntryId, domains);
 	}
 
 	public static AccountEntry updateExternalReferenceCode(
@@ -155,10 +210,20 @@ public class AccountEntryServiceUtil {
 			accountEntryId, externalReferenceCode);
 	}
 
-	public static AccountEntryService getService() {
-		return _service;
+	public static AccountEntry updateRestrictMembership(
+			long accountEntryId, boolean restrictMembership)
+		throws PortalException {
+
+		return getService().updateRestrictMembership(
+			accountEntryId, restrictMembership);
 	}
 
-	private static volatile AccountEntryService _service;
+	public static AccountEntryService getService() {
+		return _serviceSnapshot.get();
+	}
+
+	private static final Snapshot<AccountEntryService> _serviceSnapshot =
+		new Snapshot<>(
+			AccountEntryServiceUtil.class, AccountEntryService.class);
 
 }

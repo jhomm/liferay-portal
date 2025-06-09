@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -22,20 +13,10 @@ List<Group> selectedGroups = editAssetListDisplayContext.getSelectedGroups();
 
 <aui:input name="TypeSettingsProperties--groupIds--" type="hidden" value="<%= StringUtil.merge(editAssetListDisplayContext.getSelectedGroupIds()) %>" />
 
-<liferay-util:buffer
-	var="removeLinkIcon"
->
-	<liferay-ui:icon
-		icon="times-circle"
-		markupView="lexicon"
-		message="remove"
-	/>
-</liferay-util:buffer>
-
 <liferay-ui:search-container
 	compactEmptyResultsMessage="<%= true %>"
 	emptyResultsMessage="none"
-	headerNames="name,type,null"
+	headerNames="name,type,options"
 	iteratorURL="<%= editAssetListDisplayContext.getPortletURL() %>"
 	total="<%= selectedGroups.size() %>"
 >
@@ -60,8 +41,18 @@ List<Group> selectedGroups = editAssetListDisplayContext.getSelectedGroups();
 		/>
 
 		<c:if test="<%= !editAssetListDisplayContext.isLiveGroup() %>">
-			<liferay-ui:search-container-column-text>
-				<a class="modify-link" data-rowId="<%= group.getGroupId() %>" href="javascript:;"><%= removeLinkIcon %></a>
+			<liferay-ui:search-container-column-text
+				name="options"
+			>
+				<clay:button
+					aria-label='<%= LanguageUtil.get(request, "remove") %>'
+					cssClass="modify-link"
+					data-rowId="<%= group.getGroupId() %>"
+					displayType="unstyled"
+					icon="times-circle"
+					monospaced="<%= true %>"
+					small="<%= true %>"
+				/>
 			</liferay-ui:search-container-column-text>
 		</c:if>
 	</liferay-ui:search-container-row>
@@ -73,125 +64,48 @@ List<Group> selectedGroups = editAssetListDisplayContext.getSelectedGroups();
 </liferay-ui:search-container>
 
 <c:if test="<%= !editAssetListDisplayContext.isLiveGroup() %>">
-	<liferay-ui:icon-menu
-		cssClass="select-existing-selector"
-		direction="right"
-		message="select"
-		showArrow="<%= false %>"
-		showWhenSingleIcon="<%= true %>"
-	>
 
-		<%
-		for (Group group : editAssetListDisplayContext.getAvailableGroups()) {
-			if (selectedGroups.contains(group)) {
-				continue;
-			}
+	<%
+	ScopeActionDropdownItemsProvider scopeActionDropdownItemsProvider = new ScopeActionDropdownItemsProvider(editAssetListDisplayContext, liferayPortletRequest);
+	%>
 
-			String taglibOnClick = liferayPortletResponse.getNamespace() + "addRow('" + group.getGroupId() + "', '" + HtmlUtil.escapeJS(HtmlUtil.escape(group.getDescriptiveName(themeDisplay.getLocale()))) + "', '" + LanguageUtil.get(request, group.getScopeLabel(themeDisplay)) + "');";
-		%>
-
-			<liferay-ui:icon
-				message="<%= group.getScopeDescriptiveName(themeDisplay) %>"
-				onClick="<%= taglibOnClick %>"
-				url="javascript:;"
-			/>
-
-		<%
-		}
-		%>
-
-		<liferay-ui:icon
-			cssClass="highlited scope-selector"
-			id="selectManageableGroup"
-			message='<%= LanguageUtil.get(request, "other-site-or-asset-library") + StringPool.TRIPLE_PERIOD %>'
-			method="get"
-			url="javascript:;"
-		/>
-	</liferay-ui:icon-menu>
+	<clay:dropdown-menu
+		aria-label='<%= LanguageUtil.get(request, "select-site") %>'
+		cssClass="btn btn-secondary"
+		dropdownItems="<%= scopeActionDropdownItemsProvider.getActionDropdownItems() %>"
+		label='<%= LanguageUtil.get(request, "select") %>'
+		propsTransformer="{ScopeDefaultPropsTransformer} from asset-list-web"
+	/>
 </c:if>
 
 <aui:script use="liferay-search-container">
-	var searchContainer = Liferay.SearchContainer.get(
+	const searchContainer = Liferay.SearchContainer.get(
 		'<portlet:namespace />groupsSearchContainer'
 	);
 
 	searchContainer.get('contentBox').delegate(
 		'click',
 		(event) => {
-			var link = event.currentTarget;
+			const link = event.currentTarget;
 
-			var tr = link.ancestor('tr');
+			const tr = link.ancestor('tr');
 
 			searchContainer.deleteRow(tr, link.getAttribute('data-rowId'));
 
 			searchContainer.updateDataStore();
 
-			updateGroupIds();
+			const groupIds = document.getElementById(
+				'<portlet:namespace />groupIds'
+			);
+
+			if (groupIds) {
+				const searchContainerData = searchContainer.getData();
+
+				groupIds.setAttribute('value', searchContainerData.split(','));
+
+				submitForm(document.<portlet:namespace />fm);
+			}
 		},
 		'.modify-link'
 	);
-
-	var selectManageableGroupIcon = document.getElementById(
-		'<portlet:namespace />selectManageableGroup'
-	);
-
-	if (selectManageableGroupIcon) {
-		selectManageableGroupIcon.addEventListener('click', (event) => {
-			event.preventDefault();
-
-			Liferay.Util.openSelectionModal({
-				id: '<%= editAssetListDisplayContext.getSelectGroupEventName() %>',
-				onSelect: function (selectedItem) {
-					var entityId = selectedItem.groupid;
-
-					var searchContainerData = searchContainer.getData();
-
-					if (searchContainerData.indexOf(entityId) == -1) {
-						<portlet:namespace />addRow(
-							entityId,
-							selectedItem.groupdescriptivename,
-							selectedItem.groupscopelabel
-						);
-					}
-				},
-				selectEventName:
-					'<%= editAssetListDisplayContext.getSelectGroupEventName() %>',
-				title: '<liferay-ui:message key="scopes" />',
-				url: '<%= editAssetListDisplayContext.getGroupItemSelectorURL() %>',
-			});
-		});
-	}
-
-	window['<portlet:namespace />addRow'] = function (groupId, name, scopeLabel) {
-		var data = searchContainer.getData(true);
-		if (data.includes(groupId)) {
-			return;
-		}
-
-		var rowColumns = [];
-
-		rowColumns.push('<span class="text-truncate">' + name + '</span>');
-		rowColumns.push(scopeLabel);
-		rowColumns.push(
-			'<a class="modify-link" data-rowId="' +
-				groupId +
-				'" href="javascript:;"><%= UnicodeFormatter.toString(removeLinkIcon) %></a>'
-		);
-
-		searchContainer.addRow(rowColumns, groupId);
-
-		searchContainer.updateDataStore();
-
-		updateGroupIds();
-	};
-
-	function updateGroupIds() {
-		var groupIds = document.getElementById('<portlet:namespace />groupIds');
-
-		if (groupIds) {
-			var searchContainerData = searchContainer.getData();
-
-			groupIds.setAttribute('value', searchContainerData.split(','));
-		}
-	}
 </aui:script>

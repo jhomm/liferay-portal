@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.machine.learning.forecast.alert.internal.dispatch.executor;
 
-import com.liferay.commerce.account.model.CommerceAccount;
-import com.liferay.commerce.account.service.CommerceAccountLocalService;
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.commerce.machine.learning.forecast.CommerceAccountCommerceMLForecast;
 import com.liferay.commerce.machine.learning.forecast.CommerceAccountCommerceMLForecastManager;
 import com.liferay.commerce.machine.learning.forecast.alert.constants.CommerceMLForecastAlertConstants;
@@ -45,7 +36,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Riccardo Ferrari
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"dispatch.task.executor.name=" + CommerceMLForecastAlertEntryDispatchTaskExecutor.KEY,
 		"dispatch.task.executor.type=" + CommerceMLForecastAlertEntryDispatchTaskExecutor.KEY
@@ -87,18 +77,16 @@ public class CommerceMLForecastAlertEntryDispatchTaskExecutor
 					COMMERCE_ML_FORECAST_ALERT_ENTRY_THRESHOLD),
 			_DEFAULT_COMMERCE_ML_FORECAST_ALERT_ENTRY_THRESHOLD);
 
-		List<CommerceAccount> commerceAccounts =
-			_commerceAccountLocalService.getCommerceAccounts(
-				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
-
-		long[] commerceAccountIds = ListUtil.toLongArray(
-			commerceAccounts, CommerceAccount::getCommerceAccountId);
+		long[] accountEntryIds = ListUtil.toLongArray(
+			_accountEntryLocalService.getAccountEntries(
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS),
+			AccountEntry::getAccountEntryId);
 
 		List<CommerceAccountCommerceMLForecast>
 			commerceAccountCommerceMLForecasts =
 				_commerceAccountCommerceMLForecastManager.
 					getMonthlyRevenueCommerceAccountCommerceMLForecasts(
-						dispatchTrigger.getCompanyId(), commerceAccountIds,
+						dispatchTrigger.getCompanyId(), accountEntryIds,
 						commerceMLForecastAlertEntryCheckDate, 1, 0);
 
 		for (CommerceAccountCommerceMLForecast
@@ -162,11 +150,11 @@ public class CommerceMLForecastAlertEntryDispatchTaskExecutor
 		CommerceMLForecastAlertEntryDispatchTaskExecutor.class);
 
 	@Reference
-	private CommerceAccountCommerceMLForecastManager
-		_commerceAccountCommerceMLForecastManager;
+	private AccountEntryLocalService _accountEntryLocalService;
 
 	@Reference
-	private CommerceAccountLocalService _commerceAccountLocalService;
+	private CommerceAccountCommerceMLForecastManager
+		_commerceAccountCommerceMLForecastManager;
 
 	@Reference
 	private CommerceMLForecastAlertEntryLocalService

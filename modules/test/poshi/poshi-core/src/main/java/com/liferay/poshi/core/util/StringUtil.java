@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.core.util;
@@ -18,7 +9,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.IllegalFormatConversionException;
 import java.util.List;
+import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 
@@ -76,8 +69,42 @@ public class StringUtil {
 		return s;
 	}
 
+	public static void assertContains(String expectedText, String actualText) {
+		if (!contains(expectedText, actualText)) {
+			throw new RuntimeException(
+				"Expected text \"" + expectedText +
+					"\" does not contain atual text \"" + actualText + "\"");
+		}
+	}
+
+	public static void assertEquals(String expectedText, String actualText) {
+		if (!equals(expectedText, actualText)) {
+			throw new RuntimeException(
+				"Expected text \"" + expectedText +
+					"\" does not equal actual text \"" + actualText + "\"");
+		}
+	}
+
+	public static String capitalize(String s) {
+		if ((s == null) || s.isEmpty()) {
+			return "";
+		}
+
+		char firstChar = s.charAt(0);
+
+		if (Character.isLowerCase(firstChar)) {
+			s = Character.toUpperCase(firstChar) + s.substring(1);
+		}
+
+		return s;
+	}
+
+	public static String center(String s, String size) {
+		return StringUtils.center(s, GetterUtil.getInteger(size));
+	}
+
 	public static String combine(String... strings) {
-		if ((strings == null) || (strings.length == 0)) {
+		if (ArrayUtil.isEmpty(strings)) {
 			return "";
 		}
 
@@ -88,6 +115,14 @@ public class StringUtil {
 		}
 
 		return sb.toString();
+	}
+
+	public static int compareTo(String s, String comparison) {
+		return s.compareTo(comparison);
+	}
+
+	public static String concat(String s, String text) {
+		return s.concat(text);
 	}
 
 	public static boolean contains(String s, String text) {
@@ -110,14 +145,14 @@ public class StringUtil {
 		if (pos == -1) {
 			String td = text.concat(delimiter);
 
-			if (s.startsWith(td)) {
-				return true;
-			}
-
-			return false;
+			return s.startsWith(td);
 		}
 
 		return true;
+	}
+
+	public static boolean contentEquals(String s, String charSequence) {
+		return s.contentEquals(charSequence);
 	}
 
 	public static int count(String s, String text) {
@@ -171,11 +206,11 @@ public class StringUtil {
 
 		String temp = s.substring(s.length() - end.length());
 
-		if (equalsIgnoreCase(temp, end)) {
-			return true;
-		}
+		return equalsIgnoreCase(temp, end);
+	}
 
-		return false;
+	public static boolean equals(String s, String text) {
+		return s.equals(text);
 	}
 
 	public static boolean equalsIgnoreCase(String s1, String s2) {
@@ -302,6 +337,24 @@ public class StringUtil {
 		}
 
 		return sb.toString();
+	}
+
+	public static String format(String format, String s) {
+		try {
+			return String.format(format, s);
+		}
+		catch (IllegalFormatConversionException
+					illegalFormatConversionException) {
+
+			System.out.println(
+				"Please use a format specifier that utilizes a string");
+
+			throw illegalFormatConversionException;
+		}
+	}
+
+	public static boolean isEmpty(String s) {
+		return s.isEmpty();
 	}
 
 	public static boolean isLowerCase(String s) {
@@ -755,6 +808,21 @@ public class StringUtil {
 		return s;
 	}
 
+	public static String replacePropertyVariables(String s) {
+		Properties properties = PropsUtil.getProperties();
+
+		for (Object object : properties.keySet()) {
+			String propertyName = (String)object;
+
+			System.out.println(propertyName);
+
+			s = s.replace(
+				"${" + propertyName + "}", PropsUtil.get(propertyName));
+		}
+
+		return s;
+	}
+
 	public static String reverse(String s) {
 		if (s == null) {
 			return null;
@@ -835,11 +903,7 @@ public class StringUtil {
 
 		String temp = s.substring(0, start.length());
 
-		if (equalsIgnoreCase(temp, start)) {
-			return true;
-		}
-
-		return false;
+		return equalsIgnoreCase(temp, start);
 	}
 
 	public static String stripBetween(String s, String begin, String end) {
@@ -981,9 +1045,8 @@ public class StringUtil {
 		else if (x == 0) {
 			return s;
 		}
-		else {
-			return s.substring(x);
-		}
+
+		return s.substring(x);
 	}
 
 	public static String trimTrailing(String s) {
@@ -1014,9 +1077,8 @@ public class StringUtil {
 		else if (x == len) {
 			return s;
 		}
-		else {
-			return s.substring(0, x);
-		}
+
+		return s.substring(0, x);
 	}
 
 	public static String unquote(String s) {
@@ -1043,6 +1105,10 @@ public class StringUtil {
 	}
 
 	public static String upperCaseFirstLetter(String s) {
+		if ((s == null) || s.isEmpty()) {
+			return s;
+		}
+
 		char[] chars = s.toCharArray();
 
 		if ((chars[0] >= 97) && (chars[0] <= 122)) {

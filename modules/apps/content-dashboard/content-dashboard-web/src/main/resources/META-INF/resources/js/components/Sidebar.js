@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayButtonWithIcon} from '@clayui/button';
@@ -28,33 +19,42 @@ const SidebarBody = ({children, className}) => {
 	);
 };
 
-const SidebarHeader = ({title}) => {
+const SidebarHeader = ({actionsSlot, children, title}) => {
 	const {onClose} = useContext(SidebarContext);
 
 	return (
-		<section className="sidebar-header">
+		<section className="is-sticky sidebar-header">
 			<ClayLayout.ContentRow className="sidebar-section">
-				<ClayLayout.ContentCol expand>
-					<h2 className="font-weight-bold mb-0 pr-2 small">
-						{title}
-					</h2>
+				<ClayLayout.ContentCol
+					className="justify-content-center"
+					expand
+				>
+					<p className="font-weight-bold mb-0 pr-2">{title}</p>
 				</ClayLayout.ContentCol>
+
+				{actionsSlot && (
+					<ClayLayout.ContentCol>{actionsSlot}</ClayLayout.ContentCol>
+				)}
 
 				<ClayLayout.ContentCol>
 					<ClayButtonWithIcon
-						aria-label="Close"
-						className="mt-n2 text-secondary"
+						aria-label={Liferay.Language.get('close')}
+						className="component-action text-secondary"
+						data-tooltip-align="bottom"
 						displayType="unstyled"
 						onClick={onClose}
 						symbol="times"
+						title={Liferay.Language.get('close')}
 					/>
 				</ClayLayout.ContentCol>
 			</ClayLayout.ContentRow>
+
+			{children}
 		</section>
 	);
 };
 
-const Sidebar = ({children, onClose = noop, open = true}) => {
+const Sidebar = ({children, fetchData, onClose = noop, open = true}) => {
 	const [isOpen, setIsOpen] = useState(false);
 
 	const delay = useTimeout();
@@ -80,10 +80,17 @@ const Sidebar = ({children, onClose = noop, open = true}) => {
 	}, [isOpen]);
 
 	return (
-		<div className="content-dashboard sidebar sidebar-light sidebar-sm">
-			<SidebarContext.Provider value={{onClose}}>
-				{children}
-			</SidebarContext.Provider>
+		<div className="cadmin">
+			<div className="content-dashboard sidebar sidebar-light sidebar-sm">
+				<SidebarContext.Provider
+					value={{
+						fetchData,
+						onClose,
+					}}
+				>
+					{children}
+				</SidebarContext.Provider>
+			</div>
 		</div>
 	);
 };

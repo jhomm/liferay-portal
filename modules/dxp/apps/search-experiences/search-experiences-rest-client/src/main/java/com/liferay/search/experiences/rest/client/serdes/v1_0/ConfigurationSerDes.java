@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.client.serdes.v1_0;
@@ -17,13 +8,13 @@ package com.liferay.search.experiences.rest.client.serdes.v1_0;
 import com.liferay.search.experiences.rest.client.dto.v1_0.Configuration;
 import com.liferay.search.experiences.rest.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Brian Wing Shun Chan
@@ -55,14 +46,14 @@ public class ConfigurationSerDes {
 
 		sb.append("{");
 
-		if (configuration.getAdvanced() != null) {
+		if (configuration.getAdvancedConfiguration() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"advanced\": ");
+			sb.append("\"advancedConfiguration\": ");
 
-			sb.append(String.valueOf(configuration.getAdvanced()));
+			sb.append(String.valueOf(configuration.getAdvancedConfiguration()));
 		}
 
 		if (configuration.getAggregationConfiguration() != null) {
@@ -76,44 +67,46 @@ public class ConfigurationSerDes {
 				String.valueOf(configuration.getAggregationConfiguration()));
 		}
 
-		if (configuration.getFacet() != null) {
+		if (configuration.getGeneralConfiguration() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"facet\": ");
+			sb.append("\"generalConfiguration\": ");
 
-			sb.append(String.valueOf(configuration.getFacet()));
+			sb.append(String.valueOf(configuration.getGeneralConfiguration()));
 		}
 
-		if (configuration.getGeneral() != null) {
+		if (configuration.getHighlightConfiguration() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"general\": ");
+			sb.append("\"highlightConfiguration\": ");
 
-			sb.append(String.valueOf(configuration.getGeneral()));
+			sb.append(
+				String.valueOf(configuration.getHighlightConfiguration()));
 		}
 
-		if (configuration.getHighlight() != null) {
+		if (configuration.getIndexConfiguration() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"highlight\": ");
+			sb.append("\"indexConfiguration\": ");
 
-			sb.append(String.valueOf(configuration.getHighlight()));
+			sb.append(String.valueOf(configuration.getIndexConfiguration()));
 		}
 
-		if (configuration.getParameters() != null) {
+		if (configuration.getParameterConfiguration() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"parameters\": ");
+			sb.append("\"parameterConfiguration\": ");
 
-			sb.append(_toJSON(configuration.getParameters()));
+			sb.append(
+				String.valueOf(configuration.getParameterConfiguration()));
 		}
 
 		if (configuration.getQueryConfiguration() != null) {
@@ -124,6 +117,16 @@ public class ConfigurationSerDes {
 			sb.append("\"queryConfiguration\": ");
 
 			sb.append(String.valueOf(configuration.getQueryConfiguration()));
+		}
+
+		if (configuration.getSearchContextAttributes() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"searchContextAttributes\": ");
+
+			sb.append(_toJSON(configuration.getSearchContextAttributes()));
 		}
 
 		if (configuration.getSortConfiguration() != null) {
@@ -155,11 +158,13 @@ public class ConfigurationSerDes {
 
 		Map<String, String> map = new TreeMap<>();
 
-		if (configuration.getAdvanced() == null) {
-			map.put("advanced", null);
+		if (configuration.getAdvancedConfiguration() == null) {
+			map.put("advancedConfiguration", null);
 		}
 		else {
-			map.put("advanced", String.valueOf(configuration.getAdvanced()));
+			map.put(
+				"advancedConfiguration",
+				String.valueOf(configuration.getAdvancedConfiguration()));
 		}
 
 		if (configuration.getAggregationConfiguration() == null) {
@@ -171,33 +176,40 @@ public class ConfigurationSerDes {
 				String.valueOf(configuration.getAggregationConfiguration()));
 		}
 
-		if (configuration.getFacet() == null) {
-			map.put("facet", null);
-		}
-		else {
-			map.put("facet", String.valueOf(configuration.getFacet()));
-		}
-
-		if (configuration.getGeneral() == null) {
-			map.put("general", null);
-		}
-		else {
-			map.put("general", String.valueOf(configuration.getGeneral()));
-		}
-
-		if (configuration.getHighlight() == null) {
-			map.put("highlight", null);
-		}
-		else {
-			map.put("highlight", String.valueOf(configuration.getHighlight()));
-		}
-
-		if (configuration.getParameters() == null) {
-			map.put("parameters", null);
+		if (configuration.getGeneralConfiguration() == null) {
+			map.put("generalConfiguration", null);
 		}
 		else {
 			map.put(
-				"parameters", String.valueOf(configuration.getParameters()));
+				"generalConfiguration",
+				String.valueOf(configuration.getGeneralConfiguration()));
+		}
+
+		if (configuration.getHighlightConfiguration() == null) {
+			map.put("highlightConfiguration", null);
+		}
+		else {
+			map.put(
+				"highlightConfiguration",
+				String.valueOf(configuration.getHighlightConfiguration()));
+		}
+
+		if (configuration.getIndexConfiguration() == null) {
+			map.put("indexConfiguration", null);
+		}
+		else {
+			map.put(
+				"indexConfiguration",
+				String.valueOf(configuration.getIndexConfiguration()));
+		}
+
+		if (configuration.getParameterConfiguration() == null) {
+			map.put("parameterConfiguration", null);
+		}
+		else {
+			map.put(
+				"parameterConfiguration",
+				String.valueOf(configuration.getParameterConfiguration()));
 		}
 
 		if (configuration.getQueryConfiguration() == null) {
@@ -207,6 +219,15 @@ public class ConfigurationSerDes {
 			map.put(
 				"queryConfiguration",
 				String.valueOf(configuration.getQueryConfiguration()));
+		}
+
+		if (configuration.getSearchContextAttributes() == null) {
+			map.put("searchContextAttributes", null);
+		}
+		else {
+			map.put(
+				"searchContextAttributes",
+				String.valueOf(configuration.getSearchContextAttributes()));
 		}
 
 		if (configuration.getSortConfiguration() == null) {
@@ -235,14 +256,62 @@ public class ConfigurationSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "advancedConfiguration")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "aggregationConfiguration")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "generalConfiguration")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "highlightConfiguration")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "indexConfiguration")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "parameterConfiguration")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "queryConfiguration")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "searchContextAttributes")) {
+
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "sortConfiguration")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			Configuration configuration, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
 
-			if (Objects.equals(jsonParserFieldName, "advanced")) {
+			if (Objects.equals(jsonParserFieldName, "advancedConfiguration")) {
 				if (jsonParserFieldValue != null) {
-					configuration.setAdvanced(
-						AdvancedSerDes.toDTO((String)jsonParserFieldValue));
+					configuration.setAdvancedConfiguration(
+						AdvancedConfigurationSerDes.toDTO(
+							(String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(
@@ -254,28 +323,39 @@ public class ConfigurationSerDes {
 							(String)jsonParserFieldValue));
 				}
 			}
-			else if (Objects.equals(jsonParserFieldName, "facet")) {
+			else if (Objects.equals(
+						jsonParserFieldName, "generalConfiguration")) {
+
 				if (jsonParserFieldValue != null) {
-					configuration.setFacet(
-						FacetSerDes.toDTO((String)jsonParserFieldValue));
+					configuration.setGeneralConfiguration(
+						GeneralConfigurationSerDes.toDTO(
+							(String)jsonParserFieldValue));
 				}
 			}
-			else if (Objects.equals(jsonParserFieldName, "general")) {
+			else if (Objects.equals(
+						jsonParserFieldName, "highlightConfiguration")) {
+
 				if (jsonParserFieldValue != null) {
-					configuration.setGeneral(
-						GeneralSerDes.toDTO((String)jsonParserFieldValue));
+					configuration.setHighlightConfiguration(
+						HighlightConfigurationSerDes.toDTO(
+							(String)jsonParserFieldValue));
 				}
 			}
-			else if (Objects.equals(jsonParserFieldName, "highlight")) {
+			else if (Objects.equals(
+						jsonParserFieldName, "indexConfiguration")) {
+
 				if (jsonParserFieldValue != null) {
-					configuration.setHighlight(
-						HighlightSerDes.toDTO((String)jsonParserFieldValue));
+					configuration.setIndexConfiguration(
+						IndexConfigurationSerDes.toDTO(
+							(String)jsonParserFieldValue));
 				}
 			}
-			else if (Objects.equals(jsonParserFieldName, "parameters")) {
+			else if (Objects.equals(
+						jsonParserFieldName, "parameterConfiguration")) {
+
 				if (jsonParserFieldValue != null) {
-					configuration.setParameters(
-						(Map)ConfigurationSerDes.toMap(
+					configuration.setParameterConfiguration(
+						ParameterConfigurationSerDes.toDTO(
 							(String)jsonParserFieldValue));
 				}
 			}
@@ -286,6 +366,14 @@ public class ConfigurationSerDes {
 					configuration.setQueryConfiguration(
 						QueryConfigurationSerDes.toDTO(
 							(String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "searchContextAttributes")) {
+
+				if (jsonParserFieldValue != null) {
+					configuration.setSearchContextAttributes(
+						(Map<String, Object>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "sortConfiguration")) {
@@ -327,36 +415,7 @@ public class ConfigurationSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -366,6 +425,42 @@ public class ConfigurationSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

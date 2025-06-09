@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.service.impl;
@@ -21,7 +12,6 @@ import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.model.CTPreferences;
 import com.liferay.change.tracking.model.CTPreferencesTable;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
-import com.liferay.change.tracking.service.CTPreferencesLocalService;
 import com.liferay.change.tracking.service.base.CTPreferencesServiceBaseImpl;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.portal.aop.AopService;
@@ -29,16 +19,10 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.GroupTable;
-import com.liferay.portal.kernel.model.ResourceConstants;
-import com.liferay.portal.kernel.model.Role;
-import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
-import com.liferay.portal.kernel.service.RoleLocalService;
-import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.service.permission.PortletPermission;
+import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.util.List;
@@ -107,7 +91,7 @@ public class CTPreferencesServiceImpl extends CTPreferencesServiceBaseImpl {
 	public CTPreferences enablePublications(long companyId, boolean enable)
 		throws PortalException {
 
-		_portletPermission.check(
+		PortletPermissionUtil.check(
 			getPermissionChecker(), CTPortletKeys.PUBLICATIONS,
 			ActionKeys.CONFIGURATION);
 
@@ -136,19 +120,7 @@ public class CTPreferencesServiceImpl extends CTPreferencesServiceBaseImpl {
 				}
 			}
 
-			Role role = _roleLocalService.getRole(
-				companyId, RoleConstants.PUBLICATIONS_USER);
-
-			_resourcePermissionLocalService.addResourcePermission(
-				companyId, CTPortletKeys.PUBLICATIONS,
-				ResourceConstants.SCOPE_COMPANY, String.valueOf(companyId),
-				role.getRoleId(), ActionKeys.ACCESS_IN_CONTROL_PANEL);
-			_resourcePermissionLocalService.addResourcePermission(
-				companyId, CTPortletKeys.PUBLICATIONS,
-				ResourceConstants.SCOPE_COMPANY, String.valueOf(companyId),
-				role.getRoleId(), ActionKeys.VIEW);
-
-			return _ctPreferencesLocalService.getCTPreferences(companyId, 0);
+			return ctPreferencesLocalService.getCTPreferences(companyId, 0);
 		}
 
 		for (CTPreferences ctPreferences :
@@ -177,21 +149,6 @@ public class CTPreferencesServiceImpl extends CTPreferencesServiceBaseImpl {
 		_ctCollectionModelResourcePermission;
 
 	@Reference
-	private CTPreferencesLocalService _ctPreferencesLocalService;
-
-	@Reference
 	private GroupLocalService _groupLocalService;
-
-	@Reference
-	private PortletPermission _portletPermission;
-
-	@Reference
-	private ResourcePermissionLocalService _resourcePermissionLocalService;
-
-	@Reference
-	private RoleLocalService _roleLocalService;
-
-	@Reference
-	private UserLocalService _userLocalService;
 
 }

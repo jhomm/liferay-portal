@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.web.internal.model.listener;
 
 import com.liferay.asset.list.model.AssetListEntry;
-import com.liferay.asset.list.model.AssetListEntryUsage;
 import com.liferay.asset.list.service.AssetListEntryUsageLocalService;
 import com.liferay.info.collection.provider.InfoCollectionProvider;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
@@ -33,10 +23,12 @@ import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.segments.constants.SegmentsExperienceConstants;
+import com.liferay.segments.model.SegmentsExperience;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 
-import java.util.Optional;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -67,35 +59,24 @@ public class LayoutPageTemplateStructureRelModelListener
 	}
 
 	private void _addAssetListEntryUsage(
-		long classNameId, long groupId, String key,
-		long layoutPageTemplateStructureId, long plid) {
+		long classNameId, long groupId, String itemId, String key, long plid) {
 
-		AssetListEntryUsage assetListEntryUsage =
-			_assetListEntryUsageLocalService.fetchAssetListEntryUsage(
-				groupId, classNameId,
-				String.valueOf(layoutPageTemplateStructureId),
-				_portal.getClassNameId(LayoutPageTemplateStructure.class), key,
-				plid);
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
 
-		if (assetListEntryUsage != null) {
-			return;
+		if (serviceContext == null) {
+			serviceContext = new ServiceContext();
 		}
-
-		ServiceContext serviceContext = Optional.ofNullable(
-			ServiceContextThreadLocal.getServiceContext()
-		).orElse(
-			new ServiceContext()
-		);
 
 		try {
 			_assetListEntryUsageLocalService.addAssetListEntryUsage(
-				serviceContext.getUserId(), groupId, classNameId,
-				String.valueOf(layoutPageTemplateStructureId),
-				_portal.getClassNameId(LayoutPageTemplateStructure.class), key,
-				plid, serviceContext);
+				serviceContext.getUserId(), groupId, classNameId, itemId,
+				_portal.getClassNameId(
+					CollectionStyledLayoutStructureItem.class.getName()),
+				key, plid, serviceContext);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
 	}
 
@@ -110,19 +91,23 @@ public class LayoutPageTemplateStructureRelModelListener
 			return false;
 		}
 
-		if (ListUtil.exists(
-				layoutStructure.getDeletedLayoutStructureItems(),
-				deletedLayoutStructureItem ->
-					deletedLayoutStructureItem.containsItemId(itemId))) {
-
-			return false;
-		}
-
-		return true;
+		return !layoutStructure.isItemMarkedForDeletion(itemId);
 	}
 
 	private void _updateAssetListEntryUsages(
 		LayoutPageTemplateStructureRel layoutPageTemplateStructureRel) {
+
+		SegmentsExperience segmentsExperience =
+			_segmentsExperienceLocalService.fetchSegmentsExperience(
+				layoutPageTemplateStructureRel.getSegmentsExperienceId());
+
+		if ((segmentsExperience == null) ||
+			!Objects.equals(
+				SegmentsExperienceConstants.KEY_DEFAULT,
+				segmentsExperience.getSegmentsExperienceKey())) {
+
+			return;
+		}
 
 		LayoutPageTemplateStructure layoutPageTemplateStructure =
 			_layoutPageTemplateStructureLocalService.
@@ -135,22 +120,15 @@ public class LayoutPageTemplateStructureRelModelListener
 		}
 
 		_assetListEntryUsageLocalService.deleteAssetListEntryUsages(
-			String.valueOf(
-				layoutPageTemplateStructure.getLayoutPageTemplateStructureId()),
-			_portal.getClassNameId(LayoutPageTemplateStructure.class),
+			_portal.getClassNameId(
+				CollectionStyledLayoutStructureItem.class.getName()),
 			layoutPageTemplateStructure.getPlid());
 
 		LayoutStructure layoutStructure = LayoutStructure.of(
 			layoutPageTemplateStructureRel.getData());
 
 		for (LayoutStructureItem layoutStructureItem :
-				layoutStructure.getLayoutStructureItems()) {
-
-			if (!(layoutStructureItem instanceof
-					CollectionStyledLayoutStructureItem)) {
-
-				continue;
-			}
+				layoutStructure.getCollectionStyledLayoutStructureItems()) {
 
 			CollectionStyledLayoutStructureItem
 				collectionStyledLayoutStructureItem =
@@ -168,21 +146,20 @@ public class LayoutPageTemplateStructureRelModelListener
 
 			if (collectionJSONObject.has("classPK")) {
 				_addAssetListEntryUsage(
-					_portal.getClassNameId(AssetListEntry.class),
+					_portal.getClassNameId(AssetListEntry.class.getName()),
 					layoutPageTemplateStructure.getGroupId(),
+					layoutStructureItem.getItemId(),
 					collectionJSONObject.getString("classPK"),
-					layoutPageTemplateStructure.
-						getLayoutPageTemplateStructureId(),
 					layoutPageTemplateStructure.getPlid());
 			}
 
 			if (collectionJSONObject.has("key")) {
 				_addAssetListEntryUsage(
-					_portal.getClassNameId(InfoCollectionProvider.class),
+					_portal.getClassNameId(
+						InfoCollectionProvider.class.getName()),
 					layoutPageTemplateStructure.getGroupId(),
+					layoutStructureItem.getItemId(),
 					collectionJSONObject.getString("key"),
-					layoutPageTemplateStructure.
-						getLayoutPageTemplateStructureId(),
 					layoutPageTemplateStructure.getPlid());
 			}
 		}
@@ -200,5 +177,8 @@ public class LayoutPageTemplateStructureRelModelListener
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 }

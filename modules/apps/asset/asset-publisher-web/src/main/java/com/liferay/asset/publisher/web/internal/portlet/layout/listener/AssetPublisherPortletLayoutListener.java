@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.web.internal.portlet.layout.listener;
@@ -20,11 +11,16 @@ import com.liferay.asset.list.model.AssetListEntryUsage;
 import com.liferay.asset.list.service.AssetListEntryUsageLocalService;
 import com.liferay.asset.publisher.constants.AssetPublisherPortletKeys;
 import com.liferay.asset.publisher.util.AssetPublisherHelper;
+import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherSelectionStyleConfigurationUtil;
 import com.liferay.asset.publisher.web.internal.constants.AssetPublisherSelectionStyleConstants;
 import com.liferay.asset.publisher.web.internal.helper.AssetPublisherWebHelper;
+import com.liferay.asset.publisher.web.internal.util.AssetPublisherUtil;
+import com.liferay.asset.publisher.web.internal.util.FF_LPD_39304_CompanyTemporarySwapper;
+import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.info.collection.provider.InfoCollectionProvider;
 import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.layout.service.LayoutClassedModelUsageLocalService;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -32,27 +28,24 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutTypePortletConstants;
 import com.liferay.portal.kernel.model.Portlet;
-import com.liferay.portal.kernel.model.PortletPreferences;
-import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.portlet.PortletLayoutListener;
 import com.liferay.portal.kernel.portlet.PortletLayoutListenerException;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.subscription.service.SubscriptionLocalService;
+
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
 
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -66,8 +59,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Zsolt Berentey
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + AssetPublisherPortletKeys.ASSET_PUBLISHER,
+	property = "jakarta.portlet.name=" + AssetPublisherPortletKeys.ASSET_PUBLISHER,
 	service = PortletLayoutListener.class
 )
 public class AssetPublisherPortletLayoutListener
@@ -95,19 +87,6 @@ public class AssetPublisherPortletLayoutListener
 					layout.getGroupId(), layout.getUuid());
 			}
 
-			long ownerId = PortletKeys.PREFS_OWNER_ID_DEFAULT;
-			int ownerType = PortletKeys.PREFS_OWNER_TYPE_LAYOUT;
-
-			if (PortletIdCodec.hasUserId(portletId)) {
-				ownerType = PortletKeys.PREFS_OWNER_TYPE_USER;
-				ownerId = PortletIdCodec.decodeUserId(portletId);
-			}
-
-			_subscriptionLocalService.deleteSubscriptions(
-				layout.getCompanyId(), PortletPreferences.class.getName(),
-				_assetPublisherWebHelper.getSubscriptionClassPK(
-					ownerId, ownerType, plid, portletId));
-
 			_deleteLayoutClassedModelUsages(layout, portletId);
 
 			_deleteAssetListEntryUsage(plid, portletId);
@@ -125,16 +104,28 @@ public class AssetPublisherPortletLayoutListener
 			return;
 		}
 
-		javax.portlet.PortletPreferences portletPreferences =
+		PortletPreferences portletPreferences =
 			PortletPreferencesFactoryUtil.getLayoutPortletSetup(
 				layout, portletId);
 
-		String selectionStyle = portletPreferences.getValue(
-			"selectionStyle",
-			AssetPublisherSelectionStyleConstants.TYPE_DYNAMIC);
+		String selectionStyle = StringPool.BLANK;
 
-		long assetListEntryId = GetterUtil.getLong(
-			portletPreferences.getValue("assetListEntryId", null));
+		try (SafeCloseable safeCloseable =
+				FF_LPD_39304_CompanyTemporarySwapper.
+					setCompanyIdWithSafeCloseable(layout.getCompanyId())) {
+
+			selectionStyle = portletPreferences.getValue(
+				"selectionStyle",
+				AssetPublisherSelectionStyleConfigurationUtil.
+					defaultSelectionStyle());
+		}
+
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		long assetListEntryId = AssetPublisherUtil.getAssetListEntryId(
+			serviceContext.getCompanyId(), serviceContext.getScopeGroupId(),
+			portletPreferences);
 
 		String infoListProviderKey = portletPreferences.getValue(
 			"infoListProviderKey", StringPool.BLANK);
@@ -210,8 +201,8 @@ public class AssetPublisherPortletLayoutListener
 					continue;
 				}
 
-				assetListEntryUsage.setKey(key);
 				assetListEntryUsage.setClassNameId(classNameId);
+				assetListEntryUsage.setKey(key);
 
 				_assetListEntryUsageLocalService.updateAssetListEntryUsage(
 					assetListEntryUsage);
@@ -235,8 +226,7 @@ public class AssetPublisherPortletLayoutListener
 	}
 
 	private void _addLayoutClassedModelUsages(
-			long plid, String portletId,
-			javax.portlet.PortletPreferences portletPreferences)
+			long plid, String portletId, PortletPreferences portletPreferences)
 		throws PortletLayoutListenerException {
 
 		try {
@@ -258,9 +248,19 @@ public class AssetPublisherPortletLayoutListener
 					themeDisplay.getPermissionChecker(), groupIds, false, true);
 
 			for (AssetEntry assetEntry : assetEntries) {
+				long classNameId = assetEntry.getClassNameId();
+
+				if (Objects.equals(
+						assetEntry.getClassName(),
+						DLFileEntry.class.getName())) {
+
+					classNameId = _portal.getClassNameId(
+						FileEntry.class.getName());
+				}
+
 				_layoutClassedModelUsageLocalService.addLayoutClassedModelUsage(
-					themeDisplay.getScopeGroupId(), assetEntry.getClassNameId(),
-					assetEntry.getClassPK(), portletId,
+					themeDisplay.getScopeGroupId(), classNameId,
+					assetEntry.getClassPK(), StringPool.BLANK, portletId,
 					_portal.getClassNameId(Portlet.class), plid,
 					serviceContext);
 			}
@@ -306,8 +306,5 @@ public class AssetPublisherPortletLayoutListener
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private SubscriptionLocalService _subscriptionLocalService;
 
 }

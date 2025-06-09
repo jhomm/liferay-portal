@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.tlddoc.builder;
 
-import com.liferay.gradle.plugins.tlddoc.builder.tasks.TLDDocTask;
+import com.liferay.gradle.plugins.tlddoc.builder.task.TLDDocTask;
 import com.liferay.gradle.util.GradleUtil;
 
 import groovy.lang.Closure;
@@ -26,13 +17,13 @@ import java.util.concurrent.Callable;
 
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaBasePlugin;
 import org.gradle.api.plugins.PluginContainer;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.TaskInputs;
 import org.gradle.api.tasks.bundling.Jar;
@@ -149,11 +140,14 @@ public class AppTLDDocBuilderPlugin implements Plugin<Project> {
 			tldDocTask.getProject(), JAR_APP_TLDDOC_TASK_NAME, Jar.class);
 
 		jar.from(tldDocTask);
-		jar.setClassifier("taglibdoc");
 		jar.setDescription(
 			"Assembles a jar archive containing the tag library " +
 				"documentation files for this app.");
 		jar.setGroup(BasePlugin.BUILD_GROUP);
+
+		Property<String> property = jar.getArchiveClassifier();
+
+		property.set("taglibdoc");
 
 		return jar;
 	}
@@ -161,10 +155,9 @@ public class AppTLDDocBuilderPlugin implements Plugin<Project> {
 	private void _configureTaskAppTLDDoc(
 		TLDDocTask appTLDDocTask, Project subproject) {
 
-		Task task = GradleUtil.getTask(
-			subproject, TLDDocBuilderPlugin.VALIDATE_TLD_TASK_NAME);
-
-		appTLDDocTask.dependsOn(task);
+		appTLDDocTask.dependsOn(
+			GradleUtil.getTask(
+				subproject, TLDDocBuilderPlugin.VALIDATE_TLD_TASK_NAME));
 
 		TLDDocTask tldDocTask = (TLDDocTask)GradleUtil.getTask(
 			subproject, TLDDocBuilderPlugin.TLDDOC_TASK_NAME);

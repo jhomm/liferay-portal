@@ -1,34 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.enterprise.product.notification.web.internal;
 
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactory;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
-import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.PortalRunMode;
 import com.liferay.portal.kernel.util.PropsUtil;
-import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portal.vulcan.util.TransformUtil;
 
 import java.util.Locale;
 
@@ -38,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Drew Brokke
  */
-@Component(immediate = true, service = EPNManager.class)
+@Component(service = EPNManager.class)
 public class EPNManager {
 
 	public void confirm(long userId) {
@@ -71,7 +62,8 @@ public class EPNManager {
 		}
 
 		PermissionChecker permissionChecker =
-			PermissionCheckerFactoryUtil.create(user);
+			PermissionThreadLocal.getPermissionChecker(
+				user, !user.isGuestUser());
 
 		if (!permissionChecker.isOmniadmin()) {
 			return null;
@@ -92,23 +84,30 @@ public class EPNManager {
 				continue;
 			}
 
-			sb.append("<div><h4>");
+			sb.append("<div><h2 class=\"h4\">");
 			sb.append(
-				LanguageUtil.get(
+				_language.get(
 					locale,
 					"enterprise-product-notification-title[" + key + "]"));
-			sb.append("</h4><div>");
+			sb.append("</h2><div>");
 			sb.append(
-				LanguageUtil.format(
+				_language.format(
 					locale, "enterprise-product-notification-body[" + key + "]",
 					new String[] {
 						String.format(
-							"<a href=\"%s\" target=\"_blank\">",
+							StringBundler.concat(
+								"<a class=\"lfr-portal-tooltip ",
+								"text-decoration-underline\" data-title=\"",
+								_language.get(locale, "opens-new-window"),
+								"\" href=\"%s\" target=\"_blank\">"),
 							"https://learn.liferay.com/" +
 								keyValuePair.getValue()),
-						"</a>",
-						"<a href=\"mailto:sales@liferay.com\">" +
-							"sales@liferay.com</a>"
+						"<span class=\"sr-only\">" +
+							_language.get(locale, "opens-new-window") +
+								"</span></a>",
+						"<a class=\"text-decoration-underline\" " +
+							"href=\"mailto:sales@liferay.com\">" +
+								"sales@liferay.com</a>"
 					}));
 			sb.append("</div></div><br />");
 		}
@@ -126,14 +125,13 @@ public class EPNManager {
 
 	private final KeyValuePair[] _keyValuePairs = {
 		new KeyValuePair(
-			"commerce",
-			"commerce/latest/en/installation-and-upgrades" +
-				"/activating-liferay-commerce-enterprise.html"),
-		new KeyValuePair(
 			"enterprise.search",
 			"dxp/latest/en/using-search/liferay-enterprise-search" +
 				"/activating-liferay-enterprise-search.html")
 	};
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private PortletPreferencesFactory _portletPreferencesFactory;

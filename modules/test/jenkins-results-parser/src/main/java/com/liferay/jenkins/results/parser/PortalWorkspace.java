@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -90,10 +81,6 @@ public class PortalWorkspace extends BaseWorkspace {
 		_osbFaroGitHubURL = osbFaroGitHubURL;
 	}
 
-	public void setPortalPrivateGitHubURL(String portalPrivateGitHubURL) {
-		_portalPrivateGitHubURL = portalPrivateGitHubURL;
-	}
-
 	@Override
 	public void setUp() {
 		PortalWorkspaceGitRepository portalWorkspaceGitRepository =
@@ -109,8 +96,8 @@ public class PortalWorkspace extends BaseWorkspace {
 		_configureOSBAsahWorkspaceGitRepository();
 		_configureOSBFaroWorkspaceGitRepository();
 		_configurePluginsWorkspaceGitRepository();
-		_configurePortalPrivateWorkspaceGitRepository();
 		_configurePortalsPlutoWorkspaceGitRepository();
+		_configurePortletAPIGitRepository();
 		_configureReleaseToolWorkspaceGitRepository();
 
 		super.setUp();
@@ -243,10 +230,6 @@ public class PortalWorkspace extends BaseWorkspace {
 		return getWorkspaceGitRepository("com-liferay-osb-asah-private");
 	}
 
-	protected WorkspaceGitRepository getOSBFaroWorkspaceGitRepository() {
-		return getWorkspaceGitRepository("com-liferay-osb-faro-private");
-	}
-
 	protected void updateOSBAsahModule() {
 		PortalWorkspaceGitRepository portalWorkspaceGitRepository =
 			getPortalWorkspaceGitRepository();
@@ -375,8 +358,20 @@ public class PortalWorkspace extends BaseWorkspace {
 			return;
 		}
 
+		PortalWorkspaceGitRepository portalWorkspaceGitRepository =
+			getPortalWorkspaceGitRepository();
+
+		String portalUpstreamBranchName =
+			portalWorkspaceGitRepository.getUpstreamBranchName();
+
+		String repositoryName = "liferay-portal";
+
+		if (!portalUpstreamBranchName.startsWith("release-")) {
+			repositoryName += "-ee";
+		}
+
 		WorkspaceGitRepository workspaceGitRepository =
-			getWorkspaceGitRepository("com-liferay-osb-faro-private");
+			getWorkspaceGitRepository(repositoryName);
 
 		if (workspaceGitRepository == null) {
 			return;
@@ -404,40 +399,13 @@ public class PortalWorkspace extends BaseWorkspace {
 			portalWorkspaceGitRepository.getUpstreamBranchName());
 	}
 
-	private void _configurePortalPrivateWorkspaceGitRepository() {
-		WorkspaceGitRepository primaryWorkspaceGitRepository =
-			getPrimaryWorkspaceGitRepository();
-
-		if (!(primaryWorkspaceGitRepository instanceof
-				PortalWorkspaceGitRepository)) {
-
-			return;
-		}
-
-		PortalWorkspaceGitRepository portalWorkspaceGitRepository =
-			(PortalWorkspaceGitRepository)primaryWorkspaceGitRepository;
-
-		String portalPrivateDirectoryName =
-			portalWorkspaceGitRepository.getPortalPrivateRepositoryDirName();
-
-		WorkspaceGitRepository workspaceGitRepository =
-			getWorkspaceGitRepository(portalPrivateDirectoryName);
-
-		if ((workspaceGitRepository == null) ||
-			(_portalPrivateGitHubURL == null)) {
-
-			return;
-		}
-
-		workspaceGitRepository.setGitHubURL(_portalPrivateGitHubURL);
-
-		_updateWorkspaceGitRepository(
-			"git-commit-portal-private", portalPrivateDirectoryName);
-	}
-
 	private void _configurePortalsPlutoWorkspaceGitRepository() {
 		_updateWorkspaceGitRepository(
 			"git-commit-portals-pluto", "portals-pluto");
+	}
+
+	private void _configurePortletAPIGitRepository() {
+		_updateWorkspaceGitRepository("git-commit-portlet-api", "portlet-api");
 	}
 
 	private void _configureReleaseToolWorkspaceGitRepository() {
@@ -513,6 +481,5 @@ public class PortalWorkspace extends BaseWorkspace {
 	private boolean _commitOSBAsahModule;
 	private String _osbAsahGitHubURL;
 	private String _osbFaroGitHubURL;
-	private String _portalPrivateGitHubURL;
 
 }

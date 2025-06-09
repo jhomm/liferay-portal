@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.http;
@@ -46,14 +37,14 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Brian Wing Shun Chan
- * @see WebsiteServiceSoap
  * @generated
  */
 public class WebsiteServiceHttp {
 
 	public static com.liferay.portal.kernel.model.Website addWebsite(
-			HttpPrincipal httpPrincipal, String className, long classPK,
-			String url, long typeId, boolean primary,
+			HttpPrincipal httpPrincipal, String externalReferenceCode,
+			String className, long classPK, String url, long typeId,
+			boolean primary,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -63,8 +54,8 @@ public class WebsiteServiceHttp {
 				_addWebsiteParameterTypes0);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, className, classPK, url, typeId, primary,
-				serviceContext);
+				methodKey, externalReferenceCode, className, classPK, url,
+				typeId, primary, serviceContext);
 
 			Object returnObj = null;
 
@@ -130,6 +121,48 @@ public class WebsiteServiceHttp {
 		}
 	}
 
+	public static com.liferay.portal.kernel.model.Website
+			fetchWebsiteByExternalReferenceCode(
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				WebsiteServiceUtil.class, "fetchWebsiteByExternalReferenceCode",
+				_fetchWebsiteByExternalReferenceCodeParameterTypes2);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, externalReferenceCode, companyId);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.portal.kernel.model.Website)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
 	public static com.liferay.portal.kernel.model.Website getWebsite(
 			HttpPrincipal httpPrincipal, long websiteId)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -137,7 +170,7 @@ public class WebsiteServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				WebsiteServiceUtil.class, "getWebsite",
-				_getWebsiteParameterTypes2);
+				_getWebsiteParameterTypes3);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, websiteId);
@@ -178,7 +211,7 @@ public class WebsiteServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				WebsiteServiceUtil.class, "getWebsites",
-				_getWebsitesParameterTypes3);
+				_getWebsitesParameterTypes4);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, className, classPK);
@@ -213,17 +246,18 @@ public class WebsiteServiceHttp {
 	}
 
 	public static com.liferay.portal.kernel.model.Website updateWebsite(
-			HttpPrincipal httpPrincipal, long websiteId, String url,
-			long typeId, boolean primary)
+			HttpPrincipal httpPrincipal, String externalReferenceCode,
+			long websiteId, String url, long typeId, boolean primary)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
 				WebsiteServiceUtil.class, "updateWebsite",
-				_updateWebsiteParameterTypes4);
+				_updateWebsiteParameterTypes5);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, websiteId, url, typeId, primary);
+				methodKey, externalReferenceCode, websiteId, url, typeId,
+				primary);
 
 			Object returnObj = null;
 
@@ -256,18 +290,24 @@ public class WebsiteServiceHttp {
 	private static Log _log = LogFactoryUtil.getLog(WebsiteServiceHttp.class);
 
 	private static final Class<?>[] _addWebsiteParameterTypes0 = new Class[] {
-		String.class, long.class, String.class, long.class, boolean.class,
-		com.liferay.portal.kernel.service.ServiceContext.class
+		String.class, String.class, long.class, String.class, long.class,
+		boolean.class, com.liferay.portal.kernel.service.ServiceContext.class
 	};
 	private static final Class<?>[] _deleteWebsiteParameterTypes1 =
 		new Class[] {long.class};
-	private static final Class<?>[] _getWebsiteParameterTypes2 = new Class[] {
+	private static final Class<?>[]
+		_fetchWebsiteByExternalReferenceCodeParameterTypes2 = new Class[] {
+			String.class, long.class
+		};
+	private static final Class<?>[] _getWebsiteParameterTypes3 = new Class[] {
 		long.class
 	};
-	private static final Class<?>[] _getWebsitesParameterTypes3 = new Class[] {
+	private static final Class<?>[] _getWebsitesParameterTypes4 = new Class[] {
 		String.class, long.class
 	};
-	private static final Class<?>[] _updateWebsiteParameterTypes4 =
-		new Class[] {long.class, String.class, long.class, boolean.class};
+	private static final Class<?>[] _updateWebsiteParameterTypes5 =
+		new Class[] {
+			String.class, long.class, String.class, long.class, boolean.class
+		};
 
 }

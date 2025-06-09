@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.runner.util;
@@ -71,6 +62,38 @@ public class JSONCurlUtil {
 		return _getParsedResponse(request, jsonPath);
 	}
 
+	public static String head(String requestString)
+		throws IOException, TimeoutException {
+
+		Request request = new Request(requestString, "HEAD");
+
+		return request.send();
+	}
+
+	public static String head(String requestString, String jsonPath)
+		throws IOException, TimeoutException {
+
+		Request request = new Request(requestString, "HEAD");
+
+		return _getParsedResponse(request, jsonPath);
+	}
+
+	public static String patch(String requestString)
+		throws IOException, TimeoutException {
+
+		Request request = new Request(requestString, "PATCH");
+
+		return request.send();
+	}
+
+	public static String patch(String requestString, String jsonPath)
+		throws IOException, TimeoutException {
+
+		Request request = new Request(requestString, "PATCH");
+
+		return _getParsedResponse(request, jsonPath);
+	}
+
 	public static String post(String requestString)
 		throws IOException, TimeoutException {
 
@@ -101,6 +124,19 @@ public class JSONCurlUtil {
 		Request request = new Request(requestString, "PUT");
 
 		return _getParsedResponse(request, jsonPath);
+	}
+
+	public static synchronized String synchronizedPost(String requestString)
+		throws IOException, TimeoutException {
+
+		return post(requestString);
+	}
+
+	public static synchronized String synchronizedPost(
+			String requestString, String jsonPath)
+		throws IOException, TimeoutException {
+
+		return post(requestString, jsonPath);
 	}
 
 	private static String _getParsedResponse(Request request, String jsonPath)
@@ -146,15 +182,15 @@ public class JSONCurlUtil {
 
 			String response = ExecUtil.readInputStream(inputStream, true);
 
-			System.out.println("Response: " + response);
+			_log(response);
+
+			inputStream = process.getErrorStream();
+
+			String errorString = ExecUtil.readInputStream(inputStream, true);
+
+			_log(errorString);
 
 			if (process.exitValue() != 0) {
-				inputStream = process.getErrorStream();
-
-				System.out.println(
-					"Error stream: " +
-						ExecUtil.readInputStream(inputStream, true));
-
 				throw new RuntimeException(
 					"Command finished with exit value: " + process.exitValue());
 			}
@@ -186,7 +222,7 @@ public class JSONCurlUtil {
 		private String _getRequestURL(List<String> tokens) {
 			String token = tokens.get(0);
 
-			if (token.startsWith("http")) {
+			if (token.startsWith("file") || token.startsWith("http")) {
 				return token;
 			}
 
@@ -198,6 +234,21 @@ public class JSONCurlUtil {
 			sb.append("' is an invalid URL.");
 
 			throw new IllegalArgumentException(sb.toString());
+		}
+
+		private void _log(String message) {
+			if (message == null) {
+				message = "";
+			}
+
+			if (message.length() > _maxPrintLineLength) {
+				System.out.println(
+					message.substring(0, _maxPrintLineLength) + "...");
+
+				return;
+			}
+
+			System.out.println(message);
 		}
 
 		private void _setRequestOptions(List<String> tokens) {
@@ -268,10 +319,11 @@ public class JSONCurlUtil {
 		private static Pattern _escapePattern = Pattern.compile(
 			"<CURL_DATA\\[([\\s\\S]*?)\\]CURL_DATA>");
 		private static Pattern _requestPattern = Pattern.compile(
-			"(-[\\w#:\\.]|--[\\w#:\\.-]{2,}|(?:[\\s]|^)https?:[^\\s]+)" +
-				"(\\s+|\\Z)");
+			"(-[\\w#:\\.]|--[\\w#:\\.-]{2,}|(?:[\\s]|^)(?:file|https?)" +
+				":[^\\s]+)(\\s+|\\Z)");
 
 		private Map<String, String> _curlDataMap = new HashMap<>();
+		private final int _maxPrintLineLength = 2500;
 		private final String _requestMethod;
 		private List<RequestOption> _requestOptions = new ArrayList<>();
 		private final String _requestURL;

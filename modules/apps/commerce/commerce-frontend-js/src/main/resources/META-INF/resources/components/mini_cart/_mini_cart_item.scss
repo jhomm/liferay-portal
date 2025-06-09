@@ -5,29 +5,42 @@
 	border-bottom: 1px solid rgba(180, 187, 201, 0.2);
 	display: grid;
 	font-size: 12px;
-	grid-column-gap: 15px;
-	max-height: 200px;
 	grid-template-areas:
 		'info quantity price delete'
 		'errors errors errors errors';
-	grid-template-columns: auto 90px minmax(min-content, 100px) min-content;
-	overflow: hidden;
-	padding: 10px;
+	grid-template-columns: auto 120px minmax(min-content, 100px) min-content;
+	overflow: visible;
 	position: relative;
-	transition: height 0.2s ease-in, padding 0.1s ease-in;
+	transition:
+		height 0.2s ease-in,
+		padding 0.1s ease-in;
+	width: 100%;
 
-	&-anchor,
-	&-anchor:hover,
-	&-anchor:active,
-	&-anchor:focus {
+	.mini-cart-item-details {
 		align-items: center;
 		color: inherit;
 		display: flex;
 		grid-area: info;
+		margin: 1rem;
 		text-decoration: inherit;
 	}
 
-	&-thumbnail {
+	.mini-cart-item-anchor {
+		z-index: 10;
+	}
+
+	.mini-cart-item-alignment {
+		align-items: center;
+		display: flex;
+		min-height: 86px;
+	}
+
+	.mini-cart-item-actions {
+		font-size: 1rem;
+		padding-right: 0.3rem;
+	}
+
+	.mini-cart-item-thumbnail {
 		align-self: flex-start;
 		background-position: center center;
 		background-size: cover;
@@ -40,20 +53,19 @@
 		width: 70px;
 	}
 
-	&-info {
+	.mini-cart-item-info {
+		max-width: 250px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		width: 100%;
 
 		& *:not(& .child-items-quantity) {
 			overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;
-			width: 100%;
 		}
 
-		&.has-options {
+		&.options {
 			align-items: initial;
 			display: grid;
 			height: 100%;
@@ -64,6 +76,25 @@
 
 			.item-info-extra {
 				align-self: flex-end;
+			}
+
+			.item-info-collapse {
+				border: 0;
+				position: relative;
+				z-index: 10;
+
+				.panel-header {
+					padding-left: 0;
+
+					.panel-title {
+						font-size: 0.75rem;
+						text-transform: initial;
+					}
+				}
+
+				.panel-body {
+					padding: 4px 0 0;
+				}
 			}
 		}
 
@@ -85,35 +116,24 @@
 			}
 		}
 
+		.item-info-replacement {
+			align-items: center;
+			display: flex;
+			gap: 0.4em;
+		}
+
 		p,
 		h5,
-		h6 {
+		h6,
+		.h5,
+		.h6 {
 			margin: 0;
 		}
 	}
 
-	&-quantity {
-		grid-area: quantity;
-
-		.quantity-selector {
-			font-size: 0.95rem;
-			height: unset;
-			padding: 0.25rem 0.8rem;
-		}
-
-		input[type='number'] {
-			padding: 0.25rem 0.5rem 0.25rem 0.8rem;
-
-			&::-webkit-inner-spin-button,
-			&::-webkit-outer-spin-button {
-				margin: 0;
-				opacity: 1;
-			}
-		}
-	}
-
-	&-price {
+	.mini-cart-item-price {
 		grid-area: price;
+		padding: 1rem;
 		text-align: right;
 
 		.price {
@@ -127,45 +147,54 @@
 		}
 	}
 
-	&-delete {
-		font-size: 1rem;
-		grid-area: delete;
-		margin: 10px 0;
-	}
-
 	&.is-removed {
 		border: 0;
 		max-height: 0;
+		overflow-y: hidden;
 		padding: 0;
 		transition: all 400ms $ease-out-quart;
 	}
 
-	&-removing {
-		align-items: center;
-		background: #fff;
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-		justify-content: center;
-		left: 100%;
+	.mini-cart-item-is-removing-wrapper {
+		bottom: 0;
+		left: 0;
+		overflow: hidden;
+		pointer-events: none;
 		position: absolute;
-		width: 100%;
-		z-index: 2;
+		right: 0;
+		top: 0;
+		z-index: 10;
 
-		&.active {
-			animation: isRemoving 400ms $ease-out-quart 1 forwards;
+		.mini-cart-item-is-removing {
+			align-items: center;
+			background: #fff;
+			display: flex;
+			flex-direction: column;
+			height: 100%;
+			justify-content: center;
+			left: 100%;
+			position: relative;
+			width: 100%;
 		}
 
-		&.canceled {
+		&.active {
+			pointer-events: auto;
+
+			.mini-cart-item-is-removing {
+				animation: isRemoving 400ms $ease-out-quart 1 forwards;
+			}
+		}
+
+		&.canceled .mini-cart-item-is-removing {
 			animation: isCanceled 400ms $ease-out-quart 1 forwards;
 		}
 
 		.rtl & {
-			&.active {
+			&.active .mini-cart-item-is-removing {
 				animation: isRemovingRTL 400ms $ease-out-quart 1 forwards;
 			}
 
-			&.canceled {
+			&.canceled .mini-cart-item-is-removing {
 				animation: isCanceledRTL 400ms $ease-out-quart 1 forwards;
 			}
 		}
@@ -179,6 +208,7 @@
 			from {
 				transform: translateX(0);
 			}
+
 			to {
 				transform: translateX(-100%);
 			}
@@ -188,6 +218,7 @@
 			from {
 				transform: translateX(-100%);
 			}
+
 			to {
 				transform: translateX(0);
 			}
@@ -197,6 +228,7 @@
 			from {
 				transform: translateX(0);
 			}
+
 			to {
 				transform: translateX(100%);
 			}
@@ -206,22 +238,28 @@
 			from {
 				transform: translateX(100%);
 			}
+
 			to {
 				transform: translateX(0);
 			}
 		}
 	}
 
-	&-errors {
+	.mini-cart-item-errors {
 		background-color: $gray-200;
 		color: $danger-primary;
 		font-weight: 600;
 		grid-area: errors;
-		margin: 12px -12px -12px;
-		padding: 12px;
+		max-width: 100%;
+		overflow: hidden;
+		padding: 1rem;
 
 		span {
 			margin-left: 10px;
 		}
+	}
+
+	.quantity-selector {
+		max-width: 70px;
 	}
 }

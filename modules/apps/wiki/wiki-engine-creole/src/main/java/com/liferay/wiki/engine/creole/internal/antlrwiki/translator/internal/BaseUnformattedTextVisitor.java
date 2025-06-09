@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.engine.creole.internal.antlrwiki.translator.internal;
@@ -36,7 +27,7 @@ public abstract class BaseUnformattedTextVisitor extends BaseASTVisitor {
 	@Override
 	public void visit(BoldTextNode boldTextNode) {
 		if (boldTextNode.getContent() != null) {
-			write(boldTextNode.getContent());
+			_write(boldTextNode.getContent());
 		}
 		else {
 			super.visit(boldTextNode);
@@ -46,7 +37,7 @@ public abstract class BaseUnformattedTextVisitor extends BaseASTVisitor {
 	@Override
 	public void visit(FormattedTextNode formattedTextNode) {
 		if (formattedTextNode.getContent() != null) {
-			write(formattedTextNode.getContent());
+			_write(formattedTextNode.getContent());
 		}
 		else {
 			super.visit(formattedTextNode);
@@ -56,7 +47,7 @@ public abstract class BaseUnformattedTextVisitor extends BaseASTVisitor {
 	@Override
 	public void visit(ItalicTextNode italicTextNode) {
 		if (italicTextNode.getContent() != null) {
-			write(italicTextNode.getContent());
+			_write(italicTextNode.getContent());
 		}
 		else {
 			super.visit(italicTextNode);
@@ -68,7 +59,7 @@ public abstract class BaseUnformattedTextVisitor extends BaseASTVisitor {
 		String link = linkNode.getLink();
 
 		if (link != null) {
-			write(link);
+			_write(link);
 		}
 
 		super.visit(linkNode);
@@ -76,25 +67,25 @@ public abstract class BaseUnformattedTextVisitor extends BaseASTVisitor {
 
 	@Override
 	public void visit(NoWikiInlineNode noWikiInlineNode) {
-		write(noWikiInlineNode.getContent());
+		_write(noWikiInlineNode.getContent());
 	}
 
 	@Override
 	public void visit(NoWikiSectionNode noWikiSectionNode) {
-		write(noWikiSectionNode.getContent());
+		_write(noWikiSectionNode.getContent());
 	}
 
 	@Override
 	public void visit(UnformattedTextNode unformattedTextNode) {
 		if (unformattedTextNode.hasContent()) {
-			write(unformattedTextNode.getContent());
+			_write(unformattedTextNode.getContent());
 		}
 		else {
 			super.visit(unformattedTextNode);
 		}
 	}
 
-	protected void write(String text) {
+	private void _write(String text) {
 		_sb.append(text);
 	}
 

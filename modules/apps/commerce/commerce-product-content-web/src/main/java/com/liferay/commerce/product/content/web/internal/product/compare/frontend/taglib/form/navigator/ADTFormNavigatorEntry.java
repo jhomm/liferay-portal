@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.product.compare.frontend.taglib.form.navigator;
@@ -18,19 +9,18 @@ import com.liferay.commerce.product.content.web.internal.configuration.CPCompare
 import com.liferay.commerce.product.content.web.internal.constants.CPCompareContentConstants;
 import com.liferay.frontend.taglib.form.navigator.BaseJSPFormNavigatorEntry;
 import com.liferay.frontend.taglib.form.navigator.FormNavigatorEntry;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.theme.PortletDisplay;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
+
+import jakarta.servlet.ServletContext;
 
 import java.util.Locale;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, property = "form.navigator.entry.order:Integer=400",
+	property = "form.navigator.entry.order:Integer=400",
 	service = FormNavigatorEntry.class
 )
 public class ADTFormNavigatorEntry extends BaseJSPFormNavigatorEntry<Void> {
@@ -61,21 +51,17 @@ public class ADTFormNavigatorEntry extends BaseJSPFormNavigatorEntry<Void> {
 
 	@Override
 	public String getLabel(Locale locale) {
-		return LanguageUtil.get(locale, "display-template");
+		return _language.get(locale, "display-template");
+	}
+
+	@Override
+	public ServletContext getServletContext() {
+		return _servletContext;
 	}
 
 	@Override
 	public boolean isVisible(User user, Void object) {
 		return _isSelectionStyleADT();
-	}
-
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.commerce.product.content.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
 	}
 
 	@Override
@@ -87,15 +73,12 @@ public class ADTFormNavigatorEntry extends BaseJSPFormNavigatorEntry<Void> {
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
-		ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
-
-		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
-
 		try {
 			CPCompareContentPortletInstanceConfiguration
 				cpCompareContentPortletInstanceConfiguration =
-					portletDisplay.getPortletInstanceConfiguration(
-						CPCompareContentPortletInstanceConfiguration.class);
+					_configurationProvider.getPortletInstanceConfiguration(
+						CPCompareContentPortletInstanceConfiguration.class,
+						serviceContext.getThemeDisplay());
 
 			String selectionStyle =
 				cpCompareContentPortletInstanceConfiguration.selectionStyle();
@@ -104,7 +87,7 @@ public class ADTFormNavigatorEntry extends BaseJSPFormNavigatorEntry<Void> {
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 
 			return false;
@@ -113,5 +96,16 @@ public class ADTFormNavigatorEntry extends BaseJSPFormNavigatorEntry<Void> {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ADTFormNavigatorEntry.class);
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private Language _language;
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.commerce.product.content.web)"
+	)
+	private ServletContext _servletContext;
 
 }

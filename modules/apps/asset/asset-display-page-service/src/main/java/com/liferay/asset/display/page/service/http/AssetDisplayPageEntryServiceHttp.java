@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.display.page.service.http;
@@ -46,16 +37,14 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Brian Wing Shun Chan
- * @see AssetDisplayPageEntryServiceSoap
  * @generated
  */
 public class AssetDisplayPageEntryServiceHttp {
 
 	public static com.liferay.asset.display.page.model.AssetDisplayPageEntry
 			addAssetDisplayPageEntry(
-				HttpPrincipal httpPrincipal, long userId, long groupId,
-				long classNameId, long classPK, long layoutPageTemplateEntryId,
-				int type,
+				HttpPrincipal httpPrincipal, long groupId, long classNameId,
+				long classPK, long layoutPageTemplateEntryId, int type,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws Exception {
 
@@ -66,7 +55,7 @@ public class AssetDisplayPageEntryServiceHttp {
 				_addAssetDisplayPageEntryParameterTypes0);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, userId, groupId, classNameId, classPK,
+				methodKey, groupId, classNameId, classPK,
 				layoutPageTemplateEntryId, type, serviceContext);
 
 			Object returnObj = null;
@@ -97,8 +86,8 @@ public class AssetDisplayPageEntryServiceHttp {
 
 	public static com.liferay.asset.display.page.model.AssetDisplayPageEntry
 			addAssetDisplayPageEntry(
-				HttpPrincipal httpPrincipal, long userId, long groupId,
-				long classNameId, long classPK, long layoutPageTemplateEntryId,
+				HttpPrincipal httpPrincipal, long groupId, long classNameId,
+				long classPK, long layoutPageTemplateEntryId,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws Exception {
 
@@ -109,7 +98,7 @@ public class AssetDisplayPageEntryServiceHttp {
 				_addAssetDisplayPageEntryParameterTypes1);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, userId, groupId, classNameId, classPK,
+				methodKey, groupId, classNameId, classPK,
 				layoutPageTemplateEntryId, serviceContext);
 
 			Object returnObj = null;
@@ -452,12 +441,12 @@ public class AssetDisplayPageEntryServiceHttp {
 
 	private static final Class<?>[] _addAssetDisplayPageEntryParameterTypes0 =
 		new Class[] {
-			long.class, long.class, long.class, long.class, long.class,
-			int.class, com.liferay.portal.kernel.service.ServiceContext.class
+			long.class, long.class, long.class, long.class, int.class,
+			com.liferay.portal.kernel.service.ServiceContext.class
 		};
 	private static final Class<?>[] _addAssetDisplayPageEntryParameterTypes1 =
 		new Class[] {
-			long.class, long.class, long.class, long.class, long.class,
+			long.class, long.class, long.class, long.class,
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};
 	private static final Class<?>[]

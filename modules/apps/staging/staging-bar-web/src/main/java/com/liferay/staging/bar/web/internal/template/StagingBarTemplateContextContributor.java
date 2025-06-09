@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.staging.bar.web.internal.template;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -26,12 +17,12 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.staging.bar.web.internal.servlet.taglib.ui.StagingBarControlMenuJSPDynamicInclude;
+import com.liferay.staging.bar.web.internal.util.StagingBarControlMenuUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,7 +31,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jürgen Kappler
  */
 @Component(
-	immediate = true,
 	property = "type=" + TemplateContextContributor.TYPE_THEME,
 	service = TemplateContextContributor.class
 )
@@ -57,9 +47,7 @@ public class StagingBarTemplateContextContributor
 				WebKeys.THEME_DISPLAY);
 
 		try {
-			if (_stagingBarControlMenuJSPDynamicInclude.isShow(
-					httpServletRequest)) {
-
+			if (StagingBarControlMenuUtil.isShow(httpServletRequest)) {
 				StringBundler sb = new StringBundler(3);
 
 				sb.append(
@@ -95,31 +83,21 @@ public class StagingBarTemplateContextContributor
 			}
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
 
 		contextObjects.put("show_staging", themeDisplay.isShowStagingIcon());
 
 		if (themeDisplay.isShowStagingIcon()) {
 			contextObjects.put(
-				"staging_text",
-				LanguageUtil.get(httpServletRequest, "staging"));
+				"staging_text", _language.get(httpServletRequest, "staging"));
 		}
-	}
-
-	@Reference(unbind = "-")
-	protected void setCustomizationSettingsControlMenuJSPDynamicInclude(
-		StagingBarControlMenuJSPDynamicInclude
-			stagingBarControlMenuJSPDynamicInclude) {
-
-		_stagingBarControlMenuJSPDynamicInclude =
-			stagingBarControlMenuJSPDynamicInclude;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		StagingBarTemplateContextContributor.class);
 
-	private StagingBarControlMenuJSPDynamicInclude
-		_stagingBarControlMenuJSPDynamicInclude;
+	@Reference
+	private Language _language;
 
 }

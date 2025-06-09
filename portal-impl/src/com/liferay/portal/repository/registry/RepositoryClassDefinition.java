@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.repository.registry;
 
 import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.repository.DocumentRepository;
 import com.liferay.portal.kernel.repository.LocalRepository;
 import com.liferay.portal.kernel.repository.Repository;
@@ -32,7 +25,9 @@ import com.liferay.portal.kernel.repository.event.RepositoryEventType;
 import com.liferay.portal.kernel.repository.registry.RepositoryDefiner;
 import com.liferay.portal.kernel.repository.registry.RepositoryEventRegistry;
 import com.liferay.portal.kernel.repository.registry.RepositoryFactoryRegistry;
-import com.liferay.portal.kernel.util.ServiceProxyFactory;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.RepositoryLocalServiceUtil;
 import com.liferay.portal.repository.InitializedLocalRepository;
 import com.liferay.portal.repository.InitializedRepository;
 import com.liferay.portal.repository.capabilities.CapabilityLocalRepository;
@@ -70,8 +65,12 @@ public class RepositoryClassDefinition
 	public LocalRepository createLocalRepository(long repositoryId)
 		throws PortalException {
 
-		if (_localRepositories.containsKey(repositoryId)) {
-			return _localRepositories.get(repositoryId);
+		Map<Long, LocalRepository> localRepositories =
+			_localRepositoriesMap.computeIfAbsent(
+				_getCompanyId(repositoryId), key -> new ConcurrentHashMap<>());
+
+		if (localRepositories.containsKey(repositoryId)) {
+			return localRepositories.get(repositoryId);
 		}
 
 		InitializedLocalRepository initializedLocalRepository =
@@ -106,7 +105,7 @@ public class RepositoryClassDefinition
 		initializedLocalRepository.setDocumentRepository(
 			capabilityLocalRepository);
 
-		_localRepositories.put(repositoryId, capabilityLocalRepository);
+		localRepositories.put(repositoryId, capabilityLocalRepository);
 
 		return capabilityLocalRepository;
 	}
@@ -115,8 +114,11 @@ public class RepositoryClassDefinition
 	public Repository createRepository(long repositoryId)
 		throws PortalException {
 
-		if (_repositories.containsKey(repositoryId)) {
-			return _repositories.get(repositoryId);
+		Map<Long, Repository> repositories = _repositoriesMap.computeIfAbsent(
+			_getCompanyId(repositoryId), key -> new ConcurrentHashMap<>());
+
+		if (repositories.containsKey(repositoryId)) {
+			return repositories.get(repositoryId);
 		}
 
 		InitializedRepository initializedRepository =
@@ -150,7 +152,7 @@ public class RepositoryClassDefinition
 		initializedRepository.setDocumentRepository(capabilityRepository);
 
 		if (!ExportImportThreadLocal.isImportInProcess()) {
-			_repositories.put(repositoryId, capabilityRepository);
+			repositories.put(repositoryId, capabilityRepository);
 		}
 
 		return capabilityRepository;
@@ -169,8 +171,8 @@ public class RepositoryClassDefinition
 	}
 
 	public void invalidateCache() {
-		_localRepositories.clear();
-		_repositories.clear();
+		_localRepositoriesMap.clear();
+		_repositoriesMap.clear();
 	}
 
 	@Override
@@ -192,8 +194,34 @@ public class RepositoryClassDefinition
 	}
 
 	protected void invalidateCachedRepository(long repositoryId) {
-		_localRepositories.remove(repositoryId);
-		_repositories.remove(repositoryId);
+		if (CompanyThreadLocal.getCompanyId() != null) {
+			Map<Long, LocalRepository> localRepositories =
+				_localRepositoriesMap.get(CompanyThreadLocal.getCompanyId());
+
+			if (localRepositories != null) {
+				localRepositories.remove(repositoryId);
+			}
+
+			Map<Long, Repository> repositories = _repositoriesMap.get(
+				CompanyThreadLocal.getCompanyId());
+
+			if (repositories != null) {
+				repositories.remove(repositoryId);
+			}
+		}
+		else {
+			for (Map<Long, LocalRepository> localRepositories :
+					_localRepositoriesMap.values()) {
+
+				localRepositories.remove(repositoryId);
+			}
+
+			for (Map<Long, Repository> repositories :
+					_repositoriesMap.values()) {
+
+				repositories.remove(repositoryId);
+			}
+		}
 	}
 
 	protected void setUpCommonCapabilities(
@@ -204,18 +232,24 @@ public class RepositoryClassDefinition
 		if (!capabilityRegistry.isCapabilityProvided(
 				ConfigurationCapability.class)) {
 
+			PortalCapabilityLocator portalCapabilityLocator =
+				_portalCapabilityLocatorSnapshot.get();
+
 			capabilityRegistry.addExportedCapability(
 				ConfigurationCapability.class,
-				_portalCapabilityLocator.getConfigurationCapability(
+				portalCapabilityLocator.getConfigurationCapability(
 					documentRepository));
 		}
 
 		if (!capabilityRegistry.isCapabilityProvided(
 				RepositoryEventTriggerCapability.class)) {
 
+			PortalCapabilityLocator portalCapabilityLocator =
+				_portalCapabilityLocatorSnapshot.get();
+
 			capabilityRegistry.addExportedCapability(
 				RepositoryEventTriggerCapability.class,
-				_portalCapabilityLocator.getRepositoryEventTriggerCapability(
+				portalCapabilityLocator.getRepositoryEventTriggerCapability(
 					documentRepository, repositoryEventTrigger));
 		}
 
@@ -223,14 +257,26 @@ public class RepositoryClassDefinition
 			CacheCapability.class, new CacheCapability());
 	}
 
-	private static volatile PortalCapabilityLocator _portalCapabilityLocator =
-		ServiceProxyFactory.newServiceTrackedInstance(
-			PortalCapabilityLocator.class, RepositoryClassDefinition.class,
-			"_portalCapabilityLocator", false);
+	private long _getCompanyId(long repositoryId) throws PortalException {
+		Group group = GroupLocalServiceUtil.fetchGroup(repositoryId);
 
-	private final Map<Long, LocalRepository> _localRepositories =
+		if (group != null) {
+			return group.getCompanyId();
+		}
+
+		com.liferay.portal.kernel.model.Repository repository =
+			RepositoryLocalServiceUtil.getRepository(repositoryId);
+
+		return repository.getCompanyId();
+	}
+
+	private static final Snapshot<PortalCapabilityLocator>
+		_portalCapabilityLocatorSnapshot = new Snapshot<>(
+			RepositoryClassDefinition.class, PortalCapabilityLocator.class);
+
+	private final Map<Long, Map<Long, LocalRepository>> _localRepositoriesMap =
 		new ConcurrentHashMap<>();
-	private final Map<Long, Repository> _repositories =
+	private final Map<Long, Map<Long, Repository>> _repositoriesMap =
 		new ConcurrentHashMap<>();
 	private final RepositoryDefiner _repositoryDefiner;
 	private RepositoryFactory _repositoryFactory;

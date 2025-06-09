@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -44,7 +35,7 @@ public class OrgLaborWrapper
 		attributes.put("orgLaborId", getOrgLaborId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("organizationId", getOrganizationId());
-		attributes.put("typeId", getTypeId());
+		attributes.put("listTypeId", getListTypeId());
 		attributes.put("sunOpen", getSunOpen());
 		attributes.put("sunClose", getSunClose());
 		attributes.put("monOpen", getMonOpen());
@@ -89,10 +80,10 @@ public class OrgLaborWrapper
 			setOrganizationId(organizationId);
 		}
 
-		Long typeId = (Long)attributes.get("typeId");
+		Long listTypeId = (Long)attributes.get("listTypeId");
 
-		if (typeId != null) {
-			setTypeId(typeId);
+		if (listTypeId != null) {
+			setListTypeId(listTypeId);
 		}
 
 		Integer sunOpen = (Integer)attributes.get("sunOpen");
@@ -213,6 +204,23 @@ public class OrgLaborWrapper
 	@Override
 	public int getFriOpen() {
 		return model.getFriOpen();
+	}
+
+	@Override
+	public ListType getListType()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getListType();
+	}
+
+	/**
+	 * Returns the list type ID of this org labor.
+	 *
+	 * @return the list type ID of this org labor
+	 */
+	@Override
+	public long getListTypeId() {
+		return model.getListTypeId();
 	}
 
 	/**
@@ -355,23 +363,6 @@ public class OrgLaborWrapper
 		return model.getTueOpen();
 	}
 
-	@Override
-	public ListType getType()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getType();
-	}
-
-	/**
-	 * Returns the type ID of this org labor.
-	 *
-	 * @return the type ID of this org labor
-	 */
-	@Override
-	public long getTypeId() {
-		return model.getTypeId();
-	}
-
 	/**
 	 * Returns the wed close of this org labor.
 	 *
@@ -425,6 +416,16 @@ public class OrgLaborWrapper
 	@Override
 	public void setFriOpen(int friOpen) {
 		model.setFriOpen(friOpen);
+	}
+
+	/**
+	 * Sets the list type ID of this org labor.
+	 *
+	 * @param listTypeId the list type ID of this org labor
+	 */
+	@Override
+	public void setListTypeId(long listTypeId) {
+		model.setListTypeId(listTypeId);
 	}
 
 	/**
@@ -568,16 +569,6 @@ public class OrgLaborWrapper
 	}
 
 	/**
-	 * Sets the type ID of this org labor.
-	 *
-	 * @param typeId the type ID of this org labor
-	 */
-	@Override
-	public void setTypeId(long typeId) {
-		model.setTypeId(typeId);
-	}
-
-	/**
 	 * Sets the wed close of this org labor.
 	 *
 	 * @param wedClose the wed close of this org labor
@@ -595,6 +586,11 @@ public class OrgLaborWrapper
 	@Override
 	public void setWedOpen(int wedOpen) {
 		model.setWedOpen(wedOpen);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

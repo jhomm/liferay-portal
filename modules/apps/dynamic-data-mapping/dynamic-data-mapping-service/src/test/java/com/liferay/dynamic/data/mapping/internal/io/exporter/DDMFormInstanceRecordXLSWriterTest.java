@@ -1,179 +1,170 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.io.exporter;
 
 import com.liferay.dynamic.data.mapping.io.exporter.DDMFormInstanceRecordWriterRequest;
 import com.liferay.dynamic.data.mapping.io.exporter.DDMFormInstanceRecordWriterResponse;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.ByteArrayOutputStream;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.DataFormat;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import org.mockito.InOrder;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import org.powermock.api.mockito.PowerMockito;
 
 /**
  * @author Leonardo Barros
  */
-@RunWith(MockitoJUnitRunner.class)
-public class DDMFormInstanceRecordXLSWriterTest extends PowerMockito {
+public class DDMFormInstanceRecordXLSWriterTest {
 
 	@ClassRule
 	@Rule
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
+	@BeforeClass
+	public static void setUpClass() {
+		Mockito.when(
+			_workbook.createCellStyle()
+		).thenReturn(
+			_cellStyle
+		);
+
+		Mockito.when(
+			_workbook.createFont()
+		).thenReturn(
+			_font
+		);
+
+		Mockito.when(
+			_workbook.createSheet()
+		).thenReturn(
+			_sheet
+		);
+
+		Mockito.when(
+			_sheet.createRow(Mockito.anyInt())
+		).thenReturn(
+			_row
+		);
+
+		CreationHelper creationHelper = Mockito.mock(CreationHelper.class);
+
+		Mockito.when(
+			_workbook.getCreationHelper()
+		).thenReturn(
+			creationHelper
+		);
+
+		Mockito.when(
+			creationHelper.createDataFormat()
+		).thenReturn(
+			_dataFormat
+		);
+	}
+
 	@Test
 	public void testCreateCellStyle() {
-		DDMFormInstanceRecordXLSWriter ddmFormInstanceRecordXLSWriter =
-			new DDMFormInstanceRecordXLSWriter();
+		_ddmFormInstanceRecordXLSWriter.createCellStyle(
+			_workbook, false, "Courier New", (short)12);
 
-		Workbook workbook = mock(Workbook.class);
-
-		Font font = mock(Font.class);
-
-		when(
-			workbook.createFont()
-		).thenReturn(
-			font
-		);
-
-		CellStyle cellStyle = mock(CellStyle.class);
-
-		when(
-			workbook.createCellStyle()
-		).thenReturn(
-			cellStyle
-		);
-
-		ddmFormInstanceRecordXLSWriter.createCellStyle(
-			workbook, false, "Courier New", (short)12);
-
-		InOrder inOrder = Mockito.inOrder(workbook, font, cellStyle);
+		InOrder inOrder = Mockito.inOrder(_workbook, _font, _cellStyle);
 
 		inOrder.verify(
-			workbook, Mockito.times(1)
+			_workbook, Mockito.times(1)
 		).createFont();
 
 		inOrder.verify(
-			font, Mockito.times(1)
+			_font, Mockito.times(1)
 		).setBold(
 			false
 		);
 
 		inOrder.verify(
-			font, Mockito.times(1)
+			_font, Mockito.times(1)
 		).setFontHeightInPoints(
 			(short)12
 		);
 
 		inOrder.verify(
-			font, Mockito.times(1)
+			_font, Mockito.times(1)
 		).setFontName(
 			"Courier New"
 		);
 
 		inOrder.verify(
-			workbook, Mockito.times(1)
+			_workbook, Mockito.times(1)
 		).createCellStyle();
 
 		inOrder.verify(
-			cellStyle, Mockito.times(1)
+			_cellStyle, Mockito.times(1)
 		).setFont(
-			font
+			_font
 		);
 	}
 
 	@Test
 	public void testCreateRow() {
-		DDMFormInstanceRecordXLSWriter ddmFormInstanceRecordXLSWriter =
-			new DDMFormInstanceRecordXLSWriter();
+		Cell cell1 = Mockito.mock(Cell.class);
 
-		CellStyle cellStyle = mock(CellStyle.class);
-
-		Sheet sheet = mock(Sheet.class);
-
-		Row row = mock(Row.class);
-
-		when(
-			sheet.createRow(0)
-		).thenReturn(
-			row
-		);
-
-		Cell cell1 = mock(Cell.class);
-
-		when(
-			row.createCell(0, CellType.STRING)
+		Mockito.when(
+			_row.createCell(0)
 		).thenReturn(
 			cell1
 		);
 
-		Cell cell2 = mock(Cell.class);
+		Cell cell2 = Mockito.mock(Cell.class);
 
-		when(
-			row.createCell(1, CellType.STRING)
+		Mockito.when(
+			_row.createCell(1)
 		).thenReturn(
 			cell2
 		);
 
-		ddmFormInstanceRecordXLSWriter.createRow(
-			0, cellStyle, Arrays.asList("value1", "value2"), sheet);
+		_ddmFormInstanceRecordXLSWriter.createRow(
+			_cellStyle, _dataFormat, null, _row,
+			LinkedHashMapBuilder.put(
+				RandomTestUtil.randomString(), "value1"
+			).put(
+				RandomTestUtil.randomString(), "value2"
+			).build());
 
-		InOrder inOrder = Mockito.inOrder(sheet, row, cell1, cell2);
+		InOrder inOrder = Mockito.inOrder(_sheet, _row, cell1, cell2);
 
 		inOrder.verify(
-			sheet, Mockito.times(1)
-		).createRow(
-			0
-		);
-
-		inOrder.verify(
-			row, Mockito.times(1)
+			_row, Mockito.times(1)
 		).createCell(
-			0, CellType.STRING
+			0
 		);
 
 		inOrder.verify(
 			cell1, Mockito.times(1)
 		).setCellStyle(
-			cellStyle
+			_cellStyle
 		);
 
 		inOrder.verify(
@@ -183,15 +174,15 @@ public class DDMFormInstanceRecordXLSWriterTest extends PowerMockito {
 		);
 
 		inOrder.verify(
-			row, Mockito.times(1)
+			_row, Mockito.times(1)
 		).createCell(
-			1, CellType.STRING
+			1
 		);
 
 		inOrder.verify(
 			cell2, Mockito.times(1)
 		).setCellStyle(
-			cellStyle
+			_cellStyle
 		);
 
 		inOrder.verify(
@@ -203,113 +194,113 @@ public class DDMFormInstanceRecordXLSWriterTest extends PowerMockito {
 
 	@Test
 	public void testWrite() throws Exception {
-		Map<String, String> ddmFormFieldsLabel = Collections.emptyMap();
-
-		List<Map<String, String>> ddmFormFieldValues =
-			new ArrayList<Map<String, String>>() {
-				{
-					add(
-						HashMapBuilder.put(
-							"field1", "2"
-						).build());
-
-					add(
-						HashMapBuilder.put(
-							"field1", "1"
-						).build());
-				}
-			};
-
-		DDMFormInstanceRecordWriterRequest.Builder builder =
-			DDMFormInstanceRecordWriterRequest.Builder.newBuilder(
-				ddmFormFieldsLabel, ddmFormFieldValues);
-
-		DDMFormInstanceRecordWriterRequest ddmFormInstanceRecordWriterRequest =
-			builder.build();
-
-		DDMFormInstanceRecordXLSWriter ddmFormInstanceRecordXLSWriter = mock(
-			DDMFormInstanceRecordXLSWriter.class);
-
-		ByteArrayOutputStream byteArrayOutputStream = mock(
+		ByteArrayOutputStream byteArrayOutputStream = Mockito.mock(
 			ByteArrayOutputStream.class);
 
-		when(
-			ddmFormInstanceRecordXLSWriter.createByteArrayOutputStream()
-		).thenReturn(
-			byteArrayOutputStream
-		);
-
-		when(
+		Mockito.when(
 			byteArrayOutputStream.toByteArray()
 		).thenReturn(
 			new byte[] {1, 2, 3}
 		);
 
-		Workbook workbook = mock(Workbook.class);
-
-		when(
-			ddmFormInstanceRecordXLSWriter.createWorkbook()
-		).thenReturn(
-			workbook
-		);
-
 		Mockito.doNothing(
 		).when(
-			workbook
+			_workbook
 		).write(
 			byteArrayOutputStream
 		);
 
-		when(
+		DDMFormInstanceRecordXLSWriter ddmFormInstanceRecordXLSWriter =
+			Mockito.mock(DDMFormInstanceRecordXLSWriter.class);
+
+		Mockito.when(
+			ddmFormInstanceRecordXLSWriter.createByteArrayOutputStream()
+		).thenReturn(
+			byteArrayOutputStream
+		);
+
+		Mockito.when(
+			ddmFormInstanceRecordXLSWriter.createCellStyle(
+				Mockito.any(Workbook.class), Mockito.anyBoolean(),
+				Mockito.anyString(), Mockito.anyShort())
+		).thenReturn(
+			_cellStyle
+		);
+
+		Mockito.when(
+			ddmFormInstanceRecordXLSWriter.createWorkbook()
+		).thenReturn(
+			_workbook
+		);
+
+		Mockito.when(
 			ddmFormInstanceRecordXLSWriter.write(
-				ddmFormInstanceRecordWriterRequest)
+				Mockito.any(DDMFormInstanceRecordWriterRequest.class))
 		).thenCallRealMethod();
 
 		DDMFormInstanceRecordWriterResponse
 			ddmFormInstanceRecordWriterResponse =
-				ddmFormInstanceRecordXLSWriter.write(builder.build());
+				ddmFormInstanceRecordXLSWriter.write(
+					DDMFormInstanceRecordWriterRequest.Builder.newBuilder(
+						Collections.emptyMap(),
+						new ArrayList<Map<String, String>>() {
+							{
+								add(
+									HashMapBuilder.put(
+										"field1", "2"
+									).build());
+
+								add(
+									HashMapBuilder.put(
+										"field1", "1"
+									).build());
+							}
+						}
+					).build());
 
 		Assert.assertArrayEquals(
 			new byte[] {1, 2, 3},
 			ddmFormInstanceRecordWriterResponse.getContent());
 
 		InOrder inOrder = Mockito.inOrder(
-			ddmFormInstanceRecordXLSWriter, workbook, byteArrayOutputStream);
+			ddmFormInstanceRecordXLSWriter, _workbook, byteArrayOutputStream);
 
 		inOrder.verify(
-			workbook, Mockito.times(1)
+			_workbook, Mockito.times(1)
 		).createSheet();
 
 		inOrder.verify(
 			ddmFormInstanceRecordXLSWriter, Mockito.times(1)
 		).createCellStyle(
-			Matchers.any(Workbook.class), Matchers.anyBoolean(),
-			Matchers.anyString(), Matchers.anyByte()
+			Mockito.any(Workbook.class), Mockito.anyBoolean(),
+			Mockito.anyString(), Mockito.anyShort()
 		);
 
 		inOrder.verify(
 			ddmFormInstanceRecordXLSWriter, Mockito.times(1)
 		).createRow(
-			Matchers.anyInt(), Matchers.any(CellStyle.class),
-			Matchers.anyCollection(), Matchers.any(Sheet.class)
+			Mockito.any(CellStyle.class), Mockito.any(DataFormat.class),
+			Mockito.nullable(Map.class), Mockito.any(Row.class),
+			Mockito.anyMap()
 		);
 
 		inOrder.verify(
 			ddmFormInstanceRecordXLSWriter, Mockito.times(1)
 		).createCellStyle(
-			Matchers.any(Workbook.class), Matchers.anyBoolean(),
-			Matchers.anyString(), Matchers.anyByte()
+			Mockito.any(Workbook.class), Mockito.anyBoolean(),
+			Mockito.anyString(), Mockito.anyShort()
 		);
 
 		inOrder.verify(
 			ddmFormInstanceRecordXLSWriter, Mockito.times(2)
 		).createRow(
-			Matchers.anyInt(), Matchers.any(CellStyle.class),
-			Matchers.anyCollection(), Matchers.any(Sheet.class)
+			Mockito.any(CellStyle.class), Mockito.any(DataFormat.class),
+			Mockito.nullable(Map.class), Mockito.any(Row.class),
+			Mockito.anyMap()
 		);
 
 		inOrder.verify(
-			workbook, Mockito.times(1)
+			_workbook, Mockito.times(1)
 		).write(
 			byteArrayOutputStream
 		);
@@ -318,5 +309,16 @@ public class DDMFormInstanceRecordXLSWriterTest extends PowerMockito {
 			byteArrayOutputStream, Mockito.times(1)
 		).toByteArray();
 	}
+
+	private static final CellStyle _cellStyle = Mockito.mock(CellStyle.class);
+	private static final DataFormat _dataFormat = Mockito.mock(
+		DataFormat.class);
+	private static final Font _font = Mockito.mock(Font.class);
+	private static final Row _row = Mockito.mock(Row.class);
+	private static final Sheet _sheet = Mockito.mock(Sheet.class);
+	private static final Workbook _workbook = Mockito.mock(Workbook.class);
+
+	private final DDMFormInstanceRecordXLSWriter
+		_ddmFormInstanceRecordXLSWriter = new DDMFormInstanceRecordXLSWriter();
 
 }

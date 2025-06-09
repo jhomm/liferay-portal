@@ -1,9 +1,8 @@
-@component-name = "portal-workflow"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Content Page,Workflow";
 	property testray.main.component.name = "Workflow";
 
 	setUp {
@@ -12,38 +11,16 @@ definition {
 		User.firstLoginPG();
 
 		Navigator.openURL();
-
-		ProductMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Site Administration",
-			portlet = "Workflow");
-
-		Workflow.configureWorkflow(
-			workflowDefinition = "Single Approver",
-			workflowResourceValue = "Comment");
-
-		ProductMenu.gotoPortlet(
-			category = "Site Builder",
-			panel = "Site Administration",
-			portlet = "Pages");
-
-		SitePages.addPublicPage(pageName = "Page Comments Page");
-
-		Navigator.gotoPage(pageName = "Page Comments Page");
-
-		Portlet.addPG(portletName = "Page Comments");
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
-			PageComment.tearDownPG(pageName = "Page Comments Page");
-
-			Page.tearDownPG();
+			PagesAdmin.tearDownCP();
 
 			Workflow.tearDownPortalWorkflow();
 
@@ -52,12 +29,9 @@ definition {
 	}
 
 	@description = "Verify that the user can approve a Content Page"
-	@priority = "5"
+	@priority = 5
 	test CanApproveContentPageWithWorkflow {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -67,14 +41,9 @@ definition {
 
 		Alert.viewSuccessMessage();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Sites",
-			panel = "Control Panel",
-			portlet = "Sites");
+		Site.openSitesAdmin();
 
-		Site.addBlankCP(siteName = "Site Test");
-
-		JSONGroup.addGroup(groupName = "Site Test");
+		HeadlessSite.addSite(siteName = "Site Test");
 
 		JSONUser.addUser(
 			userEmailAddress = "usersn@liferay.com",
@@ -90,12 +59,8 @@ definition {
 		JSONRole.assignRoleToUser(
 			roleTitle = "Administrator",
 			userEmailAddress = "usersn@liferay.com");
-		Navigator.openURL();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Instance Settings");
+		PortalSettings.openInstanceSettingsAdmin();
 
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "User Authentication",
@@ -104,14 +69,13 @@ definition {
 
 		PortalSettings.uncheckStrangersVerifyEmailCheckbox();
 
-		Navigator.openURL();
+		Site.openSiteSettingsAdmin(siteURLKey = "site-test");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		Site.manageMembershipOptions(allowManualMembershipManagement = "true");
 
-		Site.assignUserSitesCP(
+		User.openUsersAdmin();
+
+		User.editUserSiteCP(
 			siteName = "Site Test",
 			userScreenName = "usersn_");
 
@@ -121,7 +85,7 @@ definition {
 
 		for (var resourceAction : list "UPDATE,UPDATE_LAYOUT_CONTENT,VIEW") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceAction}",
+				resourceAction = ${resourceAction},
 				resourceName = "com.liferay.portal.kernel.model.Layout",
 				roleTitle = "Page Author",
 				roleType = "site");
@@ -129,16 +93,13 @@ definition {
 
 		for (var resourceAction : list "ACCESS_IN_CONTROL_PANEL,VIEW") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceAction}",
+				resourceAction = ${resourceAction},
 				resourceName = "com_liferay_layout_admin_web_portlet_GroupPagesPortlet",
 				roleTitle = "Page Author",
 				roleType = "site");
 		}
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.assignSiteRoleCP(
 			siteRoleName = "Page Author",
@@ -158,8 +119,8 @@ definition {
 			fragmentName = "Heading");
 
 		AssertClick(
-			locator1 = "Button#SUBMIT_FOR_PUBLICATION",
-			value1 = "Submit for Publication");
+			locator1 = "Button#SUBMIT_FOR_WORKFLOW",
+			value1 = "Submit for Workflow");
 
 		ProductMenu.gotoPortlet(
 			category = "Site Builder",
@@ -195,12 +156,9 @@ definition {
 	}
 
 	@description = "Verify that the user can reject a Content Page"
-	@priority = "5"
+	@priority = 5
 	test CanRejectContentPageWithWorkflow {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -210,14 +168,9 @@ definition {
 
 		Alert.viewSuccessMessage();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Sites",
-			panel = "Control Panel",
-			portlet = "Sites");
+		Site.openSitesAdmin();
 
-		Site.addBlankCP(siteName = "Site Test");
-
-		JSONGroup.addGroup(groupName = "Site Test");
+		HeadlessSite.addSite(siteName = "Site Test");
 
 		JSONUser.addUser(
 			userEmailAddress = "usersn@liferay.com",
@@ -234,12 +187,7 @@ definition {
 			roleTitle = "Administrator",
 			userEmailAddress = "usersn@liferay.com");
 
-		Navigator.openURL();
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Instance Settings");
+		PortalSettings.openInstanceSettingsAdmin();
 
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "User Authentication",
@@ -248,14 +196,13 @@ definition {
 
 		PortalSettings.uncheckStrangersVerifyEmailCheckbox();
 
-		Navigator.openURL();
+		Site.openSiteSettingsAdmin(siteURLKey = "site-test");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		Site.manageMembershipOptions(allowManualMembershipManagement = "true");
 
-		Site.assignUserSitesCP(
+		User.openUsersAdmin();
+
+		User.editUserSiteCP(
 			siteName = "Site Test",
 			userScreenName = "usersn_");
 
@@ -265,7 +212,7 @@ definition {
 
 		for (var resourceAction : list "UPDATE,UPDATE_LAYOUT_CONTENT,VIEW") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceAction}",
+				resourceAction = ${resourceAction},
 				resourceName = "com.liferay.portal.kernel.model.Layout",
 				roleTitle = "Page Author",
 				roleType = "site");
@@ -273,16 +220,13 @@ definition {
 
 		for (var resourceAction : list "ACCESS_IN_CONTROL_PANEL,VIEW") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceAction}",
+				resourceAction = ${resourceAction},
 				resourceName = "com_liferay_layout_admin_web_portlet_GroupPagesPortlet",
 				roleTitle = "Page Author",
 				roleType = "site");
 		}
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.assignSiteRoleCP(
 			siteRoleName = "Page Author",
@@ -294,7 +238,7 @@ definition {
 			type = "content");
 
 		ContentPagesNavigator.openEditContentPage(
-			pageName = "Test Page Name",
+			pageName = "Page Name",
 			siteName = "Site Test");
 
 		PageEditor.addFragment(
@@ -302,8 +246,8 @@ definition {
 			fragmentName = "Heading");
 
 		AssertClick(
-			locator1 = "Button#SUBMIT_FOR_PUBLICATION",
-			value1 = "Submit for Publication");
+			locator1 = "Button#SUBMIT_FOR_WORKFLOW",
+			value1 = "Submit for Workflow");
 
 		ProductMenu.gotoPortlet(
 			category = "Site Builder",
@@ -335,7 +279,11 @@ definition {
 			category = "Site Builder",
 			portlet = "Pages");
 
-		AssertElementPresent(locator1 = "SitePages#SITE_PENDING_STATUS");
+		AssertTextEquals(
+			index = 2,
+			key_itemName = "Page Name",
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM_PAGE_STATUS",
+			value1 = "Pending");
 	}
 
 }

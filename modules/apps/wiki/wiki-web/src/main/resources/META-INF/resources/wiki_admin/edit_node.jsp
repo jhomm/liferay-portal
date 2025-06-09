@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -44,33 +35,35 @@ renderResponse.setTitle((node == null) ? LanguageUtil.get(request, "new-wiki-nod
 
 		<aui:model-context bean="<%= node %>" model="<%= WikiNode.class %>" />
 
-		<aui:fieldset-group markupView="lexicon">
-			<aui:fieldset>
-				<aui:input autoFocus="<%= windowState.equals(WindowState.MAXIMIZED) %>" name="name">
-					<aui:validator errorMessage="please-enter-a-nonnumeric-name" name="custom">
-						function(val) {
-							return !/^\d+$/.test(val);
-						}
-					</aui:validator>
-				</aui:input>
+		<div class="sheet">
+			<div class="panel-group panel-group-flush">
+				<aui:fieldset>
+					<aui:input name="name">
+						<aui:validator errorMessage="please-enter-a-nonnumeric-name" name="custom">
+							function(val) {
+								return !/^\d+$/.test(val);
+							}
+						</aui:validator>
+					</aui:input>
 
-				<aui:input name="description" />
-			</aui:fieldset>
-
-			<c:if test="<%= node == null %>">
-				<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" label="permissions">
-					<liferay-ui:input-permissions
-						modelName="<%= WikiNode.class.getName() %>"
-					/>
+					<aui:input name="description" />
 				</aui:fieldset>
-			</c:if>
 
-			<div class="sheet-footer">
-				<aui:button type="submit" />
+				<c:if test="<%= node == null %>">
+					<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" label="permissions">
+						<liferay-ui:input-permissions
+							modelName="<%= WikiNode.class.getName() %>"
+						/>
+					</aui:fieldset>
+				</c:if>
 
-				<aui:button href="<%= redirect %>" type="cancel" />
+				<div class="sheet-footer">
+					<aui:button type="submit" />
+
+					<aui:button href="<%= redirect %>" type="cancel" />
+				</div>
 			</div>
-		</aui:fieldset-group>
+		</div>
 	</aui:form>
 </clay:container-fluid>
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service;
@@ -25,6 +16,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
  */
 public class AccountEntryServiceWrapper
 	implements AccountEntryService, ServiceWrapper<AccountEntryService> {
+
+	public AccountEntryServiceWrapper() {
+		this(null);
+	}
 
 	public AccountEntryServiceWrapper(AccountEntryService accountEntryService) {
 		_accountEntryService = accountEntryService;
@@ -47,15 +42,32 @@ public class AccountEntryServiceWrapper
 
 	@Override
 	public com.liferay.account.model.AccountEntry addAccountEntry(
-			long userId, long parentAccountEntryId, String name,
-			String description, String[] domains, String email,
-			byte[] logoBytes, String taxIdNumber, String type, int status,
+			String externalReferenceCode, long userId,
+			long parentAccountEntryId, String name, String description,
+			String[] domains, String email, byte[] logoBytes,
+			String taxIdNumber, String type, int status,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _accountEntryService.addAccountEntry(
-			userId, parentAccountEntryId, name, description, domains, email,
-			logoBytes, taxIdNumber, type, status, serviceContext);
+			externalReferenceCode, userId, parentAccountEntryId, name,
+			description, domains, email, logoBytes, taxIdNumber, type, status,
+			serviceContext);
+	}
+
+	@Override
+	public com.liferay.account.model.AccountEntry addOrUpdateAccountEntry(
+			String externalReferenceCode, long userId,
+			long parentAccountEntryId, String name, String description,
+			String[] domains, String emailAddress, byte[] logoBytes,
+			String taxIdNumber, String type, int status,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryService.addOrUpdateAccountEntry(
+			externalReferenceCode, userId, parentAccountEntryId, name,
+			description, domains, emailAddress, logoBytes, taxIdNumber, type,
+			status, serviceContext);
 	}
 
 	@Override
@@ -96,6 +108,16 @@ public class AccountEntryServiceWrapper
 	}
 
 	@Override
+	public com.liferay.account.model.AccountEntry
+			fetchAccountEntryByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryService.fetchAccountEntryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	@Override
 	public java.util.List<com.liferay.account.model.AccountEntry>
 			getAccountEntries(
 				long companyId, int status, int start, int end,
@@ -113,6 +135,26 @@ public class AccountEntryServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _accountEntryService.getAccountEntry(accountEntryId);
+	}
+
+	@Override
+	public com.liferay.account.model.AccountEntry
+			getAccountEntryByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryService.getAccountEntryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	@Override
+	public com.liferay.account.model.AccountEntry
+			getOrAddIncompleteAccountEntry(
+				String externalReferenceCode, String name, String type)
+		throws Exception {
+
+		return _accountEntryService.getOrAddIncompleteAccountEntry(
+			externalReferenceCode, name, type);
 	}
 
 	/**
@@ -146,17 +188,43 @@ public class AccountEntryServiceWrapper
 
 	@Override
 	public com.liferay.account.model.AccountEntry updateAccountEntry(
-			long accountEntryId, long parentAccountEntryId, String name,
-			String description, boolean deleteLogo, String[] domains,
-			String emailAddress, byte[] logoBytes, String taxIdNumber,
-			int status,
+			String externalReferenceCode, long accountEntryId,
+			long parentAccountEntryId, String name, String description,
+			boolean deleteLogo, String[] domains, String emailAddress,
+			byte[] logoBytes, String taxIdNumber, int status,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _accountEntryService.updateAccountEntry(
-			accountEntryId, parentAccountEntryId, name, description, deleteLogo,
-			domains, emailAddress, logoBytes, taxIdNumber, status,
-			serviceContext);
+			externalReferenceCode, accountEntryId, parentAccountEntryId, name,
+			description, deleteLogo, domains, emailAddress, logoBytes,
+			taxIdNumber, status, serviceContext);
+	}
+
+	@Override
+	public com.liferay.account.model.AccountEntry updateDefaultBillingAddressId(
+			long accountEntryId, long addressId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryService.updateDefaultBillingAddressId(
+			accountEntryId, addressId);
+	}
+
+	@Override
+	public com.liferay.account.model.AccountEntry
+			updateDefaultShippingAddressId(long accountEntryId, long addressId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryService.updateDefaultShippingAddressId(
+			accountEntryId, addressId);
+	}
+
+	@Override
+	public com.liferay.account.model.AccountEntry updateDomains(
+			long accountEntryId, String[] domains)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryService.updateDomains(accountEntryId, domains);
 	}
 
 	@Override
@@ -166,6 +234,15 @@ public class AccountEntryServiceWrapper
 
 		return _accountEntryService.updateExternalReferenceCode(
 			accountEntryId, externalReferenceCode);
+	}
+
+	@Override
+	public com.liferay.account.model.AccountEntry updateRestrictMembership(
+			long accountEntryId, boolean restrictMembership)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryService.updateRestrictMembership(
+			accountEntryId, restrictMembership);
 	}
 
 	@Override

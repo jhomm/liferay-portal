@@ -1,0 +1,51 @@
+{
+	"description_i18n": {
+		"en_US": "hide-contents-in-a-category-description"
+	},
+	"elementDefinition": {
+		"category": "hide",
+		"configuration": {
+			"queryConfiguration": {
+				"queryEntries": [
+					{
+						"clauses": [
+							{
+								"context": "query",
+								"occur": "filter",
+								"query": {
+									"bool": {
+										"must_not": [
+											{
+												"terms": {
+													"groupAssetCategoryExternalReferenceCodes": "${configuration.group_asset_category_external_reference_codes}"
+												}
+											}
+										]
+									}
+								}
+							}
+						]
+					}
+				]
+			}
+		},
+		"icon": "hidden",
+		"uiConfiguration": {
+			"fieldSets": [
+				{
+					"fields": [
+						{
+							"label": "asset-category-external-reference-codes",
+							"name": "group_asset_category_external_reference_codes",
+							"type": "multiselect"
+						}
+					]
+				}
+			]
+		}
+	},
+	"externalReferenceCode": "HIDE_CONTENTS_IN_A_CATEGORY",
+	"title_i18n": {
+		"en_US": "hide-contents-in-a-category"
+	}
+}

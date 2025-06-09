@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.reading.time.model.impl;
@@ -19,13 +10,9 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
-import com.liferay.portal.kernel.exception.NoSuchModelException;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
-import com.liferay.portal.kernel.model.ContainerModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
-import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.DateUtil;
@@ -37,22 +24,18 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.reading.time.model.ReadingTimeEntry;
 import com.liferay.reading.time.model.ReadingTimeEntryModel;
-import com.liferay.reading.time.model.ReadingTimeEntrySoap;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -81,6 +64,7 @@ public class ReadingTimeEntryModelImpl
 	public static final String TABLE_NAME = "ReadingTimeEntry";
 
 	public static final Object[][] TABLE_COLUMNS = {
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
 		{"uuid_", Types.VARCHAR}, {"readingTimeEntryId", Types.BIGINT},
 		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
 		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
@@ -92,6 +76,8 @@ public class ReadingTimeEntryModelImpl
 		new HashMap<String, Integer>();
 
 	static {
+		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("readingTimeEntryId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
@@ -104,7 +90,7 @@ public class ReadingTimeEntryModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table ReadingTimeEntry (uuid_ VARCHAR(75) null,readingTimeEntryId LONG not null primary key,groupId LONG,companyId LONG,createDate DATE null,modifiedDate DATE null,classNameId LONG,classPK LONG,readingTime LONG)";
+		"create table ReadingTimeEntry (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,readingTimeEntryId LONG not null,groupId LONG,companyId LONG,createDate DATE null,modifiedDate DATE null,classNameId LONG,classPK LONG,readingTime LONG,primary key (readingTimeEntryId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table ReadingTimeEntry";
 
@@ -169,59 +155,6 @@ public class ReadingTimeEntryModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static ReadingTimeEntry toModel(ReadingTimeEntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		ReadingTimeEntry model = new ReadingTimeEntryImpl();
-
-		model.setUuid(soapModel.getUuid());
-		model.setReadingTimeEntryId(soapModel.getReadingTimeEntryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setReadingTime(soapModel.getReadingTime());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<ReadingTimeEntry> toModels(
-		ReadingTimeEntrySoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<ReadingTimeEntry> models = new ArrayList<ReadingTimeEntry>(
-			soapModels.length);
-
-		for (ReadingTimeEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public ReadingTimeEntryModelImpl() {
@@ -300,108 +233,144 @@ public class ReadingTimeEntryModelImpl
 	public Map<String, Function<ReadingTimeEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<ReadingTimeEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, ReadingTimeEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			ReadingTimeEntry.class.getClassLoader(), ReadingTimeEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<ReadingTimeEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<ReadingTimeEntry> constructor =
-				(Constructor<ReadingTimeEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<ReadingTimeEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<ReadingTimeEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", ReadingTimeEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", ReadingTimeEntry::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", ReadingTimeEntry::getUuid);
+			attributeGetterFunctions.put(
+				"readingTimeEntryId", ReadingTimeEntry::getReadingTimeEntryId);
+			attributeGetterFunctions.put(
+				"groupId", ReadingTimeEntry::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", ReadingTimeEntry::getCompanyId);
+			attributeGetterFunctions.put(
+				"createDate", ReadingTimeEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", ReadingTimeEntry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"classNameId", ReadingTimeEntry::getClassNameId);
+			attributeGetterFunctions.put(
+				"classPK", ReadingTimeEntry::getClassPK);
+			attributeGetterFunctions.put(
+				"readingTime", ReadingTimeEntry::getReadingTime);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<ReadingTimeEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<ReadingTimeEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<ReadingTimeEntry, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<ReadingTimeEntry, Object>>();
-		Map<String, BiConsumer<ReadingTimeEntry, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<ReadingTimeEntry, ?>>();
+		private static final Map<String, BiConsumer<ReadingTimeEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("uuid", ReadingTimeEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<ReadingTimeEntry, String>)ReadingTimeEntry::setUuid);
-		attributeGetterFunctions.put(
-			"readingTimeEntryId", ReadingTimeEntry::getReadingTimeEntryId);
-		attributeSetterBiConsumers.put(
-			"readingTimeEntryId",
-			(BiConsumer<ReadingTimeEntry, Long>)
-				ReadingTimeEntry::setReadingTimeEntryId);
-		attributeGetterFunctions.put("groupId", ReadingTimeEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<ReadingTimeEntry, Long>)ReadingTimeEntry::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", ReadingTimeEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<ReadingTimeEntry, Long>)ReadingTimeEntry::setCompanyId);
-		attributeGetterFunctions.put(
-			"createDate", ReadingTimeEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<ReadingTimeEntry, Date>)
-				ReadingTimeEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", ReadingTimeEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<ReadingTimeEntry, Date>)
-				ReadingTimeEntry::setModifiedDate);
-		attributeGetterFunctions.put(
-			"classNameId", ReadingTimeEntry::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<ReadingTimeEntry, Long>)
-				ReadingTimeEntry::setClassNameId);
-		attributeGetterFunctions.put("classPK", ReadingTimeEntry::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK",
-			(BiConsumer<ReadingTimeEntry, Long>)ReadingTimeEntry::setClassPK);
-		attributeGetterFunctions.put(
-			"readingTime", ReadingTimeEntry::getReadingTime);
-		attributeSetterBiConsumers.put(
-			"readingTime",
-			(BiConsumer<ReadingTimeEntry, Long>)
-				ReadingTimeEntry::setReadingTime);
+		static {
+			Map<String, BiConsumer<ReadingTimeEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<ReadingTimeEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<ReadingTimeEntry, Long>)
+					ReadingTimeEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<ReadingTimeEntry, Long>)
+					ReadingTimeEntry::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<ReadingTimeEntry, String>)
+					ReadingTimeEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"readingTimeEntryId",
+				(BiConsumer<ReadingTimeEntry, Long>)
+					ReadingTimeEntry::setReadingTimeEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<ReadingTimeEntry, Long>)
+					ReadingTimeEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<ReadingTimeEntry, Long>)
+					ReadingTimeEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<ReadingTimeEntry, Date>)
+					ReadingTimeEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<ReadingTimeEntry, Date>)
+					ReadingTimeEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<ReadingTimeEntry, Long>)
+					ReadingTimeEntry::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<ReadingTimeEntry, Long>)
+					ReadingTimeEntry::setClassPK);
+			attributeSetterBiConsumers.put(
+				"readingTime",
+				(BiConsumer<ReadingTimeEntry, Long>)
+					ReadingTimeEntry::setReadingTime);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
+	}
+
+	@JSON
+	@Override
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@JSON
@@ -630,74 +599,8 @@ public class ReadingTimeEntryModelImpl
 	}
 
 	@Override
-	public com.liferay.trash.kernel.model.TrashEntry getTrashEntry()
-		throws PortalException {
-
-		if (!isInTrash()) {
-			return null;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return trashEntry;
-		}
-
-		com.liferay.portal.kernel.trash.TrashHandler trashHandler =
-			getTrashHandler();
-
-		if (Validator.isNotNull(
-				trashHandler.getContainerModelClassName(getPrimaryKey()))) {
-
-			ContainerModel containerModel = null;
-
-			try {
-				containerModel = trashHandler.getParentContainerModel(this);
-			}
-			catch (NoSuchModelException noSuchModelException) {
-				return null;
-			}
-
-			while (containerModel != null) {
-				if (containerModel instanceof TrashedModel) {
-					TrashedModel trashedModel = (TrashedModel)containerModel;
-
-					return trashedModel.getTrashEntry();
-				}
-
-				trashHandler =
-					com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil.
-						getTrashHandler(
-							trashHandler.getContainerModelClassName(
-								containerModel.getContainerModelId()));
-
-				if (trashHandler == null) {
-					return null;
-				}
-
-				containerModel = trashHandler.getContainerModel(
-					containerModel.getParentContainerModelId());
-			}
-		}
-
-		return null;
-	}
-
-	@Override
 	public long getTrashEntryClassPK() {
 		return getPrimaryKey();
-	}
-
-	/**
-	 * @deprecated As of Judson (7.1.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.trash.TrashHandler getTrashHandler() {
-		return com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil.
-			getTrashHandler(getModelClassName());
 	}
 
 	@Override
@@ -708,70 +611,6 @@ public class ReadingTimeEntryModelImpl
 		else {
 			return false;
 		}
-	}
-
-	@Override
-	public boolean isInTrashContainer() {
-		com.liferay.portal.kernel.trash.TrashHandler trashHandler =
-			getTrashHandler();
-
-		if ((trashHandler == null) ||
-			Validator.isNull(
-				trashHandler.getContainerModelClassName(getPrimaryKey()))) {
-
-			return false;
-		}
-
-		try {
-			ContainerModel containerModel =
-				trashHandler.getParentContainerModel(this);
-
-			if (containerModel == null) {
-				return false;
-			}
-
-			if (containerModel instanceof TrashedModel) {
-				return ((TrashedModel)containerModel).isInTrash();
-			}
-		}
-		catch (Exception exception) {
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean isInTrashExplicitly() {
-		if (!isInTrash()) {
-			return false;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return true;
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean isInTrashImplicitly() {
-		if (!isInTrash()) {
-			return false;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return false;
-		}
-
-		return true;
 	}
 
 	public long getColumnBitmask() {
@@ -830,6 +669,8 @@ public class ReadingTimeEntryModelImpl
 	public Object clone() {
 		ReadingTimeEntryImpl readingTimeEntryImpl = new ReadingTimeEntryImpl();
 
+		readingTimeEntryImpl.setMvccVersion(getMvccVersion());
+		readingTimeEntryImpl.setCtCollectionId(getCtCollectionId());
 		readingTimeEntryImpl.setUuid(getUuid());
 		readingTimeEntryImpl.setReadingTimeEntryId(getReadingTimeEntryId());
 		readingTimeEntryImpl.setGroupId(getGroupId());
@@ -849,6 +690,10 @@ public class ReadingTimeEntryModelImpl
 	public ReadingTimeEntry cloneWithOriginalValues() {
 		ReadingTimeEntryImpl readingTimeEntryImpl = new ReadingTimeEntryImpl();
 
+		readingTimeEntryImpl.setMvccVersion(
+			this.<Long>getColumnOriginalValue("mvccVersion"));
+		readingTimeEntryImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		readingTimeEntryImpl.setUuid(
 			this.<String>getColumnOriginalValue("uuid_"));
 		readingTimeEntryImpl.setReadingTimeEntryId(
@@ -946,6 +791,10 @@ public class ReadingTimeEntryModelImpl
 		ReadingTimeEntryCacheModel readingTimeEntryCacheModel =
 			new ReadingTimeEntryCacheModel();
 
+		readingTimeEntryCacheModel.mvccVersion = getMvccVersion();
+
+		readingTimeEntryCacheModel.ctCollectionId = getCtCollectionId();
+
 		readingTimeEntryCacheModel.uuid = getUuid();
 
 		String uuid = readingTimeEntryCacheModel.uuid;
@@ -1037,44 +886,17 @@ public class ReadingTimeEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<ReadingTimeEntry, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<ReadingTimeEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<ReadingTimeEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((ReadingTimeEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, ReadingTimeEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					ReadingTimeEntry.class, ModelWrapper.class);
 
 	}
 
+	private long _mvccVersion;
+	private long _ctCollectionId;
 	private String _uuid;
 	private long _readingTimeEntryId;
 	private long _groupId;
@@ -1090,7 +912,8 @@ public class ReadingTimeEntryModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<ReadingTimeEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1115,6 +938,8 @@ public class ReadingTimeEntryModelImpl
 	private void _setColumnOriginalValues() {
 		_columnOriginalValues = new HashMap<String, Object>();
 
+		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put("readingTimeEntryId", _readingTimeEntryId);
 		_columnOriginalValues.put("groupId", _groupId);
@@ -1147,23 +972,27 @@ public class ReadingTimeEntryModelImpl
 	static {
 		Map<String, Long> columnBitmasks = new HashMap<>();
 
-		columnBitmasks.put("uuid_", 1L);
+		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("readingTimeEntryId", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("groupId", 4L);
+		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("companyId", 8L);
+		columnBitmasks.put("readingTimeEntryId", 8L);
 
-		columnBitmasks.put("createDate", 16L);
+		columnBitmasks.put("groupId", 16L);
 
-		columnBitmasks.put("modifiedDate", 32L);
+		columnBitmasks.put("companyId", 32L);
 
-		columnBitmasks.put("classNameId", 64L);
+		columnBitmasks.put("createDate", 64L);
 
-		columnBitmasks.put("classPK", 128L);
+		columnBitmasks.put("modifiedDate", 128L);
 
-		columnBitmasks.put("readingTime", 256L);
+		columnBitmasks.put("classNameId", 256L);
+
+		columnBitmasks.put("classPK", 512L);
+
+		columnBitmasks.put("readingTime", 1024L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

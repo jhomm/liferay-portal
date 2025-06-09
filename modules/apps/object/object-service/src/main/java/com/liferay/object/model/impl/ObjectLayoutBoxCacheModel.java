@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model.impl;
@@ -78,7 +69,7 @@ public class ObjectLayoutBoxCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(25);
+		StringBundler sb = new StringBundler(27);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -104,6 +95,8 @@ public class ObjectLayoutBoxCacheModel
 		sb.append(name);
 		sb.append(", priority=");
 		sb.append(priority);
+		sb.append(", type=");
+		sb.append(type);
 		sb.append("}");
 
 		return sb.toString();
@@ -159,6 +152,13 @@ public class ObjectLayoutBoxCacheModel
 
 		objectLayoutBoxImpl.setPriority(priority);
 
+		if (type == null) {
+			objectLayoutBoxImpl.setType("");
+		}
+		else {
+			objectLayoutBoxImpl.setType(type);
+		}
+
 		objectLayoutBoxImpl.resetOriginalValues();
 
 		return objectLayoutBoxImpl;
@@ -184,6 +184,7 @@ public class ObjectLayoutBoxCacheModel
 		name = objectInput.readUTF();
 
 		priority = objectInput.readInt();
+		type = objectInput.readUTF();
 	}
 
 	@Override
@@ -225,6 +226,13 @@ public class ObjectLayoutBoxCacheModel
 		}
 
 		objectOutput.writeInt(priority);
+
+		if (type == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(type);
+		}
 	}
 
 	public long mvccVersion;
@@ -239,5 +247,6 @@ public class ObjectLayoutBoxCacheModel
 	public boolean collapsable;
 	public String name;
 	public int priority;
+	public String type;
 
 }

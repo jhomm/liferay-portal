@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.test.util;
@@ -62,19 +53,20 @@ public abstract class BaseDLAppTestCase {
 		targetGroup = GroupTestUtil.addGroup();
 
 		try {
-			_dlAppService.deleteFolder(
+			dlAppService.deleteFolder(
 				group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 				"Test Folder");
 		}
 		catch (NoSuchFolderException noSuchFolderException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchFolderException, noSuchFolderException);
+				_log.debug(noSuchFolderException);
 			}
 		}
 
-		parentFolder = _dlAppService.addFolder(
-			group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-			"Test Folder", RandomTestUtil.randomString(),
+		parentFolder = dlAppService.addFolder(
+			null, group.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, "Test Folder",
+			RandomTestUtil.randomString(),
 			ServiceContextTestUtil.getServiceContext(
 				group.getGroupId(), TestPropsValues.getUserId()));
 
@@ -89,6 +81,9 @@ public abstract class BaseDLAppTestCase {
 		PrincipalThreadLocal.setName(_name);
 	}
 
+	@Inject
+	protected DLAppService dlAppService;
+
 	@DeleteAfterTestRun
 	protected Group group;
 
@@ -99,9 +94,6 @@ public abstract class BaseDLAppTestCase {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseDLAppTestCase.class);
-
-	@Inject
-	private DLAppService _dlAppService;
 
 	private String _name;
 

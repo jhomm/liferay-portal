@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.internal.upgrade.v1_0_0;
@@ -28,10 +19,10 @@ public class WikiPageResourceUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		updateWikiPageResources();
+		_updateWikiPageResources();
 	}
 
-	protected long getGroupId(long resourcePrimKey) throws Exception {
+	private long _getGroupId(long resourcePrimKey) throws Exception {
 		long groupId = 0;
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
@@ -49,7 +40,7 @@ public class WikiPageResourceUpgradeProcess extends UpgradeProcess {
 		return groupId;
 	}
 
-	protected void updateWikiPageResources() throws Exception {
+	private void _updateWikiPageResources() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				"select resourcePrimKey from WikiPageResource");
@@ -61,7 +52,7 @@ public class WikiPageResourceUpgradeProcess extends UpgradeProcess {
 				runSQL(
 					StringBundler.concat(
 						"update WikiPageResource set groupId = ",
-						getGroupId(resourcePrimKey),
+						_getGroupId(resourcePrimKey),
 						" where resourcePrimKey = ", resourcePrimKey));
 			}
 		}

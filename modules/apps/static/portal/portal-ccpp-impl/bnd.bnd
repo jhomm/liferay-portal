@@ -1,0 +1,19 @@
+Bundle-Name: Liferay Portal CCPP Implementation
+Bundle-SymbolicName: com.liferay.portal.ccpp.impl
+Bundle-Version: 1.0.6
+Import-Package:\
+	!EDU.oswego.cs.dl.util.concurrent,\
+	\
+	!com.sleepycat.db,\
+	\
+	!junit.*,\
+	\
+	!org.apache.*,\
+	\
+	!org.w3c.*,\
+	\
+	!org.xml.sax.helpers,\
+	\
+	!sun.misc,\
+	\
+	*

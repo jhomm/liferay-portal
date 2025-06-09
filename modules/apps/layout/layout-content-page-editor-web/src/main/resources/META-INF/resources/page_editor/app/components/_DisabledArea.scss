@@ -1,5 +1,3 @@
-@import './variables';
-
 html#{$cadmin-selector} {
 	.page-editor__disabled-area {
 		cursor: not-allowed;
@@ -22,4 +20,16 @@ html#{$cadmin-selector} {
 			background-color: rgba(255, 255, 255, 0.4);
 		}
 	}
+}
+
+.ae-ui .ae-toolbars {
+	.ae-toolbar,
+	.ae-toolbar-add,
+	.ae-toolbar-styles {
+		z-index: $alloyEditorZIndex;
+	}
+}
+
+.cke_dialog_contents_body {
+	min-width: 20rem;
 }

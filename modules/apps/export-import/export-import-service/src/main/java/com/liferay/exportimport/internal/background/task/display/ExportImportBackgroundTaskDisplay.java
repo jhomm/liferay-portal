@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.background.task.display;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.background.task.display.BaseBackgroundTaskDisplay;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
-import com.liferay.portal.kernel.backgroundtask.display.BaseBackgroundTaskDisplay;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.template.TemplateResource;
@@ -25,6 +16,7 @@ import com.liferay.portal.kernel.template.URLTemplateResource;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HtmlUtil_IW;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -129,47 +121,11 @@ public class ExportImportBackgroundTaskDisplay
 			return super.renderDisplayTemplate(locale);
 		}
 
-		if (hasStagedModelMessage()) {
-			return getStagedModelMessage(locale);
+		if (_hasStagedModelMessage()) {
+			return _getStagedModelMessage(locale);
 		}
 
-		return LanguageUtil.get(locale, getStatusMessageKey());
-	}
-
-	protected String getStagedModelMessage(Locale locale) {
-		return StringBundler.concat(
-			"<strong>", LanguageUtil.get(locale, getStatusMessageKey()),
-			"...</strong>",
-			ResourceActionsUtil.getModelResource(locale, _stagedModelType),
-			"<em>", HtmlUtil.escape(_stagedModelName), "</em>");
-	}
-
-	protected String getStatusMessageKey() {
-		if (Validator.isNotNull(_messageKey)) {
-			return _messageKey;
-		}
-
-		_messageKey = StringPool.BLANK;
-
-		if (hasRemoteMessage()) {
-			_messageKey =
-				"please-wait-as-the-publish-processes-complete-on-the-remote-" +
-					"site";
-		}
-		else if (hasStagedModelMessage()) {
-			_messageKey = "exporting";
-
-			if (Objects.equals(_cmd, Constants.IMPORT)) {
-				_messageKey = "importing";
-			}
-			else if (Objects.equals(_cmd, Constants.PUBLISH_TO_LIVE) ||
-					 Objects.equals(_cmd, Constants.PUBLISH_TO_REMOTE)) {
-
-				_messageKey = "publishing";
-			}
-		}
-
-		return _messageKey;
+		return LanguageUtil.get(locale, _getStatusMessageKey());
 	}
 
 	@Override
@@ -188,14 +144,50 @@ public class ExportImportBackgroundTaskDisplay
 			"exported",
 			MapUtil.getBoolean(backgroundTask.getTaskContextMap(), "exported")
 		).put(
-			"htmlUtil", HtmlUtil.getHtml()
+			"htmlUtil", HtmlUtil_IW.getInstance()
 		).put(
 			"validated",
 			MapUtil.getBoolean(backgroundTask.getTaskContextMap(), "validated")
 		).build();
 	}
 
-	protected boolean hasRemoteMessage() {
+	private String _getStagedModelMessage(Locale locale) {
+		return StringBundler.concat(
+			"<strong>", LanguageUtil.get(locale, _getStatusMessageKey()),
+			"...</strong>",
+			ResourceActionsUtil.getModelResource(locale, _stagedModelType),
+			"<em>", HtmlUtil.escape(_stagedModelName), "</em>");
+	}
+
+	private String _getStatusMessageKey() {
+		if (Validator.isNotNull(_messageKey)) {
+			return _messageKey;
+		}
+
+		_messageKey = StringPool.BLANK;
+
+		if (_hasRemoteMessage()) {
+			_messageKey =
+				"please-wait-as-the-publish-processes-complete-on-the-remote-" +
+					"site";
+		}
+		else if (_hasStagedModelMessage()) {
+			_messageKey = "exporting";
+
+			if (Objects.equals(_cmd, Constants.IMPORT)) {
+				_messageKey = "importing";
+			}
+			else if (Objects.equals(_cmd, Constants.PUBLISH_TO_LIVE) ||
+					 Objects.equals(_cmd, Constants.PUBLISH_TO_REMOTE)) {
+
+				_messageKey = "publishing";
+			}
+		}
+
+		return _messageKey;
+	}
+
+	private boolean _hasRemoteMessage() {
 		if (Objects.equals(_cmd, Constants.PUBLISH_TO_REMOTE) &&
 			(getPercentage() == PERCENTAGE_MAX)) {
 
@@ -205,7 +197,7 @@ public class ExportImportBackgroundTaskDisplay
 		return false;
 	}
 
-	protected boolean hasStagedModelMessage() {
+	private boolean _hasStagedModelMessage() {
 		if (Validator.isNotNull(_stagedModelName) &&
 			Validator.isNotNull(_stagedModelType)) {
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.model.impl;
@@ -33,7 +24,6 @@ import com.liferay.segments.model.SegmentsEntryRoleModel;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -219,118 +209,110 @@ public class SegmentsEntryRoleModelImpl
 	public Map<String, Function<SegmentsEntryRole, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<SegmentsEntryRole, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, SegmentsEntryRole>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			SegmentsEntryRole.class.getClassLoader(), SegmentsEntryRole.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<SegmentsEntryRole, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<SegmentsEntryRole> constructor =
-				(Constructor<SegmentsEntryRole>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<SegmentsEntryRole, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<SegmentsEntryRole, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", SegmentsEntryRole::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", SegmentsEntryRole::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"segmentsEntryRoleId",
+				SegmentsEntryRole::getSegmentsEntryRoleId);
+			attributeGetterFunctions.put(
+				"companyId", SegmentsEntryRole::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", SegmentsEntryRole::getUserId);
+			attributeGetterFunctions.put(
+				"userName", SegmentsEntryRole::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", SegmentsEntryRole::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", SegmentsEntryRole::getModifiedDate);
+			attributeGetterFunctions.put(
+				"segmentsEntryId", SegmentsEntryRole::getSegmentsEntryId);
+			attributeGetterFunctions.put(
+				"roleId", SegmentsEntryRole::getRoleId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<SegmentsEntryRole, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<SegmentsEntryRole, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<SegmentsEntryRole, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<SegmentsEntryRole, Object>>();
-		Map<String, BiConsumer<SegmentsEntryRole, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<SegmentsEntryRole, ?>>();
+		private static final Map<String, BiConsumer<SegmentsEntryRole, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", SegmentsEntryRole::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<SegmentsEntryRole, Long>)
-				SegmentsEntryRole::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", SegmentsEntryRole::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<SegmentsEntryRole, Long>)
-				SegmentsEntryRole::setCtCollectionId);
-		attributeGetterFunctions.put(
-			"segmentsEntryRoleId", SegmentsEntryRole::getSegmentsEntryRoleId);
-		attributeSetterBiConsumers.put(
-			"segmentsEntryRoleId",
-			(BiConsumer<SegmentsEntryRole, Long>)
-				SegmentsEntryRole::setSegmentsEntryRoleId);
-		attributeGetterFunctions.put(
-			"companyId", SegmentsEntryRole::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<SegmentsEntryRole, Long>)
-				SegmentsEntryRole::setCompanyId);
-		attributeGetterFunctions.put("userId", SegmentsEntryRole::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<SegmentsEntryRole, Long>)SegmentsEntryRole::setUserId);
-		attributeGetterFunctions.put(
-			"userName", SegmentsEntryRole::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<SegmentsEntryRole, String>)
-				SegmentsEntryRole::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", SegmentsEntryRole::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<SegmentsEntryRole, Date>)
-				SegmentsEntryRole::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", SegmentsEntryRole::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<SegmentsEntryRole, Date>)
-				SegmentsEntryRole::setModifiedDate);
-		attributeGetterFunctions.put(
-			"segmentsEntryId", SegmentsEntryRole::getSegmentsEntryId);
-		attributeSetterBiConsumers.put(
-			"segmentsEntryId",
-			(BiConsumer<SegmentsEntryRole, Long>)
-				SegmentsEntryRole::setSegmentsEntryId);
-		attributeGetterFunctions.put("roleId", SegmentsEntryRole::getRoleId);
-		attributeSetterBiConsumers.put(
-			"roleId",
-			(BiConsumer<SegmentsEntryRole, Long>)SegmentsEntryRole::setRoleId);
+		static {
+			Map<String, BiConsumer<SegmentsEntryRole, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<SegmentsEntryRole, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<SegmentsEntryRole, Long>)
+					SegmentsEntryRole::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<SegmentsEntryRole, Long>)
+					SegmentsEntryRole::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"segmentsEntryRoleId",
+				(BiConsumer<SegmentsEntryRole, Long>)
+					SegmentsEntryRole::setSegmentsEntryRoleId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<SegmentsEntryRole, Long>)
+					SegmentsEntryRole::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<SegmentsEntryRole, Long>)
+					SegmentsEntryRole::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<SegmentsEntryRole, String>)
+					SegmentsEntryRole::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<SegmentsEntryRole, Date>)
+					SegmentsEntryRole::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<SegmentsEntryRole, Date>)
+					SegmentsEntryRole::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"segmentsEntryId",
+				(BiConsumer<SegmentsEntryRole, Long>)
+					SegmentsEntryRole::setSegmentsEntryId);
+			attributeSetterBiConsumers.put(
+				"roleId",
+				(BiConsumer<SegmentsEntryRole, Long>)
+					SegmentsEntryRole::setRoleId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -789,41 +771,12 @@ public class SegmentsEntryRoleModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<SegmentsEntryRole, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<SegmentsEntryRole, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<SegmentsEntryRole, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((SegmentsEntryRole)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, SegmentsEntryRole>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					SegmentsEntryRole.class, ModelWrapper.class);
 
 	}
 
@@ -841,7 +794,8 @@ public class SegmentsEntryRoleModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<SegmentsEntryRole, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

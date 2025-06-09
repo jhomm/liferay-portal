@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.index;
@@ -39,6 +30,8 @@ import com.liferay.portal.search.engine.adapter.index.PutMappingIndexRequest;
 import com.liferay.portal.search.engine.adapter.index.PutMappingIndexResponse;
 import com.liferay.portal.search.engine.adapter.index.RefreshIndexRequest;
 import com.liferay.portal.search.engine.adapter.index.RefreshIndexResponse;
+import com.liferay.portal.search.engine.adapter.index.StatsIndexRequest;
+import com.liferay.portal.search.engine.adapter.index.StatsIndexResponse;
 import com.liferay.portal.search.engine.adapter.index.UpdateIndexSettingsIndexRequest;
 import com.liferay.portal.search.engine.adapter.index.UpdateIndexSettingsIndexResponse;
 
@@ -49,7 +42,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Dylan Rebelak
  */
 @Component(
-	immediate = true, property = "search.engine.impl=Elasticsearch",
+	property = "search.engine.impl=Elasticsearch",
 	service = IndexRequestExecutor.class
 )
 public class ElasticsearchIndexRequestExecutor implements IndexRequestExecutor {
@@ -141,6 +134,13 @@ public class ElasticsearchIndexRequestExecutor implements IndexRequestExecutor {
 	}
 
 	@Override
+	public StatsIndexResponse executeIndexRequest(
+		StatsIndexRequest statsIndexRequest) {
+
+		return _statsIndexRequestExecutor.execute(statsIndexRequest);
+	}
+
+	@Override
 	public UpdateIndexSettingsIndexResponse executeIndexRequest(
 		UpdateIndexSettingsIndexRequest updateIndexSettingsIndexRequest) {
 
@@ -148,115 +148,48 @@ public class ElasticsearchIndexRequestExecutor implements IndexRequestExecutor {
 			updateIndexSettingsIndexRequest);
 	}
 
-	@Reference(unbind = "-")
-	protected void setAnalyzeIndexRequestExecutor(
-		AnalyzeIndexRequestExecutor analyzeIndexRequestExecutor) {
-
-		_analyzeIndexRequestExecutor = analyzeIndexRequestExecutor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setCloseIndexRequestExecutor(
-		CloseIndexRequestExecutor closeIndexRequestExecutor) {
-
-		_closeIndexRequestExecutor = closeIndexRequestExecutor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setCreateIndexRequestExecutor(
-		CreateIndexRequestExecutor createIndexRequestExecutor) {
-
-		_createIndexRequestExecutor = createIndexRequestExecutor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDeleteIndexRequestExecutor(
-		DeleteIndexRequestExecutor deleteIndexRequestExecutor) {
-
-		_deleteIndexRequestExecutor = deleteIndexRequestExecutor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setFlushIndexRequestExecutor(
-		FlushIndexRequestExecutor flushIndexRequestExecutor) {
-
-		_flushIndexRequestExecutor = flushIndexRequestExecutor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setGetFieldMappingIndexRequestExecutor(
-		GetFieldMappingIndexRequestExecutor
-			getFieldMappingIndexRequestExecutor) {
-
-		_getFieldMappingIndexRequestExecutor =
-			getFieldMappingIndexRequestExecutor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setGetIndexIndexRequestExecutor(
-		GetIndexIndexRequestExecutor getIndexIndexRequestExecutor) {
-
-		_getIndexIndexRequestExecutor = getIndexIndexRequestExecutor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setGetMappingIndexRequestExecutor(
-		GetMappingIndexRequestExecutor getMappingIndexRequestExecutor) {
-
-		_getMappingIndexRequestExecutor = getMappingIndexRequestExecutor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setIndicesExistsIndexRequestExecutor(
-		IndicesExistsIndexRequestExecutor indicesExistsIndexRequestExecutor) {
-
-		_indicesExistsIndexRequestExecutor = indicesExistsIndexRequestExecutor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setOpenIndexRequestExecutor(
-		OpenIndexRequestExecutor openIndexRequestExecutor) {
-
-		_openIndexRequestExecutor = openIndexRequestExecutor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPutMappingIndexRequestExecutor(
-		PutMappingIndexRequestExecutor putMappingIndexRequestExecutor) {
-
-		_putMappingIndexRequestExecutor = putMappingIndexRequestExecutor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setRefreshIndexRequestExecutor(
-		RefreshIndexRequestExecutor refreshIndexRequestExecutor) {
-
-		_refreshIndexRequestExecutor = refreshIndexRequestExecutor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUpdateIndexSettingsIndexRequestExecutor(
-		UpdateIndexSettingsIndexRequestExecutor
-			updateIndexSettingsIndexRequestExecutor) {
-
-		_updateIndexSettingsIndexRequestExecutor =
-			updateIndexSettingsIndexRequestExecutor;
-	}
-
+	@Reference
 	private AnalyzeIndexRequestExecutor _analyzeIndexRequestExecutor;
+
+	@Reference
 	private CloseIndexRequestExecutor _closeIndexRequestExecutor;
+
+	@Reference
 	private CreateIndexRequestExecutor _createIndexRequestExecutor;
+
+	@Reference
 	private DeleteIndexRequestExecutor _deleteIndexRequestExecutor;
+
+	@Reference
 	private FlushIndexRequestExecutor _flushIndexRequestExecutor;
+
+	@Reference
 	private GetFieldMappingIndexRequestExecutor
 		_getFieldMappingIndexRequestExecutor;
+
+	@Reference
 	private GetIndexIndexRequestExecutor _getIndexIndexRequestExecutor;
+
+	@Reference
 	private GetMappingIndexRequestExecutor _getMappingIndexRequestExecutor;
+
+	@Reference
 	private IndicesExistsIndexRequestExecutor
 		_indicesExistsIndexRequestExecutor;
+
+	@Reference
 	private OpenIndexRequestExecutor _openIndexRequestExecutor;
+
+	@Reference
 	private PutMappingIndexRequestExecutor _putMappingIndexRequestExecutor;
+
+	@Reference
 	private RefreshIndexRequestExecutor _refreshIndexRequestExecutor;
+
+	@Reference
+	private StatsIndexRequestExecutor _statsIndexRequestExecutor;
+
+	@Reference
 	private UpdateIndexSettingsIndexRequestExecutor
 		_updateIndexSettingsIndexRequestExecutor;
 

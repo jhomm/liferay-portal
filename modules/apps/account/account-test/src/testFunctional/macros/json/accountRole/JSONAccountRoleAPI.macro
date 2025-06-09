@@ -1,0 +1,40 @@
+definition {
+
+	@summary = "Default summary"
+	macro _associateUser(accountRoleId = null, accountEntryId = null, userId = null) {
+		Variables.assertDefined(parameterList = "${accountEntryId},${accountRoleId},${userId}");
+
+		var adminUserLoginCredentials = JSONUtil2.formatJSONAdminUser();
+		var portalURL = JSONCompany.getPortalURL();
+
+		var curl = '''
+			${portalURL}/api/jsonws/account.accountrole/associate-user \
+				-u ${adminUserLoginCredentials} \
+				-d accountEntryId=${accountEntryId}
+				-d accountRoleId=${accountRoleId}
+				-d userId=${userId} \
+		''';
+
+		com.liferay.poshi.runner.util.JSONCurlUtil.post(${curl});
+	}
+
+	@summary = "Default summary"
+	macro _getAccountRoleByRoleId(accountRole = null) {
+		Variables.assertDefined(parameterList = ${accountRole});
+
+		var adminUserLoginCredentials = JSONUtil2.formatJSONAdminUser();
+		var portalURL = JSONCompany.getPortalURL();
+		var roleId = JSONRoleSetter.setRoleId(name = ${accountRole});
+
+		var curl = '''
+			${portalURL}/api/jsonws/account.accountrole/get-account-role-by-role-id \
+				-u ${adminUserLoginCredentials} \
+				-d roleId=${roleId} \
+		''';
+
+		var accountRoleId = JSONCurlUtil.post(${curl}, "$['accountRoleId']");
+
+		return ${accountRoleId};
+	}
+
+}

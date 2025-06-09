@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.test.util;
@@ -20,18 +11,22 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TimeZoneUtil;
+import com.liferay.portal.util.PortalInstances;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.util.Collection;
 import java.util.Locale;
 import java.util.TimeZone;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Manuel de la Peña
@@ -42,11 +37,36 @@ public class CompanyTestUtil {
 		return addCompany(RandomTestUtil.randomString());
 	}
 
+	public static Company addCompany(boolean initialize) throws Exception {
+		if (!initialize) {
+			return addCompany(RandomTestUtil.randomString());
+		}
+
+		try {
+			return TransactionInvokerUtil.invoke(
+				_transactionConfig,
+				() -> {
+					Company company = addCompany(RandomTestUtil.randomString());
+
+					PortalInstances.initCompany(company);
+
+					return company;
+				});
+		}
+		catch (Exception exception) {
+			throw exception;
+		}
+		catch (Throwable throwable) {
+			throw new Exception(throwable);
+		}
+	}
+
 	public static Company addCompany(String name) throws Exception {
 		String virtualHostname = name + "." + RandomTestUtil.randomString(3);
 
 		return CompanyLocalServiceUtil.addCompany(
-			null, name, virtualHostname, virtualHostname, false, 0, true);
+			null, name, virtualHostname, virtualHostname, 0, true, true, null,
+			null, null, null, null, null);
 	}
 
 	public static void resetCompanyLocales(
@@ -67,7 +87,7 @@ public class CompanyTestUtil {
 
 		// Reset company default locale and timezone
 
-		User user = UserLocalServiceUtil.loadGetDefaultUser(companyId);
+		User user = UserLocalServiceUtil.loadGetGuestUser(companyId);
 
 		user.setLanguageId(defaultLanguageId);
 
@@ -77,25 +97,36 @@ public class CompanyTestUtil {
 
 		UserLocalServiceUtil.updateUser(user);
 
-		// Reset company supported locales
-
-		PortletPreferences preferences = PrefsPropsUtil.getPreferences(
-			companyId);
-
-		preferences.setValue(PropsKeys.LOCALES, languageIds);
-
-		preferences.store();
-
-		// Reset company locales cache
-
-		LanguageUtil.resetAvailableLocales(companyId);
-
 		// Reset thread locals
 
 		CompanyThreadLocal.setCompanyId(companyId);
 
 		LocaleThreadLocal.setDefaultLocale(
-			LocaleUtil.fromLanguageId(defaultLanguageId));
+			LocaleUtil.fromLanguageId(defaultLanguageId, false));
+
+		// Reset company supported locales
+
+		PortletPreferences portletPreferences = PrefsPropsUtil.getPreferences(
+			companyId);
+
+		portletPreferences.setValue(PropsKeys.LOCALES, languageIds);
+
+		portletPreferences.store();
+
+		// Reset company locales cache
+
+		LanguageUtil.resetAvailableLocales(companyId);
+	}
+
+	private static final TransactionConfig _transactionConfig;
+
+	static {
+		TransactionConfig.Builder builder = new TransactionConfig.Builder();
+
+		builder.setPropagation(Propagation.REQUIRED);
+		builder.setRollbackForClasses(Exception.class);
+
+		_transactionConfig = builder.build();
 	}
 
 }

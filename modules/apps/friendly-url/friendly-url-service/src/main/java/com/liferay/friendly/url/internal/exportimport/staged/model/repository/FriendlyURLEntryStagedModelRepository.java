@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.friendly.url.internal.exportimport.staged.model.repository;
@@ -25,7 +16,7 @@ import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.MapUtil;
 
 import java.util.HashMap;
@@ -40,7 +31,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Adolfo Pérez
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.friendly.url.model.FriendlyURLEntry",
 	service = StagedModelRepository.class
 )
@@ -151,7 +141,7 @@ public class FriendlyURLEntryStagedModelRepository
 					friendlyURLEntry.getGroupId(),
 					friendlyURLEntry.getClassNameId(),
 					friendlyURLEntry.getClassPK(),
-					friendlyURLEntryLocalization.getUrlTitle()));
+					friendlyURLEntryLocalization.getUrlTitle(), null));
 
 			_friendlyURLEntryLocalService.updateFriendlyURLLocalization(
 				friendlyURLEntryLocalization);
@@ -167,11 +157,22 @@ public class FriendlyURLEntryStagedModelRepository
 			FriendlyURLEntry friendlyURLEntry)
 		throws PortalException {
 
+		FriendlyURLEntry existingFriendlyURLEntry =
+			fetchStagedModelByUuidAndGroupId(
+				friendlyURLEntry.getUuid(),
+				portletDataContext.getScopeGroupId());
+
+		if (existingFriendlyURLEntry == null) {
+			return null;
+		}
+
 		return _friendlyURLEntryLocalService.updateFriendlyURLEntry(
-			friendlyURLEntry.getFriendlyURLEntryId(),
-			friendlyURLEntry.getClassNameId(), friendlyURLEntry.getClassPK(),
-			friendlyURLEntry.getDefaultLanguageId(),
-			_getLocalizationMap(portletDataContext, friendlyURLEntry));
+			existingFriendlyURLEntry.getFriendlyURLEntryId(),
+			existingFriendlyURLEntry.getClassNameId(),
+			existingFriendlyURLEntry.getClassPK(),
+			existingFriendlyURLEntry.getDefaultLanguageId(),
+			_getLocalizationMap(portletDataContext, friendlyURLEntry),
+			portletDataContext.createServiceContext(friendlyURLEntry));
 	}
 
 	private Map<String, String> _getLocalizationMap(
@@ -182,7 +183,7 @@ public class FriendlyURLEntryStagedModelRepository
 			portletDataContext, friendlyURLEntry);
 
 		Map<Locale, String> localeLocalizationMap =
-			LocalizationUtil.getLocalizationMap(
+			_localization.getLocalizationMap(
 				portletDataContext.getZipEntryAsString(modelPath));
 
 		Map<String, String> languageIdLocalizationMap = new HashMap<>();
@@ -201,7 +202,7 @@ public class FriendlyURLEntryStagedModelRepository
 				urlTitle = _friendlyURLEntryLocalService.getUniqueUrlTitle(
 					friendlyURLEntry.getGroupId(),
 					friendlyURLEntry.getClassNameId(),
-					friendlyURLEntry.getClassPK(), urlTitle);
+					friendlyURLEntry.getClassPK(), urlTitle, null);
 			}
 
 			languageIdLocalizationMap.put(
@@ -216,6 +217,9 @@ public class FriendlyURLEntryStagedModelRepository
 
 	@Reference
 	private Language _language;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private StagedModelRepositoryHelper _stagedModelRepositoryHelper;

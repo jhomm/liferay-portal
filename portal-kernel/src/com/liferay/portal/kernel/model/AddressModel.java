@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
+import com.liferay.portal.kernel.model.change.tracking.CTModel;
 
 import java.util.Date;
 
@@ -33,7 +25,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface AddressModel
-	extends AttachedModel, BaseModel<Address>, MVCCModel, ShardedModel,
+	extends AttachedModel, BaseModel<Address>, CTModel<Address>,
+			ExternalReferenceCodeModel, MVCCModel, ShardedModel,
 			StagedAuditedModel {
 
 	/*
@@ -47,6 +40,7 @@ public interface AddressModel
 	 *
 	 * @return the primary key of this address
 	 */
+	@Override
 	public long getPrimaryKey();
 
 	/**
@@ -54,6 +48,7 @@ public interface AddressModel
 	 *
 	 * @param primaryKey the primary key of this address
 	 */
+	@Override
 	public void setPrimaryKey(long primaryKey);
 
 	/**
@@ -71,6 +66,22 @@ public interface AddressModel
 	 */
 	@Override
 	public void setMvccVersion(long mvccVersion);
+
+	/**
+	 * Returns the ct collection ID of this address.
+	 *
+	 * @return the ct collection ID of this address
+	 */
+	@Override
+	public long getCtCollectionId();
+
+	/**
+	 * Sets the ct collection ID of this address.
+	 *
+	 * @param ctCollectionId the ct collection ID of this address
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId);
 
 	/**
 	 * Returns the uuid of this address.
@@ -95,6 +106,7 @@ public interface AddressModel
 	 * @return the external reference code of this address
 	 */
 	@AutoEscape
+	@Override
 	public String getExternalReferenceCode();
 
 	/**
@@ -102,6 +114,7 @@ public interface AddressModel
 	 *
 	 * @param externalReferenceCode the external reference code of this address
 	 */
+	@Override
 	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
@@ -272,6 +285,20 @@ public interface AddressModel
 	public void setCountryId(long countryId);
 
 	/**
+	 * Returns the list type ID of this address.
+	 *
+	 * @return the list type ID of this address
+	 */
+	public long getListTypeId();
+
+	/**
+	 * Sets the list type ID of this address.
+	 *
+	 * @param listTypeId the list type ID of this address
+	 */
+	public void setListTypeId(long listTypeId);
+
+	/**
 	 * Returns the region ID of this address.
 	 *
 	 * @return the region ID of this address
@@ -284,20 +311,6 @@ public interface AddressModel
 	 * @param regionId the region ID of this address
 	 */
 	public void setRegionId(long regionId);
-
-	/**
-	 * Returns the type ID of this address.
-	 *
-	 * @return the type ID of this address
-	 */
-	public long getTypeId();
-
-	/**
-	 * Sets the type ID of this address.
-	 *
-	 * @param typeId the type ID of this address
-	 */
-	public void setTypeId(long typeId);
 
 	/**
 	 * Returns the city of this address.
@@ -460,6 +473,21 @@ public interface AddressModel
 	public void setStreet3(String street3);
 
 	/**
+	 * Returns the subtype of this address.
+	 *
+	 * @return the subtype of this address
+	 */
+	@AutoEscape
+	public String getSubtype();
+
+	/**
+	 * Sets the subtype of this address.
+	 *
+	 * @param subtype the subtype of this address
+	 */
+	public void setSubtype(String subtype);
+
+	/**
 	 * Returns the validation date of this address.
 	 *
 	 * @return the validation date of this address
@@ -502,7 +530,25 @@ public interface AddressModel
 	 */
 	public void setZip(String zip);
 
+	/**
+	 * Returns the status of this address.
+	 *
+	 * @return the status of this address
+	 */
+	public int getStatus();
+
+	/**
+	 * Sets the status of this address.
+	 *
+	 * @param status the status of this address
+	 */
+	public void setStatus(int status);
+
 	@Override
 	public Address cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

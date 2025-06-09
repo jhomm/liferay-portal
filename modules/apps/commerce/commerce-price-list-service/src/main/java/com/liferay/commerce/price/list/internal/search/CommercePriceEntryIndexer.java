@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.internal.search;
@@ -18,6 +9,7 @@ import com.liferay.commerce.price.list.model.CommercePriceEntry;
 import com.liferay.commerce.price.list.service.CommercePriceEntryLocalService;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
+import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -34,11 +26,11 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.LinkedHashMap;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(enabled = false, immediate = true, service = Indexer.class)
+@Component(service = Indexer.class)
 public class CommercePriceEntryIndexer extends BaseIndexer<CommercePriceEntry> {
 
 	public static final String CLASS_NAME = CommercePriceEntry.class.getName();
@@ -94,9 +86,11 @@ public class CommercePriceEntryIndexer extends BaseIndexer<CommercePriceEntry> {
 		addSearchTerm(
 			searchQuery, searchContext, FIELD_EXTERNAL_REFERENCE_CODE, false);
 
-		addSearchTerm(searchQuery, searchContext, "sku", false);
 		addSearchLocalizedTerm(
 			searchQuery, searchContext, "cpDefinitionName", false);
+		addSearchTerm(searchQuery, searchContext, "sku", false);
+		addSearchTerm(
+			searchQuery, searchContext, "skuExternalReferenceCode", false);
 
 		LinkedHashMap<String, Object> params =
 			(LinkedHashMap<String, Object>)searchContext.getAttribute("params");
@@ -124,7 +118,7 @@ public class CommercePriceEntryIndexer extends BaseIndexer<CommercePriceEntry> {
 		throws Exception {
 
 		if (_log.isDebugEnabled()) {
-			_log.debug("Indexing price entry " + commercePriceEntry);
+			_log.debug("Indexing commerce price entry " + commercePriceEntry);
 		}
 
 		Document document = getBaseModelDocument(
@@ -135,21 +129,29 @@ public class CommercePriceEntryIndexer extends BaseIndexer<CommercePriceEntry> {
 			commercePriceEntry.getCommercePriceListId());
 		document.addKeyword(
 			FIELD_EXTERNAL_REFERENCE_CODE,
-			commercePriceEntry.getExternalReferenceCode());
+			commercePriceEntry.getExternalReferenceCode(), true);
 
-		CPInstance cpInstance = commercePriceEntry.getCPInstance();
+		CPInstance cpInstance = _cpInstanceLocalService.fetchCPInstance(
+			commercePriceEntry.getCProductId(),
+			commercePriceEntry.getCPInstanceUuid());
 
-		document.addKeyword("cpInstanceId", cpInstance.getCPInstanceId());
-		document.addKeyword("sku", cpInstance.getSku());
+		if (cpInstance != null) {
+			document.addKeyword("cpInstanceId", cpInstance.getCPInstanceId());
+			document.addKeyword("sku", cpInstance.getSku(), true);
+			document.addKeyword(
+				"skuExternalReferenceCode",
+				cpInstance.getExternalReferenceCode(), true);
 
-		CPDefinition cpDefinition = cpInstance.getCPDefinition();
+			CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
-		document.addLocalizedKeyword(
-			"cpDefinitionName", cpDefinition.getNameMap());
+			document.addLocalizedKeyword(
+				"cpDefinitionName", cpDefinition.getNameMap());
+		}
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Document " + commercePriceEntry + " indexed successfully");
+				"Commerce price entry " + commercePriceEntry +
+					" indexed successfully");
 		}
 
 		return document;
@@ -174,8 +176,7 @@ public class CommercePriceEntryIndexer extends BaseIndexer<CommercePriceEntry> {
 		throws Exception {
 
 		_indexWriterHelper.updateDocument(
-			getSearchEngineId(), commercePriceEntry.getCompanyId(),
-			getDocument(commercePriceEntry), isCommitImmediately());
+			commercePriceEntry.getCompanyId(), getDocument(commercePriceEntry));
 	}
 
 	@Override
@@ -188,12 +189,10 @@ public class CommercePriceEntryIndexer extends BaseIndexer<CommercePriceEntry> {
 	protected void doReindex(String[] ids) throws Exception {
 		long companyId = GetterUtil.getLong(ids[0]);
 
-		reindexCommercePriceEntries(companyId);
+		_reindexCommercePriceEntries(companyId);
 	}
 
-	protected void reindexCommercePriceEntries(long companyId)
-		throws PortalException {
-
+	private void _reindexCommercePriceEntries(long companyId) throws Exception {
 		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
 			_commercePriceEntryLocalService.
 				getIndexableActionableDynamicQuery();
@@ -209,12 +208,11 @@ public class CommercePriceEntryIndexer extends BaseIndexer<CommercePriceEntry> {
 					if (_log.isWarnEnabled()) {
 						_log.warn(
 							"Unable to index commerce price entry " +
-								commercePriceEntry.getCommercePriceEntryId(),
+								commercePriceEntry,
 							portalException);
 					}
 				}
 			});
-		indexableActionableDynamicQuery.setSearchEngineId(getSearchEngineId());
 
 		indexableActionableDynamicQuery.performActions();
 	}
@@ -224,6 +222,9 @@ public class CommercePriceEntryIndexer extends BaseIndexer<CommercePriceEntry> {
 
 	@Reference
 	private CommercePriceEntryLocalService _commercePriceEntryLocalService;
+
+	@Reference
+	private CPInstanceLocalService _cpInstanceLocalService;
 
 	@Reference
 	private IndexWriterHelper _indexWriterHelper;

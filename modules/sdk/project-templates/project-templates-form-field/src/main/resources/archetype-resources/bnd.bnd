@@ -1,16 +1,20 @@
+#set ($versionPolicy = '${replacestring;${range;[==,==]};.*,(.*)];$1}')
 Bundle-Name: ${artifactId}
 Bundle-SymbolicName: ${package}
 Bundle-Version: ${version}
 #if (!(${liferayVersion.startsWith("7.2")} || ${liferayVersion.startsWith("7.3")}))
 Liferay-JS-Config: /META-INF/resources/config.js
 #end
-#if ((!${liferayVersion.startsWith("7.0")} || (!${liferayVersion.startsWith("7.1")}) && !${reactTemplate.equals("true")}))
+#if ((!${liferayVersion.startsWith("7.0")} || (!${liferayVersion.startsWith("7.1")})))
 Provide-Capability:\
+	liferay.language.resources;\
+		resource.bundle.base.name="content.Language",\
 	soy;\
 		type:String="LiferayFormField"
 #end
 Web-ContextPath: /dynamic-data-${artifactId}-form-field
 #if (${buildType} != "gradle")
+-consumer-policy: ${versionPolicy}
 #if (${liferayVersion.startsWith("7.1")})-contract: JavaPortlet,JavaServlet
 #end
 -jsp: *.jsp,*.jspf,*.jspx
@@ -22,4 +26,5 @@ Web-ContextPath: /dynamic-data-${artifactId}-form-field
 #end
 -plugin.resourcebundle: com.liferay.ant.bnd.resource.bundle.ResourceBundleLoaderAnalyzerPlugin
 -plugin.sass: com.liferay.ant.bnd.sass.SassAnalyzerPlugin
+-provider-policy: ${versionPolicy}
 -sass: *#end

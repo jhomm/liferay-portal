@@ -1,23 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.taxonomy.internal.dto.v1_0.converter;
 
 import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.asset.kernel.service.AssetTagGroupRelLocalService;
+import com.liferay.headless.admin.taxonomy.dto.v1_0.AssetLibrary;
 import com.liferay.headless.admin.taxonomy.dto.v1_0.Keyword;
 import com.liferay.headless.admin.taxonomy.internal.dto.v1_0.util.CreatorUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.service.GroupLocalService;
@@ -27,6 +21,7 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.util.GroupUtil;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.subscription.service.SubscriptionLocalService;
 
 import org.osgi.service.component.annotations.Component;
@@ -38,7 +33,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = "dto.class.name=com.liferay.asset.kernel.model.AssetTag",
-	service = {DTOConverter.class, KeywordDTOConverter.class}
+	service = DTOConverter.class
 )
 public class KeywordDTOConverter implements DTOConverter<AssetTag, Keyword> {
 
@@ -55,34 +50,73 @@ public class KeywordDTOConverter implements DTOConverter<AssetTag, Keyword> {
 
 		return new Keyword() {
 			{
-				actions = dtoConverterContext.getActions();
-				assetLibraryKey = GroupUtil.getAssetLibraryKey(group);
-				dateCreated = assetTag.getCreateDate();
-				dateModified = assetTag.getModifiedDate();
-				id = assetTag.getTagId();
-				name = assetTag.getName();
-				siteId = GroupUtil.getSiteId(group);
-				subscribed = _subscriptionLocalService.isSubscribed(
-					assetTag.getCompanyId(), dtoConverterContext.getUserId(),
-					AssetTag.class.getName(), assetTag.getTagId());
+				setActions(dtoConverterContext::getActions);
+				setAssetLibraries(
+					() -> TransformUtil.transformToArray(
+						_assetTagGroupRelLocalService.
+							getAssetTagGroupRelsByTagId(assetTag.getTagId()),
+						assetTagGroupRel -> {
+							Group depotEntryGroup =
+								_groupLocalService.fetchGroup(
+									assetTagGroupRel.getGroupId());
 
-				setCreator(
+							return new AssetLibrary() {
+								{
+									setId(assetTagGroupRel::getGroupId);
+									setName(
+										() -> {
+											if (depotEntryGroup == null) {
+												return null;
+											}
+
+											return depotEntryGroup.
+												getDescriptiveName(
+													dtoConverterContext.
+														getLocale());
+										});
+									setName_i18n(
+										() -> {
+											if (depotEntryGroup == null) {
+												return null;
+											}
+
+											return LocalizedMapUtil.getI18nMap(
+												dtoConverterContext.
+													isAcceptAllLanguages(),
+												depotEntryGroup.getNameMap());
+										});
+								}
+							};
+						},
+						AssetLibrary.class));
+				setAssetLibraryKey(
 					() -> {
-						if (assetTag.getUserId() != 0) {
-							return CreatorUtil.toCreator(
-								_portal,
-								_userLocalService.fetchUser(
-									assetTag.getUserId()));
+						if (group == null) {
+							return null;
 						}
 
-						return null;
+						return GroupUtil.getAssetLibraryKey(group);
 					});
+				setCreator(
+					() -> {
+						if (assetTag.getUserId() == 0) {
+							return null;
+						}
+
+						return CreatorUtil.toCreator(
+							_portal,
+							_userLocalService.fetchUser(assetTag.getUserId()));
+					});
+				setDateCreated(assetTag::getCreateDate);
+				setDateModified(assetTag::getModifiedDate);
+				setExternalReferenceCode(assetTag::getExternalReferenceCode);
+				setId(assetTag::getTagId);
 				setKeywordUsageCount(
 					() -> {
 						Hits hits = _assetEntryLocalService.search(
 							assetTag.getCompanyId(),
 							new long[] {assetTag.getGroupId()},
-							assetTag.getUserId(), null, 0, null, null, null,
+							assetTag.getUserId(), null, -1, null, null, null,
 							null, assetTag.getName(), true,
 							new int[] {
 								WorkflowConstants.STATUS_APPROVED,
@@ -93,12 +127,37 @@ public class KeywordDTOConverter implements DTOConverter<AssetTag, Keyword> {
 
 						return hits.getLength();
 					});
+				setName(assetTag::getName);
+				setSiteExternalReferenceCode(
+					() -> {
+						if (group == null) {
+							return null;
+						}
+
+						return GroupUtil.getSiteExternalReferenceCode(group);
+					});
+				setSiteId(
+					() -> {
+						if (group == null) {
+							return null;
+						}
+
+						return GroupUtil.getSiteId(group);
+					});
+				setSubscribed(
+					() -> _subscriptionLocalService.isSubscribed(
+						assetTag.getCompanyId(),
+						dtoConverterContext.getUserId(),
+						AssetTag.class.getName(), assetTag.getTagId()));
 			}
 		};
 	}
 
 	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
+	private AssetTagGroupRelLocalService _assetTagGroupRelLocalService;
 
 	@Reference
 	private GroupLocalService _groupLocalService;

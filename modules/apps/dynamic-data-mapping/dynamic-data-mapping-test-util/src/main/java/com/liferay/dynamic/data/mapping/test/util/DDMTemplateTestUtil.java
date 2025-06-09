@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.test.util;
@@ -24,9 +15,6 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.xml.Document;
-import com.liferay.portal.kernel.xml.Element;
-import com.liferay.portal.kernel.xml.SAXReaderUtil;
 
 import java.util.Locale;
 import java.util.Map;
@@ -36,34 +24,13 @@ import java.util.Map;
  */
 public class DDMTemplateTestUtil {
 
-	public static void addDynamicContentElement(
-		Element dynamicElementElement, String languageId, String value) {
-
-		Element dynamicContentElement = dynamicElementElement.addElement(
-			"dynamic-content");
-
-		dynamicContentElement.addAttribute("language-id", languageId);
-		dynamicContentElement.setText(value);
-	}
-
-	public static Element addDynamicElementElement(
-		Element element, String type, String name) {
-
-		Element dynamicElementElement = element.addElement("dynamic-element");
-
-		dynamicElementElement.addAttribute("name", name);
-		dynamicElementElement.addAttribute("type", type);
-
-		return dynamicElementElement;
-	}
-
 	public static DDMTemplate addTemplate(
 			long structureId, long resourceClassNameId)
 		throws Exception {
 
 		return addTemplate(
 			structureId, resourceClassNameId, TemplateConstants.LANG_TYPE_VM,
-			getSampleTemplateXSL(), LocaleUtil.getSiteDefault());
+			getSampleTemplateVM(), LocaleUtil.getSiteDefault());
 	}
 
 	public static DDMTemplate addTemplate(
@@ -72,7 +39,7 @@ public class DDMTemplateTestUtil {
 
 		return addTemplate(
 			structureId, resourceClassNameId, TemplateConstants.LANG_TYPE_VM,
-			getSampleTemplateXSL(), defaultLocale);
+			getSampleTemplateVM(), defaultLocale);
 	}
 
 	public static DDMTemplate addTemplate(
@@ -81,7 +48,7 @@ public class DDMTemplateTestUtil {
 
 		return addTemplate(
 			groupId, structureId, resourceClassNameId,
-			TemplateConstants.LANG_TYPE_VM, getSampleTemplateXSL(),
+			TemplateConstants.LANG_TYPE_VM, getSampleTemplateVM(),
 			LocaleUtil.getSiteDefault());
 	}
 
@@ -92,7 +59,7 @@ public class DDMTemplateTestUtil {
 
 		return addTemplate(
 			groupId, structureId, resourceClassNameId,
-			TemplateConstants.LANG_TYPE_VM, getSampleTemplateXSL(),
+			TemplateConstants.LANG_TYPE_VM, getSampleTemplateVM(),
 			defaultLocale);
 	}
 
@@ -103,7 +70,7 @@ public class DDMTemplateTestUtil {
 
 		return addTemplate(
 			groupId, classNameId, classPK, resourceClassNameId,
-			TemplateConstants.LANG_TYPE_VM, getSampleTemplateXSL(),
+			TemplateConstants.LANG_TYPE_VM, getSampleTemplateVM(),
 			LocaleUtil.getSiteDefault());
 	}
 
@@ -134,7 +101,7 @@ public class DDMTemplateTestUtil {
 		serviceContext.setAddGuestPermissions(true);
 
 		return DDMTemplateLocalServiceUtil.addTemplate(
-			TestPropsValues.getUserId(), groupId, classNameId, classPK,
+			null, TestPropsValues.getUserId(), groupId, classNameId, classPK,
 			resourceClassNameId, templateKey, nameMap, null,
 			DDMTemplateConstants.TEMPLATE_TYPE_DISPLAY, null, language, script,
 			false, false, null, null, serviceContext);
@@ -170,21 +137,7 @@ public class DDMTemplateTestUtil {
 			language, script, defaultLocale);
 	}
 
-	public static Document createDocument(
-		String availableLocales, String defaultLocale) {
-
-		Document document = SAXReaderUtil.createDocument();
-
-		Element rootElement = document.addElement("root");
-
-		rootElement.addAttribute("available-locales", availableLocales);
-		rootElement.addAttribute("default-locale", defaultLocale);
-		rootElement.addElement("request");
-
-		return document;
-	}
-
-	public static String getSampleTemplateXSL() {
+	public static String getSampleTemplateVM() {
 		return "$name.getData()";
 	}
 

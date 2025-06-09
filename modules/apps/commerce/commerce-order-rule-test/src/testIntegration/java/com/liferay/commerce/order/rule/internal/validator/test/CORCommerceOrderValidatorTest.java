@@ -1,26 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.internal.validator.test;
 
+import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountGroup;
+import com.liferay.account.service.AccountGroupLocalService;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.commerce.account.model.CommerceAccount;
-import com.liferay.commerce.account.model.CommerceAccountGroup;
-import com.liferay.commerce.account.service.CommerceAccountGroupLocalService;
-import com.liferay.commerce.account.service.CommerceAccountLocalService;
+import com.liferay.commerce.account.test.util.CommerceAccountTestUtil;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
 import com.liferay.commerce.exception.CommerceOrderValidatorException;
@@ -35,6 +25,7 @@ import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.service.CommerceOrderTypeLocalService;
 import com.liferay.commerce.test.util.CommerceTestUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
@@ -76,15 +67,6 @@ public class CORCommerceOrderValidatorTest {
 	public void setUp() throws Exception {
 		_user = UserTestUtil.addUser();
 
-		_commerceAccount =
-			_commerceAccountLocalService.getPersonalCommerceAccount(
-				_user.getUserId());
-		_commerceAccountGroup =
-			_commerceAccountGroupLocalService.addCommerceAccountGroup(
-				_user.getCompanyId(), RandomTestUtil.randomString(), 0, false,
-				RandomTestUtil.randomString(),
-				ServiceContextTestUtil.getServiceContext());
-
 		_group = GroupTestUtil.addGroup();
 
 		_commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
@@ -97,6 +79,20 @@ public class CORCommerceOrderValidatorTest {
 
 		_serviceContext = ServiceContextTestUtil.getServiceContext(
 			_group.getCompanyId(), _group.getGroupId(), _user.getUserId());
+
+		_accountEntry = CommerceAccountTestUtil.getPersonAccountEntry(
+			_user.getUserId());
+
+		_accountGroup = _accountGroupLocalService.addAccountGroup(
+			StringPool.BLANK, _serviceContext.getUserId(), null,
+			RandomTestUtil.randomString(), _serviceContext);
+
+		_accountGroup.setDefaultAccountGroup(false);
+		_accountGroup.setType(AccountConstants.ACCOUNT_GROUP_TYPE_STATIC);
+		_accountGroup.setExpandoBridgeAttributes(_serviceContext);
+
+		_accountGroup = _accountGroupLocalService.updateAccountGroup(
+			_accountGroup);
 
 		_commerceOrderType =
 			_commerceOrderTypeLocalService.addCommerceOrderType(
@@ -132,14 +128,14 @@ public class CORCommerceOrderValidatorTest {
 	public void testAccountEntry() throws Exception {
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), AccountEntry.class.getName(),
-			_commerceAccount.getCommerceAccountId(), _corEntry.getCOREntryId());
+			_accountEntry.getAccountEntryId(), _corEntry.getCOREntryId());
 
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
 			_group.getGroupId(), _user.getUserId(),
-			_commerceAccount.getCommerceAccountId(),
+			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
-		CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
+		commerceOrder = CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 			commerceOrder, commerceOrder.getUserId(), false, false, 5.00);
 
 		try {
@@ -158,7 +154,7 @@ public class CORCommerceOrderValidatorTest {
 	public void testAccountEntryAndCommerceChannel() throws Exception {
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), AccountEntry.class.getName(),
-			_commerceAccount.getCommerceAccountId(), _corEntry.getCOREntryId());
+			_accountEntry.getAccountEntryId(), _corEntry.getCOREntryId());
 
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), CommerceChannel.class.getName(),
@@ -166,10 +162,10 @@ public class CORCommerceOrderValidatorTest {
 
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
 			_group.getGroupId(), _user.getUserId(),
-			_commerceAccount.getCommerceAccountId(),
+			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
-		CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
+		commerceOrder = CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 			commerceOrder, commerceOrder.getUserId(), false, false, 5.00);
 
 		try {
@@ -190,7 +186,7 @@ public class CORCommerceOrderValidatorTest {
 
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), AccountEntry.class.getName(),
-			_commerceAccount.getCommerceAccountId(), _corEntry.getCOREntryId());
+			_accountEntry.getAccountEntryId(), _corEntry.getCOREntryId());
 
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), CommerceChannel.class.getName(),
@@ -203,7 +199,7 @@ public class CORCommerceOrderValidatorTest {
 
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
 			_group.getGroupId(), _user.getUserId(),
-			_commerceAccount.getCommerceAccountId(),
+			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
 		commerceOrder.setCommerceOrderTypeId(
@@ -212,7 +208,7 @@ public class CORCommerceOrderValidatorTest {
 		commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
 			commerceOrder);
 
-		CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
+		commerceOrder = CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 			commerceOrder, commerceOrder.getUserId(), false, false, 5.00);
 
 		try {
@@ -231,7 +227,7 @@ public class CORCommerceOrderValidatorTest {
 	public void testAccountEntryAndCommerceOrderType() throws Exception {
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), AccountEntry.class.getName(),
-			_commerceAccount.getCommerceAccountId(), _corEntry.getCOREntryId());
+			_accountEntry.getAccountEntryId(), _corEntry.getCOREntryId());
 
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), CommerceOrderType.class.getName(),
@@ -240,7 +236,7 @@ public class CORCommerceOrderValidatorTest {
 
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
 			_group.getGroupId(), _user.getUserId(),
-			_commerceAccount.getCommerceAccountId(),
+			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
 		commerceOrder.setCommerceOrderTypeId(
@@ -249,7 +245,7 @@ public class CORCommerceOrderValidatorTest {
 		commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
 			commerceOrder);
 
-		CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
+		commerceOrder = CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 			commerceOrder, commerceOrder.getUserId(), false, false, 5.00);
 
 		try {
@@ -268,15 +264,14 @@ public class CORCommerceOrderValidatorTest {
 	public void testAccountGroups() throws Exception {
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), AccountGroup.class.getName(),
-			_commerceAccountGroup.getCommerceAccountGroupId(),
-			_corEntry.getCOREntryId());
+			_accountGroup.getAccountGroupId(), _corEntry.getCOREntryId());
 
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
 			_group.getGroupId(), _user.getUserId(),
-			_commerceAccount.getCommerceAccountId(),
+			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
-		CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
+		commerceOrder = CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 			commerceOrder, commerceOrder.getUserId(), false, false, 5.00);
 
 		try {
@@ -295,8 +290,7 @@ public class CORCommerceOrderValidatorTest {
 	public void testAccountGroupsAndCommerceChannel() throws Exception {
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), AccountGroup.class.getName(),
-			_commerceAccountGroup.getCommerceAccountGroupId(),
-			_corEntry.getCOREntryId());
+			_accountGroup.getAccountGroupId(), _corEntry.getCOREntryId());
 
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), CommerceChannel.class.getName(),
@@ -304,10 +298,10 @@ public class CORCommerceOrderValidatorTest {
 
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
 			_group.getGroupId(), _user.getUserId(),
-			_commerceAccount.getCommerceAccountId(),
+			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
-		CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
+		commerceOrder = CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 			commerceOrder, commerceOrder.getUserId(), false, false, 5.00);
 
 		try {
@@ -328,8 +322,7 @@ public class CORCommerceOrderValidatorTest {
 
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), AccountGroup.class.getName(),
-			_commerceAccountGroup.getCommerceAccountGroupId(),
-			_corEntry.getCOREntryId());
+			_accountGroup.getAccountGroupId(), _corEntry.getCOREntryId());
 
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), CommerceChannel.class.getName(),
@@ -342,7 +335,7 @@ public class CORCommerceOrderValidatorTest {
 
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
 			_group.getGroupId(), _user.getUserId(),
-			_commerceAccount.getCommerceAccountId(),
+			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
 		commerceOrder.setCommerceOrderTypeId(
@@ -351,7 +344,7 @@ public class CORCommerceOrderValidatorTest {
 		commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
 			commerceOrder);
 
-		CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
+		commerceOrder = CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 			commerceOrder, commerceOrder.getUserId(), false, false, 5.00);
 
 		try {
@@ -370,8 +363,7 @@ public class CORCommerceOrderValidatorTest {
 	public void testAccountGroupsAndCommerceOrderType() throws Exception {
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), AccountGroup.class.getName(),
-			_commerceAccountGroup.getCommerceAccountGroupId(),
-			_corEntry.getCOREntryId());
+			_accountGroup.getAccountGroupId(), _corEntry.getCOREntryId());
 
 		_corEntryRelLocalService.addCOREntryRel(
 			_user.getUserId(), CommerceOrderType.class.getName(),
@@ -380,7 +372,7 @@ public class CORCommerceOrderValidatorTest {
 
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
 			_group.getGroupId(), _user.getUserId(),
-			_commerceAccount.getCommerceAccountId(),
+			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
 		commerceOrder.setCommerceOrderTypeId(
@@ -389,7 +381,7 @@ public class CORCommerceOrderValidatorTest {
 		commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
 			commerceOrder);
 
-		CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
+		commerceOrder = CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 			commerceOrder, commerceOrder.getUserId(), false, false, 5.00);
 
 		try {
@@ -412,10 +404,10 @@ public class CORCommerceOrderValidatorTest {
 
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
 			_group.getGroupId(), _user.getUserId(),
-			_commerceAccount.getCommerceAccountId(),
+			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
-		CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
+		commerceOrder = CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 			commerceOrder, commerceOrder.getUserId(), false, false, 5.00);
 
 		try {
@@ -443,7 +435,7 @@ public class CORCommerceOrderValidatorTest {
 
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
 			_group.getGroupId(), _user.getUserId(),
-			_commerceAccount.getCommerceAccountId(),
+			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
 		commerceOrder.setCommerceOrderTypeId(
@@ -452,7 +444,7 @@ public class CORCommerceOrderValidatorTest {
 		commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
 			commerceOrder);
 
-		CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
+		commerceOrder = CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 			commerceOrder, commerceOrder.getUserId(), false, false, 5.00);
 
 		try {
@@ -476,7 +468,7 @@ public class CORCommerceOrderValidatorTest {
 
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
 			_group.getGroupId(), _user.getUserId(),
-			_commerceAccount.getCommerceAccountId(),
+			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
 		commerceOrder.setCommerceOrderTypeId(
@@ -485,7 +477,7 @@ public class CORCommerceOrderValidatorTest {
 		commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
 			commerceOrder);
 
-		CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
+		commerceOrder = CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 			commerceOrder, commerceOrder.getUserId(), false, false, 5.00);
 
 		try {
@@ -500,14 +492,11 @@ public class CORCommerceOrderValidatorTest {
 		}
 	}
 
-	private CommerceAccount _commerceAccount;
-	private CommerceAccountGroup _commerceAccountGroup;
+	private AccountEntry _accountEntry;
+	private AccountGroup _accountGroup;
 
 	@Inject
-	private CommerceAccountGroupLocalService _commerceAccountGroupLocalService;
-
-	@Inject
-	private CommerceAccountLocalService _commerceAccountLocalService;
+	private AccountGroupLocalService _accountGroupLocalService;
 
 	private CommerceChannel _commerceChannel;
 	private CommerceCurrency _commerceCurrency;

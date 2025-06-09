@@ -1,24 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.internal.model.listener;
 
+import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.fragment.processor.PortletRegistry;
+import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureRelLocalService;
 import com.liferay.portal.kernel.exception.ModelListenerException;
 import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.ModelListener;
+import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
+import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.segments.model.SegmentsExperience;
+
+import jakarta.portlet.PortletPreferences;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,6 +36,37 @@ public class SegmentsExperienceModelListener
 			_layoutPageTemplateStructureRelLocalService.
 				deleteLayoutPageTemplateStructureRelsBySegmentsExperienceId(
 					segmentsExperience.getSegmentsExperienceId());
+
+			for (FragmentEntryLink fragmentEntryLink :
+					_fragmentEntryLinkLocalService.
+						getFragmentEntryLinksBySegmentsExperienceId(
+							segmentsExperience.getGroupId(),
+							segmentsExperience.getSegmentsExperienceId(),
+							segmentsExperience.getPlid())) {
+
+				for (String portletId :
+						_portletRegistry.getFragmentEntryLinkPortletIds(
+							fragmentEntryLink)) {
+
+					PortletPreferences jxPortletPreferences =
+						_portletPreferencesLocalService.fetchPreferences(
+							fragmentEntryLink.getCompanyId(),
+							PortletKeys.PREFS_OWNER_ID_DEFAULT,
+							PortletKeys.PREFS_OWNER_TYPE_LAYOUT,
+							fragmentEntryLink.getPlid(), portletId);
+
+					if (jxPortletPreferences != null) {
+						_portletPreferencesLocalService.
+							deletePortletPreferences(
+								PortletKeys.PREFS_OWNER_ID_DEFAULT,
+								PortletKeys.PREFS_OWNER_TYPE_LAYOUT,
+								fragmentEntryLink.getPlid(), portletId);
+					}
+				}
+
+				_fragmentEntryLinkLocalService.deleteFragmentEntryLink(
+					fragmentEntryLink);
+			}
 		}
 		catch (Exception exception) {
 			throw new ModelListenerException(exception);
@@ -45,7 +74,16 @@ public class SegmentsExperienceModelListener
 	}
 
 	@Reference(unbind = "-")
+	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+
+	@Reference(unbind = "-")
 	private LayoutPageTemplateStructureRelLocalService
 		_layoutPageTemplateStructureRelLocalService;
+
+	@Reference
+	private PortletPreferencesLocalService _portletPreferencesLocalService;
+
+	@Reference
+	private PortletRegistry _portletRegistry;
 
 }

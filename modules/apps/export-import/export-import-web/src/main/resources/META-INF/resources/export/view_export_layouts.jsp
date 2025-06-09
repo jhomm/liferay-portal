@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -27,11 +18,11 @@ if (liveGroup == null) {
 String displayStyle = ParamUtil.getString(request, "displayStyle");
 
 if (Validator.isNotNull(displayStyle) && Validator.isNotNull(displayStyle)) {
-	portalPreferences.setValue(ExportImportPortletKeys.EXPORT, "displayStyle", displayStyle);
-	portalPreferences.setValue(ExportImportPortletKeys.EXPORT, "displayStyle", displayStyle);
+	portalPreferences.setValue(portletDisplay.getPortletName(), "displayStyle", displayStyle);
+	portalPreferences.setValue(portletDisplay.getPortletName(), "displayStyle", displayStyle);
 }
 else {
-	displayStyle = portalPreferences.getValue(ExportImportPortletKeys.EXPORT, "displayStyle", "descriptive");
+	displayStyle = portalPreferences.getValue(portletDisplay.getPortletName(), "displayStyle", "descriptive");
 }
 
 String navigation = ParamUtil.getString(request, "navigation", "all");
@@ -52,7 +43,7 @@ String searchContainerId = "exportLayoutProcesses";
 %>
 
 <c:choose>
-	<c:when test="<%= !GroupPermissionUtil.contains(permissionChecker, liveGroupId, ActionKeys.EXPORT_IMPORT_LAYOUTS) %>">
+	<c:when test="<%= (!stagingGroupHelper.isCompanyGroup(liveGroup) && !GroupPermissionUtil.contains(permissionChecker, liveGroupId, ActionKeys.EXPORT_IMPORT_LAYOUTS)) || (stagingGroupHelper.isCompanyGroup(liveGroup) && !PortletPermissionUtil.contains(permissionChecker, layout, portletDisplay.getPortletName(), ActionKeys.ACCESS_IN_CONTROL_PANEL)) %>">
 		<div class="alert alert-info">
 			<liferay-ui:message key="you-do-not-have-permission-to-access-the-requested-resource" />
 		</div>

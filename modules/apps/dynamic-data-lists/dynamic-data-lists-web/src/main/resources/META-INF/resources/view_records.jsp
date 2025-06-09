@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -52,9 +43,9 @@ if (!ddlDisplayContext.isAdminPortlet()) {
 	clearResultsURL="<%= ddlViewRecordsDisplayContext.getClearResultsURL() %>"
 	creationMenu="<%= ddlViewRecordsDisplayContext.getCreationMenu() %>"
 	disabled="<%= ddlViewRecordsDisplayContext.isDisabledManagementBar() %>"
-	filterDropdownItems="<%= ddlViewRecordsDisplayContext.getFilterItemsDropdownItems() %>"
 	itemsTotal="<%= ddlViewRecordsDisplayContext.getTotalItems() %>"
-	propsTransformer="js/ViewRecordsManagementToolbarPropsTransformer"
+	orderDropdownItems="<%= ddlViewRecordsDisplayContext.getOrderItemsDropdownItems() %>"
+	propsTransformer="{ViewRecordsManagementToolbarPropsTransformer} from dynamic-data-lists-web"
 	searchActionURL="<%= ddlViewRecordsDisplayContext.getSearchActionURL() %>"
 	searchContainerId="<%= ddlViewRecordsDisplayContext.getSearchContainerId() %>"
 	searchFormName="fm1"
@@ -63,17 +54,19 @@ if (!ddlDisplayContext.isAdminPortlet()) {
 	sortingURL="<%= ddlViewRecordsDisplayContext.getSortingURL() %>"
 />
 
+<%@ include file="/deprecated_warning.jspf" %>
+
 <clay:container-fluid
 	cssClass="view-records-container"
 	id='<%= liferayPortletResponse.getNamespace() + "formContainer" %>'
 >
-	<aui:form action="<%= portletURL.toString() %>" method="post" name="fm">
+	<aui:form action="<%= portletURL %>" method="post" name="fm">
 		<aui:input name="recordIds" type="hidden" />
 
 		<liferay-ui:search-container
 			id="<%= ddlViewRecordsDisplayContext.getSearchContainerId() %>"
 			rowChecker="<%= new EmptyOnClickRowChecker(renderResponse) %>"
-			searchContainer="<%= ddlViewRecordsDisplayContext.getSearch() %>"
+			searchContainer="<%= ddlViewRecordsDisplayContext.getSearchContainer() %>"
 		>
 			<liferay-ui:search-container-row
 				className="com.liferay.dynamic.data.lists.model.DDLRecord"
@@ -178,3 +171,5 @@ if (!ddlDisplayContext.isAdminPortlet()) {
 </clay:container-fluid>
 
 <%@ include file="/export_record_set.jspf" %>
+
+<aui:script use="liferay-portlet-dynamic-data-lists"></aui:script>

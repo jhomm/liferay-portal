@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.renderer;
@@ -23,18 +14,19 @@ import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
 import com.liferay.layout.display.page.constants.LayoutDisplayPageWebKeys;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Tuple;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Pavel Savinov
@@ -71,7 +63,13 @@ public class ContentFlagsFragmentRenderer
 							"name", "message"
 						).put(
 							"type", "text"
-						))))
+						))
+				).put(
+					"label",
+					_language.format(
+						fragmentRendererContext.getLocale(), "x-options",
+						"content-flags", true)
+				))
 		).toString();
 	}
 
@@ -82,7 +80,7 @@ public class ContentFlagsFragmentRenderer
 
 	@Override
 	public String getLabel(Locale locale) {
-		return LanguageUtil.get(locale, "content-flags");
+		return _language.get(locale, "content-flags");
 	}
 
 	@Override
@@ -93,14 +91,15 @@ public class ContentFlagsFragmentRenderer
 
 		FlagsTag flagsTag = new FlagsTag();
 
-		Tuple displayObject = getDisplayObject(
+		Tuple displayObjectTuple = getDisplayObjectTuple(
 			fragmentRendererContext, httpServletRequest);
 
-		String className = GetterUtil.getString(displayObject.getObject(0));
+		String className = GetterUtil.getString(
+			displayObjectTuple.getObject(0));
 
 		flagsTag.setClassName(className);
 
-		long classPK = GetterUtil.getLong(displayObject.getObject(1));
+		long classPK = GetterUtil.getLong(displayObjectTuple.getObject(1));
 
 		flagsTag.setClassPK(classPK);
 
@@ -111,13 +110,13 @@ public class ContentFlagsFragmentRenderer
 
 		try {
 			flagsTag.setMessage(
-				LanguageUtil.get(
+				_language.get(
 					httpServletRequest,
 					GetterUtil.getString(
 						fragmentEntryConfigurationParser.getFieldValue(
 							getConfiguration(fragmentRendererContext),
 							fragmentEntryLink.getEditableValues(),
-							"message"))));
+							fragmentRendererContext.getLocale(), "message"))));
 
 			LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
 				(LayoutDisplayPageProvider<?>)httpServletRequest.getAttribute(
@@ -146,5 +145,8 @@ public class ContentFlagsFragmentRenderer
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ContentFlagsFragmentRenderer.class);
+
+	@Reference
+	private Language _language;
 
 }

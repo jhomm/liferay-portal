@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.messaging.test;
@@ -80,12 +71,11 @@ public class SubscriptionSenderTest {
 	public void testGetPortalURLFromPrivateLayoutSetWithEntryURL()
 		throws Exception {
 
-		LayoutTestUtil.addLayout(_group, true);
-		LayoutTestUtil.addLayout(_group, false);
+		LayoutTestUtil.addTypePortletLayout(_group, true);
+		LayoutTestUtil.addTypePortletLayout(_group, false);
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setEntryURL(
 			_portalURL +
 				PropsValues.LAYOUT_FRIENDLY_URL_PRIVATE_GROUP_SERVLET_MAPPING);
@@ -104,7 +94,7 @@ public class SubscriptionSenderTest {
 	public void testGetPortalURLFromPrivateLayoutSetWithVirtualHost()
 		throws Exception {
 
-		LayoutTestUtil.addLayout(_group, true);
+		LayoutTestUtil.addTypePortletLayout(_group, true);
 
 		_layoutSetLocalService.updateVirtualHosts(
 			_group.getGroupId(), true,
@@ -114,7 +104,6 @@ public class SubscriptionSenderTest {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setGroupId(_group.getGroupId());
 		subscriptionSender.setMailId("test-mail-id");
 
@@ -130,7 +119,7 @@ public class SubscriptionSenderTest {
 	public void testGetPortalURLFromPrivateLayoutSetWithVirtualHostAndEntryURL()
 		throws Exception {
 
-		LayoutTestUtil.addLayout(_group, true);
+		LayoutTestUtil.addTypePortletLayout(_group, true);
 
 		_layoutSetLocalService.updateVirtualHosts(
 			_group.getGroupId(), true,
@@ -140,7 +129,7 @@ public class SubscriptionSenderTest {
 
 		// Include a public layout set to test for LPS-113218
 
-		LayoutTestUtil.addLayout(_group, false);
+		LayoutTestUtil.addTypePortletLayout(_group, false);
 
 		_layoutSetLocalService.updateVirtualHosts(
 			_group.getGroupId(), false,
@@ -150,7 +139,6 @@ public class SubscriptionSenderTest {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setEntryURL(
 			_portalURL +
 				PropsValues.LAYOUT_FRIENDLY_URL_PRIVATE_GROUP_SERVLET_MAPPING);
@@ -169,7 +157,7 @@ public class SubscriptionSenderTest {
 	public void testGetPortalURLFromPublicLayoutSetWithVirtualHost()
 		throws Exception {
 
-		LayoutTestUtil.addLayout(_group, false);
+		LayoutTestUtil.addTypePortletLayout(_group, false);
 
 		_layoutSetLocalService.updateVirtualHosts(
 			_group.getGroupId(), false,
@@ -179,7 +167,6 @@ public class SubscriptionSenderTest {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setGroupId(_group.getGroupId());
 		subscriptionSender.setMailId("test-mail-id");
 
@@ -197,8 +184,6 @@ public class SubscriptionSenderTest {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
-
 		Assert.assertFalse(subscriptionSender.hasSubscribers());
 	}
 
@@ -212,7 +197,6 @@ public class SubscriptionSenderTest {
 
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.addPersistedSubscribers(
 			Group.class.getName(), _group.getGroupId(), false);
 
@@ -225,7 +209,6 @@ public class SubscriptionSenderTest {
 	public void testPortalURLIsReturned() throws Exception {
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setMailId("test-mail-id");
 
 		subscriptionSender.initialize();
@@ -240,7 +223,6 @@ public class SubscriptionSenderTest {
 	public void testPortalURLParamsAreRemoved() throws Exception {
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setEntryURL(_portalURL + "/test/page?with&params");
 		subscriptionSender.setGroupId(_group.getGroupId());
 		subscriptionSender.setMailId("test-mail-id");
@@ -257,7 +239,6 @@ public class SubscriptionSenderTest {
 	public void testVirtualURLIsReturned() throws Exception {
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-		subscriptionSender.setCompanyId(TestPropsValues.getCompanyId());
 		subscriptionSender.setEntryURL(_virtualURL);
 		subscriptionSender.setMailId("test-mail-id");
 

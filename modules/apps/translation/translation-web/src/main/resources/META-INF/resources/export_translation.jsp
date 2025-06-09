@@ -1,27 +1,18 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-portletDisplay.setShowBackIcon(true);
-
 ExportTranslationDisplayContext exportTranslationDisplayContext = (ExportTranslationDisplayContext)request.getAttribute(ExportTranslationDisplayContext.class.getName());
 
+portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(exportTranslationDisplayContext.getRedirect());
+portletDisplay.setURLBackTitle(ParamUtil.getString(request, "backURLTitle"));
 
 renderResponse.setTitle(exportTranslationDisplayContext.getTitle());
 %>
@@ -64,63 +55,104 @@ renderResponse.setTitle(exportTranslationDisplayContext.getTitle());
 				</div>
 
 				<%
-				List<Map<String, String>> experiences = exportTranslationDisplayContext.getExperiences();
+				Map<String, Object> exportTranslationData = exportTranslationDisplayContext.getExportTranslationData();
 				%>
 
-				<c:if test="<%= (experiences != null) && (experiences.size() > 1) %>">
-					<div class="form-group">
-						<label class="mb-2"><liferay-ui:message key="select-experiences" /></label>
+				<c:choose>
+					<c:when test='<%= (boolean)exportTranslationData.get("multiplePagesSelected") %>'>
+						<c:if test='<%= (boolean)exportTranslationData.get("multipleExperiences") %>'>
+							<div class="form-group">
+								<label class="mb-2"><liferay-ui:message key="export-experiences" /></label>
 
-						<ul class="list-group translation-experiences-wrapper">
+								<div class="custom-radio">
+									<clay:radio
+										checked="<%= true %>"
+										disabled="<%= true %>"
+										label='<%= LanguageUtil.get(request, "default-experience") %>'
+										name="exportExperience"
+										value="default"
+									/>
 
-							<%
-							for (Map<String, String> experience : experiences) {
-							%>
+									<div class="form-text">
+										<liferay-ui:message key="export-default-experience-help-message" />
+									</div>
 
-								<li class="list-group-item list-group-item-flex">
-									<clay:content-col>
-										<div class="custom-checkbox custom-control">
-											<label>
-												<input checked class="custom-control-input" id="<%= "experience_" + experience.get("value") %>" type="checkbox" />
+									<clay:radio
+										disabled="<%= true %>"
+										label='<%= LanguageUtil.get(request, "all-experiences") %>'
+										name="exportExperience"
+										value="all"
+									/>
 
-												<span class="custom-control-label"></span>
-											</label>
-										</div>
-									</clay:content-col>
+									<div class="form-text">
+										<liferay-ui:message key="export-all-experiences-help-message" />
+									</div>
+								</div>
+							</div>
+						</c:if>
+					</c:when>
+					<c:otherwise>
 
-									<clay:content-col
-										expand="<%= true %>"
-									>
-										<clay:content-row
-											containerElement="label"
-											cssClass="list-group-label"
-											for='<%= "experience_" + experience.get("value") %>'
-										>
-											<clay:content-col
-												cssClass="translation-experience-name"
-											>
-												<div class="text-truncate" title="<%= experience.get("label") %>">
-													<%= experience.get("label") %>
+						<%
+						List<Map<String, String>> experiences = exportTranslationDisplayContext.getExperiences();
+						%>
+
+						<c:if test="<%= (experiences != null) && (experiences.size() > 1) %>">
+							<div class="form-group">
+								<label class="mb-2"><liferay-ui:message key="select-experiences" /></label>
+
+								<ul class="list-group translation-experiences-wrapper">
+
+									<%
+									for (Map<String, String> experience : experiences) {
+									%>
+
+										<li class="list-group-item list-group-item-flex">
+											<clay:content-col>
+												<div class="custom-checkbox custom-control">
+													<label>
+														<input checked class="custom-control-input" id="experience_<%= experience.get("value") %>" type="checkbox" />
+
+														<span class="custom-control-label"></span>
+													</label>
 												</div>
 											</clay:content-col>
 
 											<clay:content-col
-												cssClass="text-right"
 												expand="<%= true %>"
 											>
-												<span class="small text-secondary text-truncate"><%= experience.get("segment") %></span>
+												<clay:content-row
+													containerElement="label"
+													cssClass="list-group-label"
+													for='<%= "experience_" + experience.get("value") %>'
+												>
+													<clay:content-col
+														cssClass="translation-experience-name"
+													>
+														<div class="text-truncate" title="<%= experience.get("label") %>">
+															<%= experience.get("label") %>
+														</div>
+													</clay:content-col>
+
+													<clay:content-col
+														cssClass="text-right"
+														expand="<%= true %>"
+													>
+														<span class="small text-secondary text-truncate"><%= experience.get("segment") %></span>
+													</clay:content-col>
+												</clay:content-row>
 											</clay:content-col>
-										</clay:content-row>
-									</clay:content-col>
-								</li>
+										</li>
 
-							<%
-							}
-							%>
+									<%
+									}
+									%>
 
-						</ul>
-					</div>
-				</c:if>
+								</ul>
+							</div>
+						</c:if>
+					</c:otherwise>
+				</c:choose>
 
 				<div class="btn-group">
 					<div class="btn-group-item">
@@ -143,10 +175,8 @@ renderResponse.setTitle(exportTranslationDisplayContext.getTitle());
 				</div>
 
 				<react:component
-					module="js/ExportTranslation"
-					props="<%=
-						exportTranslationDisplayContext.getExportTranslationData()
-					%>"
+					module="{ExportTranslation} from translation-web"
+					props="<%= exportTranslationData %>"
 				/>
 			</div>
 		</clay:sheet>

@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.workflow.comparator;
 
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.workflow.WorkflowInstance;
+import com.liferay.portal.kernel.workflow.WorkflowNode;
 
 import java.util.List;
 
@@ -40,17 +33,17 @@ public class WorkflowInstanceStateComparator
 		WorkflowInstance workflowInstance1,
 		WorkflowInstance workflowInstance2) {
 
-		List<String> currentNodeNames1 =
-			workflowInstance1.getCurrentNodeNames();
+		List<String> currentWorkflowNodeNames1 = ListUtil.toList(
+			workflowInstance1.getCurrentWorkflowNodes(), WorkflowNode::getName);
 
-		String currentNodeName1 = currentNodeNames1.get(0);
+		String currentWorkflowNodeName1 = currentWorkflowNodeNames1.get(0);
 
-		List<String> currentNodeNames2 =
-			workflowInstance2.getCurrentNodeNames();
+		List<String> currentNodeNames2 = ListUtil.toList(
+			workflowInstance2.getCurrentWorkflowNodes(), WorkflowNode::getName);
 
 		String currentNodeName2 = currentNodeNames2.get(0);
 
-		int value = currentNodeName1.compareTo(currentNodeName2);
+		int value = currentWorkflowNodeName1.compareTo(currentNodeName2);
 
 		if (value == 0) {
 			Long workflowInstanceId1 =

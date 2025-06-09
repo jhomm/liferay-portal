@@ -1,24 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.web.internal.display;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.sharing.security.permission.SharingEntryAction;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.ResourceBundle;
 
 /**
  * @author Sergio González
@@ -26,14 +20,14 @@ import java.util.Objects;
 public enum SharingEntryPermissionDisplayAction {
 
 	COMMENTS(
-		"COMMENTS", "comment", "collaborators-can-comment-on-the-item",
+		"COMMENTS", "comment", "collaborators-can-comment-on-the-item[",
 		"comment", SharingEntryAction.ADD_DISCUSSION, SharingEntryAction.VIEW),
 	UPDATE(
-		"UPDATE", "update", "collaborators-can-view-comment-update-the-item",
+		"UPDATE", "update", "collaborators-can-view-comment-update-the-item[",
 		"update", SharingEntryAction.ADD_DISCUSSION, SharingEntryAction.UPDATE,
 		SharingEntryAction.VIEW),
 	VIEW(
-		"VIEW", "view", "collaborators-can-only-view-the-item", "view",
+		"VIEW", "view", "collaborators-can-only-view-the-item[", "view",
 		SharingEntryAction.VIEW);
 
 	public static SharingEntryPermissionDisplayAction parseFromActionId(
@@ -56,8 +50,12 @@ public enum SharingEntryPermissionDisplayAction {
 		return _actionId;
 	}
 
-	public String getDescriptionKey() {
-		return _descriptionKey;
+	public String getDescription(
+		String className, ResourceBundle resourceBundle) {
+
+		return LanguageUtil.get(
+			resourceBundle,
+			StringBundler.concat(_descriptionKey, className, "]"));
 	}
 
 	public List<SharingEntryAction> getSharingEntryActions() {

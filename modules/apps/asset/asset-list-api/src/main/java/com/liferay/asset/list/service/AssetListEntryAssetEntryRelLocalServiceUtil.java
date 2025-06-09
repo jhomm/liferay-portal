@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -114,9 +106,11 @@ public class AssetListEntryAssetEntryRelLocalServiceUtil {
 	 *
 	 * @param assetListEntryAssetEntryRel the asset list entry asset entry rel
 	 * @return the asset list entry asset entry rel that was removed
+	 * @throws PortalException
 	 */
 	public static AssetListEntryAssetEntryRel deleteAssetListEntryAssetEntryRel(
-		AssetListEntryAssetEntryRel assetListEntryAssetEntryRel) {
+			AssetListEntryAssetEntryRel assetListEntryAssetEntryRel)
+		throws PortalException {
 
 		return getService().deleteAssetListEntryAssetEntryRel(
 			assetListEntryAssetEntryRel);
@@ -147,6 +141,14 @@ public class AssetListEntryAssetEntryRelLocalServiceUtil {
 
 		return getService().deleteAssetListEntryAssetEntryRel(
 			assetListEntryId, segmentsEntryId, position);
+	}
+
+	public static void deleteAssetListEntryAssetEntryRelByAssetEntryId(
+			long assetEntryId)
+		throws PortalException {
+
+		getService().deleteAssetListEntryAssetEntryRelByAssetEntryId(
+			assetEntryId);
 	}
 
 	public static void deleteAssetListEntryAssetEntryRelByAssetListEntryId(
@@ -294,6 +296,13 @@ public class AssetListEntryAssetEntryRelLocalServiceUtil {
 			assetListEntryAssetEntryRelId);
 	}
 
+	public static List<AssetListEntryAssetEntryRel>
+		getAssetListEntryAssetEntryRelByAssetEntryId(long assetEntryId) {
+
+		return getService().getAssetListEntryAssetEntryRelByAssetEntryId(
+			assetEntryId);
+	}
+
 	/**
 	 * Returns the asset list entry asset entry rel matching the UUID and group.
 	 *
@@ -354,19 +363,6 @@ public class AssetListEntryAssetEntryRelLocalServiceUtil {
 	}
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<AssetListEntryAssetEntryRel>
-		getAssetListEntryAssetEntryRels(
-			long assetListEntryId, long[] segmentsEntryIds,
-			long[][] assetCategoryIds, int start, int end) {
-
-		return getService().getAssetListEntryAssetEntryRels(
-			assetListEntryId, segmentsEntryIds, assetCategoryIds, start, end);
-	}
-
-	/**
 	 * Returns all the asset list entry asset entry rels matching the UUID and company.
 	 *
 	 * @param uuid the UUID of the asset list entry asset entry rels
@@ -424,29 +420,10 @@ public class AssetListEntryAssetEntryRelLocalServiceUtil {
 	}
 
 	public static int getAssetListEntryAssetEntryRelsCount(
-		long assetLIstEntryId, long segmentsEntryId, boolean visible) {
-
-		return getService().getAssetListEntryAssetEntryRelsCount(
-			assetLIstEntryId, segmentsEntryId, visible);
-	}
-
-	public static int getAssetListEntryAssetEntryRelsCount(
 		long assetListEntryId, long[] segmentsEntryIds) {
 
 		return getService().getAssetListEntryAssetEntryRelsCount(
 			assetListEntryId, segmentsEntryIds);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	public static int getAssetListEntryAssetEntryRelsCount(
-		long assetListEntryId, long[] segmentsEntryIds,
-		long[][] assetCategoryIds) {
-
-		return getService().getAssetListEntryAssetEntryRelsCount(
-			assetListEntryId, segmentsEntryIds, assetCategoryIds);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
@@ -519,9 +496,12 @@ public class AssetListEntryAssetEntryRelLocalServiceUtil {
 	}
 
 	public static AssetListEntryAssetEntryRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile AssetListEntryAssetEntryRelLocalService _service;
+	private static final Snapshot<AssetListEntryAssetEntryRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			AssetListEntryAssetEntryRelLocalServiceUtil.class,
+			AssetListEntryAssetEntryRelLocalService.class);
 
 }

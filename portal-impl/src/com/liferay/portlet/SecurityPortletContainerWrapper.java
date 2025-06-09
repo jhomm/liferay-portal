@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet;
@@ -40,30 +31,20 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.LayoutTypeAccessPolicyTracker;
 import com.liferay.portal.util.PropsValues;
 
+import jakarta.portlet.Event;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.Event;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Tomas Polesovsky
  * @author Raymond Augé
  */
 public class SecurityPortletContainerWrapper implements PortletContainer {
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static PortletContainer createSecurityPortletContainerWrapper(
-		PortletContainer portletContainer) {
-
-		return new SecurityPortletContainerWrapper(portletContainer);
-	}
 
 	public SecurityPortletContainerWrapper(PortletContainer portletContainer) {
 		_portletContainer = portletContainer;
@@ -149,7 +130,7 @@ public class SecurityPortletContainerWrapper implements PortletContainer {
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(principalException, principalException);
+				_log.debug(principalException);
 			}
 
 			processRenderException(
@@ -180,7 +161,7 @@ public class SecurityPortletContainerWrapper implements PortletContainer {
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(principalException, principalException);
+				_log.debug(principalException);
 			}
 
 			processRenderException(
@@ -402,7 +383,7 @@ public class SecurityPortletContainerWrapper implements PortletContainer {
 		PrincipalException principalException) {
 
 		if (_log.isDebugEnabled()) {
-			_log.debug(principalException, principalException);
+			_log.debug(principalException);
 		}
 
 		if (_log.isWarnEnabled() &&
@@ -459,13 +440,12 @@ public class SecurityPortletContainerWrapper implements PortletContainer {
 		PrincipalException principalException) {
 
 		if (_log.isDebugEnabled()) {
-			_log.debug(principalException, principalException);
+			_log.debug(principalException);
 		}
 
 		httpServletResponse.setHeader(
 			HttpHeaders.CACHE_CONTROL,
 			HttpHeaders.CACHE_CONTROL_NO_CACHE_VALUE);
-
 		httpServletResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
 
 		if (principalException instanceof

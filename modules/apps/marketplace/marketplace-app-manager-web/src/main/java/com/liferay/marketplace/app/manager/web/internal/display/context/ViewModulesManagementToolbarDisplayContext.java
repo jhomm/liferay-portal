@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.marketplace.app.manager.web.internal.display.context;
@@ -19,25 +10,25 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuil
 import com.liferay.marketplace.app.manager.web.internal.constants.BundleStateConstants;
 import com.liferay.marketplace.app.manager.web.internal.util.AppDisplay;
 import com.liferay.marketplace.app.manager.web.internal.util.AppDisplayFactoryUtil;
-import com.liferay.marketplace.app.manager.web.internal.util.BundleManagerUtil;
 import com.liferay.marketplace.app.manager.web.internal.util.BundleUtil;
 import com.liferay.marketplace.app.manager.web.internal.util.comparator.BundleComparator;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.marketplace.util.BundleManagerUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.Bundle;
 
@@ -61,20 +52,19 @@ public class ViewModulesManagementToolbarDisplayContext
 	}
 
 	public AppDisplay getAppDisplay() {
-		String app = ParamUtil.getString(httpServletRequest, "app");
-
 		AppDisplay appDisplay = null;
 
-		List<Bundle> allBundles = BundleManagerUtil.getBundles();
+		String app = ParamUtil.getString(httpServletRequest, "app");
 
 		if (Validator.isNumber(app)) {
 			appDisplay = AppDisplayFactoryUtil.getAppDisplay(
-				allBundles, GetterUtil.getLong(app));
+				BundleManagerUtil.getBundles(), GetterUtil.getLong(app));
 		}
 
 		if (appDisplay == null) {
 			appDisplay = AppDisplayFactoryUtil.getAppDisplay(
-				allBundles, app, httpServletRequest.getLocale());
+				BundleManagerUtil.getBundles(), app,
+				httpServletRequest.getLocale());
 		}
 
 		return appDisplay;
@@ -87,12 +77,6 @@ public class ViewModulesManagementToolbarDisplayContext
 				dropdownGroupItem.setDropdownItems(getStatusDropdownItems());
 				dropdownGroupItem.setLabel(
 					LanguageUtil.get(httpServletRequest, "status"));
-			}
-		).addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(getOrderByDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "order-by"));
 			}
 		).build();
 	}
@@ -143,21 +127,10 @@ public class ViewModulesManagementToolbarDisplayContext
 		BundleUtil.filterBundles(
 			bundles, BundleStateConstants.getState(getState()));
 
-		bundles = ListUtil.sort(
-			bundles, new BundleComparator(getOrderByType()));
-
-		int end = searchContainer.getEnd();
-
-		if (end > bundles.size()) {
-			end = bundles.size();
-		}
-
-		List<Object> results = new ArrayList<>(bundles);
-
-		searchContainer.setResults(
-			results.subList(searchContainer.getStart(), end));
-
-		searchContainer.setTotal(bundles.size());
+		searchContainer.setResultsAndTotal(
+			new ArrayList<>(
+				ListUtil.sort(
+					bundles, new BundleComparator(getOrderByType()))));
 
 		_searchContainer = searchContainer;
 

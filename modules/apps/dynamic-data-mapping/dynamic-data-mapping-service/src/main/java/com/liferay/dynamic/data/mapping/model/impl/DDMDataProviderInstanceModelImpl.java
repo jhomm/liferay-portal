@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.model.impl;
 
 import com.liferay.dynamic.data.mapping.model.DDMDataProviderInstance;
 import com.liferay.dynamic.data.mapping.model.DDMDataProviderInstanceModel;
-import com.liferay.dynamic.data.mapping.model.DDMDataProviderInstanceSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -41,18 +31,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -128,6 +115,9 @@ public class DDMDataProviderInstanceModelImpl
 	public static final String ORDER_BY_SQL =
 		" ORDER BY DDMDataProviderInstance.dataProviderInstanceId ASC";
 
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY ddmDataProviderInstance.dataProviderInstanceId ASC";
+
 	public static final String DATA_SOURCE = "liferayDataSource";
 
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
@@ -171,67 +161,6 @@ public class DDMDataProviderInstanceModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static DDMDataProviderInstance toModel(
-		DDMDataProviderInstanceSoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		DDMDataProviderInstance model = new DDMDataProviderInstanceImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setDataProviderInstanceId(soapModel.getDataProviderInstanceId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setDefinition(soapModel.getDefinition());
-		model.setType(soapModel.getType());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<DDMDataProviderInstance> toModels(
-		DDMDataProviderInstanceSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<DDMDataProviderInstance> models =
-			new ArrayList<DDMDataProviderInstance>(soapModels.length);
-
-		for (DDMDataProviderInstanceSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public DDMDataProviderInstanceModelImpl() {
@@ -311,152 +240,142 @@ public class DDMDataProviderInstanceModelImpl
 	public Map<String, Function<DDMDataProviderInstance, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<DDMDataProviderInstance, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, DDMDataProviderInstance>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			DDMDataProviderInstance.class.getClassLoader(),
-			DDMDataProviderInstance.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<DDMDataProviderInstance, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<DDMDataProviderInstance> constructor =
-				(Constructor<DDMDataProviderInstance>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<DDMDataProviderInstance, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<DDMDataProviderInstance, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", DDMDataProviderInstance::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", DDMDataProviderInstance::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"uuid", DDMDataProviderInstance::getUuid);
+			attributeGetterFunctions.put(
+				"dataProviderInstanceId",
+				DDMDataProviderInstance::getDataProviderInstanceId);
+			attributeGetterFunctions.put(
+				"groupId", DDMDataProviderInstance::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", DDMDataProviderInstance::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", DDMDataProviderInstance::getUserId);
+			attributeGetterFunctions.put(
+				"userName", DDMDataProviderInstance::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", DDMDataProviderInstance::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", DDMDataProviderInstance::getModifiedDate);
+			attributeGetterFunctions.put(
+				"name", DDMDataProviderInstance::getName);
+			attributeGetterFunctions.put(
+				"description", DDMDataProviderInstance::getDescription);
+			attributeGetterFunctions.put(
+				"definition", DDMDataProviderInstance::getDefinition);
+			attributeGetterFunctions.put(
+				"type", DDMDataProviderInstance::getType);
+			attributeGetterFunctions.put(
+				"lastPublishDate", DDMDataProviderInstance::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<DDMDataProviderInstance, Object>>
-		_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<DDMDataProviderInstance, Object>>
-			_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<DDMDataProviderInstance, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<DDMDataProviderInstance, Object>>();
-		Map<String, BiConsumer<DDMDataProviderInstance, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<DDMDataProviderInstance, ?>>();
+		private static final Map
+			<String, BiConsumer<DDMDataProviderInstance, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", DDMDataProviderInstance::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<DDMDataProviderInstance, Long>)
-				DDMDataProviderInstance::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", DDMDataProviderInstance::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<DDMDataProviderInstance, Long>)
-				DDMDataProviderInstance::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", DDMDataProviderInstance::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<DDMDataProviderInstance, String>)
-				DDMDataProviderInstance::setUuid);
-		attributeGetterFunctions.put(
-			"dataProviderInstanceId",
-			DDMDataProviderInstance::getDataProviderInstanceId);
-		attributeSetterBiConsumers.put(
-			"dataProviderInstanceId",
-			(BiConsumer<DDMDataProviderInstance, Long>)
-				DDMDataProviderInstance::setDataProviderInstanceId);
-		attributeGetterFunctions.put(
-			"groupId", DDMDataProviderInstance::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<DDMDataProviderInstance, Long>)
-				DDMDataProviderInstance::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", DDMDataProviderInstance::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<DDMDataProviderInstance, Long>)
-				DDMDataProviderInstance::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", DDMDataProviderInstance::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<DDMDataProviderInstance, Long>)
-				DDMDataProviderInstance::setUserId);
-		attributeGetterFunctions.put(
-			"userName", DDMDataProviderInstance::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<DDMDataProviderInstance, String>)
-				DDMDataProviderInstance::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", DDMDataProviderInstance::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<DDMDataProviderInstance, Date>)
-				DDMDataProviderInstance::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", DDMDataProviderInstance::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<DDMDataProviderInstance, Date>)
-				DDMDataProviderInstance::setModifiedDate);
-		attributeGetterFunctions.put("name", DDMDataProviderInstance::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<DDMDataProviderInstance, String>)
-				DDMDataProviderInstance::setName);
-		attributeGetterFunctions.put(
-			"description", DDMDataProviderInstance::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<DDMDataProviderInstance, String>)
-				DDMDataProviderInstance::setDescription);
-		attributeGetterFunctions.put(
-			"definition", DDMDataProviderInstance::getDefinition);
-		attributeSetterBiConsumers.put(
-			"definition",
-			(BiConsumer<DDMDataProviderInstance, String>)
-				DDMDataProviderInstance::setDefinition);
-		attributeGetterFunctions.put("type", DDMDataProviderInstance::getType);
-		attributeSetterBiConsumers.put(
-			"type",
-			(BiConsumer<DDMDataProviderInstance, String>)
-				DDMDataProviderInstance::setType);
-		attributeGetterFunctions.put(
-			"lastPublishDate", DDMDataProviderInstance::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<DDMDataProviderInstance, Date>)
-				DDMDataProviderInstance::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<DDMDataProviderInstance, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<DDMDataProviderInstance, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<DDMDataProviderInstance, Long>)
+					DDMDataProviderInstance::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<DDMDataProviderInstance, Long>)
+					DDMDataProviderInstance::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<DDMDataProviderInstance, String>)
+					DDMDataProviderInstance::setUuid);
+			attributeSetterBiConsumers.put(
+				"dataProviderInstanceId",
+				(BiConsumer<DDMDataProviderInstance, Long>)
+					DDMDataProviderInstance::setDataProviderInstanceId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<DDMDataProviderInstance, Long>)
+					DDMDataProviderInstance::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<DDMDataProviderInstance, Long>)
+					DDMDataProviderInstance::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<DDMDataProviderInstance, Long>)
+					DDMDataProviderInstance::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<DDMDataProviderInstance, String>)
+					DDMDataProviderInstance::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<DDMDataProviderInstance, Date>)
+					DDMDataProviderInstance::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<DDMDataProviderInstance, Date>)
+					DDMDataProviderInstance::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<DDMDataProviderInstance, String>)
+					DDMDataProviderInstance::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<DDMDataProviderInstance, String>)
+					DDMDataProviderInstance::setDescription);
+			attributeSetterBiConsumers.put(
+				"definition",
+				(BiConsumer<DDMDataProviderInstance, String>)
+					DDMDataProviderInstance::setDefinition);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<DDMDataProviderInstance, String>)
+					DDMDataProviderInstance::setType);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<DDMDataProviderInstance, Date>)
+					DDMDataProviderInstance::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1374,44 +1293,13 @@ public class DDMDataProviderInstanceModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<DDMDataProviderInstance, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<DDMDataProviderInstance, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<DDMDataProviderInstance, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply((DDMDataProviderInstance)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, DDMDataProviderInstance>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						DDMDataProviderInstance.class, ModelWrapper.class);
 
 	}
 
@@ -1438,7 +1326,8 @@ public class DDMDataProviderInstanceModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<DDMDataProviderInstance, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

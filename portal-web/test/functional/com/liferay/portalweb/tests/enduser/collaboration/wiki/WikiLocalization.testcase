@@ -1,7 +1,10 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
-	property portal.release = "true";
+	property custom.properties = "feature.flag.LPD-35013=false";
+	property osgi.modules.includes = "wiki";
+	property portal.acceptance = "true";
+	property portal.release = "false";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Wiki";
 
@@ -10,12 +13,14 @@ definition {
 
 		User.firstLoginPG();
 
+		WikiPortlet.enableWiki();
+
 		JSONLayout.addPublicLayout(
 			groupName = "Guest",
 			layoutName = "Wiki Test Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Guest",
 			layoutName = "Wiki Test Page",
 			widgetName = "Wiki");
@@ -24,9 +29,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -34,28 +39,79 @@ definition {
 
 			WikiNode.tearDownCP();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
 	@description = "This is a test for LPS-136991. It checks that a wiki page can be viewed in Arabic."
-	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test CanViewEntryInArabic {
-		property portal.acceptance = "false";
+		WikiPage.addPG(
+			groupName = "Guest",
+			layoutURLKey = "wiki-test-page",
+			siteURLKey = "guest",
+			wikiNodeName = "Main",
+			wikiPageContent = "محتوى صفحة ويكي",
+			wikiPageTitle = "عنوان صفحة ويكي");
 
-		// TODO LPS-136991 CanViewEntryInArabic pending implementation
+		WikiNavigator.openToWikiPage(
+			layoutURLKey = "wiki-test-page",
+			siteURLKey = "guest",
+			wikiNodeName = "Main",
+			wikiPageTitle = "عنوان صفحة ويكي");
 
+		WikiPage.viewPG(
+			wikiPageContent = "محتوى صفحة ويكي",
+			wikiPageTitle = "عنوان صفحة ويكي");
 	}
 
 	@description = "This is a test for LPS-136990. It checks that a wiki page can be viewed in Japanese."
-	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test CanViewEntryInJapanese {
-		property portal.acceptance = "false";
+		WikiPage.addPG(
+			groupName = "Guest",
+			layoutURLKey = "wiki-test-page",
+			siteURLKey = "guest",
+			wikiNodeName = "Main",
+			wikiPageContent = "Wikiページのコンテンツ",
+			wikiPageTitle = "Wikiページのタイトル");
 
-		// TODO LPS-136990 CanViewEntryInJapanese pending implementation
+		WikiNavigator.openToWikiPage(
+			layoutURLKey = "wiki-test-page",
+			siteURLKey = "guest",
+			wikiNodeName = "Main",
+			wikiPageTitle = "Wikiページのタイトル");
 
+		WikiPage.viewPG(
+			wikiPageContent = "Wikiページのコンテンツ",
+			wikiPageTitle = "Wikiページのタイトル");
+	}
+
+	@description = "This test covers LPS-144498. It validates that once localized, the Table of Contents uses the current language translation."
+	@priority = 3
+	test CanViewTableOfContentsInJapanese {
+		JSONWiki.addWikiPage(
+			groupName = "Guest",
+			wikiNodeName = "Main",
+			wikiPageContent = "<<TableOfContents>>",
+			wikiPageName = "Wiki Page Title");
+
+		PortalSettings.openToConfigInInstanceSettings(portletKey = "language");
+
+		PortalSettings.configureCurrentLanguagesCP(
+			currentPortalLanguages = "English (United Kingdom),Japanese (Japan)",
+			defaultPortalLanguage = "Japanese (Japan)");
+
+		WikiNavigator.openToWikiPage(
+			layoutURLKey = "wiki-test-page",
+			siteURLKey = "guest",
+			wikiNodeName = "Main",
+			wikiPageTitle = "Wiki Page Title");
+
+		WikiPage.viewPG(
+			wikiPageContent = "目次 [-]",
+			wikiPageContentGeneric = "true",
+			wikiPageTitle = "Wiki Page Title");
 	}
 
 }

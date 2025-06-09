@@ -1,29 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.web.internal.portlet.action;
 
+import com.liferay.document.library.kernel.util.DLValidator;
 import com.liferay.item.selector.ItemSelectorUploadResponseHandler;
 import com.liferay.message.boards.constants.MBPortletKeys;
-import com.liferay.message.boards.web.internal.upload.TempImageMBUploadFileEntryHandler;
+import com.liferay.message.boards.service.MBMessageService;
+import com.liferay.message.boards.web.internal.upload.BaseMBUploadFileEntryHandler;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.upload.UploadHandler;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -31,15 +25,21 @@ import org.osgi.service.component.annotations.Reference;
  * @author Ambrín Chaudhary
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS,
-		"javax.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS_ADMIN,
+		"jakarta.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS,
+		"jakarta.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS_ADMIN,
 		"mvc.command.name=/message_boards/upload_temp_image"
 	},
 	service = MVCActionCommand.class
 )
 public class UploadTempImageMVCActionCommand extends BaseMVCActionCommand {
+
+	@Activate
+	protected void activate() {
+		_tempImageMBUploadFileEntryHandler =
+			new TempImageMBUploadFileEntryHandler(
+				_dlValidator, _mbMessageService);
+	}
 
 	@Override
 	protected void doProcessAction(
@@ -52,14 +52,35 @@ public class UploadTempImageMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	@Reference
+	private DLValidator _dlValidator;
+
+	@Reference
 	private ItemSelectorUploadResponseHandler
 		_itemSelectorUploadResponseHandler;
 
 	@Reference
+	private MBMessageService _mbMessageService;
+
 	private TempImageMBUploadFileEntryHandler
 		_tempImageMBUploadFileEntryHandler;
 
 	@Reference
 	private UploadHandler _uploadHandler;
+
+	private static class TempImageMBUploadFileEntryHandler
+		extends BaseMBUploadFileEntryHandler {
+
+		public TempImageMBUploadFileEntryHandler(
+			DLValidator dlValidator, MBMessageService mbMessageService) {
+
+			super(dlValidator, mbMessageService);
+		}
+
+		@Override
+		protected String getParameterName() {
+			return "imageSelectorFileName";
+		}
+
+	}
 
 }

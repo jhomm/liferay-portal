@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.batch;
@@ -41,26 +32,26 @@ public class BatchIndexingHelperImplBulkSizesTest {
 
 		activate(entryClassName1 + "=200", entryClassName2 + "=500");
 
-		assertBulkSize(200, entryClassName1);
-		assertBulkSize(500, entryClassName2);
+		_assertBulkSize(200, entryClassName1);
+		_assertBulkSize(500, entryClassName2);
 	}
 
 	@Test
 	public void testDefault() {
-		activateWithoutConfiguration();
+		_activateWithoutConfiguration();
 
-		assertBulkSize(10000, "com.liferay.journal.model.JournalArticle");
+		_assertBulkSize(10000, "com.liferay.journal.model.JournalArticle");
 
-		assertBulkSize(10000, RandomTestUtil.randomString());
+		_assertBulkSize(10000, RandomTestUtil.randomString());
 	}
 
 	@Test
 	public void testDefaultWithConfiguration() {
 		activate("com.liferay.journal.model.JournalArticle=200");
 
-		assertBulkSize(200, "com.liferay.journal.model.JournalArticle");
+		_assertBulkSize(200, "com.liferay.journal.model.JournalArticle");
 
-		assertBulkSize(10000, RandomTestUtil.randomString());
+		_assertBulkSize(10000, RandomTestUtil.randomString());
 	}
 
 	@Test
@@ -71,8 +62,8 @@ public class BatchIndexingHelperImplBulkSizesTest {
 		activate(
 			entryClassName1 + "= ", StringPool.SPACE, entryClassName2 + "?200");
 
-		assertBulkSize(10000, entryClassName1);
-		assertBulkSize(10000, entryClassName2);
+		_assertBulkSize(10000, entryClassName1);
+		_assertBulkSize(10000, entryClassName2);
 	}
 
 	protected void activate(String... indexingBatchSizes) {
@@ -81,11 +72,11 @@ public class BatchIndexingHelperImplBulkSizesTest {
 				"indexingBatchSizes", Arrays.asList(indexingBatchSizes)));
 	}
 
-	protected void activateWithoutConfiguration() {
+	private void _activateWithoutConfiguration() {
 		_batchIndexingHelperImpl.activate(Collections.emptyMap());
 	}
 
-	protected void assertBulkSize(int bulkSize, String entryClassName) {
+	private void _assertBulkSize(int bulkSize, String entryClassName) {
 		Assert.assertEquals(
 			bulkSize, _batchIndexingHelperImpl.getBulkSize(entryClassName));
 	}

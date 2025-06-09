@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0.factory;
 
+import com.liferay.headless.commerce.delivery.catalog.internal.security.permission.LiberalPermissionChecker;
 import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.ProductSpecificationResource;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
@@ -33,24 +25,28 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.odata.filter.ExpressionConvert;
 import com.liferay.portal.odata.filter.FilterParserProvider;
+import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.UriInfo;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.function.Function;
 
 import org.osgi.service.component.ComponentServiceObjects;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceScope;
 
@@ -59,7 +55,7 @@ import org.osgi.service.component.annotations.ReferenceScope;
  * @generated
  */
 @Component(
-	enabled = false, immediate = true,
+	property = "resource.locator.key=/headless-commerce-delivery-catalog/v1.0/ProductSpecification",
 	service = ProductSpecificationResource.Factory.class
 )
 @Generated("")
@@ -76,13 +72,16 @@ public class ProductSpecificationResourceFactoryImpl
 					throw new IllegalArgumentException("User is not set");
 				}
 
-				return (ProductSpecificationResource)ProxyUtil.newProxyInstance(
-					ProductSpecificationResource.class.getClassLoader(),
-					new Class<?>[] {ProductSpecificationResource.class},
+				Function<InvocationHandler, ProductSpecificationResource>
+					productSpecificationResourceProxyProviderFunction =
+						ResourceProxyProviderFunctionHolder.
+							_productSpecificationResourceProxyProviderFunction;
+
+				return productSpecificationResourceProxyProviderFunction.apply(
 					(proxy, method, arguments) -> _invoke(
 						method, arguments, _checkPermissions,
 						_httpServletRequest, _httpServletResponse,
-						_preferredLocale, _user));
+						_preferredLocale, _uriInfo, _user));
 			}
 
 			@Override
@@ -122,6 +121,15 @@ public class ProductSpecificationResourceFactoryImpl
 			}
 
 			@Override
+			public ProductSpecificationResource.Builder uriInfo(
+				UriInfo uriInfo) {
+
+				_uriInfo = uriInfo;
+
+				return this;
+			}
+
+			@Override
 			public ProductSpecificationResource.Builder user(User user) {
 				_user = user;
 
@@ -132,26 +140,45 @@ public class ProductSpecificationResourceFactoryImpl
 			private HttpServletRequest _httpServletRequest;
 			private HttpServletResponse _httpServletResponse;
 			private Locale _preferredLocale;
+			private UriInfo _uriInfo;
 			private User _user;
 
 		};
 	}
 
-	@Activate
-	protected void activate() {
-		ProductSpecificationResource.FactoryHolder.factory = this;
-	}
+	private static Function<InvocationHandler, ProductSpecificationResource>
+		_getProxyProviderFunction() {
 
-	@Deactivate
-	protected void deactivate() {
-		ProductSpecificationResource.FactoryHolder.factory = null;
+		Class<?> proxyClass = ProxyUtil.getProxyClass(
+			ProductSpecificationResource.class.getClassLoader(),
+			ProductSpecificationResource.class);
+
+		try {
+			Constructor<ProductSpecificationResource> constructor =
+				(Constructor<ProductSpecificationResource>)
+					proxyClass.getConstructor(InvocationHandler.class);
+
+			return invocationHandler -> {
+				try {
+					return constructor.newInstance(invocationHandler);
+				}
+				catch (ReflectiveOperationException
+							reflectiveOperationException) {
+
+					throw new InternalError(reflectiveOperationException);
+				}
+			};
+		}
+		catch (NoSuchMethodException noSuchMethodException) {
+			throw new InternalError(noSuchMethodException);
+		}
 	}
 
 	private Object _invoke(
 			Method method, Object[] arguments, boolean checkPermissions,
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse, Locale preferredLocale,
-			User user)
+			UriInfo uriInfo, User user)
 		throws Throwable {
 
 		String name = PrincipalThreadLocal.getName();
@@ -167,7 +194,7 @@ public class ProductSpecificationResourceFactoryImpl
 		}
 		else {
 			PermissionThreadLocal.setPermissionChecker(
-				_liberalPermissionCheckerFactory.create(user));
+				new LiberalPermissionChecker(user));
 		}
 
 		ProductSpecificationResource productSpecificationResource =
@@ -184,6 +211,7 @@ public class ProductSpecificationResourceFactoryImpl
 			httpServletRequest);
 		productSpecificationResource.setContextHttpServletResponse(
 			httpServletResponse);
+		productSpecificationResource.setContextUriInfo(uriInfo);
 		productSpecificationResource.setContextUser(user);
 		productSpecificationResource.setExpressionConvert(_expressionConvert);
 		productSpecificationResource.setFilterParserProvider(
@@ -194,6 +222,7 @@ public class ProductSpecificationResourceFactoryImpl
 		productSpecificationResource.setResourcePermissionLocalService(
 			_resourcePermissionLocalService);
 		productSpecificationResource.setRoleLocalService(_roleLocalService);
+		productSpecificationResource.setSortParserProvider(_sortParserProvider);
 
 		try {
 			return method.invoke(productSpecificationResource, arguments);
@@ -231,9 +260,6 @@ public class ProductSpecificationResourceFactoryImpl
 	@Reference
 	private GroupLocalService _groupLocalService;
 
-	@Reference(target = "(permission.checker.type=liberal)")
-	private PermissionCheckerFactory _liberalPermissionCheckerFactory;
-
 	@Reference
 	private ResourceActionLocalService _resourceActionLocalService;
 
@@ -244,7 +270,19 @@ public class ProductSpecificationResourceFactoryImpl
 	private RoleLocalService _roleLocalService;
 
 	@Reference
+	private SortParserProvider _sortParserProvider;
+
+	@Reference
 	private UserLocalService _userLocalService;
+
+	private static class ResourceProxyProviderFunctionHolder {
+
+		private static final Function
+			<InvocationHandler, ProductSpecificationResource>
+				_productSpecificationResourceProxyProviderFunction =
+					_getProxyProviderFunction();
+
+	}
 
 	private class AcceptLanguageImpl implements AcceptLanguage {
 

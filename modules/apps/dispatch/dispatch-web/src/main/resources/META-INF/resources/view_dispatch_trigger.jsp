@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -38,10 +29,9 @@ PortletURL portletURL = PortletURLBuilder.create(
 
 <div id="<portlet:namespace />dispatchTriggerContainer">
 	<div class="closed container" id="<portlet:namespace />infoPanelId">
-		<aui:form action="<%= portletURL.toString() %>" method="post" name="fm">
+		<aui:form action="<%= portletURL %>" method="post" name="fm">
 			<aui:input name="<%= Constants.CMD %>" type="hidden" />
 			<aui:input name="redirect" type="hidden" value="<%= portletURL.toString() %>" />
-			<aui:input name="deleteDispatchTriggerIds" type="hidden" />
 
 			<liferay-ui:search-container
 				id="dispatchTriggers"
@@ -52,13 +42,8 @@ PortletURL portletURL = PortletURLBuilder.create(
 					keyProperty="dispatchTriggerId"
 					modelVar="dispatchTrigger"
 				>
-					<liferay-ui:search-container-column-jsp
-						cssClass="entry-action-column"
-						path="/dispatch_trigger_action.jsp"
-					/>
-
 					<liferay-ui:search-container-column-text
-						cssClass="important table-cell-expand"
+						cssClass="font-weight-bold important table-cell-expand"
 						href='<%=
 							PortletURLBuilder.createRenderURL(
 								renderResponse
@@ -70,12 +55,14 @@ PortletURL portletURL = PortletURLBuilder.create(
 								"dispatchTriggerId", dispatchTrigger.getDispatchTriggerId()
 							).buildPortletURL()
 						%>'
-						property="name"
+						name="name"
+						value="<%= HtmlUtil.escape(dispatchTrigger.getName()) %>"
 					/>
 
 					<liferay-ui:search-container-column-text
 						name="task-executor-type"
 						property="dispatchTaskExecutorType"
+						translate="<%= true %>"
 					/>
 
 					<liferay-ui:search-container-column-text
@@ -88,23 +75,14 @@ PortletURL portletURL = PortletURLBuilder.create(
 						property="createDate"
 					/>
 
-					<%
-					DispatchTriggerMetadata dispatchTriggerMetadata = dispatchTriggerDisplayContext.getDispatchTriggerMetadata(dispatchTrigger.getDispatchTriggerId());
-
-					String nextFireDateString = LanguageUtil.get(request, "not-scheduled");
-
-					if (dispatchTriggerMetadata.isDispatchTaskExecutorReady() && (dispatchTrigger.getNextFireDate() != null)) {
-						nextFireDateString = fastDateFormat.format(dispatchTrigger.getNextFireDate());
-					}
-					%>
-
 					<liferay-ui:search-container-column-text
+						cssClass="table-cell-ws-nowrap"
 						name="next-fire-date"
-						value="<%= nextFireDateString %>"
+						value="<%= dispatchTriggerDisplayContext.getNextFireDateString(dispatchTrigger) %>"
 					/>
 
 					<liferay-ui:search-container-column-text
-						cssClass="important table-cell-ws-nowrap"
+						cssClass="font-weight-bold important table-cell-ws-nowrap"
 						name="status"
 					>
 
@@ -112,10 +90,14 @@ PortletURL portletURL = PortletURLBuilder.create(
 						DispatchTaskStatus dispatchTaskStatus = dispatchTrigger.getDispatchTaskStatus();
 						%>
 
-						<h6 class="background-task-status-row background-task-status-<%= dispatchTaskStatus.getLabel() %> <%= dispatchTaskStatus.getCssClass() %>">
+						<div class="background-task-status-row background-task-status-<%= dispatchTaskStatus.getLabel() %> h6 <%= dispatchTaskStatus.getCssClass() %>">
 							<liferay-ui:message key="<%= dispatchTaskStatus.getLabel() %>" />
-						</h6>
+						</div>
 					</liferay-ui:search-container-column-text>
+
+					<%
+					DispatchTriggerMetadata dispatchTriggerMetadata = dispatchTriggerDisplayContext.getDispatchTriggerMetadata(dispatchTrigger.getDispatchTriggerId());
+					%>
 
 					<c:choose>
 						<c:when test="<%= dispatchTriggerMetadata.isDispatchTaskExecutorReady() %>">
@@ -126,14 +108,19 @@ PortletURL portletURL = PortletURLBuilder.create(
 						</c:when>
 						<c:otherwise>
 							<liferay-ui:search-container-column-text
-								cssClass="important table-cell-ws-nowrap"
+								cssClass="font-weight-bold important table-cell-ws-nowrap"
 							>
-								<h6 class="background-task-status-row text-warning">
+								<div class="background-task-status-row h6 text-warning">
 									<liferay-ui:message key="incomplete" />
-								</h6>
+								</div>
 							</liferay-ui:search-container-column-text>
 						</c:otherwise>
 					</c:choose>
+
+					<liferay-ui:search-container-column-jsp
+						cssClass="entry-action-column"
+						path="/dispatch_trigger_action.jsp"
+					/>
 				</liferay-ui:search-container-row>
 
 				<liferay-ui:search-iterator

@@ -1,31 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.internal.catalog;
 
 import com.liferay.commerce.product.catalog.CPCatalogEntry;
 import com.liferay.commerce.product.catalog.CPSku;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.model.CPDefinition;
-import com.liferay.commerce.product.model.CPInstance;
+import com.liferay.commerce.product.model.CPDefinitionOptionRel;
+import com.liferay.commerce.product.service.CPDefinitionOptionRelLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -37,9 +28,13 @@ public class DatabaseCPCatalogEntryImpl implements CPCatalogEntry {
 
 	public DatabaseCPCatalogEntryImpl(
 		CPDefinition cpDefinition,
+		CPDefinitionOptionRelLocalService cpDefinitionOptionRelLocalService,
+		CPInstanceHelper cpInstanceHelper,
 		CPInstanceLocalService cpInstanceLocalService, Locale locale) {
 
 		_cpDefinition = cpDefinition;
+		_cpDefinitionOptionRelLocalService = cpDefinitionOptionRelLocalService;
+		_cpInstanceHelper = cpInstanceHelper;
 		_cpInstanceLocalService = cpInstanceLocalService;
 
 		_languageId = LanguageUtil.getLanguageId(locale);
@@ -51,35 +46,27 @@ public class DatabaseCPCatalogEntryImpl implements CPCatalogEntry {
 	}
 
 	@Override
+	public List<CPDefinitionOptionRel> getCPDefinitionOptionRels() {
+		return _cpDefinitionOptionRelLocalService.getCPDefinitionOptionRels(
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+	}
+
+	@Override
 	public long getCProductId() {
 		return _cpDefinition.getCProductId();
 	}
 
 	@Override
 	public List<CPSku> getCPSkus() {
-		List<CPSku> cpSkus = new ArrayList<>();
-
-		List<CPInstance> cpInstances =
+		return TransformUtil.transform(
 			_cpInstanceLocalService.getCPDefinitionInstances(
 				_cpDefinition.getCPDefinitionId(),
 				WorkflowConstants.STATUS_APPROVED, QueryUtil.ALL_POS,
-				QueryUtil.ALL_POS, null);
-
-		for (CPInstance cpInstance : cpInstances) {
-			cpSkus.add(new CPSkuImpl(cpInstance));
-		}
-
-		return cpSkus;
-	}
-
-	@Override
-	public String getDefaultImageFileUrl() {
-		try {
-			return _cpDefinition.getDefaultImageFileURL();
-		}
-		catch (PortalException portalException) {
-			throw new SystemException(portalException);
-		}
+				QueryUtil.ALL_POS, null),
+			cpInstance -> new CPSkuImpl(
+				cpInstance,
+				_cpInstanceHelper.fetchCPInstanceUnitPrice(cpInstance),
+				_cpInstanceHelper.fetchCPInstanceUnitPromoPrice(cpInstance)));
 	}
 
 	@Override
@@ -143,6 +130,9 @@ public class DatabaseCPCatalogEntryImpl implements CPCatalogEntry {
 	}
 
 	private final CPDefinition _cpDefinition;
+	private final CPDefinitionOptionRelLocalService
+		_cpDefinitionOptionRelLocalService;
+	private final CPInstanceHelper _cpInstanceHelper;
 	private final CPInstanceLocalService _cpInstanceLocalService;
 	private final String _languageId;
 

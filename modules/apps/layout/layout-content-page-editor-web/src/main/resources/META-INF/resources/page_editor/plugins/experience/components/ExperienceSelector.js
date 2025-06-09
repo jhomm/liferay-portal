@@ -1,42 +1,55 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayAlert from '@clayui/alert';
 import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
+import ClayLabel from '@clayui/label';
 import ClayLayout from '@clayui/layout';
+import ClayLink from '@clayui/link';
 import {useModal} from '@clayui/modal';
-import {ReactPortal, useIsMounted} from '@liferay/frontend-js-react-web';
-import {openToast} from 'frontend-js-web';
-import React, {useEffect, useRef, useState} from 'react';
+import {
+	ReactPortal,
+	useEventListener,
+	useIsMounted,
+} from '@liferay/frontend-js-react-web';
+import {openToast, useId, useSessionState} from 'frontend-js-components-web';
+import {COOKIE_TYPES, navigate} from 'frontend-js-web';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 
 import {config} from '../../../app/config/index';
 import {useDispatch, useSelector} from '../../../app/contexts/StoreContext';
 import selectCanUpdateExperiences from '../../../app/selectors/selectCanUpdateExperiences';
 import selectCanUpdateSegments from '../../../app/selectors/selectCanUpdateSegments';
+import getKeyboardFocusableElements from '../../../app/utils/getKeyboardFocusableElements';
 import createExperience from '../thunks/createExperience';
 import duplicateExperience from '../thunks/duplicateExperience';
 import removeExperience from '../thunks/removeExperience';
 import updateExperience from '../thunks/updateExperience';
 import updateExperiencePriority from '../thunks/updateExperiencePriority';
-import {
-	recoverModalExperienceState,
-	storeModalExperienceState,
-	useDebounceCallback,
-} from '../utils';
+import {useDebounceCallback} from '../utils';
 import ExperienceModal from './ExperienceModal';
 import ExperiencesList from './ExperiencesList';
+
+const useOnClickOutside = (ref, handler) => {
+	useEffect(() => {
+		const listener = (event) => {
+			if (!ref.current || ref.current.contains(event.target)) {
+				return;
+			}
+			handler(event);
+		};
+		document.addEventListener('mousedown', listener);
+		document.addEventListener('touchstart', listener);
+
+		return () => {
+			document.removeEventListener('mousedown', listener);
+			document.removeEventListener('touchstart', listener);
+		};
+	}, [ref, handler]);
+};
 
 /**
  * It produces an object with a target and subtarget keys indicating what experiences
@@ -69,18 +82,14 @@ function getUpdateExperiencePriorityTargets(
 	};
 }
 
-const ExperienceSelector = ({
-	experiences,
-	segments,
-	selectId,
-	selectedExperience,
-}) => {
+const ExperienceSelector = ({experiences, segments, selectedExperience}) => {
 	const dispatch = useDispatch();
 
 	const canUpdateExperiences = useSelector(selectCanUpdateExperiences);
 	const canUpdateSegments = useSelector(selectCanUpdateSegments);
 
 	const buttonRef = useRef();
+	const selectorRef = useRef();
 	const [buttonBoundingClientRect, setButtonBoundingClientRect] = useState({
 		bottom: 0,
 		left: 0,
@@ -91,10 +100,24 @@ const ExperienceSelector = ({
 	const [openModal, setOpenModal] = useState(false);
 	const [editingExperience, setEditingExperience] = useState({});
 
+	const [modalExperienceState, setModalExperienceState] = useSessionState(
+		'modalExperienceState',
+		undefined,
+		COOKIE_TYPES.NECESSARY
+	);
+	const modalExperienceStateRef = useRef(modalExperienceState);
+	modalExperienceStateRef.current = modalExperienceState;
+
+	const isSelectedExperienceActive = experiences.find(
+		({segmentsExperienceId}) =>
+			segmentsExperienceId === selectedExperience.segmentsExperienceId
+	)?.active;
+
 	const {observer: modalObserver, onClose: onModalClose} = useModal({
 		onClose: () => {
 			setOpenModal(false);
 			setEditingExperience({});
+			debouncedSetOpen(true);
 		},
 	});
 
@@ -108,29 +131,29 @@ const ExperienceSelector = ({
 		}
 	}, 100);
 
-	const handleDropdownButtonClick = () => debouncedSetOpen(!open);
-	const handleDropdownButtonBlur = () => debouncedSetOpen(false);
-	const handleDropdownBlur = () => debouncedSetOpen(false);
-	const handleDropdownFocus = () => debouncedSetOpen(true);
+	const experienceSelectorContentId = useId();
 
-	const handleNewSegmentClick = ({
-		experienceId,
-		experienceName,
-		segmentId,
-	}) => {
-		storeModalExperienceState({
+	const memoizedDebouncedSetOpen = useCallback(
+		() => debouncedSetOpen(false),
+		[debouncedSetOpen]
+	);
+	useOnClickOutside(selectorRef, memoizedDebouncedSetOpen);
+
+	const onNewSegmentClick = ({experienceId, experienceName, segmentId}) => {
+		setModalExperienceState({
 			experienceId,
 			experienceName,
 			plid: config.plid,
 			segmentId,
 		});
 
-		Liferay.Util.navigate(config.editSegmentsEntryURL);
+		navigate(config.editSegmentsEntryURL);
 	};
 
 	useEffect(() => {
 		if (config.plid) {
-			const modalExperienceState = recoverModalExperienceState();
+			const modalExperienceState = modalExperienceStateRef.current;
+			setModalExperienceState(null);
 
 			if (
 				modalExperienceState &&
@@ -146,19 +169,24 @@ const ExperienceSelector = ({
 				});
 			}
 		}
-	}, []);
+	}, [setModalExperienceState]);
 
 	useEffect(() => {
 		if (open) {
 			const element = document.querySelector(
 				'.dropdown-menu__experience--active'
 			);
+			const focusableElements = getKeyboardFocusableElements(
+				selectorRef.current
+			);
 
 			element?.scrollIntoView?.({
-				behavior: 'auto',
-				block: 'center',
+				behavior: 'smooth',
+				block: 'nearest',
 				inline: 'nearest',
 			});
+
+			focusableElements[0]?.focus();
 		}
 	}, [open]);
 
@@ -169,7 +197,7 @@ const ExperienceSelector = ({
 
 		element?.scrollIntoView?.({
 			behavior: 'smooth',
-			block: 'center',
+			block: 'nearest',
 			inline: 'nearest',
 		});
 	}, [
@@ -179,7 +207,29 @@ const ExperienceSelector = ({
 		experiences.length,
 	]);
 
-	const handleExperienceCreation = ({
+	useEventListener(
+		'keydown',
+		(event) => {
+			if (event.key === 'Escape' && open) {
+				debouncedSetOpen(false);
+			}
+		},
+		true,
+		window
+	);
+
+	useEventListener(
+		'keyup',
+		() => {
+			if (open && !selectorRef.current.contains(document.activeElement)) {
+				debouncedSetOpen(false);
+			}
+		},
+		true,
+		window
+	);
+
+	const onExperienceCreation = ({
 		name,
 		segmentsEntryId,
 		segmentsExperienceId,
@@ -245,12 +295,16 @@ const ExperienceSelector = ({
 		}
 	};
 
-	const handleOnNewExperiecneClick = () => setOpenModal(true);
+	const onNewExperience = () => {
+		setOpenModal(true);
+		debouncedSetOpen(false);
+	};
 
-	const handleEditExperienceClick = (experienceData) => {
+	const onEditExperience = (experienceData) => {
 		const {name, segmentsEntryId, segmentsExperienceId} = experienceData;
 
 		setOpenModal(true);
+		debouncedSetOpen(false);
 
 		setEditingExperience({
 			name,
@@ -259,7 +313,38 @@ const ExperienceSelector = ({
 		});
 	};
 
-	const deleteExperience = (id) => {
+	const onDropdownKeyDown = (event) => {
+		if (event.key === 'Escape') {
+			buttonRef.current?.focus();
+		}
+		else if (event.key === 'Tab') {
+			const focusableElements = getKeyboardFocusableElements(
+				selectorRef.current
+			);
+
+			if (event.shiftKey) {
+				if (focusableElements.indexOf(event.target) === 0) {
+					event.preventDefault();
+					buttonRef.current?.focus();
+				}
+			}
+			else if (
+				focusableElements.indexOf(event.target) ===
+				focusableElements.length - 1
+			) {
+				event.preventDefault();
+
+				const allFocusableElements =
+					getKeyboardFocusableElements(document);
+
+				const index = allFocusableElements.indexOf(buttonRef.current);
+
+				allFocusableElements[index + 1]?.focus();
+			}
+		}
+	};
+
+	const onDeleteExperience = (id) => {
 		dispatch(
 			removeExperience({
 				segmentsExperienceId: id,
@@ -284,7 +369,7 @@ const ExperienceSelector = ({
 			});
 	};
 
-	const handleExperienceDuplication = (id) => {
+	const onDuplicateExperience = (id) => {
 		dispatch(
 			duplicateExperience({
 				segmentsExperienceId: id,
@@ -308,7 +393,7 @@ const ExperienceSelector = ({
 			});
 	};
 
-	const decreasePriority = (id) => {
+	const onPriorityDecrease = (id) => {
 		const target = getUpdateExperiencePriorityTargets(
 			experiences,
 			id,
@@ -318,7 +403,7 @@ const ExperienceSelector = ({
 		dispatch(updateExperiencePriority(target));
 	};
 
-	const increasePriority = (id) => {
+	const onPriorityIncrease = (id) => {
 		const target = getUpdateExperiencePriorityTargets(
 			experiences,
 			id,
@@ -331,14 +416,18 @@ const ExperienceSelector = ({
 	return (
 		<>
 			<ClayButton
-				className="form-control-select pr-4 text-left text-truncate"
+				aria-controls={experienceSelectorContentId}
+				aria-expanded={open}
+				aria-haspopup="true"
+				aria-label={`${Liferay.Language.get('experience')}: ${
+					selectedExperience.name
+				}`}
+				className="form-control-select page-editor__experience-selector pr-4 text-left text-truncate"
 				disabled={!canUpdateExperiences}
 				displayType="secondary"
-				id={selectId}
-				onBlur={handleDropdownButtonBlur}
-				onClick={handleDropdownButtonClick}
+				onClick={() => debouncedSetOpen(!open)}
 				ref={buttonRef}
-				small
+				size="sm"
 				type="button"
 			>
 				<ClayLayout.ContentRow verticalAlign="center">
@@ -347,6 +436,21 @@ const ExperienceSelector = ({
 							{selectedExperience.name}
 						</span>
 					</ClayLayout.ContentCol>
+
+					{experiences.length > 1 && (
+						<ClayLayout.ContentCol>
+							{isSelectedExperienceActive ? (
+								<ClayLabel displayType="success">
+									{Liferay.Language.get('active')}
+								</ClayLabel>
+							) : (
+								<ClayLabel displayType="secondary">
+									{Liferay.Language.get('inactive')}
+								</ClayLabel>
+							)}
+						</ClayLayout.ContentCol>
+					)}
+
 					<ClayLayout.ContentCol>
 						{selectedExperience.hasLockedSegmentsExperiment && (
 							<ClayIcon symbol="lock" />
@@ -359,8 +463,9 @@ const ExperienceSelector = ({
 				<ReactPortal className="cadmin">
 					<div
 						className="dropdown-menu p-4 page-editor__toolbar-experience__dropdown-menu toggled"
-						onBlur={handleDropdownBlur}
-						onFocus={handleDropdownFocus}
+						id={experienceSelectorContentId}
+						onKeyDown={onDropdownKeyDown}
+						ref={selectorRef}
 						style={{
 							left: buttonBoundingClientRect.left,
 							top: buttonBoundingClientRect.bottom,
@@ -369,8 +474,7 @@ const ExperienceSelector = ({
 					>
 						<ExperiencesSelectorHeader
 							canCreateExperiences={canUpdateExperiences}
-							onNewExperience={handleOnNewExperiecneClick}
-							showEmptyStateMessage={experiences.length <= 1}
+							onNewExperience={onNewExperience}
 						/>
 
 						{experiences.length > 1 && (
@@ -383,13 +487,11 @@ const ExperienceSelector = ({
 									config.defaultSegmentsExperienceId
 								}
 								experiences={experiences}
-								onDeleteExperience={deleteExperience}
-								onDuplicateExperience={
-									handleExperienceDuplication
-								}
-								onEditExperience={handleEditExperienceClick}
-								onPriorityDecrease={decreasePriority}
-								onPriorityIncrease={increasePriority}
+								onDeleteExperience={onDeleteExperience}
+								onDuplicateExperience={onDuplicateExperience}
+								onEditExperience={onEditExperience}
+								onPriorityDecrease={onPriorityDecrease}
+								onPriorityIncrease={onPriorityIncrease}
 							/>
 						)}
 					</div>
@@ -405,8 +507,8 @@ const ExperienceSelector = ({
 					observer={modalObserver}
 					onClose={onModalClose}
 					onErrorDismiss={() => setEditingExperience({error: null})}
-					onNewSegmentClick={handleNewSegmentClick}
-					onSubmit={handleExperienceCreation}
+					onNewSegmentClick={onNewSegmentClick}
+					onSubmit={onExperienceCreation}
 					segmentId={editingExperience.segmentsEntryId}
 					segments={segments}
 				/>
@@ -415,11 +517,9 @@ const ExperienceSelector = ({
 	);
 };
 
-const ExperiencesSelectorHeader = ({
-	canCreateExperiences,
-	onNewExperience,
-	showEmptyStateMessage,
-}) => {
+const ExperiencesSelectorHeader = ({canCreateExperiences, onNewExperience}) => {
+	const [dismissAlert, setDismissAlert] = useState(false);
+
 	return (
 		<>
 			<ClayLayout.ContentRow className="mb-3" verticalAlign="center">
@@ -428,13 +528,14 @@ const ExperiencesSelectorHeader = ({
 						{Liferay.Language.get('select-experience')}
 					</h3>
 				</ClayLayout.ContentCol>
+
 				<ClayLayout.ContentCol>
 					{canCreateExperiences === true && (
 						<ClayButton
 							aria-label={Liferay.Language.get('new-experience')}
 							displayType="secondary"
 							onClick={onNewExperience}
-							small
+							size="sm"
 						>
 							{Liferay.Language.get('new-experience')}
 						</ClayButton>
@@ -443,26 +544,53 @@ const ExperiencesSelectorHeader = ({
 			</ClayLayout.ContentRow>
 
 			{canCreateExperiences && (
-				<p className="text-secondary">
-					{showEmptyStateMessage
-						? Liferay.Language.get(
-								'experience-help-message-empty-state'
-						  )
-						: Liferay.Language.get(
-								'experience-help-message-started-state'
-						  )}
-				</p>
+				<>
+					<p className="text-secondary">
+						{Liferay.Language.get('experience-help-message')}
+					</p>
+					<p className="text-secondary">
+						{`${Liferay.Language.get(
+							'experience-help-message-more-info-see'
+						)} `}
+
+						<a
+							href={config.contentPagePersonalizationLearnURL}
+							target="_blank"
+						>
+							{Liferay.Language.get(
+								'content-page-personalization'
+							)}
+							.
+						</a>
+					</p>
+				</>
 			)}
 
-			<ClayAlert
-				className="mx-0"
-				displayType="warning"
-				title={Liferay.Language.get('warning')}
-			>
-				{Liferay.Language.get(
-					'changes-to-experiences-are-applied-immediately'
-				)}
-			</ClayAlert>
+			{!config.isSegmentationEnabled && !dismissAlert && (
+				<ClayAlert
+					className="mx-0 segmentation-disabled-alert"
+					displayType="warning"
+					onClose={() => setDismissAlert(true)}
+				>
+					<strong className="d-block lead">
+						{Liferay.Language.get(
+							'experiences-cannot-be-displayed-because-segmentation-is-disabled'
+						)}
+					</strong>
+
+					{config.segmentsConfigurationURL ? (
+						<ClayLink href={config.segmentsConfigurationURL}>
+							{Liferay.Language.get(
+								'to-enable,-go-to-instance-settings'
+							)}
+						</ClayLink>
+					) : (
+						Liferay.Language.get(
+							'contact-your-system-administrator-to-enable-it'
+						)
+					)}
+				</ClayAlert>
+			)}
 		</>
 	);
 };

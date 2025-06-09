@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.cart.client.dto.v1_0;
@@ -17,12 +8,15 @@ package com.liferay.headless.commerce.delivery.cart.client.dto.v1_0;
 import com.liferay.headless.commerce.delivery.cart.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.delivery.cart.client.serdes.v1_0.CartItemSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
+import java.math.BigDecimal;
+
+import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Andrea Sbarra
@@ -100,6 +94,48 @@ public class CartItem implements Cloneable, Serializable {
 
 	protected Map<String, ?> customFields;
 
+	public String getDeliveryGroup() {
+		return deliveryGroup;
+	}
+
+	public void setDeliveryGroup(String deliveryGroup) {
+		this.deliveryGroup = deliveryGroup;
+	}
+
+	public void setDeliveryGroup(
+		UnsafeSupplier<String, Exception> deliveryGroupUnsafeSupplier) {
+
+		try {
+			deliveryGroup = deliveryGroupUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String deliveryGroup;
+
+	public String getDeliveryGroupName() {
+		return deliveryGroupName;
+	}
+
+	public void setDeliveryGroupName(String deliveryGroupName) {
+		this.deliveryGroupName = deliveryGroupName;
+	}
+
+	public void setDeliveryGroupName(
+		UnsafeSupplier<String, Exception> deliveryGroupNameUnsafeSupplier) {
+
+		try {
+			deliveryGroupName = deliveryGroupNameUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String deliveryGroupName;
+
 	public String[] getErrorMessages() {
 		return errorMessages;
 	}
@@ -120,6 +156,27 @@ public class CartItem implements Cloneable, Serializable {
 	}
 
 	protected String[] errorMessages;
+
+	public String getExternalReferenceCode() {
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		try {
+			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String externalReferenceCode;
 
 	public Long getId() {
 		return id;
@@ -263,16 +320,16 @@ public class CartItem implements Cloneable, Serializable {
 
 	protected Map<String, String> productURLs;
 
-	public Integer getQuantity() {
+	public BigDecimal getQuantity() {
 		return quantity;
 	}
 
-	public void setQuantity(Integer quantity) {
+	public void setQuantity(BigDecimal quantity) {
 		this.quantity = quantity;
 	}
 
 	public void setQuantity(
-		UnsafeSupplier<Integer, Exception> quantityUnsafeSupplier) {
+		UnsafeSupplier<BigDecimal, Exception> quantityUnsafeSupplier) {
 
 		try {
 			quantity = quantityUnsafeSupplier.get();
@@ -282,7 +339,96 @@ public class CartItem implements Cloneable, Serializable {
 		}
 	}
 
-	protected Integer quantity;
+	protected BigDecimal quantity;
+
+	public String getReplacedSku() {
+		return replacedSku;
+	}
+
+	public void setReplacedSku(String replacedSku) {
+		this.replacedSku = replacedSku;
+	}
+
+	public void setReplacedSku(
+		UnsafeSupplier<String, Exception> replacedSkuUnsafeSupplier) {
+
+		try {
+			replacedSku = replacedSkuUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String replacedSku;
+
+	public String getReplacedSkuExternalReferenceCode() {
+		return replacedSkuExternalReferenceCode;
+	}
+
+	public void setReplacedSkuExternalReferenceCode(
+		String replacedSkuExternalReferenceCode) {
+
+		this.replacedSkuExternalReferenceCode =
+			replacedSkuExternalReferenceCode;
+	}
+
+	public void setReplacedSkuExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			replacedSkuExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			replacedSkuExternalReferenceCode =
+				replacedSkuExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String replacedSkuExternalReferenceCode;
+
+	public Long getReplacedSkuId() {
+		return replacedSkuId;
+	}
+
+	public void setReplacedSkuId(Long replacedSkuId) {
+		this.replacedSkuId = replacedSkuId;
+	}
+
+	public void setReplacedSkuId(
+		UnsafeSupplier<Long, Exception> replacedSkuIdUnsafeSupplier) {
+
+		try {
+			replacedSkuId = replacedSkuIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long replacedSkuId;
+
+	public Date getRequestedDeliveryDate() {
+		return requestedDeliveryDate;
+	}
+
+	public void setRequestedDeliveryDate(Date requestedDeliveryDate) {
+		this.requestedDeliveryDate = requestedDeliveryDate;
+	}
+
+	public void setRequestedDeliveryDate(
+		UnsafeSupplier<Date, Exception> requestedDeliveryDateUnsafeSupplier) {
+
+		try {
+			requestedDeliveryDate = requestedDeliveryDateUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Date requestedDeliveryDate;
 
 	public Settings getSettings() {
 		return settings;
@@ -304,6 +450,74 @@ public class CartItem implements Cloneable, Serializable {
 	}
 
 	protected Settings settings;
+
+	public Address getShippingAddress() {
+		return shippingAddress;
+	}
+
+	public void setShippingAddress(Address shippingAddress) {
+		this.shippingAddress = shippingAddress;
+	}
+
+	public void setShippingAddress(
+		UnsafeSupplier<Address, Exception> shippingAddressUnsafeSupplier) {
+
+		try {
+			shippingAddress = shippingAddressUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Address shippingAddress;
+
+	public String getShippingAddressExternalReferenceCode() {
+		return shippingAddressExternalReferenceCode;
+	}
+
+	public void setShippingAddressExternalReferenceCode(
+		String shippingAddressExternalReferenceCode) {
+
+		this.shippingAddressExternalReferenceCode =
+			shippingAddressExternalReferenceCode;
+	}
+
+	public void setShippingAddressExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			shippingAddressExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			shippingAddressExternalReferenceCode =
+				shippingAddressExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String shippingAddressExternalReferenceCode;
+
+	public Long getShippingAddressId() {
+		return shippingAddressId;
+	}
+
+	public void setShippingAddressId(Long shippingAddressId) {
+		this.shippingAddressId = shippingAddressId;
+	}
+
+	public void setShippingAddressId(
+		UnsafeSupplier<Long, Exception> shippingAddressIdUnsafeSupplier) {
+
+		try {
+			shippingAddressId = shippingAddressIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long shippingAddressId;
 
 	public String getSku() {
 		return sku;
@@ -342,6 +556,28 @@ public class CartItem implements Cloneable, Serializable {
 	}
 
 	protected Long skuId;
+
+	public SkuUnitOfMeasure getSkuUnitOfMeasure() {
+		return skuUnitOfMeasure;
+	}
+
+	public void setSkuUnitOfMeasure(SkuUnitOfMeasure skuUnitOfMeasure) {
+		this.skuUnitOfMeasure = skuUnitOfMeasure;
+	}
+
+	public void setSkuUnitOfMeasure(
+		UnsafeSupplier<SkuUnitOfMeasure, Exception>
+			skuUnitOfMeasureUnsafeSupplier) {
+
+		try {
+			skuUnitOfMeasure = skuUnitOfMeasureUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected SkuUnitOfMeasure skuUnitOfMeasure;
 
 	public Boolean getSubscription() {
 		return subscription;
@@ -384,6 +620,27 @@ public class CartItem implements Cloneable, Serializable {
 	}
 
 	protected String thumbnail;
+
+	public String getUnitOfMeasure() {
+		return unitOfMeasure;
+	}
+
+	public void setUnitOfMeasure(String unitOfMeasure) {
+		this.unitOfMeasure = unitOfMeasure;
+	}
+
+	public void setUnitOfMeasure(
+		UnsafeSupplier<String, Exception> unitOfMeasureUnsafeSupplier) {
+
+		try {
+			unitOfMeasure = unitOfMeasureUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String unitOfMeasure;
 
 	public Boolean getValid() {
 		return valid;

@@ -1,47 +1,49 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
+import {openConfirmModal} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {useState} from 'react';
 
 import {OPEN_MODAL} from '../../utilities/eventsDefinitions';
-import {getRandomId, sortByKey} from '../../utilities/index';
+import {getRandomId, liferayNavigate, sortByKey} from '../../utilities/index';
 import {resolveModalSize} from '../../utilities/modals/index';
 import Modal from '../modal/Modal';
 
 function Dropdown(props) {
 	const [active, setActive] = useState(false);
-
 	const [dropdownSupportModalId] = useState('support-modal-' + getRandomId());
 
-	function handleAction({onClick, target = 'link', title, url}) {
-		if (target.includes('modal')) {
+	function handleAction({data, label, target, url}) {
+		if (target === 'submitWithConfirmation') {
+			openConfirmModal({
+				message: data?.confirmationMessage || '',
+				onConfirm: (confirmed) => {
+					if (confirmed) {
+						if (data?.formId) {
+							submitForm(document.getElementById(data.formId));
+						}
+						else {
+							liferayNavigate(url);
+						}
+					}
+				},
+				title: label,
+			});
+		}
+		else if (target.includes('modal')) {
 			Liferay.fire(OPEN_MODAL, {
 				closeOnSubmit: true,
 				id: dropdownSupportModalId,
 				size: resolveModalSize(target),
-				title,
+				title: label,
 				url,
 			});
-		}
-
-		if (onClick) {
-			/* eslint-disable-next-line no-eval */
-			eval(onClick);
 		}
 	}
 
@@ -60,44 +62,44 @@ function Dropdown(props) {
 					className="component-action dropdown-toggle"
 					displayType="unstyled"
 				>
-					<ClayIcon spritemap={props.spritemap} symbol="ellipsis-v" />
+					<ClayIcon symbol="ellipsis-v" />
 				</ClayButton>
 			}
 		>
 			<Modal id={dropdownSupportModalId} />
+
 			<ClayDropDown.ItemList>
 				<ClayDropDown.Group>
 					{sortedItems.map((item, i) => {
 						const dropdownProps =
-							item.target === 'modal' || item.onClick
+							item.target === 'modal' ||
+							item.target === 'submitWithConfirmation'
 								? {
 										onClick: (event) => {
 											event.preventDefault();
 											setActive(false);
 
 											return handleAction({
-												onClick: item.onClick,
+												data: item.data,
+												label: item.label,
 												target: item.target,
-												title: item.title,
 												url: item.href,
 											});
 										},
-								  }
+									}
 								: {
 										'data-senna-off': true,
 										'href': item.href,
-								  };
+									};
 
 						return (
 							<ClayDropDown.Item key={i} {...dropdownProps}>
 								{item.icon && (
 									<span className="pr-2">
-										<ClayIcon
-											spritemap={props.spritemap}
-											symbol={item.icon}
-										/>
+										<ClayIcon symbol={item.icon} />
 									</span>
 								)}
+
 								{item.label}
 							</ClayDropDown.Item>
 						);
@@ -115,10 +117,13 @@ Dropdown.propTypes = {
 			icon: PropTypes.string,
 			label: PropTypes.string.isRequired,
 			order: PropTypes.number,
-			target: PropTypes.oneOf(['link', 'modal']),
+			target: PropTypes.oneOf([
+				'link',
+				'modal',
+				'submitWithConfirmation',
+			]),
 		})
 	),
-	spritemap: PropTypes.string.isRequired,
 };
 
 export default Dropdown;

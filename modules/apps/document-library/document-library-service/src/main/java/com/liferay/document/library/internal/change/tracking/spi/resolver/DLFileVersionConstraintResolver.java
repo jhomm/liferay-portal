@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.internal.change.tracking.spi.resolver;
@@ -20,7 +11,8 @@ import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileVersion;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.document.library.kernel.service.DLFileVersionLocalService;
-import com.liferay.document.library.kernel.store.Store;
+import com.liferay.document.library.kernel.store.DLStoreRequest;
+import com.liferay.document.library.kernel.store.DLStoreUtil;
 import com.liferay.document.library.kernel.util.comparator.DLFileVersionVersionComparator;
 import com.liferay.document.library.kernel.util.comparator.VersionNumberComparator;
 import com.liferay.petra.string.CharPool;
@@ -41,11 +33,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.TreeMap;
+import java.util.UUID;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Samuel Trong Tran
@@ -101,11 +92,11 @@ public class DLFileVersionConstraintResolver
 			return;
 		}
 
-		List<DLFileVersion> fileVersions =
+		List<DLFileVersion> dlFileVersions =
 			_dlFileVersionLocalService.getFileVersions(
 				dlFileVersion.getFileEntryId(), WorkflowConstants.STATUS_ANY);
 
-		fileVersions.sort(new DLFileVersionVersionComparator(true));
+		dlFileVersions.sort(DLFileVersionVersionComparator.getInstance(true));
 
 		String newFileVersion = null;
 		DLFileVersion previousFileVersion = null;
@@ -113,9 +104,11 @@ public class DLFileVersionConstraintResolver
 		Map<String, String> versionMap = new TreeMap<>(
 			new VersionNumberComparator());
 
-		for (DLFileVersion fileVersion : fileVersions) {
-			if (!constraintResolverContext.isSourceCTModel(fileVersion)) {
-				previousFileVersion = fileVersion;
+		for (DLFileVersion currentDLFileVersion : dlFileVersions) {
+			if (!constraintResolverContext.isSourceCTModel(
+					currentDLFileVersion)) {
+
+				previousFileVersion = currentDLFileVersion;
 
 				continue;
 			}
@@ -125,7 +118,7 @@ public class DLFileVersionConstraintResolver
 			}
 
 			List<String> ctVersionParts = StringUtil.split(
-				fileVersion.getVersion(), CharPool.PERIOD);
+				currentDLFileVersion.getVersion(), CharPool.PERIOD);
 			List<String> previousVersionParts = StringUtil.split(
 				previousFileVersion.getVersion(), CharPool.PERIOD);
 
@@ -161,13 +154,20 @@ public class DLFileVersionConstraintResolver
 
 			newFileVersion = sb.toString();
 
-			versionMap.put(fileVersion.getVersion(), newFileVersion);
+			String oldStoreFileName = currentDLFileVersion.getStoreFileName();
 
-			fileVersion.setVersion(newFileVersion);
+			currentDLFileVersion.setVersion(newFileVersion);
+			currentDLFileVersion.setStoreUUID(
+				String.valueOf(UUID.randomUUID()));
 
-			_dlFileVersionLocalService.updateDLFileVersion(fileVersion);
+			currentDLFileVersion =
+				_dlFileVersionLocalService.updateDLFileVersion(
+					currentDLFileVersion);
 
-			previousFileVersion = fileVersion;
+			versionMap.put(
+				oldStoreFileName, currentDLFileVersion.getStoreFileName());
+
+			previousFileVersion = currentDLFileVersion;
 		}
 
 		if (newFileVersion == null) {
@@ -178,27 +178,33 @@ public class DLFileVersionConstraintResolver
 
 		dlFileEntry.setVersion(newFileVersion);
 
-		_dlFileEntryLocalService.updateDLFileEntry(dlFileEntry);
+		dlFileEntry = _dlFileEntryLocalService.updateDLFileEntry(dlFileEntry);
 
 		for (Map.Entry<String, String> entry : versionMap.entrySet()) {
-			String oldVersion = entry.getKey();
-			String newVersion = entry.getValue();
+			String oldStoreFileName = entry.getKey();
+			String newStoreFileName = entry.getValue();
 
-			try (InputStream inputStream = _store.getFileAsStream(
-					dlFileEntry.getCompanyId(), dlFileEntry.getRepositoryId(),
-					dlFileEntry.getName(), oldVersion)) {
+			try (InputStream inputStream = DLStoreUtil.getFileAsStream(
+					dlFileEntry.getCompanyId(),
+					dlFileEntry.getDataRepositoryId(), dlFileEntry.getName(),
+					oldStoreFileName)) {
 
-				_store.addFile(
-					dlFileEntry.getCompanyId(), dlFileEntry.getRepositoryId(),
-					dlFileEntry.getName(), newVersion, inputStream);
+				DLStoreUtil.addFile(
+					DLStoreRequest.builder(
+						dlFileEntry.getCompanyId(),
+						dlFileEntry.getRepositoryId(), dlFileEntry.getName()
+					).versionLabel(
+						newStoreFileName
+					).build(),
+					inputStream);
 			}
 			catch (IOException ioException) {
 				throw new UncheckedIOException(ioException);
 			}
 
-			_store.deleteFile(
+			DLStoreUtil.deleteFile(
 				dlFileEntry.getCompanyId(), dlFileEntry.getRepositoryId(),
-				dlFileEntry.getName(), oldVersion);
+				dlFileEntry.getName(), oldStoreFileName);
 		}
 	}
 
@@ -207,11 +213,5 @@ public class DLFileVersionConstraintResolver
 
 	@Reference
 	private DLFileVersionLocalService _dlFileVersionLocalService;
-
-	@Reference(
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	private volatile Store _store;
 
 }

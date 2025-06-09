@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service.impl;
@@ -49,8 +40,8 @@ public class MBCategoryServiceImpl extends MBCategoryServiceBaseImpl {
 
 	@Override
 	public MBCategory addCategory(
-			long userId, long parentCategoryId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long parentCategoryId,
+			String name, String description, ServiceContext serviceContext)
 		throws PortalException {
 
 		ModelResourcePermissionUtil.check(
@@ -59,18 +50,19 @@ public class MBCategoryServiceImpl extends MBCategoryServiceBaseImpl {
 			ActionKeys.ADD_CATEGORY);
 
 		return mbCategoryLocalService.addCategory(
-			userId, parentCategoryId, name, description, serviceContext);
+			externalReferenceCode, userId, parentCategoryId, name, description,
+			serviceContext);
 	}
 
 	@Override
 	public MBCategory addCategory(
-			long parentCategoryId, String name, String description,
-			String displayStyle, String emailAddress, String inProtocol,
-			String inServerName, int inServerPort, boolean inUseSSL,
-			String inUserName, String inPassword, int inReadInterval,
-			String outEmailAddress, boolean outCustom, String outServerName,
-			int outServerPort, boolean outUseSSL, String outUserName,
-			String outPassword, boolean mailingListActive,
+			String externalReferenceCode, long parentCategoryId, String name,
+			String description, String displayStyle, String emailAddress,
+			String inProtocol, String inServerName, int inServerPort,
+			boolean inUseSSL, String inUserName, String inPassword,
+			int inReadInterval, String outEmailAddress, boolean outCustom,
+			String outServerName, int outServerPort, boolean outUseSSL,
+			String outUserName, String outPassword, boolean mailingListActive,
 			boolean allowAnonymousEmail, ServiceContext serviceContext)
 		throws PortalException {
 
@@ -80,11 +72,12 @@ public class MBCategoryServiceImpl extends MBCategoryServiceBaseImpl {
 			ActionKeys.ADD_CATEGORY);
 
 		return mbCategoryLocalService.addCategory(
-			getUserId(), parentCategoryId, name, description, displayStyle,
-			emailAddress, inProtocol, inServerName, inServerPort, inUseSSL,
-			inUserName, inPassword, inReadInterval, outEmailAddress, outCustom,
-			outServerName, outServerPort, outUseSSL, outUserName, outPassword,
-			mailingListActive, allowAnonymousEmail, serviceContext);
+			externalReferenceCode, getUserId(), parentCategoryId, name,
+			description, displayStyle, emailAddress, inProtocol, inServerName,
+			inServerPort, inUseSSL, inUserName, inPassword, inReadInterval,
+			outEmailAddress, outCustom, outServerName, outServerPort, outUseSSL,
+			outUserName, outPassword, mailingListActive, allowAnonymousEmail,
+			serviceContext);
 	}
 
 	@Override
@@ -109,6 +102,37 @@ public class MBCategoryServiceImpl extends MBCategoryServiceBaseImpl {
 			categoryId, ActionKeys.DELETE);
 
 		mbCategoryLocalService.deleteCategory(categoryId);
+	}
+
+	@Override
+	public void deleteCategory(String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		MBCategory category =
+			mbCategoryLocalService.getMBCategoryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+
+		_categoryModelResourcePermission.check(
+			getPermissionChecker(), category, ActionKeys.DELETE);
+
+		mbCategoryLocalService.deleteCategory(category);
+	}
+
+	@Override
+	public MBCategory fetchMBCategory(long groupId, String friendlyURL)
+		throws PortalException {
+
+		MBCategory mbCategory = mbCategoryLocalService.fetchMBCategory(
+			groupId, friendlyURL);
+
+		if (mbCategory == null) {
+			return null;
+		}
+
+		_categoryModelResourcePermission.check(
+			getPermissionChecker(), mbCategory, ActionKeys.VIEW);
+
+		return mbCategory;
 	}
 
 	@Override
@@ -402,6 +426,19 @@ public class MBCategoryServiceImpl extends MBCategoryServiceBaseImpl {
 		getSubcategoryIds(categoryIds, groupId, categoryId);
 
 		return ArrayUtil.toArray(categoryIds.toArray(new Long[0]));
+	}
+
+	@Override
+	public MBCategory getMBCategory(long groupId, String friendlyURL)
+		throws PortalException {
+
+		MBCategory mbCategory = mbCategoryLocalService.getMBCategory(
+			groupId, friendlyURL);
+
+		_categoryModelResourcePermission.check(
+			getPermissionChecker(), mbCategory, ActionKeys.VIEW);
+
+		return mbCategory;
 	}
 
 	@Override

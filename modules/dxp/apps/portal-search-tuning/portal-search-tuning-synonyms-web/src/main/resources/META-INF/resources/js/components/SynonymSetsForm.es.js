@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -73,7 +67,7 @@ class SynonymSetsForm extends Component {
 	constructor(props) {
 		super(props);
 
-		if (props.synonymSets.length > 0) {
+		if (props.synonymSets.length) {
 			props.synonymSets.split(',').forEach((synonym) => {
 				this.state.synonyms.push({
 					label: synonym,
@@ -82,6 +76,27 @@ class SynonymSetsForm extends Component {
 			});
 		}
 	}
+
+	/*
+	 * Any time the input is blurred, adds the current input value to the
+	 * list of synonyms. This ensures that the user does not lose the value
+	 * if they publish without hitting enter or comma.
+	 */
+	_handleBlur = () => {
+		if (this.state.inputValue.trim()) {
+			this.setState({
+				synonyms: filterDuplicates([
+					...this.state.synonyms,
+					{
+						label: this.state.inputValue,
+						value: this.state.inputValue,
+					},
+				]),
+			});
+		}
+
+		this.setState({inputValue: ''});
+	};
 
 	_handleCancel = () => {
 		window.history.back();
@@ -117,7 +132,7 @@ class SynonymSetsForm extends Component {
 		return (
 			<div className="synonym-sets-form">
 				<div className="sheet-title">
-					{Liferay.Language.get('create-synonym-set')}
+					{Liferay.Language.get('new-synonym-set')}
 				</div>
 
 				<div className="sheet-text">
@@ -135,10 +150,11 @@ class SynonymSetsForm extends Component {
 						<ClayInput.GroupItem>
 							<ClayMultiSelect
 								id="synonym-sets-input"
-								inputValue={inputValue}
 								items={synonyms}
+								onBlur={this._handleBlur}
 								onChange={this._handleInputChange}
 								onItemsChange={this._handleItemsChange}
+								value={inputValue}
 							/>
 
 							<ClayForm.FeedbackGroup>
@@ -154,7 +170,7 @@ class SynonymSetsForm extends Component {
 
 				<ClayLayout.SheetFooter>
 					<ClayButton
-						disabled={synonyms.length === 0}
+						disabled={!synonyms.length && !inputValue.trim()}
 						displayType="primary"
 						onClick={this._handleSubmit}
 						type="submit"

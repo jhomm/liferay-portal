@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.web.internal.portlet.action;
@@ -25,7 +16,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.DuplicateGroupException;
 import com.liferay.portal.kernel.exception.GroupKeyException;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
@@ -35,17 +26,17 @@ import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.MultiSessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -55,7 +46,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DepotPortletKeys.DEPOT_ADMIN,
+		"jakarta.portlet.name=" + DepotPortletKeys.DEPOT_ADMIN,
 		"mvc.command.name=/depot/add_depot_entry"
 	},
 	service = MVCActionCommand.class
@@ -68,15 +59,15 @@ public class AddDepotEntryMVCActionCommand extends BaseMVCActionCommand {
 		throws Exception {
 
 		String name = ParamUtil.getString(actionRequest, "name");
-		Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			actionRequest, "name");
 
 		if (Validator.isNotNull(name)) {
 			nameMap.put(LocaleUtil.getDefault(), name);
 		}
 
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(actionRequest, "description");
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			actionRequest, "description");
 
 		try {
 			MultiSessionMessages.add(
@@ -118,12 +109,12 @@ public class AddDepotEntryMVCActionCommand extends BaseMVCActionCommand {
 		ThemeDisplay themeDisplay, Throwable throwable) {
 
 		if (throwable instanceof DepotEntryNameException) {
-			return LanguageUtil.get(
+			return _language.get(
 				themeDisplay.getRequest(), "please-enter-a-name");
 		}
 
 		if (throwable instanceof DuplicateGroupException) {
-			return LanguageUtil.get(
+			return _language.get(
 				themeDisplay.getRequest(), "please-enter-a-unique-name");
 		}
 
@@ -131,7 +122,7 @@ public class AddDepotEntryMVCActionCommand extends BaseMVCActionCommand {
 			return _handleGroupKeyException(themeDisplay);
 		}
 
-		return LanguageUtil.get(
+		return _language.get(
 			themeDisplay.getRequest(), "an-unexpected-error-occurred");
 	}
 
@@ -139,7 +130,7 @@ public class AddDepotEntryMVCActionCommand extends BaseMVCActionCommand {
 		StringBundler sb = new StringBundler(5);
 
 		sb.append(
-			LanguageUtil.format(
+			_language.format(
 				themeDisplay.getRequest(),
 				"the-x-cannot-be-x-or-a-reserved-word-such-as-x",
 				new String[] {
@@ -152,7 +143,7 @@ public class AddDepotEntryMVCActionCommand extends BaseMVCActionCommand {
 		sb.append(StringPool.SPACE);
 
 		sb.append(
-			LanguageUtil.format(
+			_language.format(
 				themeDisplay.getRequest(),
 				"the-x-cannot-contain-the-following-invalid-characters-x",
 				new String[] {
@@ -166,7 +157,7 @@ public class AddDepotEntryMVCActionCommand extends BaseMVCActionCommand {
 			Group.class.getName(), "groupKey");
 
 		sb.append(
-			LanguageUtil.format(
+			_language.format(
 				themeDisplay.getRequest(),
 				"the-x-cannot-contain-more-than-x-characters",
 				new String[] {
@@ -179,6 +170,12 @@ public class AddDepotEntryMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private DepotEntryService _depotEntryService;
+
+	@Reference
+	private Language _language;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private Portal _portal;

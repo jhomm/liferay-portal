@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.my.sites.web.internal.display.context;
@@ -17,40 +8,42 @@ package com.liferay.site.my.sites.web.internal.display.context;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.OrganizationLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserGroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portlet.usersadmin.search.GroupSearch;
-import com.liferay.portlet.usersadmin.search.GroupSearchTerms;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 import com.liferay.site.my.sites.web.internal.constants.MySitesPortletKeys;
 import com.liferay.site.my.sites.web.internal.servlet.taglib.util.SiteActionDropdownItemsProvider;
-import com.liferay.users.admin.kernel.util.UsersAdminUtil;
+import com.liferay.site.search.GroupSearch;
+
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -87,6 +80,29 @@ public class SiteMySitesDisplayContext {
 		return siteActionDropdownItemsProvider.getActionDropdownItems();
 	}
 
+	public int getGroupOrganizationsCount(long groupId) {
+		if (_groupOrganizationsCounts != null) {
+			return GetterUtil.getInteger(
+				_groupOrganizationsCounts.get(groupId));
+		}
+
+		_groupOrganizationsCounts = new HashMap<>();
+
+		GroupSearch groupSearch = getGroupSearchContainer();
+
+		long[] groupIds = ListUtil.toLongArray(
+			groupSearch.getResults(), Group.GROUP_ID_ACCESSOR);
+
+		for (long curGroupId : groupIds) {
+			_groupOrganizationsCounts.put(
+				curGroupId,
+				OrganizationLocalServiceUtil.getGroupOrganizationsCount(
+					curGroupId));
+		}
+
+		return GetterUtil.getInteger(_groupOrganizationsCounts.get(groupId));
+	}
+
 	public GroupSearch getGroupSearchContainer() {
 		if (_groupSearch != null) {
 			return _groupSearch;
@@ -98,16 +114,11 @@ public class SiteMySitesDisplayContext {
 		GroupSearch groupSearch = new GroupSearch(
 			_renderRequest, getPortletURL());
 
-		OrderByComparator<Group> orderByComparator =
-			UsersAdminUtil.getGroupOrderByComparator(
-				getOrderByCol(), getOrderByType());
-
 		groupSearch.setOrderByCol(getOrderByCol());
-		groupSearch.setOrderByComparator(orderByComparator);
+		groupSearch.setOrderByComparator(
+			UsersAdminUtil.getGroupOrderByComparator(
+				getOrderByCol(), getOrderByType()));
 		groupSearch.setOrderByType(getOrderByType());
-
-		GroupSearchTerms searchTerms =
-			(GroupSearchTerms)groupSearch.getSearchTerms();
 
 		LinkedHashMap<String, Object> groupParams =
 			LinkedHashMapBuilder.<String, Object>put(
@@ -129,22 +140,40 @@ public class SiteMySitesDisplayContext {
 			groupParams.put("active", Boolean.TRUE);
 		}
 
-		int groupsCount = GroupLocalServiceUtil.searchCount(
-			themeDisplay.getCompanyId(), searchTerms.getKeywords(),
-			groupParams);
+		String keywords = ParamUtil.getString(_httpServletRequest, "keywords");
 
-		groupSearch.setTotal(groupsCount);
-
-		List<Group> groups = GroupLocalServiceUtil.search(
-			themeDisplay.getCompanyId(), searchTerms.getKeywords(), groupParams,
-			groupSearch.getStart(), groupSearch.getEnd(),
-			groupSearch.getOrderByComparator());
-
-		groupSearch.setResults(groups);
+		groupSearch.setResultsAndTotal(
+			() -> GroupLocalServiceUtil.search(
+				themeDisplay.getCompanyId(), keywords, groupParams,
+				groupSearch.getStart(), groupSearch.getEnd(),
+				groupSearch.getOrderByComparator()),
+			GroupLocalServiceUtil.searchCount(
+				themeDisplay.getCompanyId(), keywords, groupParams));
 
 		_groupSearch = groupSearch;
 
 		return _groupSearch;
+	}
+
+	public int getGroupUserGroupsCount(long groupId) {
+		if (_groupUserGroupsCounts != null) {
+			return GetterUtil.getInteger(_groupUserGroupsCounts.get(groupId));
+		}
+
+		_groupUserGroupsCounts = new HashMap<>();
+
+		GroupSearch groupSearch = getGroupSearchContainer();
+
+		long[] groupIds = ListUtil.toLongArray(
+			groupSearch.getResults(), Group.GROUP_ID_ACCESSOR);
+
+		for (long curGroupId : groupIds) {
+			_groupUserGroupsCounts.put(
+				curGroupId,
+				UserGroupLocalServiceUtil.getGroupUserGroupsCount(curGroupId));
+		}
+
+		return GetterUtil.getInteger(_groupUserGroupsCounts.get(groupId));
 	}
 
 	public int getGroupUsersCounts(long groupId) {
@@ -157,12 +186,10 @@ public class SiteMySitesDisplayContext {
 
 		GroupSearch groupSearch = getGroupSearchContainer();
 
-		long[] groupIds = ListUtil.toLongArray(
-			groupSearch.getResults(), Group.GROUP_ID_ACCESSOR);
-
 		_groupUsersCounts = UserLocalServiceUtil.searchCounts(
 			themeDisplay.getCompanyId(), WorkflowConstants.STATUS_APPROVED,
-			groupIds);
+			ListUtil.toLongArray(
+				groupSearch.getResults(), Group.GROUP_ID_ACCESSOR));
 
 		return GetterUtil.getInteger(_groupUsersCounts.get(groupId));
 	}
@@ -193,8 +220,8 @@ public class SiteMySitesDisplayContext {
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(
-			_httpServletRequest, "orderByCol", "name");
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_httpServletRequest, MySitesPortletKeys.MY_SITES, "name");
 
 		return _orderByCol;
 	}
@@ -204,8 +231,8 @@ public class SiteMySitesDisplayContext {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(
-			_httpServletRequest, "orderByType", "asc");
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_httpServletRequest, MySitesPortletKeys.MY_SITES, "asc");
 
 		return _orderByType;
 	}
@@ -241,7 +268,9 @@ public class SiteMySitesDisplayContext {
 	}
 
 	private String _displayStyle;
+	private Map<Long, Integer> _groupOrganizationsCounts;
 	private GroupSearch _groupSearch;
+	private Map<Long, Integer> _groupUserGroupsCounts;
 	private Map<Long, Integer> _groupUsersCounts;
 	private final HttpServletRequest _httpServletRequest;
 	private String _orderByCol;

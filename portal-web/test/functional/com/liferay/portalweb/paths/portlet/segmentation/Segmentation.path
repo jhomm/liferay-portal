@@ -10,14 +10,15 @@
 </thead>
 
 <tbody>
+
 <tr>
 	<td>ADD_FIELD_POSITION</td>
-	<td>//*[contains(@class, 'criteria-group-item-root')]//*[contains(@class, 'empty-drop-zone-root')]/div[1] | //*[contains(@class, 'edit-container')]</td>
+	<td>//*[contains(@class, 'criteria-group-item-root')]/div[1] | //*[contains(@class, 'edit-container')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>ADD_FIELD_POSITION_EMPTY</td>
-	<td>//div[contains(@class, 'empty-drop-zone-dashed')] //*[contains(@class, 'drop-zone-target')]</td>
+	<td>ADD_FIELD_POSITION_N</td>
+	<td>xpath=(//*[contains(@class, 'criteria-group-item-root')]/div[1])[${indexNumber}]</td>
 	<td></td>
 </tr>
 <tr>
@@ -26,13 +27,23 @@
 	<td></td>
 </tr>
 <tr>
-	<td>ADD_FIELD_TYPE</td>
-	<td>//*[contains(@class, 'criteria-sidebar-item-root') and (text()='${key_propertyOption}')]</td>
+	<td>ADD_FIELD_POSITION_EMPTY</td>
+	<td>//div[contains(@class, 'empty-drop-zone--dashed')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>ADD_TAG_BUTTON</td>
-	<td>//*[contains(@class,'btn btn-secondary') and contains(text(),'Select')]</td>
+	<td>ADD_FIELD_TYPE</td>
+	<td>//li[contains(@class, 'criteria-sidebar-item-root')][normalize-space()='${key_propertyOption}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ADD_FIELD_TYPE_VISIBLE</td>
+	<td>//button[contains(@class,'panel-header')][contains(@class,'show')]//following-sibling::div//*[contains(@class, 'criteria-sidebar-item-root')][normalize-space()='${key_propertyOption}']//div[@draggable='true']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSERTIVE</td>
+	<td>//span[@aria-live='assertive'][contains(@class,'sr-only')]/p[normalize-space(text())='${key_assertive}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -41,33 +52,23 @@
 	<td></td>
 </tr>
 <tr>
-	<td>ASSIGN_SITE_ROLES_OPTION</td>
-	<td>//*[contains(@class,'assign-site-roles-link')]</td>
+	<td>CARD_HEADING</td>
+	<td>//*[contains(@class,'panel')]//button[contains(@class,'collapse')][not(contains(@data-qa-id,'app'))] //h2[normalize-space()='${panelHeader}']</td>
 	<td></td>
 </tr>
 <tr>
-	<td>ASSIGN_SITE_ROLES_MODAL_TITLE</td>
-	<td>//*[contains(@class,'modal-title')]</td>
+	<td>CLICKABLE_SEGMENT_NAME</td>
+	<td>//table[contains(@class, 'table-list')]//tr//a[contains(href,'') and contains(text(),'${key_segmentName}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>CRITERION_INPUT</td>
-	<td>//div[@class='criterion'][1]//select[contains(@class, 'criterion-input')]</td>
+	<td>CONDITIONS_PROPERTY_NAME</td>
+	<td>//div[contains(@class,'criterion')]//span[contains(.,'${propertyName}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>CRITERION_INPUT_FORM_CONTROL</td>
-	<td>//div[@class='criterion']//*[contains(@data-testid, '${key_criterion}') and (contains(@class,'form-control'))] | //div[@class='criterion']//*[contains(@data-testid, '${key_criterion}')]/following-sibling::input[contains(@class,'form-control')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CLOSE_MODAL</td>
-	<td>//button[@aria-label='close']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CRITERION_INPUT_OPTION</td>
-	<td>//div[@class='criterion'][1]//select[contains(@class, 'criterion-input')]/option[.='${key_criterionInputOption}']</td>
+	<td>CONDITIONS_PROPERTY_NAME_BY_INDEX</td>
+	<td>xpath=(//div[contains(@class,'criterion-row')]//span[contains(@class,'criterion')])[${index}][normalize-space()='${propertyName}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -76,8 +77,28 @@
 	<td></td>
 </tr>
 <tr>
-	<td>CRITERION_CONJUNCTION_ITEM</td>
-	<td>//button[contains(@class,'dropdown-item') and contains(.,'${key_criterionConjunctionItem}')]</td>
+	<td>CRITERION_INPUT_ANY</td>
+	<td>//*[contains(@class,'edit-container')] //*[contains(@class,'form-control') and not(@type='hidden') and not(contains(@class,'operator-input')) and not(@placeholder='Key')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CRITERION_INPUT_INDEX</td>
+	<td>xpath=(//*[contains(@class,'edit-container')] //*[contains(@class,'form-control') and not(contains(@class,'operator-input')) and not(@placeholder='Key')])[${indexNumber}]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CRITERION_KEY_ANY</td>
+	<td>//*[contains(@class,'edit-container')] //*[contains(@class,'form-control') and not(contains(@class,'operator-input')) and (@placeholder='Key')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CRITERION_OPERATOR</td>
+	<td>//*[contains(@class,'edit-container')] //*[(contains(@class,'operator-input'))]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CRITERION_DRAG_ICON</td>
+	<td>//div[contains(@class,'criterion-row')][.//span[contains(@class,'criterion')][normalize-space()='${propertyName}']]//button[(contains(@class,'drag-icon'))]</td>
 	<td></td>
 </tr>
 <tr>
@@ -86,8 +107,23 @@
 	<td></td>
 </tr>
 <tr>
-	<td>DELETE_SEGMENT</td>
-	<td>//*[contains(@class, 'lexicon-icon-times-circle')]</td>
+	<td>DELETE_SEGMENT_PROPERTY_BUTTON</td>
+	<td>//*[contains(@class,'btn-outline-danger') and contains(text(),'Delete Segment Property')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DUPLICATE_BUTTON</td>
+	<td>//button//*[contains(@class,'lexicon-icon lexicon-icon-paste')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>EMPTY_DROP_ZONE_DASHED</td>
+	<td>//div[contains(@class,'empty-drop-zone--dashed')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>EMPTY_DROP_ZONE_TARGET</td>
+	<td>//div[contains(@class,'empty-drop-zone--target')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -96,33 +132,23 @@
 	<td></td>
 </tr>
 <tr>
-	<td>EDIT_TOGGLE</td>
-	<td>//label[contains(@class,'toggle-switch toggle-editing')]//input</td>
+	<td>ENABLE_SEGMENTS_INSTANCE_SETTINGS</td>
+	<td>//div[@role='alert']//a[text()='To enable, go to Instance Settings.']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>KEYBOARD_MOVEMENT_PREVIEW</td>
+	<td>//div[contains(@class,'keyboard-movement-preview')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>MEMBERS_MATCHED</td>
-	<td>//b[contains(@class,'ml-2 text-dark')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>MEMBER_NAME_LISTED</td>
-	<td>//*[contains(@class,'table-title') and contains(text(),'${key_memberName}')]</td>
+	<td>//b[contains(@class,'c-ml-2 font-weight-bold text-dark')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>MESSAGE_NO_SEGMENTS</td>
 	<td>//div[contains(@class, 'taglib-empty-result-message')]/div[contains(.,'There are no segments')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PROPERTY_FIELD</td>
-	<td>//div[@class='criterion'][1]//*[@data-testid='simple-string']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CONDITIONS_PROPERTY_NAME</td>
-	<td>//div[@class='criterion'] //span[contains(.,'${propertyName}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -136,78 +162,38 @@
 	<td></td>
 </tr>
 <tr>
-	<td>SEARCH_TAG_FIELD</td>
-	<td>//*[contains(@class,'form-control') and contains(@class,'input-group-inset') and contains(@class,'input-group-inset-after')]</td>
+	<td>SCOPE_CARD_MESSAGE</td>
+	<td>//*[contains(@role,'tablist')]//div[@role='tabpanel']//p[contains(.,'Select the scope of your segment to specify where it can be used. It will not be possible to modify the scope after the segment is saved.')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>SEGMENT_LIST</td>
-	<td>//*[@id='_com_liferay_segments_web_internal_portlet_SegmentsPortlet_segmentsEntriesSearchContainer']//td</td>
+	<td>SCOPE_CARD_SITE</td>
+	<td>//*[contains(@role,'tablist')]//div[@role='tabpanel']//p[contains(.,'${siteName}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>SEGMENT_FIELDS_TYPE</td>
-	<td>//a[contains(@class, 'sidebar-collapse-header') and contains(text(),'${key_typeName}')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>SEGMENT_OPTIONS_MENU</td>
-	<td>//*[@id='qfkd____']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>SESSION_PROPERTY_SESSION_LINK_PROPERTY</td>
-	<td>//label[text()='Session Property Name']/following-sibling::div[contains(@class, 'input-group-container')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>SESSION_PROPERTY_SESSION_LINK_PROPERTY_OPTION</td>
-	<td>//div[contains(@class, 'dropdown-menu ddm-btn-full ddm-select-dropdown show')] //button[text()='${propertyName}']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>SESSION_PROPERTY_SESSION_LINK_VOCABULARY</td>
-	<td>//label[text()='Vocabulary Name']/following-sibling::div[contains(@class, 'input-group-container')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>SESSION_PROPERTY_SESSION_LINK_VOCABULARY_OPTION</td>
-	<td>//div[contains(@class, 'dropdown-menu ddm-btn-full ddm-select-dropdown show')] //button[text()='${vocabularyName}']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>TAG_OPTION</td>
-	<td>//*[contains(@class,'selector-button')]</td>
+	<td>SCOPE_TABLE_SITE</td>
+	<td>//*[contains(@class,'lfr-name-column')]//*[contains(.,'${segmentName}')]/../../*[contains(@class,'lfr-scope-column') and normalize-space(text())='${siteScope}']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>TITLE_FIELD</td>
-	<td>//input[@data-testid='localized-main-input']</td>
+	<td>//input[@data-testid='localized-input-button']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>TITLE_FIELD_READ_ONLY</td>
-	<td>//input[@data-testid='localized-main-input' and @readonly]</td>
+	<td>//input[@data-testid='localized-input-button' and @readonly]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>TRANSLATION_BUTTON</td>
-	<td>//button[contains(@data-testid,'localized')]</td>
+	<td>//button[@*='Open Localizations']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>TRANSLATION_STATUS_TITLE</td>
-	<td>//ul[contains(@class, 'dropdown-menu')]/li[contains(@role, 'presentation')]/descendant::span[contains(text(), '${key_locale}')]/span</td>
-	<td></td>
-</tr>
-<tr>
-	<td>TRANSLATION_TITLE</td>
-	<td>//ul[contains(@class, 'dropdown-menu')]/li[contains(@role, 'presentation')]/descendant::span[contains(text(), '${key_locale}')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>VIEW_MEMBERS_BUTTON</td>
-	<td>//button[contains(@class,'btn-secondary') and contains(text(),'View Members')]</td>
+	<td>//div[contains(@class, 'dropdown-menu')]//li[contains(@role, 'presentation')]//div[contains(text(), '${key_locale}')]</td>
 	<td></td>
 </tr>
 </tbody>

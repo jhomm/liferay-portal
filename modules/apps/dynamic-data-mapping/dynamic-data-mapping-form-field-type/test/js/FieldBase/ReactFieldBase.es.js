@@ -1,40 +1,31 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {
-	act,
-	cleanup,
-	fireEvent,
-	render,
-	waitForElement,
-} from '@testing-library/react';
-import {PageProvider} from 'data-engine-js-components-web';
+import {act, fireEvent, render} from '@testing-library/react';
+import {FormProvider, PageProvider} from 'data-engine-js-components-web';
 import React from 'react';
 
 import '@testing-library/jest-dom/extend-expect';
 
-import {FieldBase} from '../../../src/main/resources/META-INF/resources/FieldBase/ReactFieldBase.es';
+import FieldBase, {
+	normalizeInputValue,
+	updateFieldNameLocale,
+} from '../../../src/main/resources/META-INF/resources/js/api/FieldBase/ReactFieldBase';
 
 const spritemap = 'icons.svg';
 
 const FieldBaseWithProvider = (props) => (
-	<PageProvider value={{editingLanguageId: 'en_US'}}>
-		<FieldBase {...props} />
-	</PageProvider>
+	<FormProvider initialState={{pages: []}}>
+		<PageProvider value={{editingLanguageId: 'en_US'}}>
+			<FieldBase {...props} />
+		</PageProvider>
+	</FormProvider>
 );
 
 describe('ReactFieldBase', () => {
+
 	// eslint-disable-next-line no-console
 	const originalWarn = console.warn;
 
@@ -54,11 +45,10 @@ describe('ReactFieldBase', () => {
 	});
 
 	afterAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = originalWarn;
 	});
-
-	afterEach(cleanup);
 
 	beforeEach(() => {
 		jest.useFakeTimers();
@@ -129,7 +119,7 @@ describe('ReactFieldBase', () => {
 	});
 
 	it('renders the FieldBase with tooltip', () => {
-		const {container} = render(
+		const {findByTestId} = render(
 			<FieldBaseWithProvider spritemap={spritemap} tooltip="Tooltip" />
 		);
 
@@ -137,7 +127,7 @@ describe('ReactFieldBase', () => {
 			jest.runAllTimers();
 		});
 
-		expect(container.querySelector('.ddm-tooltip')).not.toBeNull();
+		expect(findByTestId('tooltip')).not.toBeNull();
 	});
 
 	it('does not render the label if showLabel is false', () => {
@@ -206,21 +196,30 @@ describe('ReactFieldBase', () => {
 	});
 
 	it('shows the popover for Format field when hovering over the tooltip icon', async () => {
-		const {container, getByRole, getByTestId, getByText} = render(
+		const {findByTestId, getByRole, getByText} = render(
 			<FieldBaseWithProvider
 				fieldName="inputMaskFormat"
+				popover={{
+					alignPosition: 'right-bottom',
+					content: 'Tooltip Description',
+					header: 'input-mask-format',
+					image: {
+						alt: 'input-mask-format',
+						height: 170,
+						src: 'http://localhost:8080/forms/input_mask_format.png',
+						width: 232,
+					},
+				}}
 				spritemap={spritemap}
 				tooltip="Tooltip Description"
 			/>
 		);
 
-		const tooltipIcon = container.querySelector('.ddm-tooltip');
+		const tooltipIcon = await findByTestId('tooltip');
 
-		fireEvent.mouseOver(tooltipIcon);
+		fireEvent.click(tooltipIcon);
 
-		const clayPopover = await waitForElement(() =>
-			getByTestId('clayPopover')
-		);
+		const clayPopover = await findByTestId('clayPopover');
 
 		expect(clayPopover.style).toHaveProperty('maxWidth', '256px');
 
@@ -235,9 +234,51 @@ describe('ReactFieldBase', () => {
 		expect(getByText('Tooltip Description')).toBeInTheDocument();
 	});
 
+	it('renders the hidden inputs with data-languageid and data-field-name', () => {
+		const localizedValue = {ca_ES: 'test_ca_ES', en_US: 'test_en_US'};
+
+		render(
+			<FieldBaseWithProvider
+				fieldName="field_name"
+				instanceId="instance_id"
+				localizedValue={localizedValue}
+				name="test_name"
+			/>
+		);
+
+		const inputs = document.querySelectorAll('[name="test_name"]');
+
+		inputs.forEach((input, i) => {
+			expect(input).toHaveAttribute(
+				'data-field-name',
+				'field_nameinstance_id'
+			);
+			expect(input).toHaveAttribute(
+				'data-languageid',
+				Object.keys(localizedValue)[i]
+			);
+		});
+	});
+
+	it('renders the label with info icon and its corresponding styles when the field is non-localizable', () => {
+		const {getByLabelText, getByTitle} = render(
+			<FieldBaseWithProvider
+				editOnlyInDefaultLanguage
+				label="my-label"
+				readOnly
+			/>
+		);
+
+		expect(
+			getByTitle('this-field-cannot-be-localized')
+		).toBeInTheDocument();
+
+		expect(getByLabelText('my-label')).toHaveClass('text-muted');
+	});
+
 	describe('Hide Field', () => {
 		it('renders the FieldBase with hideField markup', () => {
-			const {getByText} = render(
+			const {getAllByText, getByText} = render(
 				<FieldBaseWithProvider
 					hideField
 					label="Text"
@@ -246,16 +287,18 @@ describe('ReactFieldBase', () => {
 			);
 
 			expect(getByText('hidden')).toBeInTheDocument();
-			expect(getByText('Text')).toBeInTheDocument();
+
+			const allByText = getAllByText('Text');
+			expect(allByText).toHaveLength(2);
+			expect(allByText[0]).toBeInTheDocument();
+			expect(allByText[1]).toBeInTheDocument();
 
 			expect(getByText('hidden').parentNode).toHaveAttribute(
 				'class',
 				'label ml-1 label-secondary'
 			);
-			expect(getByText('Text')).toHaveAttribute(
-				'class',
-				'text-secondary'
-			);
+			expect(allByText[0]).toHaveAttribute('class', 'text-secondary');
+			expect(allByText[1]).toHaveAttribute('class', 'sr-only');
 		});
 
 		it('renders the FieldBase with hideField markup when the label is empty', () => {
@@ -272,6 +315,70 @@ describe('ReactFieldBase', () => {
 			expect(getByText('hidden').parentNode).toHaveAttribute(
 				'class',
 				'label ml-1 label-secondary'
+			);
+		});
+	});
+
+	describe('updateFieldNameLocale function', () => {
+		it('checks if the name only changes the language id at the end even when using a custom language', () => {
+
+			// en_US -> language out-of-the-box
+			// co -> language customized
+
+			const customLanguageFieldName = 'com_liferay_fieldname$$co';
+			const defaultLanguageFieldName = 'com_liferay_fieldname$$en_US';
+
+			expect(
+				updateFieldNameLocale('co', 'en_US', customLanguageFieldName)
+			).toBe(defaultLanguageFieldName);
+
+			expect(
+				updateFieldNameLocale('en_US', 'co', defaultLanguageFieldName)
+			).toBe(customLanguageFieldName);
+		});
+	});
+
+	describe('normalizeInputValue function', () => {
+		it('checks if the value is being formatted according to their fieldType', () => {
+
+			// no value and any fieldType
+
+			expect(normalizeInputValue('text', null)).toBe('');
+
+			// text fieldType
+
+			const textValue = 'this is a text';
+
+			expect(normalizeInputValue('text', textValue)).toBe(textValue);
+
+			// date and date_time fieldType
+
+			const dateValue = '2024-12-25';
+			const dateTimeValue = '2024-12-25 21:00';
+
+			expect(normalizeInputValue('date', dateValue)).toBe(dateValue);
+
+			expect(normalizeInputValue('date_time', dateTimeValue)).toBe(
+				dateTimeValue
+			);
+
+			// image fieldType
+
+			const imageValue = {
+				alt: 'this is an alt text',
+				classNameId: 22222,
+				description: 'this is a description',
+				fileEntryId: '33333',
+				groupId: '10000',
+				height: 900,
+				title: 'my_image',
+				type: 'document',
+				url: '/documents/images/my_image',
+				width: 900,
+			};
+
+			expect(normalizeInputValue('image', imageValue)).toBe(
+				JSON.stringify(imageValue)
 			);
 		});
 	});

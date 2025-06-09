@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.ant.bnd.resource.bundle;
@@ -36,8 +27,59 @@ public class ResourceBundleLoaderAnalyzerPlugin implements AnalyzerPlugin {
 		return modified;
 	}
 
-	protected static final String LIFERAY_RESOURCE_BUNDLE =
+	protected static String getHeaderName(Analyzer analyzer) {
+		String portalVersion = _getPortalVersion(analyzer);
+
+		if ((portalVersion != null) &&
+			(portalVersion.equals("7.3.x") || portalVersion.equals("7.2.x") ||
+			 portalVersion.equals("7.1.x") || portalVersion.equals("7.0.x"))) {
+
+			return HEADER_NAME_LIFERAY_RESOURCE_BUNDLE;
+		}
+
+		return HEADER_NAME_LIFERAY_LANGUAGE_RESOURCES;
+	}
+
+	protected static final String HEADER_NAME_LIFERAY_LANGUAGE_RESOURCES =
+		"liferay.language.resources";
+
+	protected static final String HEADER_NAME_LIFERAY_RESOURCE_BUNDLE =
 		"liferay.resource.bundle";
+
+	private static String _getPortalVersion(Analyzer analyzer) {
+		String portalVersion = null;
+
+		for (String propertyName : _PORTAL_VERSION_PROPERTY_NAMES) {
+			portalVersion = analyzer.getProperty(propertyName);
+
+			if (portalVersion != null) {
+				break;
+			}
+		}
+
+		if (portalVersion != null) {
+			portalVersion = portalVersion.trim();
+			portalVersion = portalVersion.toLowerCase();
+
+			int pos = portalVersion.indexOf('-');
+
+			if (pos != -1) {
+				portalVersion = portalVersion.substring(0, pos);
+			}
+
+			if (portalVersion.isEmpty() || portalVersion.equals("latest") ||
+				portalVersion.equals("master")) {
+
+				portalVersion = null;
+			}
+		}
+
+		return portalVersion;
+	}
+
+	private static final String[] _PORTAL_VERSION_PROPERTY_NAMES = {
+		"git.working.branch.name", "portal.version"
+	};
 
 	private final AnalyzerPlugin[] _analyzerPlugins = {
 		new AggregateResourceBundleLoaderAnalyzerPlugin(),

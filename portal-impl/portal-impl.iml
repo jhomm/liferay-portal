@@ -19,7 +19,6 @@
 				<setting name="validation-enabled" value="true" />
 				<datasource-mapping />
 				<naming-strategy-map />
-				<deploymentDescriptor name="persistence.xml" url="file://$MODULE_DIR$/src/META-INF/persistence-custom.xml" />
 			</configuration>
 		</facet>
 	</component>
@@ -43,11 +42,8 @@
 		<orderEntry type="module" module-name="petra-function" scope="PROVIDED" />
 		<orderEntry type="module" module-name="petra-io" scope="PROVIDED" />
 		<orderEntry type="module" module-name="petra-lang" scope="PROVIDED" />
-		<orderEntry type="module" module-name="petra-log4j" scope="PROVIDED" />
-		<orderEntry type="module" module-name="petra-mail" scope="PROVIDED" />
 		<orderEntry type="module" module-name="petra-memory" scope="PROVIDED" />
 		<orderEntry type="module" module-name="petra-nio" scope="PROVIDED" />
-		<orderEntry type="module" module-name="petra-portlet-url-builder" scope="PROVIDED" />
 		<orderEntry type="module" module-name="petra-process" scope="PROVIDED" />
 		<orderEntry type="module" module-name="petra-reflect" scope="PROVIDED" />
 		<orderEntry type="module" module-name="petra-sql-dsl-api" scope="PROVIDED" />

@@ -37,12 +37,17 @@
 </tr>
 <tr>
 	<td>SELECT_SINGLE_SELECTION_ROW</td>
-	<td>//div[@class='ddm-field' and contains(@data-field-name,'SingleSelection')][${key_rowNumber}]</td>
+	<td>//div[@class='ddm-field' and contains(@data-field-name,'SingleSelection')][${key_rowNumber}] | //div[@data-ddm-field-row='${key_rowNumber}']//*[text()='Single Selection']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SELECT_SINGLE_SELECTION_ROW_OPTION</td>
-	<td>//div[@class='ddm-field' and contains(@data-field-name,'SingleSelection')][${key_rowNumber}]//span[text()='${key_optionValue}']</td>
+	<td>//div[@class='ddm-field' and contains(@data-field-name,'SingleSelection')][${key_rowNumber}]//span[text()='${key_optionValue}'] | //div[@data-ddm-field-row='${key_rowNumber}']//*[text()='${key_optionValue}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SELECT_SINGLE_SELECTION_OPTION</td>
+	<td>//div[@class='ddm-field']//span[contains(text(), '${key_optionValue}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -52,7 +57,7 @@
 </tr>
 <tr>
 	<td>FORM_PAGE</td>
-	<td>//*[contains(@class,'nav-link') and contains(.,'${key_formPageName}')]</td>
+	<td>//*[contains(@class,'nav-link') and contains(.,'${key_formPageName}')] | //div[@class='ddm-layout-builder ddm-page-container-layout']//div[text()='${key_formPageName}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -72,12 +77,12 @@
 </tr>
 <tr>
 	<td>SUCCESS_PAGE_TITLE</td>
-	<td>//div[contains(@class,'basic-info')]//h1[contains(.,'${key_successPageTitle}')]</td>
+	<td>//div[contains(@class,'lfr-ddm__default-page-title') and contains(.,'${key_successPageTitle}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SUCCESS_PAGE_DESCRIPTION</td>
-	<td>//div[contains(@class,'basic-info')]//p[contains(.,'${key_successPageDescription}')]</td>
+	<td>//p[contains(@class,'lfr-ddm__default-page-description') and contains(.,'${key_successPageDescription}')]</td>
 	<td></td>
 </tr>
 </tbody>

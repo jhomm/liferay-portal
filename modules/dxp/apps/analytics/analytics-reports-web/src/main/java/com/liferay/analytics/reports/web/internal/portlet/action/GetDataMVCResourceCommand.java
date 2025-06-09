@@ -1,36 +1,31 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.analytics.reports.web.internal.portlet.action;
 
 import com.liferay.analytics.reports.info.item.AnalyticsReportsInfoItem;
-import com.liferay.analytics.reports.info.item.AnalyticsReportsInfoItemTracker;
+import com.liferay.analytics.reports.info.item.AnalyticsReportsInfoItemRegistry;
 import com.liferay.analytics.reports.info.item.ClassNameClassPKInfoItemIdentifier;
 import com.liferay.analytics.reports.info.item.provider.AnalyticsReportsInfoItemObjectProvider;
 import com.liferay.analytics.reports.web.internal.constants.AnalyticsReportsPortletKeys;
 import com.liferay.analytics.reports.web.internal.data.provider.AnalyticsReportsDataProvider;
-import com.liferay.analytics.reports.web.internal.info.item.provider.AnalyticsReportsInfoItemObjectProviderTracker;
+import com.liferay.analytics.reports.web.internal.info.item.provider.util.AnalyticsReportsInfoItemObjectProviderRegistryUtil;
 import com.liferay.analytics.reports.web.internal.model.TimeRange;
 import com.liferay.analytics.reports.web.internal.model.TimeSpan;
+import com.liferay.analytics.reports.web.internal.util.AnalyticsReportsUtil;
+import com.liferay.analytics.settings.configuration.AnalyticsConfiguration;
+import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.type.WebImage;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.NoSuchModelException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
@@ -38,13 +33,17 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
+import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -53,6 +52,14 @@ import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -60,22 +67,13 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.stream.Stream;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -84,9 +82,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Cristina González
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + AnalyticsReportsPortletKeys.ANALYTICS_REPORTS,
+		"jakarta.portlet.name=" + AnalyticsReportsPortletKeys.ANALYTICS_REPORTS,
 		"mvc.command.name=/analytics_reports/get_data"
 	},
 	service = MVCResourceCommand.class
@@ -105,23 +102,31 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 			InfoItemReference infoItemReference = _getInfoItemReference(
 				httpServletRequest);
 
-			Object analyticsReportsInfoItemObject = Optional.ofNullable(
-				_analyticsReportsInfoItemObjectProviderTracker.
-					getAnalyticsReportsInfoItemObjectProvider(
-						infoItemReference.getClassName())
-			).map(
-				analyticsReportsInfoItemObjectProvider ->
-					analyticsReportsInfoItemObjectProvider.
-						getAnalyticsReportsInfoItemObject(infoItemReference)
-			).orElseThrow(
-				() -> new NoSuchModelException(
+			AnalyticsReportsInfoItemObjectProvider<?>
+				analyticsReportsInfoItemObjectProvider =
+					AnalyticsReportsInfoItemObjectProviderRegistryUtil.
+						getAnalyticsReportsInfoItemObjectProvider(
+							infoItemReference.getClassName());
+
+			if (analyticsReportsInfoItemObjectProvider == null) {
+				throw new NoSuchModelException(
 					"No analytics reports info item object provider found " +
-						"for " + infoItemReference)
-			);
+						"for " + infoItemReference);
+			}
+
+			Object analyticsReportsInfoItemObject =
+				analyticsReportsInfoItemObjectProvider.
+					getAnalyticsReportsInfoItemObject(infoItemReference);
+
+			if (analyticsReportsInfoItemObject == null) {
+				throw new NoSuchModelException(
+					"No analytics reports info item object provider found " +
+						"for " + infoItemReference);
+			}
 
 			AnalyticsReportsInfoItem<Object> analyticsReportsInfoItem =
 				(AnalyticsReportsInfoItem<Object>)
-					_analyticsReportsInfoItemTracker.
+					_analyticsReportsInfoItemRegistry.
 						getAnalyticsReportsInfoItem(
 							infoItemReference.getClassName());
 
@@ -134,16 +139,18 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 				JSONUtil.put(
 					"context",
 					_getJSONObject(
-						analyticsReportsInfoItem, themeDisplay.getCompanyId(),
-						infoItemReference, themeDisplay.getLayout(),
+						analyticsReportsInfoItem, infoItemReference,
+						themeDisplay.getLayout(),
+						themeDisplay.getLayoutFriendlyURL(
+							themeDisplay.getLayout()),
 						themeDisplay.getLocale(),
 						_getLocale(
 							httpServletRequest, themeDisplay.getLanguageId()),
-						analyticsReportsInfoItemObject, resourceResponse,
-						_getTimeRange(resourceRequest))));
+						analyticsReportsInfoItemObject, resourceRequest,
+						resourceResponse, _getTimeRange(resourceRequest))));
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			JSONPortletResponseUtil.writeJSON(
 				resourceRequest, resourceResponse,
@@ -154,39 +161,64 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 		}
 	}
 
+	private JSONObject _getAnalyticsDataJSONObject(Layout layout) {
+		return JSONUtil.put(
+			"cloudTrialURL", AnalyticsReportsUtil.ANALYTICS_CLOUD_TRIAL_URL
+		).put(
+			"hasValidConnection",
+			() -> {
+				AnalyticsReportsDataProvider analyticsReportsDataProvider =
+					new AnalyticsReportsDataProvider(
+						_analyticsSettingsManager, _http);
+
+				return analyticsReportsDataProvider.isValidAnalyticsConnection(
+					layout.getCompanyId());
+			}
+		).put(
+			"isSynced",
+			() -> _analyticsSettingsManager.isSiteIdSynced(
+				layout.getCompanyId(), layout.getGroupId())
+		).put(
+			"url",
+			() -> {
+				AnalyticsConfiguration analyticsConfiguration =
+					_analyticsSettingsManager.getAnalyticsConfiguration(
+						layout.getCompanyId());
+
+				return analyticsConfiguration.liferayAnalyticsURL();
+			}
+		);
+	}
+
 	private JSONObject _getAuthorJSONObject(
 		AnalyticsReportsInfoItem<Object> analyticsReportsInfoItem,
 		Locale locale, Object object) {
 
-		return Optional.ofNullable(
-			analyticsReportsInfoItem.getAuthorWebImage(object, locale)
-		).filter(
-			webImage -> Validator.isNotNull(webImage.getUrl())
-		).map(
-			webImage -> {
-				long portraitId = GetterUtil.getLong(
-					_http.getParameter(
-						HtmlUtil.escape(webImage.getUrl()), "img_id"));
+		WebImage webImage = analyticsReportsInfoItem.getAuthorWebImage(
+			object, locale);
 
-				if (portraitId > 0) {
-					return JSONUtil.put(
-						"authorId",
-						analyticsReportsInfoItem.getAuthorUserId(object)
-					).put(
-						"name", analyticsReportsInfoItem.getAuthorName(object)
-					).put(
-						"url", webImage.getUrl()
-					);
-				}
+		if ((webImage == null) || Validator.isNull(webImage.getURL())) {
+			return null;
+		}
 
-				return JSONUtil.put(
-					"authorId", analyticsReportsInfoItem.getAuthorUserId(object)
-				).put(
-					"name", analyticsReportsInfoItem.getAuthorName(object)
-				);
-			}
-		).orElse(
-			null
+		long portraitId = GetterUtil.getLong(
+			HttpComponentsUtil.getParameter(
+				HtmlUtil.escape(webImage.getURL()), "img_id"));
+
+		if (portraitId > 0) {
+			return JSONUtil.put(
+				"authorId", analyticsReportsInfoItem.getAuthorUserId(object)
+			).put(
+				"name", analyticsReportsInfoItem.getAuthorName(object)
+			).put(
+				"url", webImage.getURL()
+			);
+		}
+
+		return JSONUtil.put(
+			"authorId", analyticsReportsInfoItem.getAuthorUserId(object)
+		).put(
+			"name", analyticsReportsInfoItem.getAuthorName(object)
 		);
 	}
 
@@ -220,24 +252,27 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 
 	private JSONObject _getEndpointsJSONObject(
 		AnalyticsReportsInfoItem<Object> analyticsReportsInfoItem,
-		String canonicalURL, Locale locale, ResourceResponse resourceResponse) {
+		String canonicalURL, Locale locale, ResourceRequest resourceRequest,
+		ResourceResponse resourceResponse) {
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+		JSONObject jsonObject = _jsonFactory.createJSONObject();
 
-		Optional.ofNullable(
-			analyticsReportsInfoItem.getActions()
-		).orElseGet(
-			Collections::emptyList
-		).stream(
-		).map(
-			_objectValuePairs::get
-		).forEach(
-			objectValuePair -> jsonObject.put(
+		for (AnalyticsReportsInfoItem.Action action :
+				analyticsReportsInfoItem.getActions()) {
+
+			ObjectValuePair<String, String> objectValuePair =
+				_objectValuePairs.get(action);
+
+			if (objectValuePair == null) {
+				continue;
+			}
+
+			jsonObject.put(
 				objectValuePair.getKey(),
 				_getResourceURL(
-					canonicalURL, locale, resourceResponse,
-					objectValuePair.getValue()))
-		);
+					canonicalURL, locale, resourceRequest, resourceResponse,
+					objectValuePair.getValue()));
+		}
 
 		return jsonObject;
 	}
@@ -245,26 +280,25 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 	private InfoItemReference _getInfoItemReference(
 		HttpServletRequest httpServletRequest) {
 
-		return Optional.ofNullable(
-			_getClassTypeName(httpServletRequest)
-		).filter(
-			Validator::isNotNull
-		).map(
-			classTypeName -> new InfoItemReference(
+		String classTypeName = _getClassTypeName(httpServletRequest);
+
+		if (Validator.isNull(classTypeName)) {
+			return new InfoItemReference(
 				_getClassName(httpServletRequest),
-				new ClassNameClassPKInfoItemIdentifier(
-					classTypeName, _getClassPK(httpServletRequest)))
-		).orElseGet(
-			() -> new InfoItemReference(
-				_getClassName(httpServletRequest),
-				_getClassPK(httpServletRequest))
-		);
+				_getClassPK(httpServletRequest));
+		}
+
+		return new InfoItemReference(
+			_getClassName(httpServletRequest),
+			new ClassNameClassPKInfoItemIdentifier(
+				classTypeName, _getClassPK(httpServletRequest)));
 	}
 
 	private JSONObject _getJSONObject(
 		AnalyticsReportsInfoItem<Object> analyticsReportsInfoItem,
-		long companyId, InfoItemReference infoItemReference, Layout layout,
-		Locale locale, Locale urlLocale, Object object,
+		InfoItemReference infoItemReference, Layout layout,
+		String layoutFriendlyURL, Locale locale, Locale urlLocale,
+		Object object, ResourceRequest resourceRequest,
 		ResourceResponse resourceResponse, TimeRange timeRange) {
 
 		String canonicalURL = analyticsReportsInfoItem.getCanonicalURL(
@@ -273,6 +307,8 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 			locale, getClass());
 
 		return JSONUtil.put(
+			"analyticsData", _getAnalyticsDataJSONObject(layout)
+		).put(
 			"author",
 			_getAuthorJSONObject(analyticsReportsInfoItem, locale, object)
 		).put(
@@ -281,7 +317,25 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 			"endpoints",
 			_getEndpointsJSONObject(
 				analyticsReportsInfoItem, canonicalURL, urlLocale,
-				resourceResponse)
+				resourceRequest, resourceResponse)
+		).put(
+			"hideAnalyticsReportsPanelURL",
+			PortletURLBuilder.createActionURL(
+				resourceResponse
+			).setActionName(
+				"/analytics_reports/hide_panel"
+			).setRedirect(
+				() -> {
+					String redirect = ParamUtil.getString(
+						resourceRequest, "redirect");
+
+					if (Validator.isNotNull(redirect)) {
+						return redirect;
+					}
+
+					return layoutFriendlyURL;
+				}
+			).buildString()
 		).put(
 			"languageTag", locale.toLanguageTag()
 		).put(
@@ -291,17 +345,17 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 		).put(
 			"page", JSONUtil.put("plid", layout.getPlid())
 		).put(
+			"pathToAssets", _portal.getPathContext(resourceRequest)
+		).put(
 			"publishDate",
-			DateTimeFormatter.ISO_DATE.format(
+			_toISODateFormat(
 				_toLocaleDate(analyticsReportsInfoItem.getPublishDate(object)))
 		).put(
 			"timeRange",
 			JSONUtil.put(
-				"endDate",
-				DateTimeFormatter.ISO_DATE.format(timeRange.getEndLocalDate())
+				"endDate", _toISODateFormat(timeRange.getEndLocalDate())
 			).put(
-				"startDate",
-				DateTimeFormatter.ISO_DATE.format(timeRange.getStartLocalDate())
+				"startDate", _toISODateFormat(timeRange.getStartLocalDate())
 			)
 		).put(
 			"timeSpanKey", _getTimeSpanKey(timeRange)
@@ -310,19 +364,10 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 		).put(
 			"title", analyticsReportsInfoItem.getTitle(object, urlLocale)
 		).put(
-			"validAnalyticsConnection",
-			() -> {
-				AnalyticsReportsDataProvider analyticsReportsDataProvider =
-					new AnalyticsReportsDataProvider(_http);
-
-				return analyticsReportsDataProvider.isValidAnalyticsConnection(
-					companyId);
-			}
-		).put(
 			"viewURLs",
 			_getViewURLsJSONArray(
 				analyticsReportsInfoItem, infoItemReference, locale, object,
-				resourceResponse, urlLocale)
+				resourceRequest, resourceResponse, urlLocale)
 		);
 	}
 
@@ -335,12 +380,23 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 
 	private ResourceURL _getResourceURL(
 		InfoItemReference infoItemReference, Locale locale,
-		ResourceResponse resourceResponse, String resourceID) {
+		ResourceRequest resourceRequest, ResourceResponse resourceResponse,
+		String resourceID) {
 
-		ResourceURL resourceURL = resourceResponse.createResourceURL();
+		LiferayPortletRequest liferayPortletRequest =
+			_portal.getLiferayPortletRequest(resourceRequest);
 
-		resourceURL.setParameter("languageId", LocaleUtil.toLanguageId(locale));
-		resourceURL.setParameter("className", infoItemReference.getClassName());
+		ResourceURL resourceURL =
+			(ResourceURL)PortletURLBuilder.createLiferayPortletURL(
+				_portal.getLiferayPortletResponse(resourceResponse),
+				liferayPortletRequest.getPlid(),
+				liferayPortletRequest.getPortletName(),
+				PortletRequest.RESOURCE_PHASE, MimeResponse.Copy.PUBLIC
+			).setParameter(
+				"className", infoItemReference.getClassName()
+			).setParameter(
+				"languageId", LocaleUtil.toLanguageId(locale)
+			).buildPortletURL();
 
 		if (infoItemReference.getInfoItemIdentifier() instanceof
 				ClassNameClassPKInfoItemIdentifier) {
@@ -376,13 +432,24 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 	}
 
 	private ResourceURL _getResourceURL(
-		String canonicalURL, Locale locale, ResourceResponse resourceResponse,
-		String resourceID) {
+		String canonicalURL, Locale locale, ResourceRequest resourceRequest,
+		ResourceResponse resourceResponse, String resourceID) {
 
-		ResourceURL resourceURL = resourceResponse.createResourceURL();
+		LiferayPortletRequest liferayPortletRequest =
+			_portal.getLiferayPortletRequest(resourceRequest);
 
-		resourceURL.setParameter("languageId", LocaleUtil.toLanguageId(locale));
-		resourceURL.setParameter("canonicalURL", canonicalURL);
+		ResourceURL resourceURL =
+			(ResourceURL)PortletURLBuilder.createLiferayPortletURL(
+				_portal.getLiferayPortletResponse(resourceResponse),
+				liferayPortletRequest.getPlid(),
+				liferayPortletRequest.getPortletName(),
+				PortletRequest.RESOURCE_PHASE, MimeResponse.Copy.PUBLIC
+			).setParameter(
+				"canonicalURL", canonicalURL
+			).setParameter(
+				"languageId", LocaleUtil.toLanguageId(locale)
+			).buildPortletURL();
+
 		resourceURL.setResourceID(resourceID);
 
 		return resourceURL;
@@ -414,62 +481,58 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 	}
 
 	private JSONArray _getTimeSpansJSONArray(ResourceBundle resourceBundle) {
-		Stream<TimeSpan> stream = Arrays.stream(TimeSpan.values());
+		List<TimeSpan> timeSpans = Arrays.asList(TimeSpan.values());
 
-		return JSONUtil.putAll(
-			stream.filter(
-				timeSpan -> timeSpan != TimeSpan.TODAY
-			).sorted(
-				Comparator.comparingInt(TimeSpan::getDays)
-			).map(
-				timeSpan -> JSONUtil.put(
-					"key", timeSpan.getKey()
-				).put(
-					"label",
-					ResourceBundleUtil.getString(
-						resourceBundle, timeSpan.getKey())
-				)
-			).toArray());
+		timeSpans = ListUtil.filter(
+			timeSpans, timeSpan -> timeSpan != TimeSpan.TODAY);
+
+		timeSpans.sort(Comparator.comparingInt(TimeSpan::getDays));
+
+		return JSONUtil.toJSONArray(
+			timeSpans,
+			timeSpan -> JSONUtil.put(
+				"key", timeSpan.getKey()
+			).put(
+				"label",
+				ResourceBundleUtil.getString(resourceBundle, timeSpan.getKey())
+			),
+			_log);
 	}
 
 	private JSONArray _getViewURLsJSONArray(
 		AnalyticsReportsInfoItem<Object> analyticsReportsInfoItem,
 		InfoItemReference infoItemReference, Locale locale, Object object,
-		ResourceResponse resourceResponse, Locale urlLocale) {
+		ResourceRequest resourceRequest, ResourceResponse resourceResponse,
+		Locale urlLocale) {
 
-		List<Locale> locales = analyticsReportsInfoItem.getAvailableLocales(
-			object);
+		List<Locale> locales = ListUtil.copy(
+			analyticsReportsInfoItem.getAvailableLocales(object));
 
-		Stream<Locale> stream = locales.stream();
+		locales.sort(
+			(locale1, locale2) -> {
+				if (Objects.equals(
+						locale1,
+						analyticsReportsInfoItem.getDefaultLocale(object))) {
+
+					return -1;
+				}
+
+				if (Objects.equals(
+						locale2,
+						analyticsReportsInfoItem.getDefaultLocale(object))) {
+
+					return 1;
+				}
+
+				String displayLanguage1 = locale1.getDisplayLanguage(locale);
+				String displayLanguage2 = locale2.getDisplayLanguage(locale);
+
+				return displayLanguage1.compareToIgnoreCase(displayLanguage2);
+			});
 
 		return JSONUtil.putAll(
-			stream.sorted(
-				(locale1, locale2) -> {
-					if (Objects.equals(
-							locale1,
-							analyticsReportsInfoItem.getDefaultLocale(
-								object))) {
-
-						return -1;
-					}
-
-					if (Objects.equals(
-							locale2,
-							analyticsReportsInfoItem.getDefaultLocale(
-								object))) {
-
-						return 1;
-					}
-
-					String displayLanguage1 = locale1.getDisplayLanguage(
-						locale);
-					String displayLanguage2 = locale2.getDisplayLanguage(
-						locale);
-
-					return displayLanguage1.compareToIgnoreCase(
-						displayLanguage2);
-				}
-			).map(
+			TransformUtil.transformToArray(
+				locales,
 				currentLocale -> JSONUtil.put(
 					"default",
 					Objects.equals(
@@ -489,13 +552,25 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 				).put(
 					"viewURL",
 					_getResourceURL(
-						infoItemReference, currentLocale, resourceResponse,
-						"/analytics_reports/get_data")
-				)
-			).toArray());
+						infoItemReference, currentLocale, resourceRequest,
+						resourceResponse, "/analytics_reports/get_data")
+				),
+				JSONObject.class));
+	}
+
+	private String _toISODateFormat(LocalDate localDate) {
+		if (localDate == null) {
+			return null;
+		}
+
+		return DateTimeFormatter.ISO_DATE.format(localDate);
 	}
 
 	private LocalDate _toLocaleDate(Date date) {
+		if (date == null) {
+			return null;
+		}
+
 		Instant instant = date.toInstant();
 
 		ZonedDateTime zonedDateTime = instant.atZone(ZoneId.systemDefault());
@@ -539,21 +614,16 @@ public class GetDataMVCResourceCommand extends BaseMVCResourceCommand {
 					).build();
 
 	@Reference
-	private AnalyticsReportsInfoItemObjectProvider
-		_analyticsReportsInfoItemObjectProvider;
+	private AnalyticsReportsInfoItemRegistry _analyticsReportsInfoItemRegistry;
 
 	@Reference
-	private AnalyticsReportsInfoItemObjectProviderTracker
-		_analyticsReportsInfoItemObjectProviderTracker;
-
-	@Reference
-	private AnalyticsReportsInfoItemTracker _analyticsReportsInfoItemTracker;
+	private AnalyticsSettingsManager _analyticsSettingsManager;
 
 	@Reference
 	private Http _http;
 
 	@Reference
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private Language _language;

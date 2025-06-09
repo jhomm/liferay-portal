@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.impl;
@@ -19,28 +10,41 @@ import com.liferay.commerce.product.exception.NoSuchCPDefinitionException;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDisplayLayout;
 import com.liferay.commerce.product.model.CommerceCatalog;
+import com.liferay.commerce.product.service.CPDefinitionLocalService;
+import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.commerce.product.service.base.CPDisplayLayoutServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
-import com.liferay.portal.spring.extender.service.ServiceReference;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.asset.service.permission.AssetCategoryPermission;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alessio Antonio Rendina
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CPDisplayLayout"
+	},
+	service = AopService.class
+)
 public class CPDisplayLayoutServiceImpl extends CPDisplayLayoutServiceBaseImpl {
 
 	@Override
 	public CPDisplayLayout addCPDisplayLayout(
-			long groupId, Class<?> clazz, long classPK, String layoutUuid)
+			long groupId, Class<?> clazz, long classPK,
+			String layoutPageTemplateEntryUuid, String layoutUuid)
 		throws PortalException {
 
 		GroupPermissionUtil.check(
@@ -49,7 +53,8 @@ public class CPDisplayLayoutServiceImpl extends CPDisplayLayoutServiceBaseImpl {
 		_checkCPDisplayLayout(clazz.getName(), classPK, ActionKeys.VIEW);
 
 		return cpDisplayLayoutLocalService.addCPDisplayLayout(
-			getUserId(), groupId, clazz, classPK, layoutUuid);
+			getUserId(), groupId, clazz, classPK, layoutPageTemplateEntryUuid,
+			layoutUuid);
 	}
 
 	@Override
@@ -78,9 +83,11 @@ public class CPDisplayLayoutServiceImpl extends CPDisplayLayoutServiceBaseImpl {
 			cpDisplayLayoutLocalService.fetchCPDisplayLayout(cpDisplayLayoutId);
 
 		if (cpDisplayLayout != null) {
-			LayoutPermissionUtil.check(
-				getPermissionChecker(), _getLayout(cpDisplayLayout),
-				ActionKeys.VIEW);
+			if (Validator.isNotNull(cpDisplayLayout.getLayoutUuid())) {
+				LayoutPermissionUtil.check(
+					getPermissionChecker(), _getLayout(cpDisplayLayout),
+					ActionKeys.VIEW);
+			}
 
 			_checkCPDisplayLayout(
 				cpDisplayLayout.getClassName(), cpDisplayLayout.getClassPK(),
@@ -91,35 +98,59 @@ public class CPDisplayLayoutServiceImpl extends CPDisplayLayoutServiceBaseImpl {
 	}
 
 	@Override
+	public CPDisplayLayout getCPDisplayLayout(long cpDisplayLayoutId)
+		throws PortalException {
+
+		CPDisplayLayout cpDisplayLayout =
+			cpDisplayLayoutLocalService.getCPDisplayLayout(cpDisplayLayoutId);
+
+		if (Validator.isNotNull(cpDisplayLayout.getLayoutUuid())) {
+			LayoutPermissionUtil.check(
+				getPermissionChecker(), _getLayout(cpDisplayLayout),
+				ActionKeys.VIEW);
+		}
+
+		_checkCPDisplayLayout(
+			cpDisplayLayout.getClassName(), cpDisplayLayout.getClassPK(),
+			ActionKeys.VIEW);
+
+		return cpDisplayLayout;
+	}
+
+	@Override
 	public BaseModelSearchResult<CPDisplayLayout> searchCPDisplayLayout(
-			long companyId, long groupId, String className, String keywords,
-			int start, int end, Sort sort)
+			long companyId, long groupId, String className, Integer type,
+			String keywords, int start, int end, Sort sort)
 		throws PortalException {
 
 		GroupPermissionUtil.check(
 			getPermissionChecker(), groupId, ActionKeys.UPDATE);
 
 		return cpDisplayLayoutLocalService.searchCPDisplayLayout(
-			companyId, groupId, className, keywords, start, end, sort);
+			companyId, groupId, className, type, keywords, start, end, sort);
 	}
 
 	@Override
 	public CPDisplayLayout updateCPDisplayLayout(
-			long cpDisplayLayoutId, long classPK, String layoutUuid)
+			long cpDisplayLayoutId, long classPK,
+			String layoutPageTemplateEntryUuid, String layoutUuid)
 		throws PortalException {
 
 		CPDisplayLayout cpDisplayLayout =
 			cpDisplayLayoutLocalService.getCPDisplayLayout(cpDisplayLayoutId);
 
-		LayoutPermissionUtil.check(
-			getPermissionChecker(), _getLayout(cpDisplayLayout),
-			ActionKeys.UPDATE);
+		if (Validator.isNotNull(layoutUuid)) {
+			LayoutPermissionUtil.check(
+				getPermissionChecker(), _getLayout(cpDisplayLayout),
+				ActionKeys.VIEW);
+		}
 
 		_checkCPDisplayLayout(
 			cpDisplayLayout.getClassName(), classPK, ActionKeys.VIEW);
 
 		return cpDisplayLayoutLocalService.updateCPDisplayLayout(
-			cpDisplayLayout.getCPDisplayLayoutId(), classPK, layoutUuid);
+			cpDisplayLayout.getCPDisplayLayoutId(), classPK,
+			layoutPageTemplateEntryUuid, layoutUuid);
 	}
 
 	private void _checkCPDisplayLayout(
@@ -128,14 +159,14 @@ public class CPDisplayLayoutServiceImpl extends CPDisplayLayoutServiceBaseImpl {
 
 		if (className.equals(CPDefinition.class.getName())) {
 			CPDefinition cpDefinition =
-				cpDefinitionLocalService.fetchCPDefinition(classPK);
+				_cpDefinitionLocalService.fetchCPDefinition(classPK);
 
 			if (cpDefinition == null) {
 				throw new NoSuchCPDefinitionException();
 			}
 
 			CommerceCatalog commerceCatalog =
-				commerceCatalogLocalService.fetchCommerceCatalogByGroupId(
+				_commerceCatalogLocalService.fetchCommerceCatalogByGroupId(
 					cpDefinition.getGroupId());
 
 			_commerceCatalogModelResourcePermission.check(
@@ -161,14 +192,19 @@ public class CPDisplayLayoutServiceImpl extends CPDisplayLayoutServiceBaseImpl {
 			true);
 	}
 
-	private static volatile ModelResourcePermission<CommerceCatalog>
-		_commerceCatalogModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CPDisplayLayoutServiceImpl.class,
-				"_commerceCatalogModelResourcePermission",
-				CommerceCatalog.class);
+	@Reference
+	private CommerceCatalogLocalService _commerceCatalogLocalService;
 
-	@ServiceReference(type = LayoutLocalService.class)
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.model.CommerceCatalog)"
+	)
+	private ModelResourcePermission<CommerceCatalog>
+		_commerceCatalogModelResourcePermission;
+
+	@Reference
+	private CPDefinitionLocalService _cpDefinitionLocalService;
+
+	@Reference
 	private LayoutLocalService _layoutLocalService;
 
 }

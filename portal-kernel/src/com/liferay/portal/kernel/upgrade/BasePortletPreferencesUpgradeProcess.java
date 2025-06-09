@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.upgrade;
@@ -17,15 +8,19 @@ package com.liferay.portal.kernel.upgrade;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.PortletConstants;
 import com.liferay.portal.kernel.model.PortletPreferenceValue;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LoggingTimer;
+import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.simple.Element;
+
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.ReadOnlyException;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -37,9 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.ReadOnlyException;
 
 /**
  * @author Jorge Ferrer
@@ -247,6 +239,98 @@ public abstract class BasePortletPreferencesUpgradeProcess
 			String portletId, String xml)
 		throws Exception;
 
+	private void _deletePortletPreferences(
+			long portletPreferencesId, boolean deletePortletPreferenceValue)
+		throws Exception {
+
+		runSQL(
+			"delete from PortletPreferences where portletPreferencesId = " +
+				portletPreferencesId);
+
+		if (deletePortletPreferenceValue) {
+			runSQL(
+				"delete from PortletPreferenceValue where " +
+					"portletPreferencesId = " + portletPreferencesId);
+		}
+	}
+
+	private long _getCompanyId(int ownerType, long ownerId, long plid)
+		throws Exception {
+
+		long[] companyIds = PortalInstancePool.getCompanyIds();
+
+		if (companyIds.length == 1) {
+			return companyIds[0];
+		}
+
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				_getCompanyIdSelectSQL(ownerType, ownerId, plid))) {
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					return resultSet.getLong("companyId");
+				}
+			}
+		}
+
+		return 0;
+	}
+
+	private String _getCompanyIdSelectSQL(
+		int ownerType, long ownerId, long plid) {
+
+		String foreignColumnName = null;
+		String foreignTableName = null;
+
+		if (ownerType == PortletKeys.PREFS_OWNER_TYPE_ARCHIVED) {
+			foreignColumnName = "portletItemId";
+			foreignTableName = "PortletItem";
+		}
+		else if (ownerType == PortletKeys.PREFS_OWNER_TYPE_COMPANY) {
+			foreignColumnName = "companyId";
+			foreignTableName = "Company";
+		}
+		else if (ownerType == PortletKeys.PREFS_OWNER_TYPE_GROUP) {
+			foreignColumnName = "groupId";
+			foreignTableName = "Group_";
+		}
+		else if (ownerType == PortletKeys.PREFS_OWNER_TYPE_LAYOUT) {
+			foreignColumnName = "plid";
+			foreignTableName = "Layout";
+		}
+		else if (ownerType == PortletKeys.PREFS_OWNER_TYPE_ORGANIZATION) {
+			foreignColumnName = "organizationId";
+			foreignTableName = "Organization_";
+		}
+		else if (ownerType == PortletKeys.PREFS_OWNER_TYPE_USER) {
+			foreignColumnName = "userId";
+			foreignTableName = "User_";
+		}
+		else {
+			throw new IllegalArgumentException(
+				"Invalid owner type: " + ownerType);
+		}
+
+		StringBundler sb = new StringBundler(8);
+
+		sb.append("select companyId from ");
+		sb.append(foreignTableName);
+		sb.append(" where ");
+		sb.append(foreignTableName);
+		sb.append(".");
+		sb.append(foreignColumnName);
+		sb.append(" = ");
+
+		if (ownerType == PortletKeys.PREFS_OWNER_TYPE_LAYOUT) {
+			sb.append(plid);
+		}
+		else {
+			sb.append(ownerId);
+		}
+
+		return sb.toString();
+	}
+
 	private Map<String, PreferenceValues> _getPreferenceValuesMap(
 			PreparedStatement selectPreparedStatement)
 		throws Exception {
@@ -325,54 +409,91 @@ public abstract class BasePortletPreferencesUpgradeProcess
 			sb.append(whereClause);
 		}
 
-		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				sb.toString());
-			PreparedStatement preparedStatement2 =
-				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
-					connection,
-					"update PortletPreferences set preferences = ? where " +
-						"portletPreferencesId = ?");
-			PreparedStatement preparedStatement3 =
-				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
-					connection,
-					"delete from PortletPreferences where " +
-						"portletPreferencesId = ?");
-			ResultSet resultSet = preparedStatement1.executeQuery()) {
-
-			while (resultSet.next()) {
+		processConcurrently(
+			sb.toString(),
+			resultSet -> {
 				long portletPreferencesId = resultSet.getLong(
 					"portletPreferencesId");
 				long companyId = resultSet.getLong("companyId");
+				int ownerType = resultSet.getInt("ownerType");
+				long plid = resultSet.getLong("plid");
+				long ownerId = resultSet.getLong("ownerId");
+				String portletId = resultSet.getString("portletId");
+				String preferences = resultSet.getString("preferences");
 
-				if (companyId > 0) {
-					int ownerType = resultSet.getInt("ownerType");
-					long plid = resultSet.getLong("plid");
-					long ownerId = resultSet.getLong("ownerId");
-					String portletId = resultSet.getString("portletId");
-					String preferences = GetterUtil.getString(
-						resultSet.getString("preferences"));
+				return new Object[] {
+					portletPreferencesId, companyId, ownerType, plid, ownerId,
+					portletId, preferences
+				};
+			},
+			values -> _updatePortletPreferences(values), null);
+	}
 
-					String newPreferences = upgradePreferences(
-						companyId, ownerId, ownerType, plid, portletId,
-						preferences);
+	private void _updatePortletPreferences(Object[] values) throws Exception {
+		long portletPreferencesId = (Long)values[0];
+		long companyId = (Long)values[1];
+		int ownerType = (Integer)values[2];
+		long plid = (Long)values[3];
+		long ownerId = (Long)values[4];
 
-					if (!preferences.equals(newPreferences)) {
-						preparedStatement2.setString(1, newPreferences);
-						preparedStatement2.setLong(2, portletPreferencesId);
+		if (companyId <= 0) {
+			companyId = _getCompanyId(ownerType, ownerId, plid);
 
-						preparedStatement2.addBatch();
-					}
-				}
-				else {
-					preparedStatement3.setLong(1, portletPreferencesId);
+			if (companyId <= 0) {
+				_deletePortletPreferences(portletPreferencesId, false);
 
-					preparedStatement3.addBatch();
-				}
+				return;
 			}
 
-			preparedStatement2.executeBatch();
+			_updatePortletPreferencesCompanyId(
+				companyId, portletPreferencesId, false);
+		}
 
-			preparedStatement3.executeBatch();
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"update PortletPreferences set preferences = ? where " +
+					"portletPreferencesId = ?")) {
+
+			String portletId = (String)values[5];
+			String preferences = (String)values[6];
+
+			String newPreferences = upgradePreferences(
+				companyId, ownerId, ownerType, plid, portletId, preferences);
+
+			if (!preferences.equals(newPreferences)) {
+				preparedStatement.setString(1, newPreferences);
+				preparedStatement.setLong(2, portletPreferencesId);
+
+				preparedStatement.executeUpdate();
+			}
+		}
+	}
+
+	private void _updatePortletPreferencesCompanyId(
+			long companyId, long portletPreferencesId,
+			boolean updatePortletPreferenceValue)
+		throws Exception {
+
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"update PortletPreferences set companyId = ? where " +
+					"portletPreferencesId = ?")) {
+
+			preparedStatement.setLong(1, companyId);
+			preparedStatement.setLong(2, portletPreferencesId);
+
+			preparedStatement.executeUpdate();
+		}
+
+		if (updatePortletPreferenceValue) {
+			try (PreparedStatement preparedStatement =
+					connection.prepareStatement(
+						"update PortletPreferenceValue set companyId = ? " +
+							"where portletPreferencesId = ?")) {
+
+				preparedStatement.setLong(1, companyId);
+				preparedStatement.setLong(2, portletPreferencesId);
+
+				preparedStatement.executeUpdate();
+			}
 		}
 	}
 
@@ -390,13 +511,59 @@ public abstract class BasePortletPreferencesUpgradeProcess
 			sb.append(whereClause);
 		}
 
-		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				sb.toString());
-			PreparedStatement preparedStatement2 = connection.prepareStatement(
-				"select portletPreferenceValueId, largeValue, name, " +
-					"readOnly, smallValue from PortletPreferenceValue where " +
-						"portletPreferencesId = ? order by index_ asc");
-			PreparedStatement preparedStatement3 =
+		processConcurrently(
+			sb.toString(),
+			resultSet -> {
+				long portletPreferencesId = resultSet.getLong(
+					"portletPreferencesId");
+				long companyId = resultSet.getLong("companyId");
+				int ownerType = resultSet.getInt("ownerType");
+				long plid = resultSet.getLong("plid");
+				long ownerId = resultSet.getLong("ownerId");
+				String portletId = resultSet.getString("portletId");
+				long ctCollectionId = resultSet.getLong("ctCollectionId");
+
+				return new Object[] {
+					portletPreferencesId, companyId, ownerType, plid, ownerId,
+					portletId, ctCollectionId
+				};
+			},
+			values -> _updatePortletPreferenceValues(values), null);
+	}
+
+	private void _updatePortletPreferenceValues(Object[] values)
+		throws Exception {
+
+		long portletPreferencesId = (Long)values[0];
+		long companyId = (Long)values[1];
+		int ownerType = (Integer)values[2];
+		long plid = (Long)values[3];
+		long ownerId = (Long)values[4];
+
+		if (companyId <= 0) {
+			companyId = _getCompanyId(ownerType, ownerId, plid);
+
+			if (companyId <= 0) {
+				_deletePortletPreferences(portletPreferencesId, true);
+
+				return;
+			}
+
+			_updatePortletPreferencesCompanyId(
+				companyId, portletPreferencesId, true);
+		}
+
+		String portletId = (String)values[5];
+		long ctCollectionId = (Long)values[6];
+
+		try (PreparedStatement preparedStatement1 =
+				AutoBatchPreparedStatementUtil.autoBatch(
+					connection,
+					StringBundler.concat(
+						"select portletPreferenceValueId, largeValue, name, ",
+						"readOnly, smallValue from PortletPreferenceValue ",
+						"where portletPreferencesId = ? order by index_ asc"));
+			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					StringBundler.concat(
@@ -405,82 +572,43 @@ public abstract class BasePortletPreferencesUpgradeProcess
 						"portletPreferencesId, index_, largeValue, name, ",
 						"readOnly, smallValue) values (0, ?, ?, ?, ?, ?, ?, ",
 						"?, ?, ?)"));
+			PreparedStatement preparedStatement3 =
+				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+					connection,
+					StringBundler.concat(
+						"update PortletPreferenceValue set largeValue = ?, ",
+						"readOnly = ?, smallValue = ? where ",
+						"portletPreferenceValueId = ?"));
 			PreparedStatement preparedStatement4 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
-					"update PortletPreferenceValue set largeValue = ?, " +
-						"readOnly = ?, smallValue = ? where " +
-							"portletPreferenceValueId = ?");
-			PreparedStatement preparedStatement5 =
-				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
-					connection,
 					"delete from PortletPreferenceValue where " +
-						"portletPreferenceValueId = ?");
-			PreparedStatement preparedStatement6 =
-				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
-					connection,
-					"delete from PortletPreferences where " +
-						"portletPreferencesId = ?");
-			PreparedStatement preparedStatement7 =
-				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
-					connection,
-					"delete from PortletPreferenceValue where " +
-						"portletPreferencesId = ?");
-			ResultSet resultSet = preparedStatement1.executeQuery()) {
+						"portletPreferenceValueId = ?")) {
 
-			while (resultSet.next()) {
-				long portletPreferencesId = resultSet.getLong(
-					"portletPreferencesId");
-				long companyId = resultSet.getLong("companyId");
+			preparedStatement1.setLong(1, portletPreferencesId);
 
-				if (companyId > 0) {
-					int ownerType = resultSet.getInt("ownerType");
-					long plid = resultSet.getLong("plid");
-					long ownerId = resultSet.getLong("ownerId");
-					String portletId = resultSet.getString("portletId");
+			Map<String, PreferenceValues> preferenceValuesMap =
+				_getPreferenceValuesMap(preparedStatement1);
 
-					preparedStatement2.setLong(1, portletPreferencesId);
+			String preferences = _toXMLString(preferenceValuesMap);
 
-					Map<String, PreferenceValues> preferenceValuesMap =
-						_getPreferenceValuesMap(preparedStatement2);
+			String newPreferences = upgradePreferences(
+				companyId, ownerId, ownerType, plid, portletId, preferences);
 
-					String preferences = _toXMLString(preferenceValuesMap);
-
-					String newPreferences = upgradePreferences(
-						companyId, ownerId, ownerType, plid, portletId,
-						preferences);
-
-					if (preferences.equals(newPreferences)) {
-						continue;
-					}
-
-					_upgradePortletPreferenceValues(
-						preferenceValuesMap,
-						resultSet.getLong("ctCollectionId"),
-						portletPreferencesId, companyId, newPreferences,
-						preparedStatement3, preparedStatement4,
-						preparedStatement5);
-				}
-				else {
-					preparedStatement6.setLong(1, portletPreferencesId);
-
-					preparedStatement6.addBatch();
-
-					preparedStatement7.setLong(1, portletPreferencesId);
-
-					preparedStatement7.addBatch();
-				}
+			if (preferences.equals(newPreferences)) {
+				return;
 			}
+
+			_upgradePortletPreferenceValues(
+				preferenceValuesMap, ctCollectionId, portletPreferencesId,
+				companyId, newPreferences, preparedStatement2,
+				preparedStatement3, preparedStatement4);
+
+			preparedStatement2.executeBatch();
 
 			preparedStatement3.executeBatch();
 
 			preparedStatement4.executeBatch();
-
-			preparedStatement5.executeBatch();
-
-			preparedStatement6.executeBatch();
-
-			preparedStatement7.executeBatch();
 		}
 	}
 
@@ -592,7 +720,9 @@ public abstract class BasePortletPreferencesUpgradeProcess
 						String largeValue = null;
 						String smallValue = null;
 
-						if (value.length() > smallValueMaxLength) {
+						if ((value != null) &&
+							(value.length() > smallValueMaxLength)) {
+
 							largeValue = value;
 						}
 						else {
@@ -603,7 +733,6 @@ public abstract class BasePortletPreferencesUpgradeProcess
 						updatePreparedStatement.setBoolean(
 							2, newPreferenceValues._readOnly);
 						updatePreparedStatement.setString(3, smallValue);
-
 						updatePreparedStatement.setLong(
 							4,
 							oldPreferenceValues._portletPreferenceValueIds.get(
@@ -616,7 +745,9 @@ public abstract class BasePortletPreferencesUpgradeProcess
 					String largeValue = null;
 					String smallValue = null;
 
-					if (value.length() > smallValueMaxLength) {
+					if ((value != null) &&
+						(value.length() > smallValueMaxLength)) {
+
 						largeValue = value;
 					}
 					else {

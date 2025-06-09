@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.cart.client.serdes.v1_0;
@@ -17,14 +8,18 @@ package com.liferay.headless.commerce.delivery.cart.client.serdes.v1_0;
 import com.liferay.headless.commerce.delivery.cart.client.dto.v1_0.CartItem;
 import com.liferay.headless.commerce.delivery.cart.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.math.BigDecimal;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
 
 /**
  * @author Andrea Sbarra
@@ -53,6 +48,9 @@ public class CartItemSerDes {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("{");
+
+		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (cartItem.getAdaptiveMediaImageHTMLTag() != null) {
 			if (sb.length() > 1) {
@@ -98,6 +96,34 @@ public class CartItemSerDes {
 			sb.append(_toJSON(cartItem.getCustomFields()));
 		}
 
+		if (cartItem.getDeliveryGroup() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"deliveryGroup\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(cartItem.getDeliveryGroup()));
+
+			sb.append("\"");
+		}
+
+		if (cartItem.getDeliveryGroupName() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"deliveryGroupName\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(cartItem.getDeliveryGroupName()));
+
+			sb.append("\"");
+		}
+
 		if (cartItem.getErrorMessages() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -108,11 +134,7 @@ public class CartItemSerDes {
 			sb.append("[");
 
 			for (int i = 0; i < cartItem.getErrorMessages().length; i++) {
-				sb.append("\"");
-
-				sb.append(_escape(cartItem.getErrorMessages()[i]));
-
-				sb.append("\"");
+				sb.append(_toJSON(cartItem.getErrorMessages()[i]));
 
 				if ((i + 1) < cartItem.getErrorMessages().length) {
 					sb.append(", ");
@@ -120,6 +142,20 @@ public class CartItemSerDes {
 			}
 
 			sb.append("]");
+		}
+
+		if (cartItem.getExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(cartItem.getExternalReferenceCode()));
+
+			sb.append("\"");
 		}
 
 		if (cartItem.getId() != null) {
@@ -210,6 +246,60 @@ public class CartItemSerDes {
 			sb.append(cartItem.getQuantity());
 		}
 
+		if (cartItem.getReplacedSku() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"replacedSku\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(cartItem.getReplacedSku()));
+
+			sb.append("\"");
+		}
+
+		if (cartItem.getReplacedSkuExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"replacedSkuExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(cartItem.getReplacedSkuExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
+		if (cartItem.getReplacedSkuId() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"replacedSkuId\": ");
+
+			sb.append(cartItem.getReplacedSkuId());
+		}
+
+		if (cartItem.getRequestedDeliveryDate() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"requestedDeliveryDate\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				liferayToJSONDateFormat.format(
+					cartItem.getRequestedDeliveryDate()));
+
+			sb.append("\"");
+		}
+
 		if (cartItem.getSettings() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -218,6 +308,41 @@ public class CartItemSerDes {
 			sb.append("\"settings\": ");
 
 			sb.append(String.valueOf(cartItem.getSettings()));
+		}
+
+		if (cartItem.getShippingAddress() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"shippingAddress\": ");
+
+			sb.append(String.valueOf(cartItem.getShippingAddress()));
+		}
+
+		if (cartItem.getShippingAddressExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"shippingAddressExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(cartItem.getShippingAddressExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
+		if (cartItem.getShippingAddressId() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"shippingAddressId\": ");
+
+			sb.append(cartItem.getShippingAddressId());
 		}
 
 		if (cartItem.getSku() != null) {
@@ -244,6 +369,16 @@ public class CartItemSerDes {
 			sb.append(cartItem.getSkuId());
 		}
 
+		if (cartItem.getSkuUnitOfMeasure() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"skuUnitOfMeasure\": ");
+
+			sb.append(String.valueOf(cartItem.getSkuUnitOfMeasure()));
+		}
+
 		if (cartItem.getSubscription() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -264,6 +399,20 @@ public class CartItemSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(cartItem.getThumbnail()));
+
+			sb.append("\"");
+		}
+
+		if (cartItem.getUnitOfMeasure() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"unitOfMeasure\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(cartItem.getUnitOfMeasure()));
 
 			sb.append("\"");
 		}
@@ -296,6 +445,9 @@ public class CartItemSerDes {
 
 		Map<String, String> map = new TreeMap<>();
 
+		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
+			"yyyy-MM-dd'T'HH:mm:ssXX");
+
 		if (cartItem.getAdaptiveMediaImageHTMLTag() == null) {
 			map.put("adaptiveMediaImageHTMLTag", null);
 		}
@@ -319,12 +471,38 @@ public class CartItemSerDes {
 			map.put("customFields", String.valueOf(cartItem.getCustomFields()));
 		}
 
+		if (cartItem.getDeliveryGroup() == null) {
+			map.put("deliveryGroup", null);
+		}
+		else {
+			map.put(
+				"deliveryGroup", String.valueOf(cartItem.getDeliveryGroup()));
+		}
+
+		if (cartItem.getDeliveryGroupName() == null) {
+			map.put("deliveryGroupName", null);
+		}
+		else {
+			map.put(
+				"deliveryGroupName",
+				String.valueOf(cartItem.getDeliveryGroupName()));
+		}
+
 		if (cartItem.getErrorMessages() == null) {
 			map.put("errorMessages", null);
 		}
 		else {
 			map.put(
 				"errorMessages", String.valueOf(cartItem.getErrorMessages()));
+		}
+
+		if (cartItem.getExternalReferenceCode() == null) {
+			map.put("externalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"externalReferenceCode",
+				String.valueOf(cartItem.getExternalReferenceCode()));
 		}
 
 		if (cartItem.getId() == null) {
@@ -385,11 +563,73 @@ public class CartItemSerDes {
 			map.put("quantity", String.valueOf(cartItem.getQuantity()));
 		}
 
+		if (cartItem.getReplacedSku() == null) {
+			map.put("replacedSku", null);
+		}
+		else {
+			map.put("replacedSku", String.valueOf(cartItem.getReplacedSku()));
+		}
+
+		if (cartItem.getReplacedSkuExternalReferenceCode() == null) {
+			map.put("replacedSkuExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"replacedSkuExternalReferenceCode",
+				String.valueOf(cartItem.getReplacedSkuExternalReferenceCode()));
+		}
+
+		if (cartItem.getReplacedSkuId() == null) {
+			map.put("replacedSkuId", null);
+		}
+		else {
+			map.put(
+				"replacedSkuId", String.valueOf(cartItem.getReplacedSkuId()));
+		}
+
+		if (cartItem.getRequestedDeliveryDate() == null) {
+			map.put("requestedDeliveryDate", null);
+		}
+		else {
+			map.put(
+				"requestedDeliveryDate",
+				liferayToJSONDateFormat.format(
+					cartItem.getRequestedDeliveryDate()));
+		}
+
 		if (cartItem.getSettings() == null) {
 			map.put("settings", null);
 		}
 		else {
 			map.put("settings", String.valueOf(cartItem.getSettings()));
+		}
+
+		if (cartItem.getShippingAddress() == null) {
+			map.put("shippingAddress", null);
+		}
+		else {
+			map.put(
+				"shippingAddress",
+				String.valueOf(cartItem.getShippingAddress()));
+		}
+
+		if (cartItem.getShippingAddressExternalReferenceCode() == null) {
+			map.put("shippingAddressExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"shippingAddressExternalReferenceCode",
+				String.valueOf(
+					cartItem.getShippingAddressExternalReferenceCode()));
+		}
+
+		if (cartItem.getShippingAddressId() == null) {
+			map.put("shippingAddressId", null);
+		}
+		else {
+			map.put(
+				"shippingAddressId",
+				String.valueOf(cartItem.getShippingAddressId()));
 		}
 
 		if (cartItem.getSku() == null) {
@@ -406,6 +646,15 @@ public class CartItemSerDes {
 			map.put("skuId", String.valueOf(cartItem.getSkuId()));
 		}
 
+		if (cartItem.getSkuUnitOfMeasure() == null) {
+			map.put("skuUnitOfMeasure", null);
+		}
+		else {
+			map.put(
+				"skuUnitOfMeasure",
+				String.valueOf(cartItem.getSkuUnitOfMeasure()));
+		}
+
 		if (cartItem.getSubscription() == null) {
 			map.put("subscription", null);
 		}
@@ -418,6 +667,14 @@ public class CartItemSerDes {
 		}
 		else {
 			map.put("thumbnail", String.valueOf(cartItem.getThumbnail()));
+		}
+
+		if (cartItem.getUnitOfMeasure() == null) {
+			map.put("unitOfMeasure", null);
+		}
+		else {
+			map.put(
+				"unitOfMeasure", String.valueOf(cartItem.getUnitOfMeasure()));
 		}
 
 		if (cartItem.getValid() == null) {
@@ -443,6 +700,114 @@ public class CartItemSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(
+					jsonParserFieldName, "adaptiveMediaImageHTMLTag")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "cartItems")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "customFields")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "deliveryGroup")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "deliveryGroupName")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "errorMessages")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "options")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "parentCartItemId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "price")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "productId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "productURLs")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "quantity")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "replacedSku")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"replacedSkuExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "replacedSkuId")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "requestedDeliveryDate")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "settings")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "shippingAddress")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"shippingAddressExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "shippingAddressId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "sku")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "skuId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "skuUnitOfMeasure")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "subscription")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "thumbnail")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "unitOfMeasure")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "valid")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			CartItem cartItem, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -457,27 +822,48 @@ public class CartItemSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "cartItems")) {
 				if (jsonParserFieldValue != null) {
-					cartItem.setCartItems(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> CartItemSerDes.toDTO((String)object)
-						).toArray(
-							size -> new CartItem[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					CartItem[] cartItemsArray =
+						new CartItem[jsonParserFieldValues.length];
+
+					for (int i = 0; i < cartItemsArray.length; i++) {
+						cartItemsArray[i] = CartItemSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					cartItem.setCartItems(cartItemsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "customFields")) {
 				if (jsonParserFieldValue != null) {
 					cartItem.setCustomFields(
-						(Map)CartItemSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, ?>)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "deliveryGroup")) {
+				if (jsonParserFieldValue != null) {
+					cartItem.setDeliveryGroup((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "deliveryGroupName")) {
+				if (jsonParserFieldValue != null) {
+					cartItem.setDeliveryGroupName((String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "errorMessages")) {
 				if (jsonParserFieldValue != null) {
 					cartItem.setErrorMessages(
 						toStrings((Object[])jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					cartItem.setExternalReferenceCode(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "id")) {
@@ -516,20 +902,68 @@ public class CartItemSerDes {
 			else if (Objects.equals(jsonParserFieldName, "productURLs")) {
 				if (jsonParserFieldValue != null) {
 					cartItem.setProductURLs(
-						(Map)CartItemSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "quantity")) {
 				if (jsonParserFieldValue != null) {
 					cartItem.setQuantity(
-						Integer.valueOf((String)jsonParserFieldValue));
+						new BigDecimal((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "replacedSku")) {
+				if (jsonParserFieldValue != null) {
+					cartItem.setReplacedSku((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"replacedSkuExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					cartItem.setReplacedSkuExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "replacedSkuId")) {
+				if (jsonParserFieldValue != null) {
+					cartItem.setReplacedSkuId(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "requestedDeliveryDate")) {
+
+				if (jsonParserFieldValue != null) {
+					cartItem.setRequestedDeliveryDate(
+						toDate((String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "settings")) {
 				if (jsonParserFieldValue != null) {
 					cartItem.setSettings(
 						SettingsSerDes.toDTO((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "shippingAddress")) {
+				if (jsonParserFieldValue != null) {
+					cartItem.setShippingAddress(
+						AddressSerDes.toDTO((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"shippingAddressExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					cartItem.setShippingAddressExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "shippingAddressId")) {
+				if (jsonParserFieldValue != null) {
+					cartItem.setShippingAddressId(
+						Long.valueOf((String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "sku")) {
@@ -543,6 +977,13 @@ public class CartItemSerDes {
 						Long.valueOf((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "skuUnitOfMeasure")) {
+				if (jsonParserFieldValue != null) {
+					cartItem.setSkuUnitOfMeasure(
+						SkuUnitOfMeasureSerDes.toDTO(
+							(String)jsonParserFieldValue));
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "subscription")) {
 				if (jsonParserFieldValue != null) {
 					cartItem.setSubscription((Boolean)jsonParserFieldValue);
@@ -551,6 +992,11 @@ public class CartItemSerDes {
 			else if (Objects.equals(jsonParserFieldName, "thumbnail")) {
 				if (jsonParserFieldValue != null) {
 					cartItem.setThumbnail((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "unitOfMeasure")) {
+				if (jsonParserFieldValue != null) {
+					cartItem.setUnitOfMeasure((String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "valid")) {
@@ -590,36 +1036,7 @@ public class CartItemSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -629,6 +1046,42 @@ public class CartItemSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

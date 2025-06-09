@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.order.model;
@@ -17,6 +8,7 @@ package com.liferay.commerce.product.type.virtual.order.model;
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.GroupedModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 import com.liferay.portal.kernel.model.StagedAuditedModel;
 
@@ -37,8 +29,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface CommerceVirtualOrderItemModel
-	extends BaseModel<CommerceVirtualOrderItem>, GroupedModel, ShardedModel,
-			StagedAuditedModel {
+	extends BaseModel<CommerceVirtualOrderItem>, GroupedModel, MVCCModel,
+			ShardedModel, StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -59,6 +51,22 @@ public interface CommerceVirtualOrderItemModel
 	 * @param primaryKey the primary key of this commerce virtual order item
 	 */
 	public void setPrimaryKey(long primaryKey);
+
+	/**
+	 * Returns the mvcc version of this commerce virtual order item.
+	 *
+	 * @return the mvcc version of this commerce virtual order item
+	 */
+	@Override
+	public long getMvccVersion();
+
+	/**
+	 * Sets the mvcc version of this commerce virtual order item.
+	 *
+	 * @param mvccVersion the mvcc version of this commerce virtual order item
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion);
 
 	/**
 	 * Returns the uuid of this commerce virtual order item.
@@ -219,35 +227,6 @@ public interface CommerceVirtualOrderItemModel
 	public void setCommerceOrderItemId(long commerceOrderItemId);
 
 	/**
-	 * Returns the file entry ID of this commerce virtual order item.
-	 *
-	 * @return the file entry ID of this commerce virtual order item
-	 */
-	public long getFileEntryId();
-
-	/**
-	 * Sets the file entry ID of this commerce virtual order item.
-	 *
-	 * @param fileEntryId the file entry ID of this commerce virtual order item
-	 */
-	public void setFileEntryId(long fileEntryId);
-
-	/**
-	 * Returns the url of this commerce virtual order item.
-	 *
-	 * @return the url of this commerce virtual order item
-	 */
-	@AutoEscape
-	public String getUrl();
-
-	/**
-	 * Sets the url of this commerce virtual order item.
-	 *
-	 * @param url the url of this commerce virtual order item
-	 */
-	public void setUrl(String url);
-
-	/**
 	 * Returns the activation status of this commerce virtual order item.
 	 *
 	 * @return the activation status of this commerce virtual order item
@@ -274,20 +253,6 @@ public interface CommerceVirtualOrderItemModel
 	 * @param duration the duration of this commerce virtual order item
 	 */
 	public void setDuration(long duration);
-
-	/**
-	 * Returns the usages of this commerce virtual order item.
-	 *
-	 * @return the usages of this commerce virtual order item
-	 */
-	public int getUsages();
-
-	/**
-	 * Sets the usages of this commerce virtual order item.
-	 *
-	 * @param usages the usages of this commerce virtual order item
-	 */
-	public void setUsages(int usages);
 
 	/**
 	 * Returns the max usages of this commerce virtual order item.
@@ -354,5 +319,9 @@ public interface CommerceVirtualOrderItemModel
 
 	@Override
 	public CommerceVirtualOrderItem cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 import com.liferay.portal.kernel.model.StagedGroupedModel;
@@ -39,8 +31,8 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface LayoutPageTemplateCollectionModel
 	extends BaseModel<LayoutPageTemplateCollection>,
-			CTModel<LayoutPageTemplateCollection>, MVCCModel, ShardedModel,
-			StagedGroupedModel {
+			CTModel<LayoutPageTemplateCollection>, ExternalReferenceCodeModel,
+			MVCCModel, ShardedModel, StagedGroupedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -112,6 +104,23 @@ public interface LayoutPageTemplateCollectionModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this layout page template collection.
+	 *
+	 * @return the external reference code of this layout page template collection
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this layout page template collection.
+	 *
+	 * @param externalReferenceCode the external reference code of this layout page template collection
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the layout page template collection ID of this layout page template collection.
@@ -242,6 +251,21 @@ public interface LayoutPageTemplateCollectionModel
 	public void setModifiedDate(Date modifiedDate);
 
 	/**
+	 * Returns the parent layout page template collection ID of this layout page template collection.
+	 *
+	 * @return the parent layout page template collection ID of this layout page template collection
+	 */
+	public long getParentLayoutPageTemplateCollectionId();
+
+	/**
+	 * Sets the parent layout page template collection ID of this layout page template collection.
+	 *
+	 * @param parentLayoutPageTemplateCollectionId the parent layout page template collection ID of this layout page template collection
+	 */
+	public void setParentLayoutPageTemplateCollectionId(
+		long parentLayoutPageTemplateCollectionId);
+
+	/**
 	 * Returns the layout page template collection key of this layout page template collection.
 	 *
 	 * @return the layout page template collection key of this layout page template collection
@@ -288,6 +312,20 @@ public interface LayoutPageTemplateCollectionModel
 	public void setDescription(String description);
 
 	/**
+	 * Returns the type of this layout page template collection.
+	 *
+	 * @return the type of this layout page template collection
+	 */
+	public int getType();
+
+	/**
+	 * Sets the type of this layout page template collection.
+	 *
+	 * @param type the type of this layout page template collection
+	 */
+	public void setType(int type);
+
+	/**
 	 * Returns the last publish date of this layout page template collection.
 	 *
 	 * @return the last publish date of this layout page template collection
@@ -305,5 +343,9 @@ public interface LayoutPageTemplateCollectionModel
 
 	@Override
 	public LayoutPageTemplateCollection cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

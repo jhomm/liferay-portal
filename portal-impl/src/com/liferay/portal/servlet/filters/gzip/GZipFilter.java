@@ -1,31 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.servlet.filters.gzip;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.servlet.BrowserSnifferUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.ServerDetector;
+import com.liferay.portal.servlet.BrowserSnifferUtil;
 import com.liferay.portal.servlet.filters.BasePortalFilter;
 
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * @author Brian Wing Shun Chan
@@ -39,13 +30,13 @@ public class GZipFilter extends BasePortalFilter {
 	public GZipFilter() {
 
 		// The compression filter will work on JBoss, Tomcat, WebLogic,
-		// and WebSphere, but may break on other servers
+		// but may break on other servers
 
 		boolean filterEnabled = false;
 
 		if (super.isFilterEnabled() &&
 			(ServerDetector.isJBoss() || ServerDetector.isTomcat() ||
-			 ServerDetector.isWebLogic() || ServerDetector.isWebSphere())) {
+			 ServerDetector.isWebLogic())) {
 
 			filterEnabled = true;
 		}
@@ -82,11 +73,7 @@ public class GZipFilter extends BasePortalFilter {
 	}
 
 	protected boolean isCompress(HttpServletRequest httpServletRequest) {
-		if (ParamUtil.getBoolean(httpServletRequest, _COMPRESS, true)) {
-			return true;
-		}
-
-		return false;
+		return ParamUtil.getBoolean(httpServletRequest, _COMPRESS, true);
 	}
 
 	protected boolean isInclude(HttpServletRequest httpServletRequest) {
@@ -107,7 +94,8 @@ public class GZipFilter extends BasePortalFilter {
 		throws Exception {
 
 		if (_log.isDebugEnabled()) {
-			String completeURL = HttpUtil.getCompleteURL(httpServletRequest);
+			String completeURL = HttpComponentsUtil.getCompleteURL(
+				httpServletRequest);
 
 			_log.debug("Compressing " + completeURL);
 		}

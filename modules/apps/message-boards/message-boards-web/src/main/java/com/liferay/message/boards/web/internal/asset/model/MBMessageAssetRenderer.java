@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.web.internal.asset.model;
@@ -17,10 +8,11 @@ package com.liferay.message.boards.web.internal.asset.model;
 import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.model.BaseJSPAssetRenderer;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.InfoItemReference;
 import com.liferay.message.boards.constants.MBPortletKeys;
 import com.liferay.message.boards.model.MBMessage;
-import com.liferay.message.boards.service.permission.MBDiscussionPermission;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.comment.DiscussionPermission;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
@@ -32,27 +24,29 @@ import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletLayoutFinder;
 import com.liferay.portal.kernel.portlet.PortletLayoutFinderRegistryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.trash.TrashRenderer;
+import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Julio Camarero
@@ -63,9 +57,12 @@ public class MBMessageAssetRenderer
 	extends BaseJSPAssetRenderer<MBMessage> implements TrashRenderer {
 
 	public MBMessageAssetRenderer(
+		DiscussionPermission discussionPermission, HtmlParser htmlParser,
 		MBMessage message,
 		ModelResourcePermission<MBMessage> messageModelResourcePermission) {
 
+		_discussionPermission = discussionPermission;
+		_htmlParser = htmlParser;
 		_message = message;
 		_messageModelResourcePermission = messageModelResourcePermission;
 	}
@@ -114,7 +111,7 @@ public class MBMessageAssetRenderer
 	@Override
 	public String getSearchSummary(Locale locale) {
 		if (_message.isFormatBBCode()) {
-			return HtmlUtil.extractText(
+			return _htmlParser.extractText(
 				BBCodeTranslatorUtil.getHTML(_message.getBody()));
 		}
 
@@ -130,7 +127,13 @@ public class MBMessageAssetRenderer
 	public String getSummary(
 		PortletRequest portletRequest, PortletResponse portletResponse) {
 
-		return _message.getBody();
+		String summary = _message.getBody();
+
+		if (Validator.isNotNull(summary)) {
+			return _htmlParser.render(HtmlUtil.stripHtml(summary));
+		}
+
+		return summary;
 	}
 
 	@Override
@@ -195,25 +198,32 @@ public class MBMessageAssetRenderer
 			LiferayPortletRequest liferayPortletRequest,
 			LiferayPortletResponse liferayPortletResponse,
 			String noSuchEntryRedirect)
-		throws Exception {
+		throws PortalException {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)liferayPortletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		return getURLViewInContext(themeDisplay, noSuchEntryRedirect);
+	}
+
+	@Override
+	public String getURLViewInContext(
+			ThemeDisplay themeDisplay, String noSuchEntryRedirect)
+		throws PortalException {
 
 		if (_assetDisplayPageFriendlyURLProvider != null) {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)liferayPortletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
-
 			String friendlyURL =
 				_assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-					getClassName(), getClassPK(), themeDisplay);
+					new InfoItemReference(
+						getClassName(),
+						new ClassPKInfoItemIdentifier(getClassPK())),
+					themeDisplay);
 
 			if (Validator.isNotNull(friendlyURL)) {
 				return friendlyURL;
 			}
 		}
-
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)liferayPortletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
 
 		if (!_hasViewInContextGroupLayout(
 				_message.getGroupId(), themeDisplay)) {
@@ -222,9 +232,8 @@ public class MBMessageAssetRenderer
 		}
 
 		return getURLViewInContext(
-			liferayPortletRequest, noSuchEntryRedirect,
-			"/message_boards/find_message", "messageId",
-			_message.getMessageId());
+			themeDisplay, noSuchEntryRedirect, "/message_boards/find_message",
+			"messageId", _message.getMessageId());
 	}
 
 	@Override
@@ -256,8 +265,8 @@ public class MBMessageAssetRenderer
 		throws PortalException {
 
 		if (_message.isDiscussion()) {
-			return MBDiscussionPermission.contains(
-				permissionChecker, _message, ActionKeys.UPDATE);
+			return _discussionPermission.hasPermission(
+				permissionChecker, _message.getMessageId(), ActionKeys.UPDATE);
 		}
 
 		return _messageModelResourcePermission.contains(
@@ -269,8 +278,8 @@ public class MBMessageAssetRenderer
 		throws PortalException {
 
 		if (_message.isDiscussion()) {
-			return MBDiscussionPermission.contains(
-				permissionChecker, _message, ActionKeys.VIEW);
+			return _discussionPermission.hasPermission(
+				permissionChecker, _message.getMessageId(), ActionKeys.VIEW);
 		}
 
 		return _messageModelResourcePermission.contains(
@@ -327,7 +336,7 @@ public class MBMessageAssetRenderer
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 
 			return false;
@@ -339,6 +348,8 @@ public class MBMessageAssetRenderer
 
 	private AssetDisplayPageFriendlyURLProvider
 		_assetDisplayPageFriendlyURLProvider;
+	private final DiscussionPermission _discussionPermission;
+	private final HtmlParser _htmlParser;
 	private final MBMessage _message;
 	private final ModelResourcePermission<MBMessage>
 		_messageModelResourcePermission;

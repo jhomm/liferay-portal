@@ -1,28 +1,42 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.runner.util;
 
 import java.text.SimpleDateFormat;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
+import java.util.TimeZone;
 
 /**
  * @author Brian Wing Shun Chan
  */
 public class DateUtil {
+
+	public static String format(
+			String dateString, String oldPattern, String newPattern)
+		throws Exception {
+
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(oldPattern);
+
+		Date date = simpleDateFormat.parse(dateString);
+
+		simpleDateFormat.applyPattern(newPattern);
+
+		return simpleDateFormat.format(date);
+	}
 
 	public static String getCurrentDate() {
 		return getFormattedCurrentDate("d");
@@ -52,6 +66,43 @@ public class DateUtil {
 		return getFormattedDate(offsetDays, "d");
 	}
 
+	public static String getDateOffsetByDays(String offset, String pattern) {
+		return getFormattedDate(
+			Calendar.DATE, Integer.valueOf(offset), pattern);
+	}
+
+	public static String getDateOffsetByHours(String offset, String pattern) {
+		return getFormattedDate(
+			Calendar.HOUR, Integer.valueOf(offset), pattern);
+	}
+
+	public static String getDateOffsetByMinutes(String offset, String pattern) {
+		return getFormattedDate(
+			Calendar.MINUTE, Integer.valueOf(offset), pattern);
+	}
+
+	public static String getDateOffsetByMinutes(
+		String offset, String pattern, String timeZoneID) {
+
+		return getFormattedDate(
+			Calendar.MINUTE, Integer.valueOf(offset), pattern, timeZoneID);
+	}
+
+	public static String getDateOffsetByMonths(String offset, String pattern) {
+		return getFormattedDate(
+			Calendar.MONTH, Integer.valueOf(offset), pattern);
+	}
+
+	public static String getDateOffsetBySeconds(String offset, String pattern) {
+		return getFormattedDate(
+			Calendar.SECOND, Integer.valueOf(offset), pattern);
+	}
+
+	public static String getDateOffsetByYears(String offset, String pattern) {
+		return getFormattedDate(
+			Calendar.YEAR, Integer.valueOf(offset), pattern);
+	}
+
 	public static String getDayOfWeek(String offsetDays) {
 		return getFormattedDate(offsetDays, "EEEE");
 	}
@@ -60,8 +111,28 @@ public class DateUtil {
 		return _format(new Date(), pattern);
 	}
 
+	public static String getFormattedCurrentDate(
+		String pattern, String timeZoneID) {
+
+		return _format(new Date(), pattern, timeZoneID);
+	}
+
+	public static String getFormattedDate(
+		int field, int offset, String pattern) {
+
+		return _format(_getOffsetDate(field, offset), pattern);
+	}
+
+	public static String getFormattedDate(
+		int field, int offset, String pattern, String timeZoneID) {
+
+		return _format(_getOffsetDate(field, offset), pattern, timeZoneID);
+	}
+
 	public static String getFormattedDate(String offsetDays, String pattern) {
-		return _format(_getOffsetDate(Integer.valueOf(offsetDays)), pattern);
+		return _format(
+			_getOffsetDate(Calendar.DATE, Integer.valueOf(offsetDays)),
+			pattern);
 	}
 
 	public static String getMonth(String offsetDays) {
@@ -80,6 +151,17 @@ public class DateUtil {
 		return String.valueOf(System.currentTimeMillis());
 	}
 
+	public static String getTimeInMilliseconds(String date, String timeZone) {
+		LocalDateTime localDateTime = LocalDateTime.parse(
+			date, DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
+
+		ZonedDateTime zonedDateTime = localDateTime.atZone(ZoneId.of(timeZone));
+
+		Instant instant = zonedDateTime.toInstant();
+
+		return String.valueOf(instant.toEpochMilli());
+	}
+
 	public static String getYear(String offsetDays) {
 		return getFormattedDate(offsetDays, "yyyy");
 	}
@@ -90,10 +172,28 @@ public class DateUtil {
 		return simpleDateFormat.format(date);
 	}
 
-	private static Date _getOffsetDate(int offsetDays) {
+	private static String _format(
+		Date date, String pattern, String timeZoneID) {
+
+		List<String> availableTimeZoneIDs = new ArrayList<>(
+			Arrays.asList(TimeZone.getAvailableIDs()));
+
+		if (!availableTimeZoneIDs.contains(timeZoneID)) {
+			throw new IllegalArgumentException(
+				"Invalid time zone ID: " + timeZoneID);
+		}
+
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+
+		simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timeZoneID));
+
+		return simpleDateFormat.format(date);
+	}
+
+	private static Date _getOffsetDate(int field, int offset) {
 		Calendar calendar = Calendar.getInstance();
 
-		calendar.add(Calendar.DATE, offsetDays);
+		calendar.add(field, offset);
 
 		return calendar.getTime();
 	}

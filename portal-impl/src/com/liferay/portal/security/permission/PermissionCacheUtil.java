@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.permission;
@@ -268,52 +259,6 @@ public class PermissionCacheUtil {
 
 		PortalCacheHelperUtil.putWithoutReplicator(
 			_userRolePortalCache, userRoleKey, value);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static void removePermission(
-		long groupId, String name, String primKey, long[] roleIds,
-		String actionId) {
-
-		PermissionKey permissionKey = new PermissionKey(
-			groupId, name, primKey, roleIds, actionId);
-
-		_permissionPortalCache.remove(permissionKey);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static void removeUserBag(long userId) {
-		_userBagPortalCache.remove(userId);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static void removeUserGroupRoleIds(long userId, long groupId) {
-		UserGroupRoleIdsKey userGroupRoleIdsKey = new UserGroupRoleIdsKey(
-			userId, groupId);
-
-		_userGroupRoleIdsPortalCache.remove(userGroupRoleIdsKey);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static void removeUserPrimaryKeyRole(
-		long userId, long primaryKey, String roleName) {
-
-		UserPrimaryKeyRoleKey userPrimaryKeyRoleKey = new UserPrimaryKeyRoleKey(
-			userId, primaryKey, roleName);
-
-		_userPrimaryKeyRolePortalCache.remove(userPrimaryKeyRoleKey);
 	}
 
 	private static void _clearPermissionChecksMap() {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.test.util;
@@ -17,7 +8,6 @@ package com.liferay.portal.search.test.util;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.LayoutSet;
-import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
@@ -26,21 +16,21 @@ import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.service.ThemeLocalServiceUtil;
+import com.liferay.portal.kernel.test.portlet.MockPortletResponse;
+import com.liferay.portal.kernel.test.portlet.MockRenderRequest;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.TimeZoneUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockPortletResponse;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockRenderRequest;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Collections;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.junit.Assert;
 
@@ -143,19 +133,17 @@ public class SummaryFixture<T> {
 
 		themeDisplay.setCompany(
 			CompanyLocalServiceUtil.getCompany(_group.getCompanyId()));
-		themeDisplay.setLayout(LayoutTestUtil.addLayout(_group));
+		themeDisplay.setLayout(LayoutTestUtil.addTypePortletLayout(_group));
 
 		LayoutSet layoutSet = _group.getPublicLayoutSet();
 
 		themeDisplay.setLayoutSet(layoutSet);
 
 		themeDisplay.setLocale(locale);
-
-		Theme theme = ThemeLocalServiceUtil.getTheme(
-			_group.getCompanyId(), layoutSet.getThemeId());
-
-		themeDisplay.setLookAndFeel(theme, null);
-
+		themeDisplay.setLookAndFeel(
+			ThemeLocalServiceUtil.getTheme(
+				_group.getCompanyId(), layoutSet.getThemeId()),
+			null);
 		themeDisplay.setRealUser(_user);
 		themeDisplay.setRequest(httpServletRequest);
 		themeDisplay.setResponse(httpServletResponse);

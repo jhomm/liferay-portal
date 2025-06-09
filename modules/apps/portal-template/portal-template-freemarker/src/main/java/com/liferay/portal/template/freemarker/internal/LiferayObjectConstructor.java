@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.template.freemarker.internal;
 
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 
 import freemarker.ext.beans.BeansWrapper;
@@ -53,6 +46,10 @@ public class LiferayObjectConstructor implements TemplateMethodModelEx {
 				className, true, currentThread.getContextClassLoader());
 		}
 		catch (Exception exception1) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception1);
+			}
+
 			try {
 				clazz = Class.forName(
 					className, true, PortalClassLoaderUtil.getClassLoader());
@@ -67,6 +64,9 @@ public class LiferayObjectConstructor implements TemplateMethodModelEx {
 
 		return _beansWrapper.wrap(object);
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		LiferayObjectConstructor.class);
 
 	private final BeansWrapper _beansWrapper;
 

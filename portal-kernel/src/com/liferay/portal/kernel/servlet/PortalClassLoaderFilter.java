@@ -1,47 +1,46 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.servlet;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.portal.kernel.bean.ClassLoaderBeanHandler;
 import com.liferay.portal.kernel.servlet.filters.invoker.InvokerFilterChain;
-import com.liferay.portal.kernel.util.BasePortalLifecycle;
 import com.liferay.portal.kernel.util.InstanceFactory;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.lang.reflect.InvocationHandler;
+
+import java.util.function.Function;
 
 /**
  * @author Brian Wing Shun Chan
  */
-public class PortalClassLoaderFilter
-	extends BasePortalLifecycle implements LiferayFilter {
+public class PortalClassLoaderFilter implements LiferayFilter {
 
 	@Override
 	public void destroy() {
-		portalDestroy();
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				PortalClassLoaderUtil.getClassLoader())) {
+
+			_filter.destroy();
+		}
 	}
 
 	@Override
@@ -54,13 +53,11 @@ public class PortalClassLoaderFilter
 
 		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
 
-		try {
-			currentThread.setContextClassLoader(
-				PortalClassLoaderUtil.getClassLoader());
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				PortalClassLoaderUtil.getClassLoader())) {
 
 			FilterChain contextClassLoaderFilterChain =
-				(FilterChain)ProxyUtil.newProxyInstance(
-					contextClassLoader, new Class<?>[] {FilterChain.class},
+				_filterChainProxyProviderFunction.apply(
 					new ClassLoaderBeanHandler(
 						filterChain, contextClassLoader));
 
@@ -73,16 +70,33 @@ public class PortalClassLoaderFilter
 
 			invokerFilterChain.doFilter(servletRequest, servletResponse);
 		}
-		finally {
-			currentThread.setContextClassLoader(contextClassLoader);
-		}
 	}
 
 	@Override
-	public void init(FilterConfig filterConfig) {
+	public void init(FilterConfig filterConfig) throws ServletException {
 		_filterConfig = filterConfig;
 
-		registerPortalLifecycle();
+		String filterClassName = _filterConfig.getInitParameter("filter-class");
+
+		if (filterClassName.startsWith("com.liferay.filters.")) {
+			filterClassName = StringUtil.replace(
+				filterClassName, "com.liferay.filters.",
+				"com.liferay.portal.servlet.filters.");
+		}
+
+		try {
+			_filter = (Filter)InstanceFactory.newInstance(
+				PortalClassLoaderUtil.getClassLoader(), filterClassName);
+		}
+		catch (Exception exception) {
+			throw new ServletException(exception);
+		}
+
+		_filter.init(_filterConfig);
+
+		if (_filter instanceof LiferayFilter) {
+			_liferayFilter = (LiferayFilter)_filter;
+		}
 	}
 
 	@Override
@@ -114,42 +128,9 @@ public class PortalClassLoaderFilter
 		}
 	}
 
-	@Override
-	protected void doPortalDestroy() {
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		try {
-			currentThread.setContextClassLoader(
-				PortalClassLoaderUtil.getClassLoader());
-
-			_filter.destroy();
-		}
-		finally {
-			currentThread.setContextClassLoader(contextClassLoader);
-		}
-	}
-
-	@Override
-	protected void doPortalInit() throws Exception {
-		String filterClass = _filterConfig.getInitParameter("filter-class");
-
-		if (filterClass.startsWith("com.liferay.filters.")) {
-			filterClass = StringUtil.replace(
-				filterClass, "com.liferay.filters.",
-				"com.liferay.portal.servlet.filters.");
-		}
-
-		_filter = (Filter)InstanceFactory.newInstance(
-			PortalClassLoaderUtil.getClassLoader(), filterClass);
-
-		_filter.init(_filterConfig);
-
-		if (_filter instanceof LiferayFilter) {
-			_liferayFilter = (LiferayFilter)_filter;
-		}
-	}
+	private static final Function<InvocationHandler, FilterChain>
+		_filterChainProxyProviderFunction = ProxyUtil.getProxyProviderFunction(
+			FilterChain.class);
 
 	private Filter _filter;
 	private FilterConfig _filterConfig;

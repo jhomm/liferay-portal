@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -20,6 +11,7 @@ import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.exportimport.kernel.staging.StagingUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -38,17 +30,16 @@ import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
-import com.liferay.portal.kernel.security.membershippolicy.SiteMembershipPolicyUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.UserBag;
-import com.liferay.portal.kernel.security.permission.UserBagFactoryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
 import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.service.permission.RolePermissionUtil;
 import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
+import com.liferay.portal.kernel.service.persistence.CompanyPersistence;
 import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -58,10 +49,13 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.comparator.GroupIdComparator;
+import com.liferay.portal.security.membershippolicy.SiteMembershipPolicyUtil;
+import com.liferay.portal.security.permission.UserBagFactoryUtil;
 import com.liferay.portal.service.base.GroupServiceBaseImpl;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.ratings.kernel.transformer.RatingsDataTransformerUtil;
 
 import java.io.Serializable;
@@ -132,6 +126,40 @@ public class GroupServiceImpl extends GroupServiceBaseImpl {
 			parentGroupId, liveGroupId, nameMap, descriptionMap, type,
 			manualMembership, membershipRestriction, friendlyURL, site, false,
 			active, serviceContext);
+	}
+
+	@Override
+	public Group addOrUpdateGroup(
+			String externalReferenceCode, long parentGroupId, long liveGroupId,
+			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
+			int type, boolean manualMembership, int membershipRestriction,
+			String friendlyURL, boolean site, boolean inheritContent,
+			boolean active, ServiceContext serviceContext)
+		throws Exception {
+
+		User user = getUser();
+
+		Group group = groupPersistence.fetchByERC_C(
+			externalReferenceCode, user.getCompanyId());
+
+		if (group == null) {
+			group = addGroup(
+				parentGroupId, liveGroupId, nameMap, descriptionMap, type,
+				manualMembership, membershipRestriction, friendlyURL, site,
+				inheritContent, active, serviceContext);
+
+			group.setExternalReferenceCode(externalReferenceCode);
+
+			group = groupPersistence.update(group);
+		}
+		else {
+			group = updateGroup(
+				group.getGroupId(), parentGroupId, nameMap, descriptionMap,
+				type, manualMembership, membershipRestriction, friendlyURL,
+				inheritContent, active, serviceContext);
+		}
+
+		return group;
 	}
 
 	/**
@@ -209,6 +237,22 @@ public class GroupServiceImpl extends GroupServiceBaseImpl {
 			ActionKeys.UPDATE);
 
 		groupLocalService.enableStaging(groupId);
+	}
+
+	@Override
+	public Group fetchGroupByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		Group group = groupLocalService.fetchGroupByExternalReferenceCode(
+			externalReferenceCode, companyId);
+
+		if (group != null) {
+			GroupPermissionUtil.check(
+				getPermissionChecker(), group, ActionKeys.VIEW);
+		}
+
+		return group;
 	}
 
 	/**
@@ -298,10 +342,11 @@ public class GroupServiceImpl extends GroupServiceBaseImpl {
 		GroupPermissionUtil.check(
 			getPermissionChecker(), group, ActionKeys.UPDATE);
 
-		String portletId = PortletProviderUtil.getPortletId(
-			Layout.class.getName(), PortletProvider.Action.EDIT);
-
-		return PortalUtil.getControlPanelFullURL(groupId, portletId, null);
+		return PortalUtil.getControlPanelFullURL(
+			groupId,
+			PortletProviderUtil.getPortletId(
+				Layout.class.getName(), PortletProvider.Action.EDIT),
+			null);
 	}
 
 	/**
@@ -434,7 +479,7 @@ public class GroupServiceImpl extends GroupServiceBaseImpl {
 
 		return groupPersistence.findByGtG_C_P_S(
 			gtGroupId, companyId, parentGroupId, site, 0, size,
-			new GroupIdComparator(true));
+			GroupIdComparator.getInstance(true));
 	}
 
 	/**
@@ -637,7 +682,7 @@ public class GroupServiceImpl extends GroupServiceBaseImpl {
 				getPermissionChecker(), userId, ActionKeys.VIEW);
 		}
 
-		if (user.isDefaultUser()) {
+		if (user.isGuestUser()) {
 			return Collections.emptyList();
 		}
 
@@ -651,8 +696,12 @@ public class GroupServiceImpl extends GroupServiceBaseImpl {
 		}
 
 		if (ArrayUtil.contains(classNames, User.class.getName()) &&
-			(PropsValues.LAYOUT_USER_PRIVATE_LAYOUTS_ENABLED ||
-			 PropsValues.LAYOUT_USER_PUBLIC_LAYOUTS_ENABLED)) {
+			(PrefsPropsUtil.getBoolean(
+				user.getCompanyId(),
+				PropsKeys.LAYOUT_USER_PRIVATE_LAYOUTS_ENABLED) ||
+			 PrefsPropsUtil.getBoolean(
+				 user.getCompanyId(),
+				 PropsKeys.LAYOUT_USER_PUBLIC_LAYOUTS_ENABLED))) {
 
 			userSiteGroups.add(user.getGroup());
 
@@ -666,8 +715,10 @@ public class GroupServiceImpl extends GroupServiceBaseImpl {
 		}
 
 		if (ArrayUtil.contains(classNames, Company.class.getName())) {
-			Group companyGroup = groupLocalService.getCompanyGroup(
+			Company company = _companyPersistence.fetchByPrimaryKey(
 				user.getCompanyId());
+
+			Group companyGroup = company.getGroup();
 
 			if (GroupPermissionUtil.contains(
 					getPermissionChecker(), companyGroup,
@@ -806,7 +857,7 @@ public class GroupServiceImpl extends GroupServiceBaseImpl {
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(principalException, principalException);
+				_log.debug(principalException);
 			}
 
 			GroupPermissionUtil.check(
@@ -1114,19 +1165,19 @@ public class GroupServiceImpl extends GroupServiceBaseImpl {
 	protected List<Group> filterGroups(List<Group> groups)
 		throws PortalException {
 
-		List<Group> filteredGroups = new ArrayList<>();
-
 		PermissionChecker permissionChecker = getPermissionChecker();
 
-		for (Group group : groups) {
-			if (GroupPermissionUtil.contains(
-					permissionChecker, group, ActionKeys.VIEW)) {
+		return TransformUtil.transform(
+			groups,
+			group -> {
+				if (GroupPermissionUtil.contains(
+						permissionChecker, group, ActionKeys.VIEW)) {
 
-				filteredGroups.add(group);
-			}
-		}
+					return group;
+				}
 
-		return filteredGroups;
+				return null;
+			});
 	}
 
 	protected Map<Locale, String> getLocalizationMap(String value) {
@@ -1143,6 +1194,9 @@ public class GroupServiceImpl extends GroupServiceBaseImpl {
 
 	@BeanReference(type = AssetTagLocalService.class)
 	private AssetTagLocalService _assetTagLocalService;
+
+	@BeanReference(type = CompanyPersistence.class)
+	private CompanyPersistence _companyPersistence;
 
 	@BeanReference(type = UserPersistence.class)
 	private UserPersistence _userPersistence;

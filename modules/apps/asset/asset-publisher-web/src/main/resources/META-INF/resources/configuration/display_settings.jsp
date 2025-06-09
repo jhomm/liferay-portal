@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -42,13 +33,13 @@ PortletURL configurationRenderURL = (PortletURL)request.getAttribute("configurat
 
 <aui:input cssClass="hidden-field show-asset-title" inlineLabel="right" labelCssClass="simple-toggle-switch" name="preferences--showAssetTitle--" type="toggle-switch" value="<%= assetPublisherDisplayContext.isShowAssetTitle() %>" />
 
-<aui:input cssClass="hidden-field show-context-link" inlineLabel="right" labelCssClass="simple-toggle-switch" name="preferences--showContextLink--" type="toggle-switch" value="<%= assetPublisherDisplayContext.isShowContextLink() %>" />
+<aui:input cssClass="hidden-field show-context-link" inlineLabel="right" label="show-new-page-link" labelCssClass="simple-toggle-switch" name="preferences--showContextLink--" type="toggle-switch" value="<%= assetPublisherDisplayContext.isShowContextLink() %>" />
 
 <aui:input cssClass="hidden-field show-extra-info" inlineLabel="right" labelCssClass="simple-toggle-switch" name="preferences--showExtraInfo--" type="toggle-switch" value="<%= assetPublisherDisplayContext.isShowExtraInfo() %>" />
 
 <aui:select cssClass="asset-link-behavior" name="preferences--assetLinkBehavior--">
 	<aui:option label="show-full-content" selected="<%= assetPublisherDisplayContext.isAssetLinkBehaviorShowFullContent() %>" value="showFullContent" />
-	<aui:option label="view-in-context" selected="<%= assetPublisherDisplayContext.isAssetLinkBehaviorViewInPortlet() %>" value="viewInPortlet" />
+	<aui:option label="view-on-new-page" selected="<%= assetPublisherDisplayContext.isAssetLinkBehaviorViewInPortlet() %>" value="viewInPortlet" />
 </aui:select>
 
 <aui:input helpMessage='<%= LanguageUtil.format(request, "number-of-items-to-display-help", new Object[] {SearchContainer.MAX_DELTA}, false) %>' label="number-of-items-to-display" name="preferences--delta--" type="text" value="<%= assetPublisherDisplayContext.getDelta() %>">
@@ -73,45 +64,6 @@ PortletURL configurationRenderURL = (PortletURL)request.getAttribute("configurat
 	<aui:input inlineLabel="right" label="exclude-assets-with-0-views" labelCssClass="simple-toggle-switch" name="preferences--excludeZeroViewCount--" type="toggle-switch" value="<%= assetPublisherDisplayContext.isExcludeZeroViewCount() %>" />
 </c:if>
 
-<aui:script sandbox="<%= true %>">
-	var displayStyleSelect = document.getElementById(
-		'<portlet:namespace />displayStyle'
-	);
-
-	function showHiddenFields() {
-		var displayStyle = displayStyleSelect.value;
-
-		var hiddenFields = document.querySelectorAll('.hidden-field');
-
-		Array.prototype.forEach.call(hiddenFields, (field) => {
-			var fieldContainer = field.closest('.form-group');
-
-			if (fieldContainer) {
-				var fieldClassList = field.classList;
-				var fieldContainerClassList = fieldContainer.classList;
-
-				if (
-					displayStyle === 'full-content' &&
-					(fieldClassList.contains('show-asset-title') ||
-						fieldClassList.contains('show-context-link') ||
-						fieldClassList.contains('show-extra-info'))
-				) {
-					fieldContainerClassList.remove('hide');
-				}
-				else if (
-					displayStyle === 'abstracts' &&
-					fieldClassList.contains('abstract-length')
-				) {
-					fieldContainerClassList.remove('hide');
-				}
-				else {
-					fieldContainerClassList.add('hide');
-				}
-			}
-		});
-	}
-
-	showHiddenFields();
-
-	displayStyleSelect.addEventListener('change', showHiddenFields);
-</aui:script>
+<liferay-frontend:component
+	module="{DisplaySettings} from asset-publisher-web"
+/>

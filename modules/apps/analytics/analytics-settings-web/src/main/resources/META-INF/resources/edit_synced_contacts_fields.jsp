@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -61,11 +52,8 @@ PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(resourceBundle, "
 			size="12"
 		>
 			<div id="breadcrumb">
-				<liferay-ui:breadcrumb
-					showCurrentGroup="<%= false %>"
-					showGuestGroup="<%= false %>"
-					showLayout="<%= false %>"
-					showPortletBreadcrumb="<%= true %>"
+				<liferay-site-navigation:breadcrumb
+					breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, false, false, false, true, true) %>"
 				/>
 			</div>
 		</clay:col>
@@ -197,13 +185,30 @@ PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(resourceBundle, "
 			<aui:button-row>
 				<aui:button href="" onClick='<%= liferayPortletResponse.getNamespace() + "showConfirmationModal(this);" %>' value="cancel" />
 
-				<aui:button type="submit" value="save" />
+				<aui:button id="submitForm" type="submit" value="save" />
 			</aui:button-row>
 		</div>
 	</aui:form>
 </clay:sheet>
 
 <aui:script>
+	var submitButton = document.querySelector('#<portlet:namespace />submitForm');
+	var form = document.querySelector(
+		"form[action='<%= editSyncedContactsURL %>']"
+	);
+
+	submitButton.addEventListener('click', () => {
+		var selectUsersFields = document.querySelector(
+			'#<portlet:namespace />selectUsersFields'
+		);
+
+		if (selectUsersFields) {
+			form.appendChild(selectUsersFields);
+		}
+
+		form.submit();
+	});
+
 	Liferay.provide(
 		window,
 		'<portlet:namespace />showConfirmationModal',

@@ -1,26 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.internal.deployer;
 
-import com.liferay.info.collection.provider.InfoCollectionProvider;
-import com.liferay.list.type.service.ListTypeEntryLocalService;
+import com.liferay.account.service.AccountEntryLocalService;
+import com.liferay.account.service.AccountEntryOrganizationRelLocalService;
+import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.frontend.taglib.servlet.taglib.ScreenNavigationCategory;
+import com.liferay.frontend.taglib.servlet.taglib.ScreenNavigationEntry;
+import com.liferay.notification.handler.NotificationHandler;
+import com.liferay.notification.term.evaluator.NotificationTermEvaluator;
+import com.liferay.object.constants.ObjectActionTriggerConstants;
 import com.liferay.object.deployer.ObjectDefinitionDeployer;
-import com.liferay.object.internal.info.collection.provider.ObjectEntrySingleFormVariationInfoCollectionProvider;
-import com.liferay.object.internal.language.ObjectResourceBundle;
+import com.liferay.object.internal.layout.tab.screen.navigation.category.ObjectLayoutTabScreenNavigationCategory;
+import com.liferay.object.internal.notification.handler.ObjectDefinitionNotificationHandler;
+import com.liferay.object.internal.notification.term.contributor.ObjectDefinitionNotificationTermEvaluator;
 import com.liferay.object.internal.related.models.ObjectEntry1to1ObjectRelatedModelsProviderImpl;
+import com.liferay.object.internal.related.models.ObjectEntry1toMObjectRelatedModelsPredicateProviderImpl;
 import com.liferay.object.internal.related.models.ObjectEntry1toMObjectRelatedModelsProviderImpl;
+import com.liferay.object.internal.related.models.ObjectEntryMtoMObjectRelatedModelsPredicateProviderImpl;
 import com.liferay.object.internal.related.models.ObjectEntryMtoMObjectRelatedModelsProviderImpl;
 import com.liferay.object.internal.rest.context.path.RESTContextPathResolverImpl;
 import com.liferay.object.internal.search.spi.model.index.contributor.ObjectEntryModelDocumentContributor;
@@ -28,41 +28,86 @@ import com.liferay.object.internal.search.spi.model.index.contributor.ObjectEntr
 import com.liferay.object.internal.search.spi.model.query.contributor.ObjectEntryKeywordQueryContributor;
 import com.liferay.object.internal.search.spi.model.query.contributor.ObjectEntryModelPreFilterContributor;
 import com.liferay.object.internal.search.spi.model.result.contributor.ObjectEntryModelSummaryContributor;
+import com.liferay.object.internal.security.permission.ObjectEntrySharingPermissionChecker;
 import com.liferay.object.internal.security.permission.resource.ObjectEntryModelResourcePermission;
 import com.liferay.object.internal.security.permission.resource.ObjectEntryPortletResourcePermissionLogic;
+import com.liferay.object.internal.security.permission.resource.util.ObjectDefinitionResourcePermissionUtil;
+import com.liferay.object.internal.uad.anonymizer.ObjectEntryUADAnonymizer;
+import com.liferay.object.internal.uad.display.ObjectEntryUADDisplay;
+import com.liferay.object.internal.uad.exporter.ObjectEntryUADExporter;
 import com.liferay.object.internal.workflow.ObjectEntryWorkflowHandler;
+import com.liferay.object.model.ObjectAction;
 import com.liferay.object.model.ObjectDefinition;
-import com.liferay.object.related.models.ObjectRelatedModelsProvider;
+import com.liferay.object.model.ObjectEntry;
+import com.liferay.object.model.ObjectLayout;
+import com.liferay.object.model.ObjectRelationship;
+import com.liferay.object.related.models.ObjectRelatedModelsPredicateProvider;
+import com.liferay.object.related.models.ObjectRelatedModelsProviderRegistryUtil;
 import com.liferay.object.rest.context.path.RESTContextPathResolver;
 import com.liferay.object.scope.ObjectScopeProviderRegistry;
+import com.liferay.object.service.ObjectActionLocalService;
 import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectEntryFolderLocalService;
 import com.liferay.object.service.ObjectEntryLocalService;
+import com.liferay.object.service.ObjectEntryService;
 import com.liferay.object.service.ObjectFieldLocalService;
+import com.liferay.object.service.ObjectFolderLocalService;
+import com.liferay.object.service.ObjectLayoutLocalService;
+import com.liferay.object.service.ObjectLayoutTabLocalService;
 import com.liferay.object.service.ObjectRelationshipLocalService;
+import com.liferay.object.service.ObjectViewLocalService;
+import com.liferay.object.service.persistence.ObjectDefinitionPersistence;
+import com.liferay.object.tree.Edge;
+import com.liferay.object.tree.Node;
+import com.liferay.object.tree.ObjectDefinitionTreeFactory;
+import com.liferay.object.tree.Tree;
 import com.liferay.petra.reflect.ReflectionUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.db.partition.util.DBPartitionUtil;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionLogic;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermissionFactory;
-import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ListTypeLocalService;
+import com.liferay.portal.kernel.service.OrganizationLocalService;
+import com.liferay.portal.kernel.service.PersistedModelLocalService;
+import com.liferay.portal.kernel.service.PortletLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowHandler;
-import com.liferay.portal.kernel.xml.SAXReaderUtil;
+import com.liferay.portal.language.override.service.PLOEntryLocalService;
 import com.liferay.portal.search.batch.DynamicQueryBatchIndexingActionableFactory;
+import com.liferay.portal.search.localization.SearchLocalizationHelper;
 import com.liferay.portal.search.spi.model.index.contributor.ModelDocumentContributor;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.query.contributor.KeywordQueryContributor;
 import com.liferay.portal.search.spi.model.query.contributor.ModelPreFilterContributor;
-import com.liferay.portal.search.spi.model.registrar.ModelSearchRegistrarHelper;
+import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
+import com.liferay.portal.search.spi.model.result.contributor.ModelSummaryContributor;
+import com.liferay.sharing.security.permission.SharingPermissionChecker;
+import com.liferay.sharing.security.permission.resource.SharingModelResourcePermissionConfigurator;
+import com.liferay.user.associated.data.anonymizer.UADAnonymizer;
+import com.liferay.user.associated.data.display.UADDisplay;
+import com.liferay.user.associated.data.exporter.UADExporter;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
-import java.util.ResourceBundle;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -74,141 +119,269 @@ import org.osgi.framework.ServiceRegistration;
 public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 
 	public ObjectDefinitionDeployerImpl(
+		AccountEntryLocalService accountEntryLocalService,
+		AccountEntryOrganizationRelLocalService
+			accountEntryOrganizationRelLocalService,
+		AssetEntryLocalService assetEntryLocalService,
 		BundleContext bundleContext,
 		DynamicQueryBatchIndexingActionableFactory
 			dynamicQueryBatchIndexingActionableFactory,
-		ListTypeEntryLocalService listTypeEntryLocalService,
-		ModelSearchRegistrarHelper modelSearchRegistrarHelper,
+		GroupLocalService groupLocalService,
+		ListTypeLocalService listTypeLocalService,
+		ObjectActionLocalService objectActionLocalService,
 		ObjectDefinitionLocalService objectDefinitionLocalService,
+		ObjectEntryFolderLocalService objectEntryFolderLocalService,
 		ObjectEntryLocalService objectEntryLocalService,
+		ObjectEntryService objectEntryService,
 		ObjectFieldLocalService objectFieldLocalService,
+		ObjectFolderLocalService objectFolderLocalService,
+		ObjectLayoutLocalService objectLayoutLocalService,
+		ObjectLayoutTabLocalService objectLayoutTabLocalService,
 		ObjectRelationshipLocalService objectRelationshipLocalService,
 		ObjectScopeProviderRegistry objectScopeProviderRegistry,
-		PersistedModelLocalServiceRegistry persistedModelLocalServiceRegistry,
-		ResourceActions resourceActions,
-		ModelPreFilterContributor workflowStatusModelPreFilterContributor) {
+		ObjectViewLocalService objectViewLocalService,
+		OrganizationLocalService organizationLocalService,
+		PLOEntryLocalService ploEntryLocalService, Portal portal,
+		PortletLocalService portletLocalService,
+		ResourceActions resourceActions, UserLocalService userLocalService,
+		ResourcePermissionLocalService resourcePermissionLocalService,
+		SearchLocalizationHelper searchLocalizationHelper,
+		SharingModelResourcePermissionConfigurator
+			sharingModelResourcePermissionConfigurator,
+		WorkflowDefinitionLinkLocalService workflowDefinitionLinkLocalService,
+		ModelPreFilterContributor workflowStatusModelPreFilterContributor,
+		UserGroupRoleLocalService userGroupRoleLocalService) {
 
+		_accountEntryLocalService = accountEntryLocalService;
+		_accountEntryOrganizationRelLocalService =
+			accountEntryOrganizationRelLocalService;
+		_assetEntryLocalService = assetEntryLocalService;
 		_bundleContext = bundleContext;
 		_dynamicQueryBatchIndexingActionableFactory =
 			dynamicQueryBatchIndexingActionableFactory;
-		_listTypeEntryLocalService = listTypeEntryLocalService;
-		_modelSearchRegistrarHelper = modelSearchRegistrarHelper;
+		_groupLocalService = groupLocalService;
+		_listTypeLocalService = listTypeLocalService;
+		_objectActionLocalService = objectActionLocalService;
 		_objectDefinitionLocalService = objectDefinitionLocalService;
+		_objectEntryFolderLocalService = objectEntryFolderLocalService;
 		_objectEntryLocalService = objectEntryLocalService;
+		_objectEntryService = objectEntryService;
 		_objectFieldLocalService = objectFieldLocalService;
+		_objectFolderLocalService = objectFolderLocalService;
+		_objectLayoutLocalService = objectLayoutLocalService;
+		_objectLayoutTabLocalService = objectLayoutTabLocalService;
 		_objectRelationshipLocalService = objectRelationshipLocalService;
 		_objectScopeProviderRegistry = objectScopeProviderRegistry;
-		_persistedModelLocalServiceRegistry =
-			persistedModelLocalServiceRegistry;
+		_objectViewLocalService = objectViewLocalService;
+		_organizationLocalService = organizationLocalService;
+		_ploEntryLocalService = ploEntryLocalService;
+		_portal = portal;
+		_portletLocalService = portletLocalService;
 		_resourceActions = resourceActions;
+		_userLocalService = userLocalService;
+		_resourcePermissionLocalService = resourcePermissionLocalService;
+		_searchLocalizationHelper = searchLocalizationHelper;
+		_sharingModelResourcePermissionConfigurator =
+			sharingModelResourcePermissionConfigurator;
+		_workflowDefinitionLinkLocalService =
+			workflowDefinitionLinkLocalService;
 		_workflowStatusModelPreFilterContributor =
 			workflowStatusModelPreFilterContributor;
+		_userGroupRoleLocalService = userGroupRoleLocalService;
+
+		_objectDefinitionTreeFactory = new ObjectDefinitionTreeFactory(
+			_objectDefinitionLocalService, _objectRelationshipLocalService);
 	}
 
+	@Override
+	public Map<String, List<ServiceRegistration<?>>> deploy(
+		long companyId, List<ObjectDefinition> objectDefinitions) {
+
+		Map<String, List<ServiceRegistration<?>>> serviceRegistrationsMap =
+			new ConcurrentHashMap<>();
+
+		Map<Long, List<ObjectAction>> objectActionsMap =
+			_objectActionLocalService.getObjectActionsMap(
+				companyId, true, ObjectActionTriggerConstants.KEY_STANDALONE);
+		Map<Long, List<ObjectLayout>> objectLayoutsMap =
+			_objectLayoutLocalService.getObjectLayoutsMap(companyId);
+		Map<Long, List<ObjectRelationship>> objectRelationshipsMap =
+			_objectRelationshipLocalService.getObjectRelationshipsMap(
+				companyId);
+
+		for (ObjectDefinition objectDefinition : objectDefinitions) {
+			long objectDefinitionId = objectDefinition.getObjectDefinitionId();
+
+			serviceRegistrationsMap.put(
+				DBPartitionUtil.getPartitionKey(objectDefinitionId),
+				_deploy(
+					objectDefinition,
+					objectLayoutsMap.getOrDefault(
+						objectDefinitionId, Collections.emptyList()),
+					objectRelationshipsMap,
+					objectActionsMap.getOrDefault(
+						objectDefinitionId, Collections.emptyList())));
+		}
+
+		return serviceRegistrationsMap;
+	}
+
+	@Override
 	public List<ServiceRegistration<?>> deploy(
 		ObjectDefinition objectDefinition) {
 
-		_persistedModelLocalServiceRegistry.register(
-			objectDefinition.getClassName(), _objectEntryLocalService);
+		return _deploy(objectDefinition, null, null, null);
+	}
+
+	@Override
+	public synchronized void undeploy(ObjectDefinition objectDefinition) {
+		_unregister(_getServiceRegistrationKey(objectDefinition, null));
+
+		for (String serviceRegistrationKey : _serviceRegistrations.keySet()) {
+			if (serviceRegistrationKey.startsWith(
+					_getServiceRegistrationKey(objectDefinition, null) +
+						StringPool.POUND)) {
+
+				_unregister(serviceRegistrationKey);
+			}
+		}
+	}
+
+	private List<ServiceRegistration<?>> _deploy(
+		ObjectDefinition objectDefinition, List<ObjectLayout> objectLayouts,
+		Map<Long, List<ObjectRelationship>> objectRelationshipsMap,
+		List<ObjectAction> standaloneObjectActions) {
+
+		if (objectDefinition.isUnmodifiableSystemObject()) {
+			return Collections.emptyList();
+		}
 
 		try {
-			_readResourceActions(objectDefinition);
+			ObjectDefinitionResourcePermissionUtil.populateResourceActions(
+				_objectActionLocalService, objectDefinition,
+				objectRelationshipsMap,
+				(ObjectDefinitionPersistence)
+					_objectDefinitionLocalService.getBasePersistence(),
+				_objectDefinitionTreeFactory, _portletLocalService,
+				_resourceActions, standaloneObjectActions);
 		}
 		catch (Exception exception) {
 			return ReflectionUtil.throwException(exception);
 		}
 
-		ObjectEntryModelIndexerWriterContributor
-			objectEntryModelIndexerWriterContributor =
-				new ObjectEntryModelIndexerWriterContributor(
-					_dynamicQueryBatchIndexingActionableFactory,
-					_objectEntryLocalService);
-		ObjectEntryModelSummaryContributor objectEntryModelSummaryContributor =
-			new ObjectEntryModelSummaryContributor();
+		List<ServiceRegistration<?>> serviceRegistrations = new ArrayList<>();
 
-		PortletResourcePermission portletResourcePermission =
-			PortletResourcePermissionFactory.create(
-				objectDefinition.getResourceName(),
-				new ObjectEntryPortletResourcePermissionLogic());
+		if (objectDefinition.isEnableIndexSearch()) {
+			ObjectEntryModelIndexerWriterContributor
+				objectEntryModelIndexerWriterContributor =
+					new ObjectEntryModelIndexerWriterContributor(
+						_dynamicQueryBatchIndexingActionableFactory,
+						objectDefinition.getObjectDefinitionId(),
+						_objectEntryLocalService);
+			ObjectEntryModelSummaryContributor
+				objectEntryModelSummaryContributor =
+					new ObjectEntryModelSummaryContributor();
 
-		List<ServiceRegistration<?>> serviceRegistrations = ListUtil.fromArray(
+			Collections.addAll(
+				serviceRegistrations,
+				_bundleContext.registerService(
+					KeywordQueryContributor.class,
+					new ObjectEntryKeywordQueryContributor(
+						objectDefinition, _objectFieldLocalService,
+						_objectViewLocalService, _searchLocalizationHelper),
+					HashMapDictionaryBuilder.<String, Object>put(
+						"component.name",
+						ObjectEntryKeywordQueryContributor.class.getName()
+					).put(
+						"indexer.class.name", objectDefinition.getClassName()
+					).build()),
+				_bundleContext.registerService(
+					ModelDocumentContributor.class,
+					new ObjectEntryModelDocumentContributor(
+						_accountEntryOrganizationRelLocalService,
+						objectDefinition.getClassName(),
+						_objectDefinitionLocalService,
+						_objectEntryFolderLocalService,
+						_objectEntryLocalService, _objectFieldLocalService,
+						_objectFolderLocalService),
+					HashMapDictionaryBuilder.<String, Object>put(
+						"indexer.class.name", objectDefinition.getClassName()
+					).build()),
+				_bundleContext.registerService(
+					ModelPreFilterContributor.class,
+					new ObjectEntryModelPreFilterContributor(
+						_workflowStatusModelPreFilterContributor),
+					HashMapDictionaryBuilder.<String, Object>put(
+						"indexer.class.name", objectDefinition.getClassName()
+					).build()),
+				_bundleContext.registerService(
+					ModelSearchConfigurator.class,
+					new ModelSearchConfigurator<ObjectEntry>() {
+
+						@Override
+						public String getClassName() {
+							return objectDefinition.getClassName();
+						}
+
+						@Override
+						public long getCompanyId() {
+							return objectDefinition.getCompanyId();
+						}
+
+						@Override
+						public ModelIndexerWriterContributor<ObjectEntry>
+							getModelIndexerWriterContributor() {
+
+							return objectEntryModelIndexerWriterContributor;
+						}
+
+						@Override
+						public ModelSummaryContributor
+							getModelSummaryContributor() {
+
+							return objectEntryModelSummaryContributor;
+						}
+
+					},
+					null));
+		}
+
+		Collections.addAll(
+			serviceRegistrations,
 			_bundleContext.registerService(
-				InfoCollectionProvider.class,
-				new ObjectEntrySingleFormVariationInfoCollectionProvider(
-					_listTypeEntryLocalService, objectDefinition,
-					_objectEntryLocalService, _objectFieldLocalService,
-					_objectScopeProviderRegistry),
+				NotificationHandler.class,
+				new ObjectDefinitionNotificationHandler(objectDefinition),
 				HashMapDictionaryBuilder.<String, Object>put(
-					"item.class.name", objectDefinition.getClassName()
+					"class.name", objectDefinition.getClassName()
 				).build()),
 			_bundleContext.registerService(
-				KeywordQueryContributor.class,
-				new ObjectEntryKeywordQueryContributor(
-					_objectFieldLocalService),
-				HashMapDictionaryBuilder.<String, Object>put(
-					"indexer.class.name", objectDefinition.getClassName()
-				).build()),
-			_bundleContext.registerService(
-				ModelDocumentContributor.class,
-				new ObjectEntryModelDocumentContributor(
-					objectDefinition.getClassName(),
+				NotificationTermEvaluator.class,
+				new ObjectDefinitionNotificationTermEvaluator(
+					_listTypeLocalService, objectDefinition,
 					_objectDefinitionLocalService, _objectEntryLocalService,
-					_objectFieldLocalService),
+					_objectFieldLocalService, _objectRelationshipLocalService,
+					_userLocalService),
 				HashMapDictionaryBuilder.<String, Object>put(
-					"indexer.class.name", objectDefinition.getClassName()
+					"class.name", objectDefinition.getClassName()
 				).build()),
 			_bundleContext.registerService(
-				ModelIndexerWriterContributor.class,
-				objectEntryModelIndexerWriterContributor,
-				HashMapDictionaryBuilder.<String, Object>put(
-					"indexer.class.name", objectDefinition.getClassName()
-				).build()),
-			_bundleContext.registerService(
-				ModelPreFilterContributor.class,
-				new ObjectEntryModelPreFilterContributor(
-					_workflowStatusModelPreFilterContributor),
-				HashMapDictionaryBuilder.<String, Object>put(
-					"indexer.class.name", objectDefinition.getClassName()
-				).build()),
-			_bundleContext.registerService(
-				ModelResourcePermission.class,
-				new ObjectEntryModelResourcePermission(
-					objectDefinition.getClassName(), _objectEntryLocalService,
-					portletResourcePermission),
-				HashMapDictionaryBuilder.<String, Object>put(
-					"com.liferay.object", "true"
-				).put(
-					"model.class.name", objectDefinition.getClassName()
-				).build()),
-			_bundleContext.registerService(
-				ObjectRelatedModelsProvider.class,
-				new ObjectEntry1to1ObjectRelatedModelsProviderImpl(
-					objectDefinition, _objectEntryLocalService,
-					_objectFieldLocalService, _objectRelationshipLocalService),
+				ObjectRelatedModelsPredicateProvider.class,
+				new ObjectEntry1toMObjectRelatedModelsPredicateProviderImpl(
+					objectDefinition, _objectFieldLocalService),
 				null),
 			_bundleContext.registerService(
-				ObjectRelatedModelsProvider.class,
-				new ObjectEntry1toMObjectRelatedModelsProviderImpl(
-					objectDefinition, _objectEntryLocalService,
-					_objectFieldLocalService, _objectRelationshipLocalService),
+				ObjectRelatedModelsPredicateProvider.class,
+				new ObjectEntryMtoMObjectRelatedModelsPredicateProviderImpl(
+					objectDefinition, _objectFieldLocalService),
 				null),
 			_bundleContext.registerService(
-				ObjectRelatedModelsProvider.class,
-				new ObjectEntryMtoMObjectRelatedModelsProviderImpl(
-					objectDefinition, _objectEntryLocalService,
-					_objectRelationshipLocalService),
-				null),
-			_bundleContext.registerService(
-				PortletResourcePermission.class, portletResourcePermission,
-				HashMapDictionaryBuilder.<String, Object>put(
-					"com.liferay.object", "true"
-				).put(
-					"resource.name", objectDefinition.getResourceName()
-				).build()),
+				PersistedModelLocalService.class, _objectEntryLocalService,
+				MapUtil.singletonDictionary(
+					"model.class.name", objectDefinition.getClassName())),
 			_bundleContext.registerService(
 				RESTContextPathResolver.class,
 				new RESTContextPathResolverImpl(
-					"/o/" + objectDefinition.getRESTContextPath(),
+					objectDefinition,
 					_objectScopeProviderRegistry.getObjectScopeProvider(
 						objectDefinition.getScope()),
 					false),
@@ -216,74 +389,290 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 					"model.class.name", objectDefinition.getClassName()
 				).build()),
 			_bundleContext.registerService(
-				WorkflowHandler.class,
-				new ObjectEntryWorkflowHandler(
+				UADAnonymizer.class,
+				new ObjectEntryUADAnonymizer(
+					_assetEntryLocalService, objectDefinition,
+					_objectEntryLocalService, _resourcePermissionLocalService),
+				null),
+			_bundleContext.registerService(
+				UADDisplay.class,
+				new ObjectEntryUADDisplay(
+					_groupLocalService, objectDefinition,
+					_objectEntryLocalService, _objectScopeProviderRegistry,
+					_portal),
+				null),
+			_bundleContext.registerService(
+				UADExporter.class,
+				new ObjectEntryUADExporter(
 					objectDefinition, _objectEntryLocalService),
-				HashMapDictionaryBuilder.<String, Object>put(
-					"model.class.name", objectDefinition.getClassName()
-				).build()),
-			_modelSearchRegistrarHelper.register(
-				objectDefinition.getClassName(), _bundleContext,
-				modelSearchDefinition -> {
-					modelSearchDefinition.setModelIndexWriteContributor(
-						objectEntryModelIndexerWriterContributor);
-					modelSearchDefinition.setModelSummaryContributor(
-						objectEntryModelSummaryContributor);
-				}));
+				null),
+			ObjectRelatedModelsProviderRegistryUtil.register(
+				_bundleContext, objectDefinition,
+				new ObjectEntryMtoMObjectRelatedModelsProviderImpl(
+					objectDefinition, _objectEntryService,
+					_objectRelationshipLocalService)),
+			ObjectRelatedModelsProviderRegistryUtil.register(
+				_bundleContext, objectDefinition,
+				new ObjectEntry1toMObjectRelatedModelsProviderImpl(
+					objectDefinition, _objectEntryService,
+					_objectFieldLocalService, _objectRelationshipLocalService)),
+			ObjectRelatedModelsProviderRegistryUtil.register(
+				_bundleContext, objectDefinition,
+				new ObjectEntry1to1ObjectRelatedModelsProviderImpl(
+					objectDefinition, _objectEntryService,
+					_objectFieldLocalService,
+					_objectRelationshipLocalService)));
 
-		for (Locale locale : LanguageUtil.getAvailableLocales()) {
+		if (!objectDefinition.isRootDescendantNode()) {
+			ConsumerSupplier<ModelResourcePermissionLogic<ObjectEntry>>
+				consumerSupplier = new ConsumerSupplier<>();
+			PortletResourcePermission portletResourcePermission =
+				PortletResourcePermissionFactory.create(
+					objectDefinition.getResourceName(),
+					new ObjectEntryPortletResourcePermissionLogic(
+						_accountEntryLocalService, _groupLocalService,
+						_objectDefinitionLocalService,
+						_organizationLocalService));
+
+			ModelResourcePermission<ObjectEntry> modelResourcePermission =
+				new ObjectEntryModelResourcePermission(
+					_accountEntryLocalService,
+					_accountEntryOrganizationRelLocalService,
+					_groupLocalService, objectDefinition.getClassName(),
+					_objectActionLocalService, _objectDefinitionLocalService,
+					_objectEntryLocalService, consumerSupplier,
+					_objectFieldLocalService, portletResourcePermission,
+					_resourcePermissionLocalService,
+					_userGroupRoleLocalService);
+
 			serviceRegistrations.add(
 				_bundleContext.registerService(
-					ResourceBundle.class,
-					new ObjectResourceBundle(locale, objectDefinition),
-					MapUtil.singletonDictionary(
-						"language.id", LocaleUtil.toLanguageId(locale))));
+					ModelResourcePermission.class, modelResourcePermission,
+					HashMapDictionaryBuilder.<String, Object>put(
+						"com.liferay.object", "true"
+					).put(
+						"model.class.name", objectDefinition.getClassName()
+					).build()));
+
+			serviceRegistrations.add(
+				_bundleContext.registerService(
+					PortletResourcePermission.class, portletResourcePermission,
+					HashMapDictionaryBuilder.<String, Object>put(
+						"com.liferay.object", "true"
+					).put(
+						"resource.name", objectDefinition.getResourceName()
+					).build()));
+
+			_sharingModelResourcePermissionConfigurator.configure(
+				modelResourcePermission, consumerSupplier);
+
+			serviceRegistrations.add(
+				_bundleContext.registerService(
+					SharingPermissionChecker.class,
+					new ObjectEntrySharingPermissionChecker(
+						modelResourcePermission),
+					HashMapDictionaryBuilder.<String, Object>put(
+						"com.liferay.object", "true"
+					).put(
+						"model.class.name", objectDefinition.getClassName()
+					).build()));
+
+			serviceRegistrations.add(
+				_bundleContext.registerService(
+					WorkflowHandler.class,
+					new ObjectEntryWorkflowHandler(
+						objectDefinition, _objectEntryLocalService,
+						_workflowDefinitionLinkLocalService),
+					HashMapDictionaryBuilder.<String, Object>put(
+						"model.class.name", objectDefinition.getClassName()
+					).build()));
+		}
+
+		ObjectLayout objectLayout = null;
+
+		if (objectLayouts == null) {
+			objectLayout = _objectLayoutLocalService.fetchDefaultObjectLayout(
+				objectDefinition.getObjectDefinitionId());
+		}
+		else if (!objectLayouts.isEmpty()) {
+			objectLayout = objectLayouts.get(0);
+		}
+
+		if (objectLayout != null) {
+			_objectLayoutTabLocalService.
+				registerObjectLayoutTabScreenNavigationCategories(
+					objectDefinition, objectLayout.getObjectLayoutTabs());
+		}
+
+		List<ObjectRelationship> objectRelationships = null;
+
+		if (objectRelationshipsMap != null) {
+			objectRelationships = objectRelationshipsMap.getOrDefault(
+				objectDefinition.getObjectDefinitionId(),
+				Collections.emptyList());
+		}
+
+		_objectRelationshipLocalService.
+			registerObjectRelationshipsRelatedInfoCollectionProviders(
+				objectDefinition, _objectDefinitionLocalService,
+				objectRelationships);
+
+		try {
+			if (objectDefinition.isRootNode()) {
+				_registerRootObjectLayoutTabScreenNavigationCategories(
+					objectDefinition.getRootObjectDefinitionId());
+			}
+		}
+		catch (PortalException portalException) {
+			return ReflectionUtil.throwException(portalException);
 		}
 
 		return serviceRegistrations;
 	}
 
-	@Override
-	public void undeploy(ObjectDefinition objectDefinition) {
-		_persistedModelLocalServiceRegistry.unregister(
-			objectDefinition.getClassName());
+	private String _getServiceRegistrationKey(
+		ObjectDefinition objectDefinition,
+		ObjectRelationship objectRelationship) {
+
+		String serviceRegistrationKey = StringBundler.concat(
+			"ROOT_OBJECT_LAYOUT_TAB#", objectDefinition.getCompanyId(),
+			StringPool.POUND, objectDefinition.getObjectDefinitionId());
+
+		if (objectRelationship == null) {
+			return serviceRegistrationKey;
+		}
+
+		return StringBundler.concat(
+			serviceRegistrationKey, StringPool.POUND,
+			objectRelationship.getObjectRelationshipId());
 	}
 
-	private void _readResourceActions(ObjectDefinition objectDefinition)
-		throws Exception {
+	private void _registerRootObjectLayoutTabScreenNavigationCategories(
+			long rootObjectDefinitionId)
+		throws PortalException {
 
-		_resourceActions.populateModelResources(
-			SAXReaderUtil.read(
-				StringUtil.replace(
-					StringUtil.read(
-						ObjectDefinitionDeployerImpl.class.getClassLoader(),
-						"resource-actions/resource-actions.xml.tpl"),
-					new String[] {
-						"[$MODEL_NAME$]", "[$PORTLET_NAME$]",
-						"[$RESOURCE_NAME$]"
-					},
-					new String[] {
-						objectDefinition.getClassName(),
-						objectDefinition.getPortletId(),
-						objectDefinition.getResourceName()
-					})));
+		Tree tree = _objectDefinitionTreeFactory.create(rootObjectDefinitionId);
+
+		Iterator<Node> iterator = tree.iterator();
+
+		while (iterator.hasNext()) {
+			Node node = iterator.next();
+
+			ObjectDefinition objectDefinition =
+				_objectDefinitionLocalService.fetchObjectDefinition(
+					node.getPrimaryKey());
+
+			if (objectDefinition == null) {
+				continue;
+			}
+
+			List<Node> childNodes = node.getChildNodes();
+
+			if (ListUtil.isEmpty(childNodes)) {
+				_registerRootObjectLayoutTabScreenNavigationCategory(
+					objectDefinition, null);
+
+				continue;
+			}
+
+			for (int i = childNodes.size() - 1; i >= 0; i--) {
+				Node childNode = childNodes.get(i);
+
+				Edge edge = childNode.getEdge();
+
+				_registerRootObjectLayoutTabScreenNavigationCategory(
+					objectDefinition,
+					_objectRelationshipLocalService.fetchObjectRelationship(
+						edge.getObjectRelationshipId()));
+			}
+
+			_registerRootObjectLayoutTabScreenNavigationCategory(
+				objectDefinition, null);
+		}
 	}
 
+	private void _registerRootObjectLayoutTabScreenNavigationCategory(
+		ObjectDefinition objectDefinition,
+		ObjectRelationship objectRelationship) {
+
+		_serviceRegistrations.computeIfAbsent(
+			_getServiceRegistrationKey(objectDefinition, objectRelationship),
+			serviceRegistrationKey -> _bundleContext.registerService(
+				new String[] {
+					ScreenNavigationCategory.class.getName(),
+					ScreenNavigationEntry.class.getName()
+				},
+				new ObjectLayoutTabScreenNavigationCategory(
+					objectDefinition, null, objectRelationship),
+				null));
+	}
+
+	private void _unregister(String serviceRegistrationKey) {
+		ServiceRegistration<?> serviceRegistration =
+			_serviceRegistrations.remove(serviceRegistrationKey);
+
+		if (serviceRegistration != null) {
+			serviceRegistration.unregister();
+		}
+	}
+
+	private final AccountEntryLocalService _accountEntryLocalService;
+	private final AccountEntryOrganizationRelLocalService
+		_accountEntryOrganizationRelLocalService;
+	private final AssetEntryLocalService _assetEntryLocalService;
 	private final BundleContext _bundleContext;
 	private final DynamicQueryBatchIndexingActionableFactory
 		_dynamicQueryBatchIndexingActionableFactory;
-	private final ListTypeEntryLocalService _listTypeEntryLocalService;
-	private final ModelSearchRegistrarHelper _modelSearchRegistrarHelper;
+	private final GroupLocalService _groupLocalService;
+	private final ListTypeLocalService _listTypeLocalService;
+	private final ObjectActionLocalService _objectActionLocalService;
 	private final ObjectDefinitionLocalService _objectDefinitionLocalService;
+	private final ObjectDefinitionTreeFactory _objectDefinitionTreeFactory;
+	private final ObjectEntryFolderLocalService _objectEntryFolderLocalService;
 	private final ObjectEntryLocalService _objectEntryLocalService;
+	private final ObjectEntryService _objectEntryService;
 	private final ObjectFieldLocalService _objectFieldLocalService;
+	private final ObjectFolderLocalService _objectFolderLocalService;
+	private final ObjectLayoutLocalService _objectLayoutLocalService;
+	private final ObjectLayoutTabLocalService _objectLayoutTabLocalService;
 	private final ObjectRelationshipLocalService
 		_objectRelationshipLocalService;
 	private final ObjectScopeProviderRegistry _objectScopeProviderRegistry;
-	private final PersistedModelLocalServiceRegistry
-		_persistedModelLocalServiceRegistry;
+	private final ObjectViewLocalService _objectViewLocalService;
+	private final OrganizationLocalService _organizationLocalService;
+	private final PLOEntryLocalService _ploEntryLocalService;
+	private final Portal _portal;
+	private final PortletLocalService _portletLocalService;
 	private final ResourceActions _resourceActions;
+	private final ResourcePermissionLocalService
+		_resourcePermissionLocalService;
+	private final SearchLocalizationHelper _searchLocalizationHelper;
+	private final Map<String, ServiceRegistration<?>> _serviceRegistrations =
+		new ConcurrentHashMap<>();
+	private final SharingModelResourcePermissionConfigurator
+		_sharingModelResourcePermissionConfigurator;
+	private final UserGroupRoleLocalService _userGroupRoleLocalService;
+	private final UserLocalService _userLocalService;
+	private final WorkflowDefinitionLinkLocalService
+		_workflowDefinitionLinkLocalService;
 	private final ModelPreFilterContributor
 		_workflowStatusModelPreFilterContributor;
+
+	private static class ConsumerSupplier<T>
+		implements Consumer<T>, Supplier<T> {
+
+		@Override
+		public void accept(T t) {
+			_t = t;
+		}
+
+		@Override
+		public T get() {
+			return _t;
+		}
+
+		private T _t;
+
+	}
 
 }

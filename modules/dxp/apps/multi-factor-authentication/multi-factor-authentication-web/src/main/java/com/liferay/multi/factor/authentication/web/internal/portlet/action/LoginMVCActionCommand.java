@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.multi.factor.authentication.web.internal.portlet.action;
@@ -18,16 +9,30 @@ import com.liferay.login.web.constants.LoginPortletKeys;
 import com.liferay.multi.factor.authentication.web.internal.constants.MFAPortletKeys;
 import com.liferay.multi.factor.authentication.web.internal.constants.MFAWebKeys;
 import com.liferay.multi.factor.authentication.web.internal.policy.MFAPolicy;
-import com.liferay.petra.encryptor.Encryptor;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.encryptor.Encryptor;
+import com.liferay.portal.kernel.exception.CompanyMaxUsersException;
+import com.liferay.portal.kernel.exception.CookieNotSupportedException;
+import com.liferay.portal.kernel.exception.NoSuchUserException;
+import com.liferay.portal.kernel.exception.PasswordExpiredException;
+import com.liferay.portal.kernel.exception.UserEmailAddressException;
+import com.liferay.portal.kernel.exception.UserIdException;
+import com.liferay.portal.kernel.exception.UserLockoutException;
+import com.liferay.portal.kernel.exception.UserPasswordException;
+import com.liferay.portal.kernel.exception.UserScreenNameException;
 import com.liferay.portal.kernel.json.JSONFactory;
-import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.PortletURLFactory;
+import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.security.auth.AuthException;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
-import com.liferay.portal.kernel.security.auth.session.AuthenticatedSessionManagerUtil;
+import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Accessor;
 import com.liferay.portal.kernel.util.DigesterUtil;
@@ -39,6 +44,17 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.security.auth.session.AuthenticatedSessionManagerUtil;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+import jakarta.portlet.filter.ActionRequestWrapper;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import java.security.Key;
 
@@ -47,15 +63,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
-import javax.portlet.WindowState;
-import javax.portlet.filter.ActionRequestWrapper;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -66,8 +73,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + LoginPortletKeys.FAST_LOGIN,
-		"javax.portlet.name=" + LoginPortletKeys.LOGIN,
+		"jakarta.portlet.name=" + LoginPortletKeys.FAST_LOGIN,
+		"jakarta.portlet.name=" + LoginPortletKeys.LOGIN,
 		"mvc.command.name=/login/login", "service.ranking:Integer=1"
 	},
 	service = MVCActionCommand.class
@@ -87,6 +94,20 @@ public class LoginMVCActionCommand extends BaseMVCActionCommand {
 			return;
 		}
 
+		HttpServletRequest httpServletRequest =
+			_portal.getOriginalServletRequest(
+				_portal.getHttpServletRequest(actionRequest));
+
+		if (AuthenticatedSessionManagerUtil.isPasswordParameterInQueryString(
+				httpServletRequest)) {
+
+			_postProcessAuthFailure(actionRequest, actionResponse);
+
+			hideDefaultErrorMessage(actionRequest);
+
+			return;
+		}
+
 		String state = ParamUtil.getString(actionRequest, "state");
 
 		if (!Validator.isBlank(state)) {
@@ -97,23 +118,66 @@ public class LoginMVCActionCommand extends BaseMVCActionCommand {
 		String password = ParamUtil.getString(actionRequest, "password");
 
 		if (!Validator.isBlank(login) && !Validator.isBlank(password)) {
-			HttpServletRequest httpServletRequest =
-				_portal.getOriginalServletRequest(
-					_portal.getHttpServletRequest(actionRequest));
+			try {
+				long userId =
+					AuthenticatedSessionManagerUtil.getAuthenticatedUserId(
+						httpServletRequest, login, password, null);
 
-			long userId =
-				AuthenticatedSessionManagerUtil.getAuthenticatedUserId(
-					httpServletRequest, login, password, null);
+				if (_mfaPolicy.isSatisfied(
+						companyId, httpServletRequest, userId)) {
 
-			if (_mfaPolicy.isSatisfied(companyId, httpServletRequest, userId)) {
-				_loginMVCActionCommand.processAction(
-					actionRequest, actionResponse);
+					_loginMVCActionCommand.processAction(
+						actionRequest, actionResponse);
 
-				return;
+					return;
+				}
+
+				if (userId > 0) {
+					_redirectToVerify(actionRequest, userId);
+				}
 			}
+			catch (Exception exception) {
+				if (exception instanceof AuthException) {
+					Throwable throwable = exception.getCause();
 
-			if (userId > 0) {
-				_redirectToVerify(actionRequest, actionResponse, userId);
+					if (throwable instanceof PasswordExpiredException ||
+						throwable instanceof UserLockoutException) {
+
+						SessionErrors.add(
+							actionRequest, throwable.getClass(), throwable);
+					}
+					else {
+						if (_log.isInfoEnabled()) {
+							_log.info("Authentication failed");
+						}
+
+						SessionErrors.add(actionRequest, exception.getClass());
+					}
+				}
+				else if (exception instanceof CompanyMaxUsersException ||
+						 exception instanceof CookieNotSupportedException ||
+						 exception instanceof NoSuchUserException ||
+						 exception instanceof PasswordExpiredException ||
+						 exception instanceof UserEmailAddressException ||
+						 exception instanceof UserIdException ||
+						 exception instanceof UserLockoutException ||
+						 exception instanceof UserPasswordException ||
+						 exception instanceof UserScreenNameException) {
+
+					SessionErrors.add(
+						actionRequest, exception.getClass(), exception);
+				}
+				else {
+					_log.error(exception);
+
+					_portal.sendError(exception, actionRequest, actionResponse);
+
+					return;
+				}
+
+				_postProcessAuthFailure(actionRequest, actionResponse);
+
+				hideDefaultErrorMessage(actionRequest);
 			}
 		}
 	}
@@ -135,10 +199,11 @@ public class LoginMVCActionCommand extends BaseMVCActionCommand {
 			throw new PrincipalException("User sent unverified state");
 		}
 
-		Key mfaWebKey = (Key)httpSession.getAttribute(MFAWebKeys.MFA_WEB_KEY);
+		Key mfaWebKey = _encryptor.deserializeKey(
+			(String)httpSession.getAttribute(MFAWebKeys.MFA_WEB_KEY));
 
 		Map<String, Object> stateMap = _jsonFactory.looseDeserialize(
-			Encryptor.decrypt(mfaWebKey, state), Map.class);
+			_encryptor.decrypt(mfaWebKey, state), Map.class);
 
 		Map<String, Object> requestParameters =
 			(Map<String, Object>)stateMap.get("requestParameters");
@@ -176,9 +241,72 @@ public class LoginMVCActionCommand extends BaseMVCActionCommand {
 		};
 	}
 
-	private LiferayPortletURL _getLiferayPortletURL(
-		HttpServletRequest httpServletRequest, String redirectURL,
-		String returnToFullPageURL) {
+	private void _postProcessAuthFailure(
+			ActionRequest actionRequest, ActionResponse actionResponse)
+		throws Exception {
+
+		LiferayPortletRequest liferayPortletRequest =
+			_portal.getLiferayPortletRequest(actionRequest);
+
+		String portletName = liferayPortletRequest.getPortletName();
+
+		Layout layout = (Layout)actionRequest.getAttribute(WebKeys.LAYOUT);
+
+		PortletURL portletURL = PortletURLBuilder.create(
+			PortletURLFactoryUtil.create(
+				actionRequest, liferayPortletRequest.getPortlet(), layout,
+				PortletRequest.RENDER_PHASE)
+		).setRedirect(
+			() -> {
+				String redirect = ParamUtil.getString(
+					actionRequest, "redirect");
+
+				if (Validator.isNotNull(redirect)) {
+					return redirect;
+				}
+
+				return null;
+			}
+		).setParameter(
+			"saveLastPath", false
+		).buildPortletURL();
+
+		String login = ParamUtil.getString(actionRequest, "login");
+
+		if (Validator.isNotNull(login)) {
+			SessionErrors.add(actionRequest, "login", login);
+		}
+
+		if (portletName.equals(LoginPortletKeys.LOGIN)) {
+			portletURL.setWindowState(WindowState.MAXIMIZED);
+		}
+		else {
+			portletURL.setWindowState(actionRequest.getWindowState());
+		}
+
+		actionResponse.sendRedirect(portletURL.toString());
+	}
+
+	private void _redirectToVerify(ActionRequest actionRequest, long userId)
+		throws Exception {
+
+		Key key = _encryptor.generateKey();
+
+		String encryptedStateMapJSON = _encryptor.encrypt(
+			key,
+			_jsonFactory.looseSerializeDeep(
+				HashMapBuilder.<String, Object>put(
+					"requestParameters",
+					() -> HashMapBuilder.putAll(
+						actionRequest.getParameterMap()
+					).remove(
+						"redirect"
+					).build()
+				).build()));
+
+		HttpServletRequest httpServletRequest =
+			_portal.getOriginalServletRequest(
+				_portal.getHttpServletRequest(actionRequest));
 
 		httpServletRequest = _portal.getOriginalServletRequest(
 			httpServletRequest);
@@ -201,57 +329,9 @@ public class LoginMVCActionCommand extends BaseMVCActionCommand {
 			"saveLastPath", Boolean.FALSE.toString());
 		liferayPortletURL.setParameter(
 			"mvcRenderCommandName", "/mfa_verify/view");
-		liferayPortletURL.setParameter("redirect", redirectURL);
 		liferayPortletURL.setParameter(
-			"returnToFullPageURL", returnToFullPageURL);
-
-		return liferayPortletURL;
-	}
-
-	private void _redirectToVerify(
-			ActionRequest actionRequest, ActionResponse actionResponse,
-			long userId)
-		throws Exception {
-
-		LiferayPortletResponse liferayPortletResponse =
-			_portal.getLiferayPortletResponse(actionResponse);
-
-		Key key = Encryptor.generateKey();
-
-		String encryptedStateMapJSON = Encryptor.encrypt(
-			key,
-			_jsonFactory.looseSerializeDeep(
-				HashMapBuilder.<String, Object>put(
-					"requestParameters", actionRequest.getParameterMap()
-				).build()));
-
-		HttpServletRequest httpServletRequest =
-			_portal.getOriginalServletRequest(
-				_portal.getHttpServletRequest(actionRequest));
-
-		LiferayPortletURL liferayPortletURL = _getLiferayPortletURL(
-			httpServletRequest,
-			PortletURLBuilder.createActionURL(
-				liferayPortletResponse
-			).setActionName(
-				"/login/login"
-			).setParameter(
-				"state", encryptedStateMapJSON
-			).buildString(),
-			PortletURLBuilder.createRenderURL(
-				liferayPortletResponse
-			).setRedirect(
-				() -> {
-					String redirect = ParamUtil.getString(
-						actionRequest, "redirect");
-
-					if (Validator.isNotNull(redirect)) {
-						return redirect;
-					}
-
-					return null;
-				}
-			).buildString());
+			"redirect", ParamUtil.getString(actionRequest, "redirect"));
+		liferayPortletURL.setParameter("state", encryptedStateMapJSON);
 
 		String portletId = ParamUtil.getString(httpServletRequest, "p_p_id");
 
@@ -271,7 +351,8 @@ public class LoginMVCActionCommand extends BaseMVCActionCommand {
 		httpSession.setAttribute(
 			MFAWebKeys.MFA_WEB_DIGEST,
 			DigesterUtil.digest(encryptedStateMapJSON));
-		httpSession.setAttribute(MFAWebKeys.MFA_WEB_KEY, key);
+		httpSession.setAttribute(
+			MFAWebKeys.MFA_WEB_KEY, _encryptor.serializeKey(key));
 	}
 
 	private static final Accessor<Object, String> _STRING_ACCESSOR =
@@ -293,6 +374,12 @@ public class LoginMVCActionCommand extends BaseMVCActionCommand {
 			}
 
 		};
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		LoginMVCActionCommand.class);
+
+	@Reference
+	private Encryptor _encryptor;
 
 	@Reference
 	private JSONFactory _jsonFactory;

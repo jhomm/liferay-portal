@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -41,52 +32,56 @@ if (threadFlag != null) {
 
 <c:if test="<%= (message.getMessageId() != selMessage.getMessageId()) || MBUtil.isViewableMessage(themeDisplay, message) %>">
 	<tr>
-		<td class="table-cell" style="padding-left: <%= (depth > 0) ? depth * 10 : 5 %>px; width: 90%;" valign="middle">
-			<c:if test="<%= !message.isRoot() %>">
-				<c:choose>
-					<c:when test="<%= !lastNode %>">
-						<img alt="" src="<%= themeDisplay.getPathThemeImages() %>/message_boards/t.png" />
-					</c:when>
-					<c:otherwise>
-						<img alt="" src="<%= themeDisplay.getPathThemeImages() %>/message_boards/l.png" />
-					</c:otherwise>
-				</c:choose>
-			</c:if>
 
-			<%
-			String rowHREF = null;
+		<%
+		String rowHREF = null;
 
-			if (portletName.equals(MBPortletKeys.MESSAGE_BOARDS_ADMIN)) {
-				rowHREF = MBUtil.getMBMessageURL(selMessage.getMessageId(), renderResponse);
+		if (portletName.equals(MBPortletKeys.MESSAGE_BOARDS_ADMIN)) {
+			rowHREF = MBUtil.getMBMessageURL(selMessage.getMessageId(), renderResponse);
+		}
+		else {
+			rowHREF = MBUtil.getMBMessageURL(selMessage.getMessageId(), PortalUtil.getLayoutFullURL(themeDisplay), renderResponse);
+		}
+
+		boolean readThread = true;
+
+		if (themeDisplay.isSignedIn()) {
+			Date messageModifiedDate = message.getModifiedDate();
+
+			if (threadFlagModifiedTime < messageModifiedDate.getTime()) {
+				readThread = false;
 			}
-			else {
-				rowHREF = MBUtil.getMBMessageURL(selMessage.getMessageId(), PortalUtil.getLayoutFullURL(themeDisplay), renderResponse);
-			}
+		}
+		%>
 
-			boolean readThread = true;
-
-			if (themeDisplay.isSignedIn()) {
-				Date messageModifiedDate = message.getModifiedDate();
-
-				if (threadFlagModifiedTime < messageModifiedDate.getTime()) {
-					readThread = false;
-				}
-			}
-			%>
-
-			<a href="<%= rowHREF %>">
-				<c:if test="<%= !readThread %>">
-					<strong>
+		<liferay-ui:csp>
+			<td class="table-cell" style="padding-left: <%= (depth > 0) ? depth * 10 : 5 %>px; width: 90%;" valign="middle">
+				<c:if test="<%= !message.isRoot() %>">
+					<c:choose>
+						<c:when test="<%= !lastNode %>">
+							<img alt="" src="<%= themeDisplay.getPathThemeImages() %>/message_boards/t.png" />
+						</c:when>
+						<c:otherwise>
+							<img alt="" src="<%= themeDisplay.getPathThemeImages() %>/message_boards/l.png" />
+						</c:otherwise>
+					</c:choose>
 				</c:if>
 
-				<%= HtmlUtil.escape(message.getSubject()) %>
+				<a href="<%= rowHREF %>">
+					<c:if test="<%= !readThread %>">
+						<strong>
+					</c:if>
 
-				<c:if test="<%= !readThread %>">
-					</strong>
-				</c:if>
-			</a>
-		</td>
-		<td class="table-cell" style="white-space: nowrap;">
+					<%= HtmlUtil.escape(message.getSubject()) %>
+
+					<c:if test="<%= !readThread %>">
+						</strong>
+					</c:if>
+				</a>
+			</td>
+		</liferay-ui:csp>
+
+		<td class="table-cell text-nowrap">
 			<a href="<%= rowHREF %>">
 				<c:if test="<%= !readThread %>">
 					<strong>
@@ -106,8 +101,8 @@ if (threadFlag != null) {
 				</c:if>
 			</a>
 		</td>
-		<td class="table-cell" style="white-space: nowrap;">
-			<a href="<%= rowHREF %>"><%= dateFormatDateTime.format(message.getModifiedDate()) %></a>
+		<td class="table-cell text-nowrap">
+			<a href="<%= rowHREF %>"><%= dateTimeFormat.format(message.getModifiedDate()) %></a>
 		</td>
 	</tr>
 </c:if>

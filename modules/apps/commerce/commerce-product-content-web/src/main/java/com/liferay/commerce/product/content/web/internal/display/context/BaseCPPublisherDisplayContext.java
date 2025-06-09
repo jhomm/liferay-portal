@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.display.context;
 
-import com.liferay.commerce.account.model.CommerceAccount;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.product.catalog.CPCatalogEntry;
@@ -24,22 +14,26 @@ import com.liferay.commerce.product.content.render.list.CPContentListRendererReg
 import com.liferay.commerce.product.content.render.list.entry.CPContentListEntryRenderer;
 import com.liferay.commerce.product.content.render.list.entry.CPContentListEntryRendererRegistry;
 import com.liferay.commerce.product.content.web.internal.configuration.CPPublisherPortletInstanceConfiguration;
-import com.liferay.commerce.product.content.web.internal.display.context.util.CPContentRequestHelper;
-import com.liferay.commerce.product.content.web.internal.util.CPPublisherWebHelper;
+import com.liferay.commerce.product.content.web.internal.display.context.helper.CPContentRequestHelper;
+import com.liferay.commerce.product.content.web.internal.helper.CPPublisherWebHelper;
 import com.liferay.commerce.product.type.CPType;
-import com.liferay.commerce.product.type.CPTypeServicesTracker;
+import com.liferay.commerce.product.type.CPTypeRegistry;
+import com.liferay.commerce.util.CommerceUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.theme.PortletDisplay;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Marco Leo
@@ -48,27 +42,28 @@ import javax.servlet.http.HttpServletRequest;
 public class BaseCPPublisherDisplayContext {
 
 	public BaseCPPublisherDisplayContext(
+			ConfigurationProvider configurationProvider,
 			CPContentListEntryRendererRegistry contentListEntryRendererRegistry,
 			CPContentListRendererRegistry cpContentListRendererRegistry,
 			CPPublisherWebHelper cpPublisherWebHelper,
-			CPTypeServicesTracker cpTypeServicesTracker,
+			CPTypeRegistry cpTypeRegistry, GroupLocalService groupLocalService,
 			HttpServletRequest httpServletRequest)
 		throws PortalException {
 
+		this.configurationProvider = configurationProvider;
 		this.contentListEntryRendererRegistry =
 			contentListEntryRendererRegistry;
 		this.cpContentListRendererRegistry = cpContentListRendererRegistry;
 		this.cpPublisherWebHelper = cpPublisherWebHelper;
-		this.cpTypeServicesTracker = cpTypeServicesTracker;
+		this.cpTypeRegistry = cpTypeRegistry;
+		this.groupLocalService = groupLocalService;
 
 		cpContentRequestHelper = new CPContentRequestHelper(httpServletRequest);
 
-		PortletDisplay portletDisplay =
-			cpContentRequestHelper.getPortletDisplay();
-
 		cpPublisherPortletInstanceConfiguration =
-			portletDisplay.getPortletInstanceConfiguration(
-				CPPublisherPortletInstanceConfiguration.class);
+			this.configurationProvider.getPortletInstanceConfiguration(
+				CPPublisherPortletInstanceConfiguration.class,
+				cpContentRequestHelper.getThemeDisplay());
 	}
 
 	public List<CPCatalogEntry> getCPCatalogEntries() throws Exception {
@@ -79,16 +74,13 @@ public class BaseCPPublisherDisplayContext {
 			(CommerceContext)httpServletRequest.getAttribute(
 				CommerceWebKeys.COMMERCE_CONTEXT);
 
-		CommerceAccount commerceAccount = commerceContext.getCommerceAccount();
-
-		long commerceAccountId = 0;
-
-		if (commerceAccount != null) {
-			commerceAccountId = commerceAccount.getCommerceAccountId();
+		if (commerceContext == null) {
+			return null;
 		}
 
 		return cpPublisherWebHelper.getCPCatalogEntries(
-			commerceAccountId, commerceContext.getCommerceChannelGroupId(),
+			CommerceUtil.getCommerceAccountId(commerceContext),
+			commerceContext.getCommerceChannelGroupId(),
 			cpContentRequestHelper.getPortletPreferences(),
 			cpContentRequestHelper.getThemeDisplay());
 	}
@@ -164,7 +156,7 @@ public class BaseCPPublisherDisplayContext {
 	}
 
 	public List<CPType> getCPTypes() {
-		return cpTypeServicesTracker.getCPTypes();
+		return cpTypeRegistry.getCPTypes();
 	}
 
 	public String getDataSource() {
@@ -186,7 +178,61 @@ public class BaseCPPublisherDisplayContext {
 	}
 
 	public long getDisplayStyleGroupId() {
-		return cpPublisherPortletInstanceConfiguration.displayStyleGroupId();
+		if (displayStyleGroupId != null) {
+			return displayStyleGroupId;
+		}
+
+		String displayStyleGroupExternalReferenceCode =
+			cpPublisherPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode();
+
+		ThemeDisplay themeDisplay = cpContentRequestHelper.getThemeDisplay();
+
+		Group group = themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = groupLocalService.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			displayStyleGroupId = group.getGroupId();
+		}
+		else {
+			displayStyleGroupId = themeDisplay.getScopeGroupId();
+		}
+
+		return displayStyleGroupId;
+	}
+
+	public String getDisplayStyleGroupKey() {
+		if (Validator.isNotNull(displayStyleGroupKey)) {
+			return displayStyleGroupKey;
+		}
+
+		String displayStyleGroupExternalReferenceCode =
+			cpPublisherPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode();
+
+		ThemeDisplay themeDisplay = cpContentRequestHelper.getThemeDisplay();
+
+		Group group = themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = groupLocalService.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			displayStyleGroupKey = group.getGroupKey();
+		}
+		else {
+			displayStyleGroupKey = StringPool.BLANK;
+		}
+
+		return displayStyleGroupKey;
 	}
 
 	public int getPaginationDelta() {
@@ -255,6 +301,7 @@ public class BaseCPPublisherDisplayContext {
 		return selectionStyle.equals("manual");
 	}
 
+	protected ConfigurationProvider configurationProvider;
 	protected final CPContentListEntryRendererRegistry
 		contentListEntryRendererRegistry;
 	protected final CPContentListRendererRegistry cpContentListRendererRegistry;
@@ -262,8 +309,11 @@ public class BaseCPPublisherDisplayContext {
 	protected final CPPublisherPortletInstanceConfiguration
 		cpPublisherPortletInstanceConfiguration;
 	protected final CPPublisherWebHelper cpPublisherWebHelper;
-	protected final CPTypeServicesTracker cpTypeServicesTracker;
+	protected final CPTypeRegistry cpTypeRegistry;
 	protected String dataSource;
+	protected Long displayStyleGroupId;
+	protected String displayStyleGroupKey;
+	protected final GroupLocalService groupLocalService;
 	protected String renderSelection;
 	protected String selectionStyle;
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.test.util;
@@ -32,16 +23,18 @@ import org.mockito.Mockito;
 public class DocumentFixture {
 
 	public void setUp() {
-		setUpFastDateFormatFactoryUtil();
-		setUpPropsUtil();
+		_setUpFastDateFormatFactoryUtil();
+		_setUpPropsUtil();
 	}
 
 	public void tearDown() {
-		tearDownFastDateFormatFactoryUtil();
-		tearDownPropsUtil();
+		_tearDownFastDateFormatFactoryUtil();
+		_tearDownPropsUtil();
 	}
 
-	protected void setUpFastDateFormatFactoryUtil() {
+	protected Props props;
+
+	private void _setUpFastDateFormatFactoryUtil() {
 		_fastDateFormatFactory =
 			FastDateFormatFactoryUtil.getFastDateFormatFactory();
 
@@ -61,7 +54,7 @@ public class DocumentFixture {
 			fastDateFormatFactory);
 	}
 
-	protected void setUpPropsUtil() {
+	private void _setUpPropsUtil() {
 		_props = PropsUtil.getProps();
 
 		props = PropsTestUtil.setProps(
@@ -97,7 +90,7 @@ public class DocumentFixture {
 			).build());
 	}
 
-	protected void tearDownFastDateFormatFactoryUtil() {
+	private void _tearDownFastDateFormatFactoryUtil() {
 		FastDateFormatFactoryUtil fastDateFormatFactoryUtil =
 			new FastDateFormatFactoryUtil();
 
@@ -107,15 +100,13 @@ public class DocumentFixture {
 		_fastDateFormatFactory = null;
 	}
 
-	protected void tearDownPropsUtil() {
+	private void _tearDownPropsUtil() {
 		PropsUtil.setProps(_props);
 
 		_props = null;
 
 		props = null;
 	}
-
-	protected Props props;
 
 	private FastDateFormatFactory _fastDateFormatFactory;
 	private Props _props;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.seo.web.internal.portlet.action;
@@ -17,11 +8,11 @@ package com.liferay.layout.seo.web.internal.portlet.action;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
+import com.liferay.layout.admin.kernel.model.LayoutTypePortletConstants;
 import com.liferay.layout.seo.service.LayoutSEOEntryService;
 import com.liferay.layout.seo.web.internal.util.LayoutTypeSettingsUtil;
-import com.liferay.portal.events.EventsProcessorUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.service.LayoutLocalService;
@@ -30,21 +21,20 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.MultiSessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.upload.UploadPortletRequest;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropertiesParamUtil;
-import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -53,9 +43,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alejandro Tardín
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
+		"jakarta.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
 		"mvc.command.name=/layout/edit_seo"
 	},
 	service = MVCActionCommand.class
@@ -66,9 +55,6 @@ public class EditSEOMVCActionCommand extends BaseMVCActionCommand {
 	protected void doProcessAction(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
-
-		UploadPortletRequest uploadPortletRequest =
-			_portal.getUploadPortletRequest(actionRequest);
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -81,14 +67,14 @@ public class EditSEOMVCActionCommand extends BaseMVCActionCommand {
 		Layout layout = _layoutLocalService.getLayout(
 			groupId, privateLayout, layoutId);
 
-		Map<Locale, String> titleMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> titleMap = _localization.getLocalizationMap(
 			actionRequest, "title");
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(actionRequest, "description");
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			actionRequest, "description");
 
-		Map<Locale, String> keywordsMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> keywordsMap = _localization.getLocalizationMap(
 			actionRequest, "keywords");
-		Map<Locale, String> robotsMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> robotsMap = _localization.getLocalizationMap(
 			actionRequest, "robots");
 
 		ServiceContext serviceContext = _getServiceContent(
@@ -99,13 +85,13 @@ public class EditSEOMVCActionCommand extends BaseMVCActionCommand {
 			layout.getNameMap(), titleMap, descriptionMap, keywordsMap,
 			robotsMap, layout.getType(), layout.isHidden(),
 			layout.getFriendlyURLMap(), layout.isIconImage(), null,
-			layout.getMasterLayoutPlid(), layout.getStyleBookEntryId(),
-			serviceContext);
+			layout.getStyleBookEntryId(), layout.getFaviconFileEntryId(),
+			layout.getMasterLayoutPlid(), serviceContext);
 
 		boolean canonicalURLEnabled = ParamUtil.getBoolean(
 			actionRequest, "canonicalURLEnabled");
-		Map<Locale, String> canonicalURLMap =
-			LocalizationUtil.getLocalizationMap(actionRequest, "canonicalURL");
+		Map<Locale, String> canonicalURLMap = _localization.getLocalizationMap(
+			actionRequest, "canonicalURL");
 
 		_layoutSEOEntryService.updateLayoutSEOEntry(
 			groupId, privateLayout, layoutId, canonicalURLEnabled,
@@ -115,39 +101,26 @@ public class EditSEOMVCActionCommand extends BaseMVCActionCommand {
 			PropertiesParamUtil.getProperties(
 				actionRequest, "TypeSettingsProperties--");
 
-		Layout draftLayout = layout.fetchDraftLayout();
+		for (Map.Entry<Locale, String> entry : robotsMap.entrySet()) {
+			String value = entry.getValue();
 
-		if (draftLayout != null) {
-			draftLayout = _layoutService.updateLayout(
-				groupId, privateLayout, draftLayout.getLayoutId(),
-				draftLayout.getParentLayoutId(), draftLayout.getNameMap(),
-				titleMap, descriptionMap, keywordsMap, robotsMap,
-				draftLayout.getType(), draftLayout.isHidden(),
-				draftLayout.getFriendlyURLMap(), draftLayout.isIconImage(),
-				null, draftLayout.getMasterLayoutPlid(),
-				draftLayout.getStyleBookEntryId(), serviceContext);
+			if (Validator.isNotNull(value) &&
+				(StringUtil.containsIgnoreCase(
+					value, "nofollow", StringPool.BLANK) ||
+				 StringUtil.containsIgnoreCase(
+					 value, "noindex", StringPool.BLANK))) {
 
-			draftLayout = LayoutTypeSettingsUtil.updateTypeSettings(
-				draftLayout, _layoutService, formTypeSettingsUnicodeProperties);
+				formTypeSettingsUnicodeProperties.setProperty(
+					LayoutTypePortletConstants.SITEMAP_INCLUDE, "0");
 
-			_layoutSEOEntryService.updateLayoutSEOEntry(
-				groupId, privateLayout, draftLayout.getLayoutId(),
-				canonicalURLEnabled, canonicalURLMap, serviceContext);
+				break;
+			}
 		}
 
 		themeDisplay.clearLayoutFriendlyURL(layout);
 
 		layout = LayoutTypeSettingsUtil.updateTypeSettings(
 			layout, _layoutService, formTypeSettingsUnicodeProperties);
-
-		LayoutTypePortlet layoutTypePortlet =
-			(LayoutTypePortlet)layout.getLayoutType();
-
-		EventsProcessorUtil.process(
-			PropsKeys.LAYOUT_CONFIGURATION_ACTION_UPDATE,
-			layoutTypePortlet.getConfigurationActionUpdate(),
-			uploadPortletRequest,
-			_portal.getHttpServletResponse(actionResponse));
 
 		String redirect = ParamUtil.getString(actionRequest, "redirect");
 
@@ -177,7 +150,7 @@ public class EditSEOMVCActionCommand extends BaseMVCActionCommand {
 		serviceContext.setAssetCategoryIds(assetEntry.getCategoryIds());
 		serviceContext.setAssetTagNames(assetEntry.getTagNames());
 
-		if (layout.isTypeAssetDisplay()) {
+		if (layout.isTypeAssetDisplay() || layout.isTypeUtility()) {
 			serviceContext.setAttribute(
 				"layout.instanceable.allowed", Boolean.TRUE);
 		}
@@ -196,6 +169,9 @@ public class EditSEOMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private LayoutService _layoutService;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private Portal _portal;

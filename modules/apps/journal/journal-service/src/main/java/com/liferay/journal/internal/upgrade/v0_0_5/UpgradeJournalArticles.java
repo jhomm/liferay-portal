@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.upgrade.v0_0_5;
@@ -37,12 +28,12 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portlet.PortletPreferencesImpl;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Eudaldo Alonso
@@ -64,116 +55,6 @@ public class UpgradeJournalArticles extends BasePortletIdUpgradeProcess {
 		_portletPreferenceValueLocalService =
 			portletPreferenceValueLocalService;
 		_portletPreferencesLocalService = portletPreferencesLocalService;
-	}
-
-	protected long getCategoryId(long companyId, String type) throws Exception {
-		List<AssetCategory> assetCategories = _assetCategoryLocalService.search(
-			companyId, type, new String[0], QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS);
-
-		if (!assetCategories.isEmpty()) {
-			AssetCategory assetCategory = assetCategories.get(0);
-
-			return assetCategory.getCategoryId();
-		}
-
-		return 0;
-	}
-
-	protected PortletPreferences getNewPreferences(
-			PortletPreferences oldPortletPreferences, long plid,
-			String oldRootPortletId, String newRootPortletId)
-		throws Exception {
-
-		String ddmStructureKey = oldPortletPreferences.getValue(
-			"ddmStructureKey", StringPool.BLANK);
-		long groupId = GetterUtil.getLong(
-			oldPortletPreferences.getValue("groupId", StringPool.BLANK));
-		String orderByCol = oldPortletPreferences.getValue(
-			"orderByCol", StringPool.BLANK);
-		String orderByType = oldPortletPreferences.getValue(
-			"orderByType", StringPool.BLANK);
-		int pageDelta = GetterUtil.getInteger(
-			oldPortletPreferences.getValue("pageDelta", StringPool.BLANK));
-		String pageUrl = oldPortletPreferences.getValue(
-			"pageUrl", StringPool.BLANK);
-		String portletSetupCss = oldPortletPreferences.getValue(
-			"portletSetupCss", StringPool.BLANK);
-		String type = oldPortletPreferences.getValue("type", StringPool.BLANK);
-
-		PortletPreferences newPortletPreferences = new PortletPreferencesImpl();
-
-		newPortletPreferences.setValue(
-			"anyAssetType",
-			String.valueOf(
-				PortalUtil.getClassNameId(JournalArticle.class.getName())));
-
-		Layout layout = _layoutLocalService.getLayout(plid);
-
-		long structureId = getStructureId(
-			layout.getCompanyId(), layout.getGroupId(), ddmStructureKey);
-
-		if (structureId > 0) {
-			newPortletPreferences.setValue(
-				"anyClassTypeJournalArticleAssetRendererFactory",
-				String.valueOf(structureId));
-		}
-
-		String assetLinkBehavior = "showFullContent";
-
-		if (pageUrl.equals("viewInContext")) {
-			assetLinkBehavior = "viewInPortlet";
-		}
-
-		newPortletPreferences.setValue("assetLinkBehavior", assetLinkBehavior);
-
-		if (structureId > 0) {
-			newPortletPreferences.setValue(
-				"classTypeIds", String.valueOf(structureId));
-		}
-
-		newPortletPreferences.setValue("delta", String.valueOf(pageDelta));
-		newPortletPreferences.setValue("displayStyle", "table");
-		newPortletPreferences.setValue("metadataFields", "publish-date,author");
-		newPortletPreferences.setValue("orderByColumn1", orderByCol);
-		newPortletPreferences.setValue("orderByType1", orderByType);
-		newPortletPreferences.setValue("paginationType", "none");
-
-		portletSetupCss = StringUtil.replace(
-			portletSetupCss,
-			new String[] {
-				"#p_p_id_" + oldRootPortletId, "#portlet_" + oldRootPortletId
-			},
-			new String[] {
-				"#p_p_id_" + newRootPortletId, "#portlet_" + newRootPortletId
-			});
-
-		newPortletPreferences.setValue("portletSetupCss", portletSetupCss);
-
-		long categoryId = getCategoryId(layout.getCompanyId(), type);
-
-		if (categoryId > 0) {
-			newPortletPreferences.setValue(
-				"queryAndOperator0", Boolean.TRUE.toString());
-			newPortletPreferences.setValue(
-				"queryContains0", Boolean.TRUE.toString());
-			newPortletPreferences.setValue("queryName0", "assetCategories");
-			newPortletPreferences.setValue(
-				"queryValues0", String.valueOf(categoryId));
-		}
-
-		newPortletPreferences.setValue(
-			"showAddContentButton", Boolean.FALSE.toString());
-
-		String groupName = String.valueOf(groupId);
-
-		if (groupId == layout.getGroupId()) {
-			groupName = "default";
-		}
-
-		newPortletPreferences.setValue("scopeIds", "Group_" + groupName);
-
-		return newPortletPreferences;
 	}
 
 	@Override
@@ -253,15 +134,14 @@ public class UpgradeJournalArticles extends BasePortletIdUpgradeProcess {
 					_portletPreferenceValueLocalService.getPreferences(
 						portletPreferences);
 
-				PortletPreferences newPreferences = getNewPreferences(
-					oldPortletPreferences, plid, oldRootPortletId,
-					newRootPortletId);
-
 				_portletPreferencesLocalService.updatePreferences(
 					portletPreferences.getOwnerId(),
 					portletPreferences.getOwnerType(),
 					portletPreferences.getPlid(),
-					portletPreferences.getPortletId(), newPreferences);
+					portletPreferences.getPortletId(),
+					_getNewPortletPreferences(
+						oldPortletPreferences, plid, oldRootPortletId,
+						newRootPortletId));
 			}
 		}
 	}
@@ -279,9 +159,125 @@ public class UpgradeJournalArticles extends BasePortletIdUpgradeProcess {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
+	}
+
+	private long _getCategoryId(long companyId, String type) throws Exception {
+		List<AssetCategory> assetCategories = _assetCategoryLocalService.search(
+			companyId, type, new String[0], QueryUtil.ALL_POS,
+			QueryUtil.ALL_POS);
+
+		if (!assetCategories.isEmpty()) {
+			AssetCategory assetCategory = assetCategories.get(0);
+
+			return assetCategory.getCategoryId();
+		}
+
+		return 0;
+	}
+
+	private PortletPreferences _getNewPortletPreferences(
+			PortletPreferences oldPortletPreferences, long plid,
+			String oldRootPortletId, String newRootPortletId)
+		throws Exception {
+
+		PortletPreferences newPortletPreferences = new PortletPreferencesImpl();
+
+		newPortletPreferences.setValue(
+			"anyAssetType",
+			String.valueOf(
+				PortalUtil.getClassNameId(JournalArticle.class.getName())));
+
+		String ddmStructureKey = oldPortletPreferences.getValue(
+			"ddmStructureKey", StringPool.BLANK);
+		Layout layout = _layoutLocalService.getLayout(plid);
+
+		long structureId = getStructureId(
+			layout.getCompanyId(), layout.getGroupId(), ddmStructureKey);
+
+		if (structureId > 0) {
+			newPortletPreferences.setValue(
+				"anyClassTypeJournalArticleAssetRendererFactory",
+				String.valueOf(structureId));
+		}
+
+		String assetLinkBehavior = "showFullContent";
+
+		if (StringUtil.equals(
+				oldPortletPreferences.getValue("pageUrl", StringPool.BLANK),
+				"viewInContext")) {
+
+			assetLinkBehavior = "viewInPortlet";
+		}
+
+		newPortletPreferences.setValue("assetLinkBehavior", assetLinkBehavior);
+
+		if (structureId > 0) {
+			newPortletPreferences.setValue(
+				"classTypeIds", String.valueOf(structureId));
+		}
+
+		newPortletPreferences.setValue(
+			"delta",
+			String.valueOf(
+				GetterUtil.getInteger(
+					oldPortletPreferences.getValue(
+						"pageDelta", StringPool.BLANK))));
+		newPortletPreferences.setValue("displayStyle", "table");
+		newPortletPreferences.setValue("metadataFields", "publish-date,author");
+		newPortletPreferences.setValue(
+			"orderByColumn1",
+			oldPortletPreferences.getValue("orderByCol", StringPool.BLANK));
+		newPortletPreferences.setValue(
+			"orderByType1",
+			oldPortletPreferences.getValue("orderByType", StringPool.BLANK));
+		newPortletPreferences.setValue("paginationType", "none");
+
+		String portletSetupCss = oldPortletPreferences.getValue(
+			"portletSetupCss", StringPool.BLANK);
+
+		portletSetupCss = StringUtil.replace(
+			portletSetupCss,
+			new String[] {
+				"#p_p_id_" + oldRootPortletId, "#portlet_" + oldRootPortletId
+			},
+			new String[] {
+				"#p_p_id_" + newRootPortletId, "#portlet_" + newRootPortletId
+			});
+
+		newPortletPreferences.setValue("portletSetupCss", portletSetupCss);
+
+		long categoryId = _getCategoryId(
+			layout.getCompanyId(),
+			oldPortletPreferences.getValue("type", StringPool.BLANK));
+
+		if (categoryId > 0) {
+			newPortletPreferences.setValue(
+				"queryAndOperator0", Boolean.TRUE.toString());
+			newPortletPreferences.setValue(
+				"queryContains0", Boolean.TRUE.toString());
+			newPortletPreferences.setValue("queryName0", "assetCategories");
+			newPortletPreferences.setValue(
+				"queryValues0", String.valueOf(categoryId));
+		}
+
+		newPortletPreferences.setValue(
+			"showAddContentButton", Boolean.FALSE.toString());
+
+		long groupId = GetterUtil.getLong(
+			oldPortletPreferences.getValue("groupId", StringPool.BLANK));
+
+		String groupName = String.valueOf(groupId);
+
+		if (groupId == layout.getGroupId()) {
+			groupName = "default";
+		}
+
+		newPortletPreferences.setValue("scopeIds", "Group_" + groupName);
+
+		return newPortletPreferences;
 	}
 
 	private static final String _PORTLET_ID_ASSET_PUBLISHER =

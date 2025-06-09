@@ -1,18 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
+
+import {navigate} from 'frontend-js-web';
 
 const EXPERIENCE_ID_URL_KEY = 'segmentsExperienceId';
 
 const EXPERIENCE_KEY_URL_KEY = 'segmentsExperienceKey';
 const EXPERIMENT_KEY_URL_KEY = 'segmentsExperimentKey';
+const EXPERIMENT_ACTION_URL_KEY = 'segmentsExperimentAction';
 
 /**
  * Generates standard navigation between Experiences
@@ -22,10 +19,11 @@ const EXPERIMENT_KEY_URL_KEY = 'segmentsExperimentKey';
  * @param {string} experienceId
  * @param {string} [baseUrl=window.location.href]
  */
-export function navigateToExperience(
+export function navigateToExperience({
 	experienceId,
-	baseUrl = window.location.href
-) {
+	baseUrl = window.location.href,
+	params = [],
+}) {
 	const currentUrl = new URL(baseUrl);
 	const urlQueryString = currentUrl.search;
 	const urlSearchParams = new URLSearchParams(urlQueryString);
@@ -34,9 +32,32 @@ export function navigateToExperience(
 	urlSearchParams.delete(EXPERIMENT_KEY_URL_KEY);
 
 	urlSearchParams.set(EXPERIENCE_ID_URL_KEY, experienceId);
+
+	if (params.length) {
+		params.forEach((param) => {
+			urlSearchParams.set(param.key, param.value);
+		});
+	}
+
 	currentUrl.search = urlSearchParams.toString();
 
 	const newUrl = currentUrl.toString();
 
-	Liferay.Util.navigate(newUrl);
+	navigate(newUrl);
+}
+
+export function getSegmentsExperimentParameter(
+	paramName = EXPERIMENT_ACTION_URL_KEY
+) {
+	const url = new URL(window.location.href);
+	const action = url.searchParams.get(paramName);
+
+	if (!action) {
+		return null;
+	}
+
+	url.searchParams.delete(paramName);
+	window.history.replaceState(null, null, decodeURIComponent(url.href));
+
+	return action;
 }

@@ -2,6 +2,7 @@
 //Example: 1user user1 with Role 1 role
 
 import com.liferay.portal.kernel.dao.orm.*
+import com.liferay.portal.kernel.service.ServiceContext
 import com.liferay.portal.kernel.util.*
 import com.liferay.portal.kernel.workflow.*
 import com.liferay.portal.kernel.model.*
@@ -22,13 +23,11 @@ boolean autoPassword = true;
 String password = "123";
 String screenName = i + "user";
 String emailAddress = i + "user@liferay.com";
-long facebookId = 0;
-String openId = "";
 String firstName = i + "user";
 String middleName = "";
 String lastName = "user" + i;
-long prefixId = 0;
-long suffixId = 0;
+long prefixListTypeId = 0;
+long suffixListTypeId = 0;
 boolean male = true;
 int birthdayMonth = 1;
 int birthdayDay = 1;
@@ -42,11 +41,12 @@ long[] groudIds = [groupId];
 
 //create a user
 groupUser = com.liferay.portal.kernel.service.UserLocalServiceUtil.addUser(
-	   0L, companyId, autoPassword, password, password,
-	   false, screenName, emailAddress, facebookId,
-	   openId, java.util.Locale.US, firstName, middleName, lastName, prefixId, suffixId,
-	   male, birthdayMonth, birthdayDay, birthdayYear, jobTitle, groudIds,
-	   organizationIds, roleIds, userGroupIds, sendMail, serviceContext);
+	0L, companyId, autoPassword, password, password,
+	false, screenName, emailAddress, java.util.Locale.US, firstName,
+	middleName, lastName, prefixListTypeId, suffixListTypeId, male,
+	birthdayMonth, birthdayDay, birthdayYear, jobTitle,
+	com.liferay.portal.kernel.model.UserConstants.TYPE_REGULAR, groudIds,
+	organizationIds, roleIds, userGroupIds, sendMail, serviceContext);
 
 role = com.liferay.portal.kernel.service.RoleLocalServiceUtil.getRole(companyId, "Administrator");
 
@@ -58,6 +58,6 @@ com.liferay.portal.kernel.service.UserGroupRoleLocalServiceUtil.addUserGroupRole
 //create a new Role and assign it to created user
 java.util.Map<java.util.Locale, String> titleMap = new java.util.HashMap<java.util.Locale, String>();
 titleMap.put(java.util.Locale.US, i + "Role");
-com.liferay.portal.kernel.model.Role newRole = com.liferay.portal.kernel.service.RoleLocalServiceUtil.addRole(userId, null, 0, i + "Role", titleMap, titleMap, 1, null, null);
+com.liferay.portal.kernel.model.Role newRole = com.liferay.portal.kernel.service.RoleLocalServiceUtil.addRole(null, userId, null, 0, i + "Role", titleMap, titleMap, 1, null, null);
 com.liferay.portal.kernel.service.UserLocalServiceUtil.addRoleUser(newRole.getRoleId(), groupUser);
 }

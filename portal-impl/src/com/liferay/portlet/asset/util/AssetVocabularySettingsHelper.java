@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.asset.util;
@@ -20,10 +11,12 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -37,24 +30,6 @@ public class AssetVocabularySettingsHelper {
 	};
 
 	public static final long[] DEFAULT_SELECTED_CLASS_TYPE_PKS = {
-		AssetCategoryConstants.ALL_CLASS_TYPE_PK
-	};
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #DEFAULT_SELECTED_CLASS_NAME_IDS}
-	 */
-	@Deprecated
-	public static final long[] DEFAULT_SELECTED_CLASSNAME_IDS = {
-		AssetCategoryConstants.ALL_CLASS_NAME_ID
-	};
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #DEFAULT_SELECTED_CLASS_TYPE_PKS}
-	 */
-	@Deprecated
-	public static final long[] DEFAULT_SELECTED_CLASSTYPE_PKS = {
 		AssetCategoryConstants.ALL_CLASS_TYPE_PK
 	};
 
@@ -74,6 +49,17 @@ public class AssetVocabularySettingsHelper {
 
 	public long[] getClassTypePKs() {
 		return getClassTypePKs(getClassNameIdsAndClassTypePKs());
+	}
+
+	public long[] getRegisteredClassNameIds() {
+		String value = _unicodeProperties.getProperty(
+			_KEY_REGISTERED_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS);
+
+		if (Validator.isNull(value)) {
+			return new long[0];
+		}
+
+		return getClassNameIds(StringUtil.split(value));
 	}
 
 	public long[] getRequiredClassNameIds() {
@@ -97,6 +83,14 @@ public class AssetVocabularySettingsHelper {
 			classNameId, classTypePK, getClassNameIdsAndClassTypePKs());
 	}
 
+	public boolean isClassNameIdAndClassTypePKDepotRequired(
+		long classNameId, long classTypePK) {
+
+		return isClassNameIdAndClassTypePKSpecified(
+			classNameId, classTypePK,
+			getDepotRequiredClassNameIdsAndClassTypePKs());
+	}
+
 	public boolean isClassNameIdAndClassTypePKRequired(
 		long classNameId, long classTypePK) {
 
@@ -113,12 +107,26 @@ public class AssetVocabularySettingsHelper {
 	public void setClassNameIdsAndClassTypePKs(
 		long[] classNameIds, long[] classTypePKs, boolean[] requireds) {
 
+		boolean[] depotRequireds = new boolean[requireds.length];
+
+		Arrays.fill(depotRequireds, false);
+
+		setClassNameIdsAndClassTypePKs(
+			classNameIds, classTypePKs, depotRequireds, requireds);
+	}
+
+	public void setClassNameIdsAndClassTypePKs(
+		long[] classNameIds, long[] classTypePKs, boolean[] depotRequireds,
+		boolean[] requireds) {
+
+		Set<String> depotRequiredClassNameIds = new LinkedHashSet<>();
 		Set<String> requiredClassNameIds = new LinkedHashSet<>();
 		Set<String> selectedClassNameIds = new LinkedHashSet<>();
 
 		for (int i = 0; i < classNameIds.length; ++i) {
 			long classNameId = classNameIds[i];
 			long classTypePK = classTypePKs[i];
+			boolean depotRequired = depotRequireds[i];
 			boolean required = requireds[i];
 
 			String classNameIdAndClassTypePK = getClassNameIdAndClassTypePK(
@@ -126,12 +134,19 @@ public class AssetVocabularySettingsHelper {
 
 			if (classNameIdAndClassTypePK.equals(
 					AssetCategoryConstants.
-						ALL_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS)) {
+						ALL_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS) &&
+				(required || depotRequired)) {
 
 				if (required) {
 					requiredClassNameIds.clear();
 
 					requiredClassNameIds.add(classNameIdAndClassTypePK);
+				}
+
+				if (depotRequired) {
+					depotRequiredClassNameIds.clear();
+
+					depotRequiredClassNameIds.add(classNameIdAndClassTypePK);
 				}
 
 				selectedClassNameIds.clear();
@@ -141,6 +156,10 @@ public class AssetVocabularySettingsHelper {
 				break;
 			}
 
+			if (depotRequired) {
+				depotRequiredClassNameIds.add(classNameIdAndClassTypePK);
+			}
+
 			if (required) {
 				requiredClassNameIds.add(classNameIdAndClassTypePK);
 			}
@@ -148,6 +167,20 @@ public class AssetVocabularySettingsHelper {
 			selectedClassNameIds.add(classNameIdAndClassTypePK);
 		}
 
+		if (selectedClassNameIds.contains(
+				AssetCategoryConstants.ALL_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS)) {
+
+			selectedClassNameIds.clear();
+
+			selectedClassNameIds.add(
+				AssetCategoryConstants.ALL_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS);
+
+			selectedClassNameIds.addAll(requiredClassNameIds);
+		}
+
+		_unicodeProperties.setProperty(
+			_KEY_DEPOT_REQUIRED_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS,
+			StringUtil.merge(depotRequiredClassNameIds));
 		_unicodeProperties.setProperty(
 			_KEY_REQUIRED_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS,
 			StringUtil.merge(requiredClassNameIds));
@@ -159,6 +192,19 @@ public class AssetVocabularySettingsHelper {
 	public void setMultiValued(boolean multiValued) {
 		_unicodeProperties.setProperty(
 			_KEY_MULTI_VALUED, String.valueOf(multiValued));
+	}
+
+	public void setRegisteredClassNameIds(long[] classNameIds) {
+		Set<Long> registeredClassNameIds = SetUtil.fromArray(
+			getRegisteredClassNameIds());
+
+		for (long classNameId : classNameIds) {
+			registeredClassNameIds.add(classNameId);
+		}
+
+		_unicodeProperties.setProperty(
+			_KEY_REGISTERED_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS,
+			StringUtil.merge(registeredClassNameIds));
 	}
 
 	@Override
@@ -229,6 +275,17 @@ public class AssetVocabularySettingsHelper {
 		return classTypePKs;
 	}
 
+	protected String[] getDepotRequiredClassNameIdsAndClassTypePKs() {
+		String value = _unicodeProperties.getProperty(
+			_KEY_DEPOT_REQUIRED_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS);
+
+		if (Validator.isNull(value)) {
+			return new String[0];
+		}
+
+		return StringUtil.split(value);
+	}
+
 	protected String[] getRequiredClassNameIdsAndClassTypePKs() {
 		String value = _unicodeProperties.getProperty(
 			_KEY_REQUIRED_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS);
@@ -249,25 +306,10 @@ public class AssetVocabularySettingsHelper {
 		}
 
 		if (classNameIdsAndClassTypePKs[0].equals(
-				AssetCategoryConstants.ALL_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS)) {
-
-			return true;
-		}
-
-		if (classTypePK == AssetCategoryConstants.ALL_CLASS_TYPE_PK) {
-			String prefix = classNameId + StringPool.COLON;
-
-			return ArrayUtil.exists(
+				AssetCategoryConstants.ALL_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS) ||
+			ArrayUtil.contains(
 				classNameIdsAndClassTypePKs,
-				classNameIdsAndClassTypePK ->
-					classNameIdsAndClassTypePK.startsWith(prefix));
-		}
-
-		String classNameIdAndClassTypePK = getClassNameIdAndClassTypePK(
-			classNameId, classTypePK);
-
-		if (ArrayUtil.contains(
-				classNameIdsAndClassTypePKs, classNameIdAndClassTypePK)) {
+				getClassNameIdAndClassTypePK(classNameId, classTypePK))) {
 
 			return true;
 		}
@@ -279,7 +321,15 @@ public class AssetVocabularySettingsHelper {
 			classNameIdsAndClassTypePKs, classNameIdAndAllClassTypePK);
 	}
 
+	private static final String
+		_KEY_DEPOT_REQUIRED_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS =
+			"depotRequiredClassNameIds";
+
 	private static final String _KEY_MULTI_VALUED = "multiValued";
+
+	private static final String
+		_KEY_REGISTERED_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS =
+			"registeredClassNameIds";
 
 	private static final String
 		_KEY_REQUIRED_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS =

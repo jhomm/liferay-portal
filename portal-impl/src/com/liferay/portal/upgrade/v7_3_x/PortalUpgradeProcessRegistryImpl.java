@@ -1,26 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.v7_3_x;
 
 import com.liferay.portal.kernel.upgrade.CTModelUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.DummyUpgradeProcess;
-import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
+import com.liferay.portal.kernel.upgrade.util.UpgradeModulesFactory;
+import com.liferay.portal.kernel.upgrade.util.UpgradeVersionTreeMap;
 import com.liferay.portal.kernel.version.Version;
 import com.liferay.portal.upgrade.util.PortalUpgradeProcessRegistry;
-
-import java.util.TreeMap;
 
 /**
  * @author Alicia García
@@ -30,21 +21,27 @@ public class PortalUpgradeProcessRegistryImpl
 
 	@Override
 	public void registerUpgradeProcesses(
-		TreeMap<Version, UpgradeProcess> upgradeProcesses) {
+		UpgradeVersionTreeMap upgradeVersionTreeMap) {
 
-		upgradeProcesses.put(new Version(6, 0, 0), new UpgradeMVCCVersion());
+		upgradeVersionTreeMap.put(
+			new Version(6, 0, 0), new UpgradeMVCCVersion());
 
-		upgradeProcesses.put(new Version(6, 0, 1), new DummyUpgradeProcess());
+		upgradeVersionTreeMap.put(
+			new Version(6, 0, 1), new DummyUpgradeProcess());
 
-		upgradeProcesses.put(new Version(6, 0, 2), new UpgradeLayoutSet());
+		upgradeVersionTreeMap.put(new Version(6, 0, 2), new UpgradeLayoutSet());
 
-		upgradeProcesses.put(new Version(6, 0, 3), new UpgradeClusterGroup());
+		upgradeVersionTreeMap.put(
+			new Version(6, 0, 3),
+			UpgradeProcessFactory.runSQL("DROP_TABLE_IF_EXISTS(ClusterGroup)"));
 
-		upgradeProcesses.put(new Version(6, 0, 4), new UpgradeAssetCategory());
+		upgradeVersionTreeMap.put(
+			new Version(6, 0, 4), new UpgradeAssetCategory());
 
-		upgradeProcesses.put(new Version(7, 0, 0), new UpgradeRatingsStats());
+		upgradeVersionTreeMap.put(
+			new Version(7, 0, 0), new UpgradeRatingsStats());
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(7, 1, 0),
 			new CTModelUpgradeProcess(
 				"AssetCategory", "AssetCategoryProperty", "AssetEntry",
@@ -52,25 +49,36 @@ public class PortalUpgradeProcessRegistryImpl
 				"LayoutFriendlyURL", "PortletPreferences",
 				"ResourcePermission"));
 
-		upgradeProcesses.put(new Version(8, 0, 0), new UpgradeSchema());
+		upgradeVersionTreeMap.put(new Version(8, 0, 0), new UpgradeSchema());
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 1, 0),
 			new CTModelUpgradeProcess(
 				"AssetEntries_AssetCategories", "AssetEntries_AssetTags"));
 
-		upgradeProcesses.put(
-			new Version(8, 1, 1), new UpgradeAssetCategoryName());
+		upgradeVersionTreeMap.put(
+			new Version(8, 1, 1),
+			UpgradeProcessFactory.alterColumnType(
+				"AssetCategory", "name", "VARCHAR(255) null"));
 
-		upgradeProcesses.put(
-			new Version(8, 2, 0), new UpgradeAssetEntryMappingTables());
+		upgradeVersionTreeMap.put(
+			new Version(8, 2, 0),
+			UpgradeProcessFactory.dropColumns(
+				"AssetEntries_AssetCategories", "changeType"),
+			UpgradeProcessFactory.dropColumns(
+				"AssetEntries_AssetTags", "changeType"),
+			UpgradeProcessFactory.addColumns(
+				"AssetEntries_AssetCategories", "ctChangeType BOOLEAN"),
+			UpgradeProcessFactory.addColumns(
+				"AssetEntries_AssetTags", "ctChangeType BOOLEAN"));
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 3, 0), new UpgradeUserGroupGroupRole());
 
-		upgradeProcesses.put(new Version(8, 4, 0), new UpgradeUserGroupRole());
+		upgradeVersionTreeMap.put(
+			new Version(8, 4, 0), new UpgradeUserGroupRole());
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 5, 0),
 			new CTModelUpgradeProcess(
 				"Group_", "Groups_Orgs", "Groups_Roles", "Groups_UserGroups",
@@ -79,40 +87,43 @@ public class PortalUpgradeProcessRegistryImpl
 				"UserGroups_Teams", "Users_Groups", "Users_Orgs", "Users_Roles",
 				"Users_Teams", "Users_UserGroups", "VirtualHost"));
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 6, 0),
 			new CTModelUpgradeProcess(
 				"DLFileEntry", "DLFileEntryMetadata", "DLFileEntryType",
 				"DLFileEntryTypes_DLFolders", "DLFileShortcut", "DLFileVersion",
 				"DLFolder"));
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 7, 0), new UpgradeSocialMVCCVersion());
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 8, 0), new UpgradeExpandoMVCCVersion());
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 9, 0), new UpgradeRatingsMVCCVersion());
 
-		upgradeProcesses.put(
-			new Version(8, 10, 0), new UpgradeResourceAction());
+		upgradeVersionTreeMap.put(
+			new Version(8, 10, 0),
+			UpgradeProcessFactory.runSQL(
+				"delete from ResourceAction where name in ('136', '150', " +
+					"'151', '152', '153', '157', '158')"));
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 11, 0),
 			new CTModelUpgradeProcess(
 				"ExpandoColumn", "ExpandoRow", "ExpandoTable", "ExpandoValue"));
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 12, 0),
 			new CTModelUpgradeProcess("RatingsEntry", "RatingsStats"));
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 13, 0),
 			new CTModelUpgradeProcess(
 				"WorkflowDefinitionLink", "WorkflowInstanceLink"));
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 14, 0),
 			new CTModelUpgradeProcess(
 				"SocialActivity", "SocialActivityAchievement",
@@ -120,25 +131,30 @@ public class PortalUpgradeProcessRegistryImpl
 				"SocialActivitySet", "SocialActivitySetting", "SocialRelation",
 				"SocialRequest"));
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 15, 0), new CTModelUpgradeProcess("SystemEvent"));
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 16, 0), new UpgradeDLFileEntryType());
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 17, 0), new UpgradeAssetVocabulary());
 
-		upgradeProcesses.put(
+		upgradeVersionTreeMap.put(
 			new Version(8, 18, 0), new UpgradeLayoutStyleBookEntry());
 
-		upgradeProcesses.put(new Version(8, 18, 1), new UpgradeModules());
+		upgradeVersionTreeMap.put(
+			new Version(8, 18, 1),
+			UpgradeModulesFactory.create(
+				new String[] {"com.liferay.layout.service"}, null));
 
-		upgradeProcesses.put(new Version(8, 18, 2), new UpgradeLayout());
+		upgradeVersionTreeMap.put(new Version(8, 18, 2), new UpgradeLayout());
 
-		upgradeProcesses.put(new Version(8, 18, 3), new DummyUpgradeProcess());
+		upgradeVersionTreeMap.put(
+			new Version(8, 18, 3), new DummyUpgradeProcess());
 
-		upgradeProcesses.put(new Version(8, 18, 4), new DummyUpgradeProcess());
+		upgradeVersionTreeMap.put(
+			new Version(8, 18, 4), new DummyUpgradeProcess());
 	}
 
 }

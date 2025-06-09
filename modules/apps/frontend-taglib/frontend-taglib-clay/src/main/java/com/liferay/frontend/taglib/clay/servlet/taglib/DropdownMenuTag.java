@@ -1,27 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.clay.servlet.taglib;
 
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownGroupItem;
+import com.liferay.frontend.taglib.clay.internal.servlet.taglib.util.DropdownItemListUtil;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
-import com.liferay.portal.kernel.util.ListUtil;
+
+import jakarta.servlet.jsp.JspException;
 
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.jsp.JspException;
 
 /**
  * @author Chema Balsas
@@ -29,10 +19,21 @@ import javax.servlet.jsp.JspException;
 public class DropdownMenuTag extends ButtonTag {
 
 	@Override
+	public int doEndTag() throws JspException {
+		if (_empty) {
+			return EVAL_PAGE;
+		}
+
+		return super.doEndTag();
+	}
+
+	@Override
 	public int doStartTag() throws JspException {
 		setAttributeNamespace(_ATTRIBUTE_NAMESPACE);
 
-		if (_isEmpty(_dropdownItems)) {
+		_empty = DropdownItemListUtil.isEmpty(_dropdownItems);
+
+		if (_empty) {
 			return SKIP_BODY;
 		}
 
@@ -43,8 +44,16 @@ public class DropdownMenuTag extends ButtonTag {
 		return _dropdownItems;
 	}
 
+	public Map<String, String> getMenuProps() {
+		return _menuProps;
+	}
+
 	public void setDropdownItems(List<DropdownItem> dropdownItems) {
 		_dropdownItems = dropdownItems;
+	}
+
+	public void setMenuProps(Map<String, String> menuProps) {
+		_menuProps = menuProps;
 	}
 
 	@Override
@@ -53,49 +62,32 @@ public class DropdownMenuTag extends ButtonTag {
 
 		_buttonType = null;
 		_dropdownItems = null;
+		_empty = null;
+		_menuProps = null;
 	}
 
 	@Override
 	protected String getHydratedModuleName() {
-		if (_isEmpty(_dropdownItems)) {
+		if (DropdownItemListUtil.isEmpty(_dropdownItems)) {
 			return null;
 		}
 
-		return "frontend-taglib-clay/DropdownMenu";
+		return "{DropdownMenu} from frontend-taglib-clay";
 	}
 
 	@Override
 	protected Map<String, Object> prepareProps(Map<String, Object> props) {
 		props.put("items", _dropdownItems);
+		props.put("menuProps", _menuProps);
 
 		return super.prepareProps(props);
-	}
-
-	private boolean _isEmpty(List<DropdownItem> dropdownItems) {
-		if (ListUtil.isEmpty(_dropdownItems)) {
-			return true;
-		}
-
-		for (DropdownItem dropdownItem : dropdownItems) {
-			if (!(dropdownItem instanceof DropdownGroupItem)) {
-				return false;
-			}
-
-			Object items = dropdownItem.get("items");
-
-			if ((items instanceof List) &&
-				ListUtil.isNotEmpty((List<?>)items)) {
-
-				return false;
-			}
-		}
-
-		return true;
 	}
 
 	private static final String _ATTRIBUTE_NAMESPACE = "clay:dropdown-menu:";
 
 	private String _buttonType;
 	private List<DropdownItem> _dropdownItems;
+	private Boolean _empty;
+	private Map<String, String> _menuProps;
 
 }

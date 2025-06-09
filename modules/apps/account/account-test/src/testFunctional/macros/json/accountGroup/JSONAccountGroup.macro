@@ -1,0 +1,26 @@
+definition {
+
+	@summary = "Default summary"
+	macro addAccountGroup(accountGroupName = null) {
+		Variables.assertDefined(parameterList = ${accountGroupName});
+
+		if (!(isSet(creatorEmailAddress))) {
+			var creatorEmailAddress = JSONUtil2.getAdminUserEmail();
+		}
+
+		if (!(isSet(creatorPassword))) {
+			var creatorPassword = JSONUtil2.getAdminUserPassword();
+		}
+
+		if (!(isSet(accountGroupDescription))) {
+			var accountGroupDescription = "Account Group Default Description";
+		}
+
+		JSONAccountGroupAPI._addAccountGroup(
+			accountGroupDescription = ${accountGroupDescription},
+			accountGroupName = ${accountGroupName},
+			creatorEmailAddress = ${creatorEmailAddress},
+			creatorPassword = ${creatorPassword});
+	}
+
+}

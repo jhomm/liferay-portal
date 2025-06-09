@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.product.exception.DuplicateCommerceCatalogExternalReferenceCodeException;
 import com.liferay.commerce.product.exception.NoSuchCatalogException;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CommerceCatalogLocalServiceUtil;
@@ -124,6 +116,12 @@ public class CommerceCatalogPersistenceTest {
 
 		CommerceCatalog newCommerceCatalog = _persistence.create(pk);
 
+		newCommerceCatalog.setMvccVersion(RandomTestUtil.nextLong());
+
+		newCommerceCatalog.setCtCollectionId(RandomTestUtil.nextLong());
+
+		newCommerceCatalog.setUuid(RandomTestUtil.randomString());
+
 		newCommerceCatalog.setExternalReferenceCode(
 			RandomTestUtil.randomString());
 
@@ -136,6 +134,8 @@ public class CommerceCatalogPersistenceTest {
 		newCommerceCatalog.setCreateDate(RandomTestUtil.nextDate());
 
 		newCommerceCatalog.setModifiedDate(RandomTestUtil.nextDate());
+
+		newCommerceCatalog.setAccountEntryId(RandomTestUtil.nextLong());
 
 		newCommerceCatalog.setName(RandomTestUtil.randomString());
 
@@ -152,6 +152,14 @@ public class CommerceCatalogPersistenceTest {
 		CommerceCatalog existingCommerceCatalog = _persistence.findByPrimaryKey(
 			newCommerceCatalog.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCommerceCatalog.getMvccVersion(),
+			newCommerceCatalog.getMvccVersion());
+		Assert.assertEquals(
+			existingCommerceCatalog.getCtCollectionId(),
+			newCommerceCatalog.getCtCollectionId());
+		Assert.assertEquals(
+			existingCommerceCatalog.getUuid(), newCommerceCatalog.getUuid());
 		Assert.assertEquals(
 			existingCommerceCatalog.getExternalReferenceCode(),
 			newCommerceCatalog.getExternalReferenceCode());
@@ -174,6 +182,9 @@ public class CommerceCatalogPersistenceTest {
 			Time.getShortTimestamp(existingCommerceCatalog.getModifiedDate()),
 			Time.getShortTimestamp(newCommerceCatalog.getModifiedDate()));
 		Assert.assertEquals(
+			existingCommerceCatalog.getAccountEntryId(),
+			newCommerceCatalog.getAccountEntryId());
+		Assert.assertEquals(
 			existingCommerceCatalog.getName(), newCommerceCatalog.getName());
 		Assert.assertEquals(
 			existingCommerceCatalog.getCommerceCurrencyCode(),
@@ -185,11 +196,58 @@ public class CommerceCatalogPersistenceTest {
 			existingCommerceCatalog.isSystem(), newCommerceCatalog.isSystem());
 	}
 
+	@Test(
+		expected = DuplicateCommerceCatalogExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CommerceCatalog commerceCatalog = addCommerceCatalog();
+
+		CommerceCatalog newCommerceCatalog = addCommerceCatalog();
+
+		newCommerceCatalog.setCompanyId(commerceCatalog.getCompanyId());
+
+		newCommerceCatalog = _persistence.update(newCommerceCatalog);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCommerceCatalog);
+
+		newCommerceCatalog.setExternalReferenceCode(
+			commerceCatalog.getExternalReferenceCode());
+
+		_persistence.update(newCommerceCatalog);
+	}
+
+	@Test
+	public void testCountByUuid() throws Exception {
+		_persistence.countByUuid("");
+
+		_persistence.countByUuid("null");
+
+		_persistence.countByUuid((String)null);
+	}
+
+	@Test
+	public void testCountByUuid_C() throws Exception {
+		_persistence.countByUuid_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByUuid_C("null", 0L);
+
+		_persistence.countByUuid_C((String)null, 0L);
+	}
+
 	@Test
 	public void testCountByCompanyId() throws Exception {
 		_persistence.countByCompanyId(RandomTestUtil.nextLong());
 
 		_persistence.countByCompanyId(0L);
+	}
+
+	@Test
+	public void testCountByAccountEntryId() throws Exception {
+		_persistence.countByAccountEntryId(RandomTestUtil.nextLong());
+
+		_persistence.countByAccountEntryId(0L);
 	}
 
 	@Test
@@ -201,12 +259,12 @@ public class CommerceCatalogPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_ERC() throws Exception {
-		_persistence.countByC_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
 
-		_persistence.countByC_ERC(0L, "null");
+		_persistence.countByERC_C("null", 0L);
 
-		_persistence.countByC_ERC(0L, (String)null);
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -234,11 +292,12 @@ public class CommerceCatalogPersistenceTest {
 
 	protected OrderByComparator<CommerceCatalog> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CommerceCatalog", "externalReferenceCode", true,
-			"commerceCatalogId", true, "companyId", true, "userId", true,
-			"userName", true, "createDate", true, "modifiedDate", true, "name",
-			true, "commerceCurrencyCode", true, "catalogDefaultLanguageId",
-			true, "system", true);
+			"CommerceCatalog", "mvccVersion", true, "ctCollectionId", true,
+			"uuid", true, "externalReferenceCode", true, "commerceCatalogId",
+			true, "companyId", true, "userId", true, "userName", true,
+			"createDate", true, "modifiedDate", true, "accountEntryId", true,
+			"name", true, "commerceCurrencyCode", true,
+			"catalogDefaultLanguageId", true, "system", true);
 	}
 
 	@Test
@@ -509,21 +568,27 @@ public class CommerceCatalogPersistenceTest {
 
 	private void _assertOriginalValues(CommerceCatalog commerceCatalog) {
 		Assert.assertEquals(
-			Long.valueOf(commerceCatalog.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				commerceCatalog, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
 			commerceCatalog.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				commerceCatalog, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(commerceCatalog.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				commerceCatalog, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CommerceCatalog addCommerceCatalog() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
 		CommerceCatalog commerceCatalog = _persistence.create(pk);
+
+		commerceCatalog.setMvccVersion(RandomTestUtil.nextLong());
+
+		commerceCatalog.setCtCollectionId(RandomTestUtil.nextLong());
+
+		commerceCatalog.setUuid(RandomTestUtil.randomString());
 
 		commerceCatalog.setExternalReferenceCode(RandomTestUtil.randomString());
 
@@ -536,6 +601,8 @@ public class CommerceCatalogPersistenceTest {
 		commerceCatalog.setCreateDate(RandomTestUtil.nextDate());
 
 		commerceCatalog.setModifiedDate(RandomTestUtil.nextDate());
+
+		commerceCatalog.setAccountEntryId(RandomTestUtil.nextLong());
 
 		commerceCatalog.setName(RandomTestUtil.randomString());
 

@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.social.service.impl;
 
 import com.liferay.asset.kernel.model.AssetEntry;
-import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.asset.kernel.service.persistence.AssetEntryPersistence;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.cache.PortalCache;
@@ -29,8 +20,6 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.persistence.GroupPersistence;
 import com.liferay.portal.kernel.service.persistence.UserPersistence;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Tuple;
@@ -108,7 +97,6 @@ public class SocialActivityCounterLocalServiceImpl
 	 * @return the added activity counter
 	 */
 	@Override
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public SocialActivityCounter addActivityCounter(
 			long groupId, long classNameId, long classPK, String name,
 			int ownerType, int totalValue, long previousActivityCounterId,
@@ -276,7 +264,7 @@ public class SocialActivityCounterLocalServiceImpl
 
 		SocialActivityCounter assetActivitiesCounter = null;
 
-		if (!assetEntryUser.isDefaultUser() && assetEntryUser.isActive() &&
+		if (!assetEntryUser.isGuestUser() && assetEntryUser.isActive() &&
 			assetEntry.isVisible()) {
 
 			assetActivitiesCounter = addAssetActivitiesCounter(activity);
@@ -284,7 +272,7 @@ public class SocialActivityCounterLocalServiceImpl
 
 		SocialActivityCounter userActivitiesCounter = null;
 
-		if (!user.isDefaultUser() && user.isActive()) {
+		if (!user.isGuestUser() && user.isActive()) {
 			userActivitiesCounter = addUserActivitiesCounter(activity);
 		}
 
@@ -366,8 +354,8 @@ public class SocialActivityCounterLocalServiceImpl
 		String className = PortalUtil.getClassName(classNameId);
 
 		if (!className.equals(User.class.getName())) {
-			AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
-				className, classPK);
+			AssetEntry assetEntry = _assetEntryPersistence.fetchByC_C(
+				classNameId, classPK);
 
 			deleteActivityCounters(assetEntry);
 		}
@@ -391,15 +379,16 @@ public class SocialActivityCounterLocalServiceImpl
 	public void deleteActivityCounters(String className, long classPK)
 		throws PortalException {
 
+		long classNameId = _classNameLocalService.getClassNameId(className);
+
 		if (!className.equals(User.class.getName())) {
-			AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
-				className, classPK);
+			AssetEntry assetEntry = _assetEntryPersistence.fetchByC_C(
+				classNameId, classPK);
 
 			deleteActivityCounters(assetEntry);
 		}
 		else {
-			socialActivityCounterPersistence.removeByC_C(
-				_classNameLocalService.getClassNameId(className), classPK);
+			socialActivityCounterPersistence.removeByC_C(classNameId, classPK);
 
 			_socialActivityLimitPersistence.removeByUserId(classPK);
 		}
@@ -423,7 +412,31 @@ public class SocialActivityCounterLocalServiceImpl
 	public void disableActivityCounters(long classNameId, long classPK)
 		throws PortalException {
 
-		disableActivityCounters(PortalUtil.getClassName(classNameId), classPK);
+		List<SocialActivityCounter> activityCounters =
+			socialActivityCounterPersistence.findByC_C(classNameId, classPK);
+
+		if (activityCounters.isEmpty()) {
+			return;
+		}
+
+		AssetEntry assetEntry = _assetEntryPersistence.fetchByC_C(
+			classNameId, classPK);
+
+		if (assetEntry == null) {
+			return;
+		}
+
+		adjustUserContribution(assetEntry, false);
+
+		for (SocialActivityCounter activityCounter : activityCounters) {
+			if (activityCounter.isActive()) {
+				activityCounter.setActive(false);
+
+				socialActivityCounterPersistence.update(activityCounter);
+			}
+		}
+
+		clearFinderCache();
 	}
 
 	/**
@@ -442,28 +455,8 @@ public class SocialActivityCounterLocalServiceImpl
 	public void disableActivityCounters(String className, long classPK)
 		throws PortalException {
 
-		AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
-			className, classPK);
-
-		if (assetEntry == null) {
-			return;
-		}
-
-		List<SocialActivityCounter> activityCounters =
-			socialActivityCounterPersistence.findByC_C(
-				assetEntry.getClassNameId(), classPK);
-
-		adjustUserContribution(assetEntry, false);
-
-		for (SocialActivityCounter activityCounter : activityCounters) {
-			if (activityCounter.isActive()) {
-				activityCounter.setActive(false);
-
-				socialActivityCounterPersistence.update(activityCounter);
-			}
-		}
-
-		clearFinderCache();
+		disableActivityCounters(
+			_classNameLocalService.getClassNameId(className), classPK);
 	}
 
 	/**
@@ -482,7 +475,31 @@ public class SocialActivityCounterLocalServiceImpl
 	public void enableActivityCounters(long classNameId, long classPK)
 		throws PortalException {
 
-		enableActivityCounters(PortalUtil.getClassName(classNameId), classPK);
+		List<SocialActivityCounter> activityCounters =
+			socialActivityCounterPersistence.findByC_C(classNameId, classPK);
+
+		if (activityCounters.isEmpty()) {
+			return;
+		}
+
+		AssetEntry assetEntry = _assetEntryPersistence.fetchByC_C(
+			classNameId, classPK);
+
+		if (assetEntry == null) {
+			return;
+		}
+
+		adjustUserContribution(assetEntry, true);
+
+		for (SocialActivityCounter activityCounter : activityCounters) {
+			if (!activityCounter.isActive()) {
+				activityCounter.setActive(true);
+
+				socialActivityCounterPersistence.update(activityCounter);
+			}
+		}
+
+		clearFinderCache();
 	}
 
 	/**
@@ -501,28 +518,8 @@ public class SocialActivityCounterLocalServiceImpl
 	public void enableActivityCounters(String className, long classPK)
 		throws PortalException {
 
-		AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
-			className, classPK);
-
-		if (assetEntry == null) {
-			return;
-		}
-
-		List<SocialActivityCounter> activityCounters =
-			socialActivityCounterPersistence.findByC_C(
-				assetEntry.getClassNameId(), classPK);
-
-		adjustUserContribution(assetEntry, true);
-
-		for (SocialActivityCounter activityCounter : activityCounters) {
-			if (!activityCounter.isActive()) {
-				activityCounter.setActive(true);
-
-				socialActivityCounterPersistence.update(activityCounter);
-			}
-		}
-
-		clearFinderCache();
+		enableActivityCounters(
+			_classNameLocalService.getClassNameId(className), classPK);
 	}
 
 	/**
@@ -1047,14 +1044,14 @@ public class SocialActivityCounterLocalServiceImpl
 		User user, User assetEntryUser, AssetEntry assetEntry,
 		SocialActivityCounterDefinition activityCounterDefinition) {
 
-		if ((user.isDefaultUser() || !user.isActive()) &&
+		if ((user.isGuestUser() || !user.isActive()) &&
 			(activityCounterDefinition.getOwnerType() !=
 				SocialActivityCounterConstants.TYPE_ASSET)) {
 
 			return false;
 		}
 
-		if ((assetEntryUser.isDefaultUser() || !assetEntryUser.isActive()) &&
+		if ((assetEntryUser.isGuestUser() || !assetEntryUser.isActive()) &&
 			(activityCounterDefinition.getOwnerType() !=
 				SocialActivityCounterConstants.TYPE_ACTOR)) {
 
@@ -1177,8 +1174,8 @@ public class SocialActivityCounterLocalServiceImpl
 				SocialActivityCounterConstants.NAME_ASSET_ACTIVITIES,
 				SocialActivityCounterConstants.TYPE_ASSET);
 
-	@BeanReference(type = AssetEntryLocalService.class)
-	private AssetEntryLocalService _assetEntryLocalService;
+	@BeanReference(type = AssetEntryPersistence.class)
+	private AssetEntryPersistence _assetEntryPersistence;
 
 	@BeanReference(type = ClassNameLocalService.class)
 	private ClassNameLocalService _classNameLocalService;

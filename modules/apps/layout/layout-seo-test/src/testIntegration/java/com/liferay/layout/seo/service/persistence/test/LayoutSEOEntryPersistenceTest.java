@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.seo.service.persistence.test;
@@ -151,8 +142,6 @@ public class LayoutSEOEntryPersistenceTest {
 		newLayoutSEOEntry.setCanonicalURLEnabled(
 			RandomTestUtil.randomBoolean());
 
-		newLayoutSEOEntry.setDDMStorageId(RandomTestUtil.nextLong());
-
 		newLayoutSEOEntry.setOpenGraphDescription(
 			RandomTestUtil.randomString());
 
@@ -216,9 +205,6 @@ public class LayoutSEOEntryPersistenceTest {
 		Assert.assertEquals(
 			existingLayoutSEOEntry.isCanonicalURLEnabled(),
 			newLayoutSEOEntry.isCanonicalURLEnabled());
-		Assert.assertEquals(
-			existingLayoutSEOEntry.getDDMStorageId(),
-			newLayoutSEOEntry.getDDMStorageId());
 		Assert.assertEquals(
 			existingLayoutSEOEntry.getOpenGraphDescription(),
 			newLayoutSEOEntry.getOpenGraphDescription());
@@ -307,9 +293,9 @@ public class LayoutSEOEntryPersistenceTest {
 			"uuid", true, "layoutSEOEntryId", true, "groupId", true,
 			"companyId", true, "userId", true, "userName", true, "createDate",
 			true, "modifiedDate", true, "privateLayout", true, "layoutId", true,
-			"canonicalURL", true, "canonicalURLEnabled", true, "DDMStorageId",
-			true, "openGraphDescription", true, "openGraphDescriptionEnabled",
-			true, "openGraphImageAlt", true, "openGraphImageFileEntryId", true,
+			"canonicalURL", true, "canonicalURLEnabled", true,
+			"openGraphDescription", true, "openGraphDescriptionEnabled", true,
+			"openGraphImageAlt", true, "openGraphImageFileEntryId", true,
 			"openGraphTitle", true, "openGraphTitleEnabled", true,
 			"lastPublishDate", true);
 	}
@@ -637,8 +623,6 @@ public class LayoutSEOEntryPersistenceTest {
 		layoutSEOEntry.setCanonicalURL(RandomTestUtil.randomString());
 
 		layoutSEOEntry.setCanonicalURLEnabled(RandomTestUtil.randomBoolean());
-
-		layoutSEOEntry.setDDMStorageId(RandomTestUtil.nextLong());
 
 		layoutSEOEntry.setOpenGraphDescription(RandomTestUtil.randomString());
 

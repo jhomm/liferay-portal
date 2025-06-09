@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.workflow.internal.resource.v1_0;
@@ -20,13 +11,14 @@ import com.liferay.headless.admin.workflow.dto.v1_0.WorkflowTaskTransition;
 import com.liferay.headless.admin.workflow.dto.v1_0.WorkflowTaskTransitions;
 import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.TransitionUtil;
 import com.liferay.headless.admin.workflow.resource.v1_0.WorkflowTaskTransitionsResource;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowTask;
 import com.liferay.portal.kernel.workflow.WorkflowTaskManager;
+import com.liferay.portal.kernel.workflow.WorkflowTransition;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -41,6 +33,7 @@ import org.osgi.service.component.annotations.ServiceScope;
 	scope = ServiceScope.PROTOTYPE,
 	service = WorkflowTaskTransitionsResource.class
 )
+@CTAware
 public class WorkflowTaskTransitionsResourceImpl
 	extends BaseWorkflowTaskTransitionsResourceImpl {
 
@@ -61,13 +54,11 @@ public class WorkflowTaskTransitionsResourceImpl
 
 							workflowTaskTransitions.add(
 								_createWorkflowTaskTransition(
-									_workflowTaskManager.getNextTransitionNames(
-										contextCompany.getCompanyId(),
-										contextUser.getUserId(),
-										workflowTaskId),
 									_workflowTaskManager.getWorkflowTask(
-										contextCompany.getCompanyId(),
-										workflowTaskId)));
+										workflowTaskId),
+									_workflowTaskManager.
+										getNextWorkflowTransitions(
+											workflowTaskId)));
 						}
 
 						return workflowTaskTransitions.toArray(
@@ -78,29 +69,28 @@ public class WorkflowTaskTransitionsResourceImpl
 	}
 
 	private WorkflowTaskTransition _createWorkflowTaskTransition(
-		Collection<String> transitionNames, WorkflowTask workflowTask) {
+		WorkflowTask workflowTask,
+		List<WorkflowTransition> workflowTransitions) {
 
 		WorkflowTaskTransition workflowTaskTransition =
 			new WorkflowTaskTransition();
 
 		workflowTaskTransition.setTransitions(
-			transformToArray(
-				transitionNames,
-				transitionName -> TransitionUtil.toTransition(
-					_language, transitionName,
-					ResourceBundleUtil.getModuleAndPortalResourceBundle(
-						contextAcceptLanguage.getPreferredLocale(),
-						WorkflowTaskTransitionsResourceImpl.class)),
+			() -> transformToArray(
+				workflowTransitions,
+				workflowTransition -> TransitionUtil.toTransition(
+					contextAcceptLanguage.getPreferredLocale(),
+					workflowTransition),
 				Transition.class));
 		workflowTaskTransition.setWorkflowDefinitionVersion(
-			String.valueOf(workflowTask.getWorkflowDefinitionVersion()));
+			() -> String.valueOf(workflowTask.getWorkflowDefinitionVersion()));
 		workflowTaskTransition.setWorkflowTaskLabel(
-			_language.get(
+			() -> _language.get(
 				ResourceBundleUtil.getModuleAndPortalResourceBundle(
 					contextAcceptLanguage.getPreferredLocale(),
 					WorkflowTaskTransitionsResourceImpl.class),
 				workflowTask.getName()));
-		workflowTaskTransition.setWorkflowTaskName(workflowTask.getName());
+		workflowTaskTransition.setWorkflowTaskName(workflowTask::getName);
 
 		return workflowTaskTransition;
 	}

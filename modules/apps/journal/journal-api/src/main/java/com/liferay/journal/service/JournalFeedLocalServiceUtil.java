@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -46,7 +38,7 @@ public class JournalFeedLocalServiceUtil {
 	 */
 	public static JournalFeed addFeed(
 			long userId, long groupId, String feedId, boolean autoFeedId,
-			String name, String description, String ddmStructureKey,
+			String name, String description, long ddmStructureId,
 			String ddmTemplateKey, String ddmRendererTemplateKey, int delta,
 			String orderByCol, String orderByType,
 			String targetLayoutFriendlyUrl, String targetPortletId,
@@ -56,7 +48,7 @@ public class JournalFeedLocalServiceUtil {
 
 		return getService().addFeed(
 			userId, groupId, feedId, autoFeedId, name, description,
-			ddmStructureKey, ddmTemplateKey, ddmRendererTemplateKey, delta,
+			ddmStructureId, ddmTemplateKey, ddmRendererTemplateKey, delta,
 			orderByCol, orderByType, targetLayoutFriendlyUrl, targetPortletId,
 			contentField, feedFormat, feedVersion, serviceContext);
 	}
@@ -437,33 +429,15 @@ public class JournalFeedLocalServiceUtil {
 			companyId, groupId, keywords, start, end, orderByComparator);
 	}
 
-	public static List<JournalFeed> search(
-		long companyId, long groupId, String feedId, String name,
-		String description, boolean andOperator, int start, int end,
-		OrderByComparator<JournalFeed> orderByComparator) {
-
-		return getService().search(
-			companyId, groupId, feedId, name, description, andOperator, start,
-			end, orderByComparator);
-	}
-
 	public static int searchCount(
 		long companyId, long groupId, String keywords) {
 
 		return getService().searchCount(companyId, groupId, keywords);
 	}
 
-	public static int searchCount(
-		long companyId, long groupId, String feedId, String name,
-		String description, boolean andOperator) {
-
-		return getService().searchCount(
-			companyId, groupId, feedId, name, description, andOperator);
-	}
-
 	public static JournalFeed updateFeed(
 			long groupId, String feedId, String name, String description,
-			String ddmStructureKey, String ddmTemplateKey,
+			long ddmStructureId, String ddmTemplateKey,
 			String ddmRendererTemplateKey, int delta, String orderByCol,
 			String orderByType, String targetLayoutFriendlyUrl,
 			String targetPortletId, String contentField, String feedFormat,
@@ -472,7 +446,7 @@ public class JournalFeedLocalServiceUtil {
 		throws PortalException {
 
 		return getService().updateFeed(
-			groupId, feedId, name, description, ddmStructureKey, ddmTemplateKey,
+			groupId, feedId, name, description, ddmStructureId, ddmTemplateKey,
 			ddmRendererTemplateKey, delta, orderByCol, orderByType,
 			targetLayoutFriendlyUrl, targetPortletId, contentField, feedFormat,
 			feedVersion, serviceContext);
@@ -493,9 +467,11 @@ public class JournalFeedLocalServiceUtil {
 	}
 
 	public static JournalFeedLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile JournalFeedLocalService _service;
+	private static final Snapshot<JournalFeedLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			JournalFeedLocalServiceUtil.class, JournalFeedLocalService.class);
 
 }

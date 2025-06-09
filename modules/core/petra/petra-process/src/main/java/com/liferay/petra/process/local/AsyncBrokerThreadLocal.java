@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.petra.process.local;
@@ -25,8 +16,7 @@ import java.io.Serializable;
 class AsyncBrokerThreadLocal {
 
 	public static AsyncBroker<Long, Serializable> getAsyncBroker() {
-		AsyncBroker<Long, Serializable> asyncBroker =
-			_asyncBrokerThreadLocal.get();
+		AsyncBroker<Long, Serializable> asyncBroker = _asyncBroker.get();
 
 		if (asyncBroker == null) {
 			throw new IllegalStateException("Async broker is not set");
@@ -36,16 +26,16 @@ class AsyncBrokerThreadLocal {
 	}
 
 	public static void removeAsyncBroker() {
-		_asyncBrokerThreadLocal.remove();
+		_asyncBroker.remove();
 	}
 
 	public static void setAsyncBroker(
 		AsyncBroker<Long, Serializable> asyncBroker) {
 
-		_asyncBrokerThreadLocal.set(asyncBroker);
+		_asyncBroker.set(asyncBroker);
 	}
 
 	private static final ThreadLocal<AsyncBroker<Long, Serializable>>
-		_asyncBrokerThreadLocal = new CentralizedThreadLocal<>(false);
+		_asyncBroker = new CentralizedThreadLocal<>(false);
 
 }

@@ -1,0 +1,137 @@
+{
+	"pageElement": {
+		"pageElements": [
+			{
+				"definition": {
+					"fragmentStyle": {
+						"backgroundColor": "brandColor1",
+						"paddingBottom": "7",
+						"paddingTop": "7"
+					},
+					"fragmentViewports": [
+						{
+							"fragmentViewportStyle": {
+								"paddingBottom": "5",
+								"paddingTop": "3"
+							},
+							"id": "tablet"
+						}
+					],
+					"layout": {
+						"paddingBottom": 8,
+						"paddingTop": 8
+					}
+				},
+				"pageElements": [
+					{
+						"definition": {
+							"fragmentStyle": {
+								"textColor": "whiteColor"
+							},
+							"layout": {
+								"widthType": "Fixed"
+							}
+						},
+						"pageElements": [
+							{
+								"definition": {
+									"fragment": {
+										"key": "text-block"
+									},
+									"fragmentFields": [
+										{
+											"id": "element-text",
+											"value": {
+												"text": {
+													"value_i18n": {
+														"en_US": "Resources"
+													}
+												}
+											}
+										}
+									],
+									"fragmentStyle": {
+										"fontSize": "fontSizeLg",
+										"marginBottom": "2",
+										"textColor": "brandColor3"
+									}
+								},
+								"type": "Fragment"
+							},
+							{
+								"definition": {
+									"fragment": {
+										"key": "heading"
+									},
+									"fragmentConfig": {
+										"displayLevel": "4",
+										"headingLevel": "h1"
+									},
+									"fragmentFields": [
+										{
+											"id": "element-text",
+											"value": {
+												"text": {
+													"value_i18n": {
+														"en_US": "All team resources gathered in one place"
+													}
+												}
+											}
+										}
+									],
+									"fragmentStyle": {
+										"marginBottom": "3",
+										"maxWidth": "100%",
+										"width": "540px"
+									},
+									"fragmentViewports": [
+										{
+											"fragmentViewportStyle": {
+												"marginBottom": "2"
+											},
+											"id": "tablet"
+										}
+									]
+								},
+								"type": "Fragment"
+							},
+							{
+								"definition": {
+									"fragment": {
+										"key": "text-block"
+									},
+									"fragmentFields": [
+										{
+											"id": "element-text",
+											"value": {
+												"text": {
+													"value_i18n": {
+														"en_US": "Lorem ipsum dolor sit amet, consectetur adipiscing elit ut at magna eros."
+													}
+												}
+											}
+										}
+									],
+									"fragmentStyle": {
+										"fontSize": "fontSizeLg",
+										"maxWidth": "100%",
+										"width": "420px"
+									}
+								},
+								"type": "Fragment"
+							}
+						],
+						"type": "Section"
+					}
+				],
+				"type": "Section"
+			}
+		],
+		"type": "Root"
+	},
+	"settings": {
+		"masterPage": {
+			"key": "master"
+		}
+	}
+}

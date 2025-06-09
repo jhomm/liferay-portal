@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.test;
@@ -22,6 +13,7 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.exception.DuplicateOrganizationExternalReferenceCodeException;
 import com.liferay.portal.kernel.exception.NoSuchOrganizationException;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.service.OrganizationLocalServiceUtil;
@@ -155,11 +147,13 @@ public class OrganizationPersistenceTest {
 
 		newOrganization.setCountryId(RandomTestUtil.nextLong());
 
-		newOrganization.setStatusId(RandomTestUtil.nextLong());
+		newOrganization.setStatusListTypeId(RandomTestUtil.nextLong());
 
 		newOrganization.setComments(RandomTestUtil.randomString());
 
 		newOrganization.setLogoId(RandomTestUtil.nextLong());
+
+		newOrganization.setStatus(RandomTestUtil.nextInt());
 
 		_organizations.add(_persistence.update(newOrganization));
 
@@ -211,11 +205,34 @@ public class OrganizationPersistenceTest {
 			existingOrganization.getCountryId(),
 			newOrganization.getCountryId());
 		Assert.assertEquals(
-			existingOrganization.getStatusId(), newOrganization.getStatusId());
+			existingOrganization.getStatusListTypeId(),
+			newOrganization.getStatusListTypeId());
 		Assert.assertEquals(
 			existingOrganization.getComments(), newOrganization.getComments());
 		Assert.assertEquals(
 			existingOrganization.getLogoId(), newOrganization.getLogoId());
+		Assert.assertEquals(
+			existingOrganization.getStatus(), newOrganization.getStatus());
+	}
+
+	@Test(expected = DuplicateOrganizationExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		Organization organization = addOrganization();
+
+		Organization newOrganization = addOrganization();
+
+		newOrganization.setCompanyId(organization.getCompanyId());
+
+		newOrganization = _persistence.update(newOrganization);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newOrganization);
+
+		newOrganization.setExternalReferenceCode(
+			organization.getExternalReferenceCode());
+
+		_persistence.update(newOrganization);
 	}
 
 	@Test
@@ -305,12 +322,12 @@ public class OrganizationPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_ERC() throws Exception {
-		_persistence.countByC_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
 
-		_persistence.countByC_ERC(0L, "null");
+		_persistence.countByERC_C("null", 0L);
 
-		_persistence.countByC_ERC(0L, (String)null);
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -343,8 +360,8 @@ public class OrganizationPersistenceTest {
 			"companyId", true, "userId", true, "userName", true, "createDate",
 			true, "modifiedDate", true, "parentOrganizationId", true,
 			"treePath", true, "name", true, "type", true, "recursable", true,
-			"regionId", true, "countryId", true, "statusId", true, "comments",
-			true, "logoId", true);
+			"regionId", true, "countryId", true, "statusListTypeId", true,
+			"comments", true, "logoId", true, "status", true);
 	}
 
 	@Test
@@ -623,15 +640,15 @@ public class OrganizationPersistenceTest {
 				new Class<?>[] {String.class}, "name"));
 
 		Assert.assertEquals(
-			Long.valueOf(organization.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				organization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
 			organization.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				organization, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(organization.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				organization, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected Organization addOrganization() throws Exception {
@@ -671,11 +688,13 @@ public class OrganizationPersistenceTest {
 
 		organization.setCountryId(RandomTestUtil.nextLong());
 
-		organization.setStatusId(RandomTestUtil.nextLong());
+		organization.setStatusListTypeId(RandomTestUtil.nextLong());
 
 		organization.setComments(RandomTestUtil.randomString());
 
 		organization.setLogoId(RandomTestUtil.nextLong());
+
+		organization.setStatus(RandomTestUtil.nextInt());
 
 		_organizations.add(_persistence.update(organization));
 

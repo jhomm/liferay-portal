@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -31,11 +22,18 @@ long[] classNameIdValues = StringUtil.split(ParamUtil.getString(request, "classN
 	<liferay-ui:error key="rules" message="please-enter-valid-rules" />
 	<liferay-ui:error key="rulesEngineException" message="please-check-the-syntax-of-your-rules" />
 
+	<aui:style type="text/css">
+		.lfr-rules-configuration--textarea {
+			height: 250px !important;
+			width: 100% !important;
+		}
+	</aui:style>
+
 	<clay:container-fluid>
 		<aui:fieldset>
 			<aui:input name="domainName" value='<%= ParamUtil.getString(request, "domainName", domainName) %>' wrapperCssClass="lfr-input-text-container" />
 
-			<aui:input name="rules" style="height: 250px; width: 100%;" type="textarea" value='<%= ParamUtil.getString(request, "rules", rules) %>' wrap="off" wrapperCssClass="lfr-textarea-container" />
+			<aui:input cssClass="lfr-rules-configuration--textarea" name="rules" type="textarea" value='<%= ParamUtil.getString(request, "rules", rules) %>' wrap="off" wrapperCssClass="lfr-textarea-container" />
 
 			<%
 
@@ -97,7 +95,7 @@ long[] classNameIdValues = StringUtil.split(ParamUtil.getString(request, "classN
 			if (classNameIds && currentClassNameIds) {
 				classNameIds.setAttribute(
 					'value',
-					Liferay.Util.listSelect(currentClassNameIds)
+					Liferay.Util.getSelectedOptionValues(currentClassNameIds)
 				);
 			}
 

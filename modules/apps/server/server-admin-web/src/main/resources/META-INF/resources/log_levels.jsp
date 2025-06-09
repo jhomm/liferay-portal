@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -30,14 +21,6 @@ PortletURL searchURL = PortletURLBuilder.createRenderURL(
 	"delta", delta
 ).buildPortletURL();
 
-PortletURL clearResultsURL = PortletURLBuilder.create(
-	PortletURLUtil.clone(searchURL, liferayPortletResponse)
-).setKeywords(
-	StringPool.BLANK
-).setNavigation(
-	(String)null
-).buildPortletURL();
-
 SearchContainer<Map.Entry<String, String>> loggerSearchContainer = new SearchContainer(liferayPortletRequest, searchURL, null, null);
 
 Map<String, String> currentPriorities = new TreeMap<>();
@@ -52,40 +35,11 @@ for (Map.Entry<String, String> entry : priorities.entrySet()) {
 	}
 }
 
-List<Map.Entry<String, String>> currentPrioritiesList = ListUtil.fromCollection(currentPriorities.entrySet());
-
-loggerSearchContainer.setResults(ListUtil.subList(currentPrioritiesList, loggerSearchContainer.getStart(), loggerSearchContainer.getEnd()));
-loggerSearchContainer.setTotal(currentPrioritiesList.size());
-
-PortletURL addLogCategoryURL = PortletURLBuilder.createRenderURL(
-	renderResponse
-).setMVCRenderCommandName(
-	"/server_admin/add_log_category"
-).setRedirect(
-	currentURL
-).buildPortletURL();
-
-CreationMenu creationMenu =
-	new CreationMenu() {
-		{
-			addPrimaryDropdownItem(
-				dropdownItem -> {
-					dropdownItem.setHref(addLogCategoryURL);
-					dropdownItem.setLabel(LanguageUtil.get(request, "add-category"));
-				});
-		}
-	};
+loggerSearchContainer.setResultsAndTotal(ListUtil.fromCollection(currentPriorities.entrySet()));
 %>
 
 <clay:management-toolbar
-	clearResultsURL="<%= String.valueOf(clearResultsURL) %>"
-	creationMenu="<%= creationMenu %>"
-	itemsTotal="<%= loggerSearchContainer.getTotal() %>"
-	searchActionURL="<%= String.valueOf(searchURL) %>"
-	searchFormName="searchFm"
-	selectable="<%= false %>"
-	showCreationMenu="<%= true %>"
-	showSearch="<%= true %>"
+	managementToolbarDisplayContext="<%= new LogLevelsManagementToolbarDisplayContext(liferayPortletRequest, liferayPortletResponse, loggerSearchContainer) %>"
 />
 
 <clay:container-fluid>
@@ -102,11 +56,13 @@ CreationMenu creationMenu =
 			%>
 
 			<liferay-ui:search-container-column-text
+				cssClass="table-cell-expand table-title"
 				name="category"
 				value="<%= HtmlUtil.escape(name) %>"
 			/>
 
 			<liferay-ui:search-container-column-text
+				cssClass="table-cell-expand-smallest table-cell-minw-150 table-cell-ws-nowrap"
 				name="level"
 			>
 
@@ -114,19 +70,19 @@ CreationMenu creationMenu =
 				String priority = (String)entry.getValue();
 				%>
 
-				<select name="<%= liferayPortletResponse.getNamespace() + "logLevel" + HtmlUtil.escapeAttribute(name) %>">
+				<aui:select label="" name='<%= liferayPortletResponse.getNamespace() + "logLevel" + HtmlUtil.escapeAttribute(name) %>' useNamespace="<%= false %>" wrapperCssClass="mb-0">
 
 					<%
 					for (int j = 0; j < _ALL_PRIORITIES.length; j++) {
 					%>
 
-						<option <%= priority.equals(_ALL_PRIORITIES[j]) ? "selected" : StringPool.BLANK %> value="<%= _ALL_PRIORITIES[j] %>"><%= _ALL_PRIORITIES[j] %></option>
+						<aui:option label="<%= _ALL_PRIORITIES[j] %>" selected="<%= priority.equals(_ALL_PRIORITIES[j]) %>" value="<%= _ALL_PRIORITIES[j] %>" />
 
 					<%
 					}
 					%>
 
-				</select>
+				</aui:select>
 			</liferay-ui:search-container-column-text>
 		</liferay-ui:search-container-row>
 

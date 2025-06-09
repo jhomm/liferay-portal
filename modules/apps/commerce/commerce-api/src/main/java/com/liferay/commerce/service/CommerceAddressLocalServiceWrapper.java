@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service;
@@ -21,11 +12,17 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceAddressLocalService
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 public class CommerceAddressLocalServiceWrapper
 	implements CommerceAddressLocalService,
 			   ServiceWrapper<CommerceAddressLocalService> {
+
+	public CommerceAddressLocalServiceWrapper() {
+		this(null);
+	}
 
 	public CommerceAddressLocalServiceWrapper(
 		CommerceAddressLocalService commerceAddressLocalService) {
@@ -33,62 +30,29 @@ public class CommerceAddressLocalServiceWrapper
 		_commerceAddressLocalService = commerceAddressLocalService;
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), defaultBilling/Shipping exist on Account Entity. Pass type.
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.commerce.model.CommerceAddress addCommerceAddress(
-			String className, long classPK, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			boolean defaultBilling, boolean defaultShipping,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceAddressLocalService.addCommerceAddress(
-			className, classPK, name, description, street1, street2, street3,
-			city, zip, regionId, countryId, phoneNumber, defaultBilling,
-			defaultShipping, serviceContext);
-	}
-
-	@Override
-	public com.liferay.commerce.model.CommerceAddress addCommerceAddress(
-			String className, long classPK, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			int type,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceAddressLocalService.addCommerceAddress(
-			className, classPK, name, description, street1, street2, street3,
-			city, zip, regionId, countryId, phoneNumber, type, serviceContext);
-	}
-
 	@Override
 	public com.liferay.commerce.model.CommerceAddress addCommerceAddress(
 			String externalReferenceCode, String className, long classPK,
-			String name, String description, String street1, String street2,
-			String street3, String city, String zip, long regionId,
-			long countryId, String phoneNumber, int type,
+			long countryId, long regionId, String city, String description,
+			String name, String phoneNumber, String street1, String street2,
+			String street3, String subtype, int type, String zip,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceAddressLocalService.addCommerceAddress(
-			externalReferenceCode, className, classPK, name, description,
-			street1, street2, street3, city, zip, regionId, countryId,
-			phoneNumber, type, serviceContext);
+			externalReferenceCode, className, classPK, countryId, regionId,
+			city, description, name, phoneNumber, street1, street2, street3,
+			subtype, type, zip, serviceContext);
 	}
 
 	@Override
 	public com.liferay.commerce.model.CommerceAddress copyCommerceAddress(
-			long commerceAddressId, String className, long classPK,
+			long sourceCommerceAddressId, String className, long classPK,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceAddressLocalService.copyCommerceAddress(
-			commerceAddressId, className, classPK, serviceContext);
+			sourceCommerceAddressId, className, classPK, serviceContext);
 	}
 
 	@Override
@@ -106,15 +70,6 @@ public class CommerceAddressLocalServiceWrapper
 
 		return _commerceAddressLocalService.deleteCommerceAddress(
 			commerceAddress);
-	}
-
-	@Override
-	public com.liferay.commerce.model.CommerceAddress deleteCommerceAddress(
-			long commerceAddressId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceAddressLocalService.deleteCommerceAddress(
-			commerceAddressId);
 	}
 
 	@Override
@@ -140,20 +95,21 @@ public class CommerceAddressLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.model.CommerceAddress
-		fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId) {
-
-		return _commerceAddressLocalService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public com.liferay.commerce.model.CommerceAddress fetchCommerceAddress(
 		long commerceAddressId) {
 
 		return _commerceAddressLocalService.fetchCommerceAddress(
 			commerceAddressId);
+	}
+
+	@Override
+	public com.liferay.commerce.model.CommerceAddress
+		fetchCommerceAddressByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return _commerceAddressLocalService.
+			fetchCommerceAddressByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -187,22 +143,43 @@ public class CommerceAddressLocalServiceWrapper
 
 	@Override
 	public java.util.List<com.liferay.commerce.model.CommerceAddress>
+		getBillingCommerceAddresses(
+			long channelId, String className, long classPK, int start,
+			int end) {
+
+		return _commerceAddressLocalService.getBillingCommerceAddresses(
+			channelId, className, classPK, start, end);
+	}
+
+	@Override
+	public java.util.List<com.liferay.commerce.model.CommerceAddress>
 			getBillingCommerceAddresses(
-				long companyId, String className, long classPK, String keywords,
-				int start, int end, com.liferay.portal.kernel.search.Sort sort)
+				long companyId, String className, long classPK,
+				long commerceChannelId, String keywords, int start, int end,
+				com.liferay.portal.kernel.search.Sort sort)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceAddressLocalService.getBillingCommerceAddresses(
-			companyId, className, classPK, keywords, start, end, sort);
+			companyId, className, classPK, commerceChannelId, keywords, start,
+			end, sort);
 	}
 
 	@Override
 	public int getBillingCommerceAddressesCount(
-			long companyId, String className, long classPK, String keywords)
+		long channelId, String className, long classPK, int start, int end) {
+
+		return _commerceAddressLocalService.getBillingCommerceAddressesCount(
+			channelId, className, classPK, start, end);
+	}
+
+	@Override
+	public int getBillingCommerceAddressesCount(
+			long companyId, String className, long classPK,
+			long commerceChannelId, String keywords)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceAddressLocalService.getBillingCommerceAddressesCount(
-			companyId, className, classPK, keywords);
+			companyId, className, classPK, commerceChannelId, keywords);
 	}
 
 	@Override
@@ -323,22 +300,35 @@ public class CommerceAddressLocalServiceWrapper
 
 	@Override
 	public java.util.List<com.liferay.commerce.model.CommerceAddress>
+		getShippingCommerceAddresses(
+			long channelId, String className, long classPK, int start,
+			int end) {
+
+		return _commerceAddressLocalService.getShippingCommerceAddresses(
+			channelId, className, classPK, start, end);
+	}
+
+	@Override
+	public java.util.List<com.liferay.commerce.model.CommerceAddress>
 			getShippingCommerceAddresses(
-				long companyId, String className, long classPK, String keywords,
-				int start, int end, com.liferay.portal.kernel.search.Sort sort)
+				long companyId, String className, long classPK,
+				long commerceChannelId, String keywords, int start, int end,
+				com.liferay.portal.kernel.search.Sort sort)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceAddressLocalService.getShippingCommerceAddresses(
-			companyId, className, classPK, keywords, start, end, sort);
+			companyId, className, classPK, commerceChannelId, keywords, start,
+			end, sort);
 	}
 
 	@Override
 	public int getShippingCommerceAddressesCount(
-			long companyId, String className, long classPK, String keywords)
+			long companyId, String className, long classPK,
+			long commerceChannelId, String keywords)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceAddressLocalService.getShippingCommerceAddressesCount(
-			companyId, className, classPK, keywords);
+			companyId, className, classPK, commerceChannelId, keywords);
 	}
 
 	/**
@@ -368,37 +358,19 @@ public class CommerceAddressLocalServiceWrapper
 			companyId, className, classPK, keywords, start, end, sort);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), defaultBilling/Shipping exist on Account Entity. Pass type.
-	 */
-	@Deprecated
 	@Override
 	public com.liferay.commerce.model.CommerceAddress updateCommerceAddress(
-			long commerceAddressId, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			boolean defaultBilling, boolean defaultShipping,
+			String externalReferenceCode, long commerceAddressId,
+			long countryId, long regionId, String city, String description,
+			String name, String phoneNumber, String street1, String street2,
+			String street3, String subtype, int type, String zip,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceAddressLocalService.updateCommerceAddress(
-			commerceAddressId, name, description, street1, street2, street3,
-			city, zip, regionId, countryId, phoneNumber, defaultBilling,
-			defaultShipping, serviceContext);
-	}
-
-	@Override
-	public com.liferay.commerce.model.CommerceAddress updateCommerceAddress(
-			long commerceAddressId, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			int type,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceAddressLocalService.updateCommerceAddress(
-			commerceAddressId, name, description, street1, street2, street3,
-			city, zip, regionId, countryId, phoneNumber, type, serviceContext);
+			externalReferenceCode, commerceAddressId, countryId, regionId, city,
+			description, name, phoneNumber, street1, street2, street3, subtype,
+			type, zip, serviceContext);
 	}
 
 	@Override

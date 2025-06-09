@@ -1,0 +1,441 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {isObject} from '../util/utils';
+
+function parse(value, field) {
+	if (field.parser) {
+		if (field.parser instanceof Function) {
+			value.content = field.parser.call(this, value.content);
+		}
+	}
+
+	return value;
+}
+
+function getChildAttributes(childNodes) {
+	const attributes = [];
+
+	Object.entries(childNodes).map((childNode) => {
+		const childAttributes = childNode[1].attributes;
+		if (childAttributes) {
+			Object.entries(childAttributes).map((attribute) => {
+				attributes.push({
+					[attribute[1].value]: attribute[1].ownerElement.textContent,
+				});
+			});
+		}
+	});
+
+	return attributes;
+}
+
+function getLocationValue(field, context) {
+	let locator = field.locator || field.key || field;
+	if (locator === 'taskTimers') {
+		locator = 'task-timers';
+	}
+	const xmlDoc = context.ownerDocument || context;
+	let result;
+	let res;
+	const value = {};
+
+	if (xmlDoc.evaluate !== undefined) {
+		result = xmlDoc.evaluate(
+			locator,
+			context,
+			xmlDoc.createNSResolver(
+				!context.ownerDocument
+					? context.documentElement
+					: context.ownerDocument.documentElement
+			),
+			0,
+			null
+		);
+		while ((res = result.iterateNext())) {
+			const resNodesAttributes = getChildAttributes(res.childNodes);
+
+			if (resNodesAttributes.length) {
+				value.content = resNodesAttributes;
+			}
+			else if (res.children.length) {
+				const content = [];
+
+				for (const child of res.children) {
+					const childContent = {};
+
+					if (!child.children.length) {
+						const childNodesAttributes = getChildAttributes(
+							child.childNodes
+						);
+
+						let itemContent;
+
+						if (childNodesAttributes.length) {
+							itemContent = childNodesAttributes;
+						}
+						else {
+							itemContent = child.textContent;
+						}
+
+						childContent[child.tagName] = itemContent;
+					}
+					else {
+						for (const item of child.children) {
+							if (item.children.length) {
+								let childNodesAttributes = [];
+								let grandChildren = [];
+								let grandGrandChildren = [];
+								let currentTagName;
+
+								for (const itemChild of item.children) {
+									childNodesAttributes = getChildAttributes(
+										itemChild.childNodes
+									);
+
+									for (const item of itemChild.childNodes) {
+										if (item.children) {
+											for (const itemChildren of item.children) {
+												const tagName =
+													itemChildren.tagName ===
+													'name'
+														? `${item.tagName}-name`
+														: itemChildren.tagName;
+												if (!childContent[tagName]) {
+													childContent[tagName] = [];
+												}
+
+												childContent[tagName].push(
+													itemChildren.textContent
+												);
+											}
+										}
+									}
+
+									const itemChildNodesAttributes =
+										getChildAttributes(item.childNodes);
+
+									let itemContent;
+
+									if (childNodesAttributes.length) {
+										itemContent = childNodesAttributes;
+									}
+									else if (
+										itemChildNodesAttributes.length
+									) {
+										itemContent = itemChildNodesAttributes;
+
+										if (itemChildNodesAttributes.length) {
+											if (!childContent[item.tagName]) {
+												childContent[item.tagName] = [];
+											}
+
+											childContent[item.tagName] =
+												itemContent;
+										}
+
+										break;
+									}
+
+									if (itemChild.children.length) {
+										if (!currentTagName) {
+											currentTagName = itemChild.tagName;
+										}
+										else if (
+											currentTagName !== itemChild.tagName
+										) {
+											grandChildren = [];
+										}
+										currentTagName = itemChild.tagName;
+										const subItemContent = {};
+
+										for (const itemGrandChild of itemChild.children) {
+											if (
+												itemGrandChild.children.length
+											) {
+												grandGrandChildren = [];
+
+												for (const grandGrand of itemGrandChild.children) {
+													const grandGrandContent =
+														{};
+
+													if (
+														grandGrand.children
+															.length
+													) {
+														grandGrandContent[
+															grandGrand.tagName
+														] = {};
+
+														for (const grandGrandChild of grandGrand.children) {
+															if (
+																!grandGrandChild
+																	.children
+																	.length
+															) {
+																fillContent(
+																	grandGrandChild.tagName,
+																	grandGrandContent[
+																		grandGrand
+																			.tagName
+																	],
+																	grandGrandChild.textContent
+																);
+															}
+															else {
+																for (const grandGrandGrandChild of grandGrandChild.children) {
+																	if (
+																		!grandGrandContent[
+																			grandGrand
+																				.tagName
+																		][
+																			grandGrandGrandChild
+																				.tagName
+																		]
+																	) {
+																		grandGrandContent[
+																			grandGrand.tagName
+																		][
+																			grandGrandGrandChild.tagName
+																		] = [];
+																	}
+
+																	grandGrandContent[
+																		grandGrand
+																			.tagName
+																	][
+																		grandGrandGrandChild
+																			.tagName
+																	].push(
+																		grandGrandGrandChild.textContent
+																	);
+																}
+															}
+														}
+													}
+													else {
+														grandGrandContent[
+															grandGrand.tagName
+														] =
+															grandGrand.textContent;
+													}
+
+													grandGrandChildren.push(
+														grandGrandContent
+													);
+												}
+
+												fillContent(
+													itemGrandChild.tagName,
+													subItemContent,
+													grandGrandChildren
+												);
+											}
+											else {
+												fillContent(
+													itemGrandChild.tagName,
+													subItemContent,
+													itemGrandChild.textContent
+												);
+											}
+
+											for (const itemGrandChildAttribute of itemGrandChild.attributes) {
+												subItemContent[
+													itemGrandChildAttribute.name
+												] =
+													itemGrandChildAttribute.value;
+											}
+										}
+										grandChildren.push(subItemContent);
+									}
+									else {
+										itemContent = itemChild.textContent;
+										if (!childContent[itemChild.tagName]) {
+											childContent[itemChild.tagName] =
+												[];
+										}
+										childContent[itemChild.tagName].push(
+											itemContent
+										);
+									}
+
+									childContent[currentTagName] =
+										grandChildren;
+								}
+
+								const itemAttributes = item.attributes;
+
+								if (itemAttributes && itemAttributes.length) {
+									for (
+										let i = 0;
+										i < itemAttributes.length;
+										i++
+									) {
+										if (
+											!childContent[
+												itemAttributes[i].name
+											]
+										) {
+											childContent[
+												itemAttributes[i].name
+											] = [];
+										}
+
+										childContent[
+											itemAttributes[i].name
+										].push(itemAttributes[i].value);
+									}
+								}
+							}
+							else {
+								const childNodesAttributes = getChildAttributes(
+									item.childNodes
+								);
+
+								let itemContent;
+
+								if (childNodesAttributes.length) {
+									itemContent = childNodesAttributes;
+								}
+								else {
+									itemContent = item.textContent;
+								}
+
+								fillContent(
+									item.tagName,
+									childContent,
+									itemContent
+								);
+							}
+						}
+					}
+
+					content.push(childContent);
+				}
+
+				value.content = content;
+			}
+			else {
+				value.content = res.textContent;
+			}
+		}
+	}
+
+	return parse(value, field);
+}
+
+function fillContent(index, item, content) {
+	if (!item[index]) {
+		item[index] = content;
+
+		return;
+	}
+
+	if (!Array.isArray(item[index])) {
+		item[index] = [item[index], content];
+
+		return;
+	}
+	if (Array.isArray(content)) {
+		item[index] = item[index].concat(content);
+	}
+	else {
+		item[index] = item[index].push(content);
+	}
+}
+function parseMeta(metaFields, xmldoc_in, data_out) {
+	if (isObject(metaFields)) {
+		let key;
+		const xmldoc = xmldoc_in.ownerDocument || xmldoc_in;
+
+		for (key in metaFields) {
+			if (Object.keys(metaFields).includes(key)) {
+				data_out.meta[key] = getLocationValue(
+					metaFields[key],
+					xmldoc
+				).content;
+			}
+		}
+	}
+
+	return data_out;
+}
+
+function parseResults(schema, xmldoc_in, data_out) {
+	if (schema.resultListLocator && Array.isArray(schema.resultFields)) {
+		const nodeList = xmldoc_in.getElementsByTagName(
+			schema.resultListLocator
+		);
+		const fields = schema.resultFields;
+		const results = [];
+		let node;
+		let field;
+		let result;
+		let i;
+		let j;
+
+		if (nodeList.length) {
+
+			// Loop through each result node
+
+			for (i = nodeList.length - 1; i >= 0; i--) {
+				result = {};
+				node = nodeList[i];
+
+				// Find each field value
+
+				for (j = fields.length - 1; j >= 0; j--) {
+					field = fields[j];
+
+					const locationValue = getLocationValue(field, node);
+
+					result[field.key || field] = locationValue.content;
+
+					if (locationValue.attributes) {
+						result.metaAttributes = locationValue.attributes;
+					}
+				}
+
+				results[i] = result;
+			}
+
+			data_out.results = results;
+		}
+		else {
+			data_out.error = new Error(
+				'XML schema result nodes retrieval failure'
+			);
+		}
+	}
+
+	return data_out;
+}
+
+const XMLSchemaUtil = {
+	applySchema(schema, data) {
+		const xmlDoc = data;
+		let data_out = {meta: {}, results: []};
+
+		if (
+			xmlDoc &&
+			xmlDoc.nodeType &&
+			(xmlDoc.nodeType === 9 ||
+				xmlDoc.nodeType === 1 ||
+				xmlDoc.nodeType === 11) &&
+			schema
+		) {
+			data_out = parseResults(schema, xmlDoc, data_out);
+
+			data_out = parseMeta(schema.metaFields, xmlDoc, data_out);
+		}
+		else {
+			data_out.error = new Error('XML schema parse failure');
+		}
+
+		return data_out;
+	},
+};
+
+export default XMLSchemaUtil;

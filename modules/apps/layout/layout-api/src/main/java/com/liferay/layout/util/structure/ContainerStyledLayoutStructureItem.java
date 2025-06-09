@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.util.structure;
 
 import com.liferay.layout.util.constants.LayoutDataItemTypeConstants;
+import com.liferay.layout.util.constants.StyledLayoutStructureConstants;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -36,6 +28,14 @@ public class ContainerStyledLayoutStructureItem
 		_linkJSONObject = JSONFactoryUtil.createJSONObject();
 	}
 
+	public ContainerStyledLayoutStructureItem(
+		String itemId, String parentItemId) {
+
+		super(itemId, parentItemId);
+
+		_linkJSONObject = JSONFactoryUtil.createJSONObject();
+	}
+
 	@Override
 	public boolean equals(Object object) {
 		if (this == object) {
@@ -50,7 +50,7 @@ public class ContainerStyledLayoutStructureItem
 			(ContainerStyledLayoutStructureItem)object;
 
 		if (!Objects.equals(
-				_linkJSONObject.toJSONString(),
+				_linkJSONObject.toString(),
 				containerStyledLayoutStructureItem._linkJSONObject.
 					toJSONString()) ||
 			!Objects.equals(
@@ -62,33 +62,118 @@ public class ContainerStyledLayoutStructureItem
 		return super.equals(object);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getWidthType()}
-	 */
-	@Deprecated
-	public String getContainerType() {
-		return _widthType;
+	public String getAlign() {
+		return _align;
 	}
 
 	public String getContentDisplay() {
 		return _contentDisplay;
 	}
 
+	public String getContentVisibility() {
+		return _contentVisibility;
+	}
+
+	public String getDisplay() {
+		return stylesJSONObject.getString("display");
+	}
+
+	public String getFlexWrap() {
+		return _flexWrap;
+	}
+
+	public String getHtmlTag() {
+		return _htmlTag;
+	}
+
 	@Override
 	public JSONObject getItemConfigJSONObject() {
 		JSONObject jsonObject = super.getItemConfigJSONObject();
 
-		return jsonObject.put(
-			"align", _align
+		jsonObject.put(
+			"align",
+			() -> {
+				if (Validator.isBlank(_align)) {
+					return null;
+				}
+
+				return _align;
+			}
 		).put(
-			"contentDisplay", _contentDisplay
+			"contentDisplay",
+			() -> {
+				if (Validator.isBlank(_contentDisplay)) {
+					return null;
+				}
+
+				return _contentDisplay;
+			}
 		).put(
-			"justify", _justify
+			"contentVisibility",
+			() -> {
+				if (Validator.isBlank(_contentVisibility)) {
+					return null;
+				}
+
+				return _contentVisibility;
+			}
 		).put(
-			"link", _linkJSONObject
+			"flexWrap",
+			() -> {
+				if (Validator.isBlank(_flexWrap)) {
+					return null;
+				}
+
+				return _flexWrap;
+			}
 		).put(
-			"widthType", _widthType
+			"htmlTag",
+			() -> {
+				if (Validator.isBlank(_htmlTag)) {
+					return null;
+				}
+
+				return _htmlTag;
+			}
+		).put(
+			"indexed",
+			() -> {
+				if (_indexed) {
+					return null;
+				}
+
+				return false;
+			}
+		).put(
+			"justify",
+			() -> {
+				if (Validator.isBlank(_justify)) {
+					return null;
+				}
+
+				return _justify;
+			}
+		).put(
+			"link",
+			() -> {
+				if (_linkJSONObject.length() == 0) {
+					return null;
+				}
+
+				return _linkJSONObject;
+			}
+		).put(
+			"widthType",
+			() -> {
+				if (Objects.equals(_widthType, "fluid")) {
+					return null;
+				}
+
+				return _widthType;
+			}
 		);
+
+		return jsonObject;
 	}
 
 	@Override
@@ -96,17 +181,12 @@ public class ContainerStyledLayoutStructureItem
 		return LayoutDataItemTypeConstants.TYPE_CONTAINER;
 	}
 
-	public JSONObject getLinkJSONObject() {
-		return _linkJSONObject;
+	public String getJustify() {
+		return _justify;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getPaddingLeft()} and {@link #getPaddingRight()}
-	 */
-	@Deprecated
-	public int getPaddingHorizontal() {
-		return 0;
+	public JSONObject getLinkJSONObject() {
+		return _linkJSONObject;
 	}
 
 	public String getWidthType() {
@@ -118,57 +198,32 @@ public class ContainerStyledLayoutStructureItem
 		return HashUtil.hash(0, getItemId());
 	}
 
+	public boolean isIndexed() {
+		return _indexed;
+	}
+
 	public void setAlign(String align) {
 		_align = align;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setBackgroundColorCssClass(String backgroundColorCssClass) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setBackgroundImageJSONObject(
-		JSONObject backgroundImageJSONObject) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setBorderColor(String borderColor) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setBorderRadius(String borderRadius) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setBorderWidth(int borderWidth) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #setWidthType(String)}
-	 */
-	@Deprecated
-	public void setContainerType(String containerType) {
-		_widthType = containerType;
-	}
-
 	public void setContentDisplay(String contentDisplay) {
 		_contentDisplay = contentDisplay;
+	}
+
+	public void setContentVisibility(String contentVisibility) {
+		_contentVisibility = contentVisibility;
+	}
+
+	public void setFlexWrap(String flexWrap) {
+		_flexWrap = flexWrap;
+	}
+
+	public void setHtmlTag(String htmlTag) {
+		_htmlTag = htmlTag;
+	}
+
+	public void setIndexed(boolean indexed) {
+		_indexed = indexed;
 	}
 
 	public void setJustify(String justify) {
@@ -177,84 +232,6 @@ public class ContainerStyledLayoutStructureItem
 
 	public void setLinkJSONObject(JSONObject linkJSONObject) {
 		_linkJSONObject = linkJSONObject;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setMarginBottom(int marginBottom) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setMarginLeft(int marginLeft) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setMarginRight(int marginRight) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setMarginTop(int marginTop) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setOpacity(int opacity) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setPaddingBottom(int paddingBottom) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #setPaddingLeft(int)} and {@link #setPaddingRight(int)}
-	 */
-	@Deprecated
-	public void setPaddingHorizontal(int paddingHorizontal) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setPaddingLeft(int paddingLeft) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setPaddingRight(int paddingRight) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setPaddingTop(int paddingTop) {
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setShadow(String shadow) {
 	}
 
 	public void setWidthType(String widthType) {
@@ -275,12 +252,33 @@ public class ContainerStyledLayoutStructureItem
 			setContentDisplay(itemConfigJSONObject.getString("contentDisplay"));
 		}
 
+		if (itemConfigJSONObject.has("contentVisibility")) {
+			setContentVisibility(
+				itemConfigJSONObject.getString("contentVisibility"));
+		}
+
+		if (itemConfigJSONObject.has("flexWrap")) {
+			setFlexWrap(itemConfigJSONObject.getString("flexWrap"));
+		}
+
+		if (itemConfigJSONObject.has("htmlTag")) {
+			String htmlTag = itemConfigJSONObject.getString("htmlTag");
+
+			if (!Objects.equals(htmlTag, "main")) {
+				setHtmlTag(htmlTag);
+			}
+		}
+
 		if (itemConfigJSONObject.has("justify")) {
 			setJustify(itemConfigJSONObject.getString("justify"));
 		}
 
 		if (itemConfigJSONObject.has("link")) {
 			setLinkJSONObject(itemConfigJSONObject.getJSONObject("link"));
+		}
+
+		if (itemConfigJSONObject.has("indexed")) {
+			setIndexed(itemConfigJSONObject.getBoolean("indexed"));
 		}
 
 		if (itemConfigJSONObject.has("containerType") ||
@@ -379,8 +377,12 @@ public class ContainerStyledLayoutStructureItem
 
 	private String _align = "";
 	private String _contentDisplay = "";
+	private String _contentVisibility = "";
+	private String _flexWrap = "";
+	private String _htmlTag = "";
+	private boolean _indexed = true;
 	private String _justify = "";
 	private JSONObject _linkJSONObject;
-	private String _widthType = "fluid";
+	private String _widthType = StyledLayoutStructureConstants.WIDTH_TYPE;
 
 }

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.internal.search;
 
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
+import com.liferay.commerce.product.constants.CPDisplayLayoutConstants;
 import com.liferay.commerce.product.constants.CPField;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDisplayLayout;
@@ -37,17 +29,19 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import java.io.Serializable;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -55,7 +49,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(enabled = false, immediate = true, service = Indexer.class)
+@Component(service = Indexer.class)
 public class CPDisplayLayoutIndexer extends BaseIndexer<CPDisplayLayout> {
 
 	public static final String CLASS_NAME = CPDisplayLayout.class.getName();
@@ -89,6 +83,19 @@ public class CPDisplayLayoutIndexer extends BaseIndexer<CPDisplayLayout> {
 			contextBooleanFilter.addTerm(
 				FIELD_ENTRY_MODEL_CLASS_NAME, entryModelClassName,
 				BooleanClauseOccur.MUST);
+		}
+
+		String groupId = GetterUtil.getString(attributes.get(Field.GROUP_ID));
+
+		if (Validator.isNotNull(groupId)) {
+			contextBooleanFilter.addTerm(
+				Field.GROUP_ID, groupId, BooleanClauseOccur.MUST);
+		}
+
+		Integer type = (Integer)attributes.get(Field.TYPE);
+
+		if (type != null) {
+			contextBooleanFilter.addRequiredTerm(Field.TYPE, type);
 		}
 	}
 
@@ -150,12 +157,25 @@ public class CPDisplayLayoutIndexer extends BaseIndexer<CPDisplayLayout> {
 				_assetCategoryLocalService.getAssetCategory(
 					cpDisplayLayout.getClassPK());
 
+			String[] availableLanguageIds =
+				_localization.getAvailableLanguageIds(
+					assetCategory.getDescription());
+
+			for (String availableLanguageId : availableLanguageIds) {
+				document.addText(
+					_localization.getLocalizedName(
+						Field.DESCRIPTION, availableLanguageId),
+					HtmlUtil.stripHtml(
+						assetCategory.getDescription(availableLanguageId)));
+			}
+
 			Locale siteDefaultLocale = _portal.getSiteDefaultLocale(
 				assetCategory.getGroupId());
 
-			addLocalizedField(
-				document, Field.DESCRIPTION, siteDefaultLocale,
-				assetCategory.getDescriptionMap());
+			document.addText(
+				Field.DESCRIPTION,
+				HtmlUtil.stripHtml(
+					assetCategory.getDescription(siteDefaultLocale)));
 
 			document.addText(Field.NAME, assetCategory.getName());
 
@@ -166,8 +186,22 @@ public class CPDisplayLayoutIndexer extends BaseIndexer<CPDisplayLayout> {
 
 		document.addKeyword(Field.GROUP_ID, cpDisplayLayout.getGroupId());
 
+		if (Validator.isNotNull(
+				cpDisplayLayout.getLayoutPageTemplateEntryUuid())) {
+
+			document.addKeyword(
+				Field.TYPE,
+				CPDisplayLayoutConstants.TYPE_LAYOUT_PAGE_TEMPLATE_ENTRY);
+		}
+		else if (Validator.isNotNull(cpDisplayLayout.getLayoutUuid())) {
+			document.addKeyword(
+				Field.TYPE, CPDisplayLayoutConstants.TYPE_LAYOUT);
+		}
+
 		if (_log.isDebugEnabled()) {
-			_log.debug("Document " + cpDisplayLayout + " indexed successfully");
+			_log.debug(
+				"Commerce product display layout " + cpDisplayLayout +
+					" indexed successfully");
 		}
 
 		return document;
@@ -189,8 +223,7 @@ public class CPDisplayLayoutIndexer extends BaseIndexer<CPDisplayLayout> {
 	@Override
 	protected void doReindex(CPDisplayLayout cpDisplayLayout) throws Exception {
 		_indexWriterHelper.updateDocument(
-			getSearchEngineId(), cpDisplayLayout.getCompanyId(),
-			getDocument(cpDisplayLayout), isCommitImmediately());
+			cpDisplayLayout.getCompanyId(), getDocument(cpDisplayLayout));
 	}
 
 	@Override
@@ -202,12 +235,10 @@ public class CPDisplayLayoutIndexer extends BaseIndexer<CPDisplayLayout> {
 	protected void doReindex(String[] ids) throws Exception {
 		long companyId = GetterUtil.getLong(ids[0]);
 
-		reindexCPDisplayLayouts(companyId);
+		_reindexCPDisplayLayouts(companyId);
 	}
 
-	protected void reindexCPDisplayLayouts(long companyId)
-		throws PortalException {
-
+	private void _reindexCPDisplayLayouts(long companyId) throws Exception {
 		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
 			_cpDisplayLayoutLocalService.getIndexableActionableDynamicQuery();
 
@@ -222,12 +253,11 @@ public class CPDisplayLayoutIndexer extends BaseIndexer<CPDisplayLayout> {
 					if (_log.isWarnEnabled()) {
 						_log.warn(
 							"Unable to index commerce product display layout " +
-								cpDisplayLayout.getCPDisplayLayoutId(),
+								cpDisplayLayout,
 							portalException);
 					}
 				}
 			});
-		indexableActionableDynamicQuery.setSearchEngineId(getSearchEngineId());
 
 		indexableActionableDynamicQuery.performActions();
 	}
@@ -246,6 +276,9 @@ public class CPDisplayLayoutIndexer extends BaseIndexer<CPDisplayLayout> {
 
 	@Reference
 	private IndexWriterHelper _indexWriterHelper;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private Portal _portal;

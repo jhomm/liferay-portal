@@ -12,45 +12,161 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 	}
 
-	@priority = "5"
-	test CannotEnablePublicationsWhenStagingIsTurnedOn {
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+	@description = "This is a use case for LPS-163875. It shouldn't be possible to enable Publications is a remote live site."
+	@priority = 4
+	test CannotEnablePublicationsInRemoteLiveSite {
+		property app.server.bundles.size = "1";
+		property app.server.types = "tomcat";
+		property custom.properties = "auth.verifier.TunnelAuthVerifier.hosts.allowed=${line.separator}tunneling.servlet.shared.secret=1234567890123456";
+		property database.types = "mysql";
+		property databases.size = "1";
+		property minimum.slave.ram = "24";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ProductMenu.gotoPortlet(
-			category = "Publishing",
-			portlet = "Staging",
-			site = "Guest");
+		HeadlessSite.addSite(siteName = "Site Name");
 
-		Staging.activateStagingCP(siteName = "${siteName}");
+		JSONLayout.addPublicLayout(
+			groupName = "Site Name",
+			layoutName = "Staging Test Page");
+
+		Staging.remoteStagingSetUpViaJson(
+			groupName = "Site Name",
+			remotePort = 9080);
 
 		ApplicationsMenu.gotoPortlet(
 			category = "Publications",
 			panel = "Applications",
 			portlet = "Publications");
 
-		Check.checkToggleSwitch(locator1 = "Publications#PUBLICATIONS_TOGGLE_SWITCH");
+		Check.checkToggleSwitch(locator1 = "Publications#ENABLE_PUBLICATIONS_TOGGLE_SWITCH");
 
-		Click(locator1 = "Button#SUBMIT");
+		Alert.viewErrorMessage(errorMessage = "Staging is enabled for at least one site or asset library in the current virtual instance. Publications and staging cannot be used together.");
+
+		User.logoutPG();
+
+		User.firstLoginPG(
+			password = PropsUtil.get("default.admin.password"),
+			specificURL = "http://localhost:9080",
+			userEmailAddress = "test@liferay.com");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Publications",
+			panel = "Applications",
+			portlet = "Publications");
+
+		Check.checkToggleSwitch(locator1 = "Publications#ENABLE_PUBLICATIONS_TOGGLE_SWITCH");
 
 		Alert.viewErrorMessage(errorMessage = "Staging is enabled for at least one site or asset library in the current virtual instance. Publications and staging cannot be used together.");
 	}
 
-	@priority = "5"
-	test EnableDisablePublications {
+	@description = "Publications test in a non-root portal context."
+	@priority = 4
+	test CreatePublicationsInNonRootContext {
+		property app.server.types = "tomcat";
+		property database.types = "mysql";
+		property portal.context = "liferay";
+		property skip.clean-app-server-deploy-dir = "true";
+		property test.assert.warning.exceptions = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		Publications.enablePublications();
+
+		PublicationsNavigator.openPublicationsAdmin();
+
+		AssertTextEquals(
+			locator1 = "Publications#MANAGE_PUBLICATIONS_PAGE_TITLE",
+			value1 = "Publications");
+
+		AssertTextPresent(
+			key_publicationName = "Production",
+			locator1 = "Publications#PUBLICATIONS_INDICATOR_TITLE",
+			value1 = "Production");
+
+		Publications.createNewPublication(
+			gotoPublicationsAdmin = "true",
+			publicationDescription = "Publication Description",
+			publicationName = "Publication Name");
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent Content",
+			groupName = "Guest",
+			title = "WC WebContent Title");
+
+		Publications.publishPublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name");
+	}
+
+	@priority = 5
+	test EnableDisablePublicationsAndSandboxViaInstanceSettings {
+		property custom.properties = "jsonws.web.service.paths.excludes=";
+
+		JSONUser.addUser(
+			userEmailAddress = "userea@liferay.com",
+			userFirstName = "userfn",
+			userLastName = "userln",
+			userScreenName = "usersn");
+
+		JSONUser.setFirstPassword(
+			agreeToTermsAndAnswerReminderQuery = "true",
+			requireReset = "false",
+			userEmailAddress = "userea@liferay.com");
+
+		JSONRole.assignRoleToUser(
+			roleTitle = "Publications User",
+			userEmailAddress = "userea@liferay.com");
+
+		Publications.enablePublications(
+			enableSandboxOnly = "true",
+			gotoInstancesettings = "true");
+
+		Publications.createNewPublication(publicationName = "Publication Name");
+
+		SignOut.signOut();
+
+		User.firstLoginPG(
+			password = PropsUtil.get("default.admin.password"),
+			userEmailAddress = "userea@liferay.com");
+
+		var sandboxedPublicationName = Publications.generateSandboxedPublicationName(userScreenName = "usersn");
+
+		Publications.viewSandboxedPublication(
+			sandboxedPublicationName = ${sandboxedPublicationName},
+			sandboxedUser = "true");
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "test@liferay.com",
+			userLoginFullName = "test test");
+
+		Publications.disablePublications(gotoInstancesettings = "true");
+
+		FormFields.viewCheckboxNotChecked(fieldName = "Enabled");
+
+		FormFields.viewCheckboxNotChecked(fieldName = "Sandbox Enabled");
+
+		AssertElementNotPresent(locator1 = "Publications#PUBLICATIONS_INDICATOR_BUTTON");
+	}
+
+	@priority = 5
+	test EnableDisablePublicationsViaPublicationsAdmin {
 		property portal.acceptance = "true";
+
+		HeadlessSite.addSite(siteName = "Site Name");
 
 		Publications.enablePublications();
 
 		Publications.createNewPublication(publicationName = "Publication Name");
 
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name");
 
 		DMDocument.addCP(
 			dmDocumentDescription = "DM Document Description",
@@ -61,17 +177,19 @@ definition {
 
 		AssertElementNotPresent(locator1 = "Publications#PUBLICATIONS_INDICATOR_BUTTON");
 
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name");
 
 		DMDocument.viewDefault();
 	}
 
-	@priority = "5"
+	@priority = 5
 	test EnablePublicationsAndGoToOverview {
 		Publications.enablePublications();
 
+		PublicationsNavigator.openPublicationsAdmin();
+
 		AssertTextEquals(
-			locator1 = "Publications#MANGE_PUBLICATIONS_PAGE_TITLE",
+			locator1 = "Publications#MANAGE_PUBLICATIONS_PAGE_TITLE",
 			value1 = "Publications");
 
 		AssertTextPresent(
@@ -82,11 +200,11 @@ definition {
 		Click(locator1 = "Publications#PUBLICATIONS_INDICATOR_BUTTON");
 
 		for (var menuItem : list "Select a Publication,Create New Publication") {
-			MenuItem.viewPresent(menuItem = "${menuItem}");
+			MenuItem.viewPresent(menuItem = ${menuItem});
 		}
 
 		for (var menuItem : list "Review Changes,Schedule,Publish") {
-			MenuItem.viewNotPresent(menuItem = "${menuItem}");
+			MenuItem.viewNotPresent(menuItem = ${menuItem});
 		}
 
 		Navigator.openURL();

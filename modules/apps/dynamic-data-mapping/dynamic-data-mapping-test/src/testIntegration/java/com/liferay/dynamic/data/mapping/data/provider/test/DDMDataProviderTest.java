@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.data.provider.test;
@@ -17,9 +8,9 @@ package com.liferay.dynamic.data.mapping.data.provider.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.dynamic.data.mapping.data.provider.DDMDataProvider;
 import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderException;
+import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderRegistry;
 import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderRequest;
 import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderResponse;
-import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderTracker;
 import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.test.rule.Inject;
@@ -27,7 +18,6 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -66,7 +56,7 @@ public class DDMDataProviderTest {
 	@Test
 	public void testGetDDMDataProviderByInstanceId() {
 		DDMDataProvider testDataProvider =
-			_ddmDataProviderTracker.getDDMDataProviderByInstanceId("test");
+			_ddmDataProviderRegistry.getDDMDataProviderByInstanceId("test");
 
 		Assert.assertNotNull(testDataProvider);
 	}
@@ -74,7 +64,7 @@ public class DDMDataProviderTest {
 	@Test
 	public void testInvokeDataProvider() throws Exception {
 		DDMDataProvider testDataProvider =
-			_ddmDataProviderTracker.getDDMDataProviderByInstanceId("test");
+			_ddmDataProviderRegistry.getDDMDataProviderByInstanceId("test");
 
 		DDMDataProviderRequest.Builder builder =
 			DDMDataProviderRequest.Builder.newBuilder();
@@ -84,14 +74,10 @@ public class DDMDataProviderTest {
 		DDMDataProviderResponse ddmDataProviderResponse =
 			testDataProvider.getData(ddmDataProviderRequest);
 
-		Optional<List<KeyValuePair>> keyValuePairsOptional =
-			ddmDataProviderResponse.getOutputOptional(
-				"Default-Output", List.class);
+		List<KeyValuePair> keyValuePairs = ddmDataProviderResponse.getOutput(
+			"Default-Output", List.class);
 
-		Assert.assertTrue(keyValuePairsOptional.isPresent());
-
-		List<KeyValuePair> keyValuePairs = keyValuePairsOptional.get();
-
+		Assert.assertNotNull(keyValuePairs);
 		Assert.assertEquals(keyValuePairs.toString(), 2, keyValuePairs.size());
 	}
 
@@ -107,7 +93,7 @@ public class DDMDataProviderTest {
 	}
 
 	@Inject
-	private static DDMDataProviderTracker _ddmDataProviderTracker;
+	private static DDMDataProviderRegistry _ddmDataProviderRegistry;
 
 	private static ServiceRegistration<DDMDataProvider> _serviceRegistration;
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.query;
@@ -60,23 +51,23 @@ public class MatchQueryTranslatorImpl
 			}
 
 			if (type == MatchQuery.Type.PHRASE) {
-				return translateMatchPhraseQuery(
+				return _translateMatchPhraseQuery(
 					field, stringValue, matchQuery);
 			}
 			else if (type == MatchQuery.Type.PHRASE_PREFIX) {
-				return translateMatchPhrasePrefixQuery(
+				return _translateMatchPhrasePrefixQuery(
 					field, stringValue, matchQuery);
 			}
 		}
 
 		if ((type == null) || (type == MatchQuery.Type.BOOLEAN)) {
-			return translateMatchQuery(field, value, matchQuery);
+			return _translateMatchQuery(field, value, matchQuery);
 		}
 
 		throw new IllegalArgumentException("Invalid match query type: " + type);
 	}
 
-	protected QueryBuilder translateMatchPhrasePrefixQuery(
+	private QueryBuilder _translateMatchPhrasePrefixQuery(
 		String field, String value, MatchQuery matchQuery) {
 
 		MatchPhrasePrefixQueryBuilder matchPhrasePrefixQueryBuilder =
@@ -98,7 +89,7 @@ public class MatchQueryTranslatorImpl
 		return matchPhrasePrefixQueryBuilder;
 	}
 
-	protected QueryBuilder translateMatchPhraseQuery(
+	private QueryBuilder _translateMatchPhraseQuery(
 		String field, String value, MatchQuery matchQuery) {
 
 		MatchPhraseQueryBuilder matchPhraseQueryBuilder =
@@ -115,7 +106,7 @@ public class MatchQueryTranslatorImpl
 		return matchPhraseQueryBuilder;
 	}
 
-	protected QueryBuilder translateMatchQuery(
+	private QueryBuilder _translateMatchQuery(
 		String field, Object value, MatchQuery matchQuery) {
 
 		MatchQueryBuilder matchQueryBuilder = QueryBuilders.matchQuery(

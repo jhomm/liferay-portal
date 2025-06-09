@@ -10,7 +10,9 @@
 </thead>
 
 <tbody>
+
 <!-- SETTINGS HEADER -->
+
 <tr>
 	<td>HEADER_DESCRIPTION</td>
 	<td>//div[contains(@class,'content-header')]//div[contains(@class,'description')]</td>
@@ -31,13 +33,22 @@
 	<td>//div[contains(@class,'header-text')]//div[contains(text(),'Invite new users to Analytics Cloud and/or configure existing users.')]</td>
 	<td></td>
 </tr>
+
 <!-- SETTINGS NAVIGATION -->
+
 <tr>
 	<td>SETTINGS_NAVIGATION</td>
-	<td>//*[contains(@class, 'btn-link') and contains(@href,'${key_SettingsNavigation}')]</td>
+	<td>//*[@class='button-root' and contains(@href,'${key_settingsNavigation}')]</td>
 	<td></td>
 </tr>
+<tr>
+	<td>DEFINITIONS_OPTIONS</td>
+	<td>//a[contains(@href,'${key_definitionsOptions}')]</td>
+	<td></td>
+</tr>
+
 <!-- SETTINGS TOOLBAR -->
+
 <tr>
 	<td>DELETE_FROM_TOOLBAR</td>
 	<td>//*[contains(@class,'nav-btn')]</td>
@@ -50,7 +61,7 @@
 </tr>
 <tr>
 	<td>SELECT_ALL_CHECKBOX</td>
-	<td>//div/label/input[@data-testid='select-all-checkbox']</td>
+	<td>//div/label/input[@data-testid='select-all-checkbox' and not(@disabled)]</td>
 	<td></td>
 </tr>
 <tr>
@@ -58,7 +69,9 @@
 	<td>//h2[text()='Settings']</td>
 	<td></td>
 </tr>
+
 <!-- INTEREST KEYWORD -->
+
 <tr>
 	<td>KEYWORD_BUTTON</td>
 	<td>//*[contains(@class,'btn-primary')]</td>
@@ -66,22 +79,17 @@
 </tr>
 <tr>
 	<td>KEYWORD_CHECKBOX</td>
-	<td>//h4[text()='${key_KeywordName}']/parent::td/preceding-sibling::td//input</td>
+	<td>//div[text()='${key_keywordName}']/parent::td/preceding-sibling::td//input</td>
 	<td></td>
 </tr>
 <tr>
 	<td>KEYWORD_NAME_BY_INDEX</td>
-	<td>//tr[${key_index}]//*[contains(@class,'table-title') and (text()='${key_KeywordName}')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>KEYWORD_DELETE_ICON</td>
-	<td>//h4[text()='${key_KeywordName}']/parent::td/following-sibling::td[contains(@class,'row-inline-actions')]/span/button</td>
+	<td>xpath=(//*[contains(@class,'table-title')])[${key_index}]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>KEYWORD_NAME</td>
-	<td>//*[contains(@class,'table-title') and (text()='${key_KeywordName}')]</td>
+	<td>//*[contains(@class,'table-title') and (text()='${key_keywordName}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -94,7 +102,17 @@
 	<td>//*[@class='form-control-inset']</td>
 	<td></td>
 </tr>
+
+<!-- DATA CONTROL & PRIVACY -->
+
+<tr>
+	<td>RETENTION_PERIOD</td>
+	<td>//button[contains(@class,'form-control')]</td>
+	<td></td>
+</tr>
+
 <!-- ADD DATA SOURCE SCREEN -->
+
 <tr>
 	<td>DXP_DATA_SOURCE_OPTION</td>
 	<td>//button[contains(@class,'data-source-item')]</td>
@@ -106,8 +124,23 @@
 	<td></td>
 </tr>
 <tr>
-	<td>DXP_DATA_SOURCE_CHOOSE_OPTION</td>
-	<td>//h4[contains(@class,'section-title') and contains(.,'Choose Source')]/..//*[contains(@class,'data-source-item') and contains(.,'${key_sourceType}')]</td>
+	<td>COPY_TOKEN_BUTTON</td>
+	<td>//button[@aria-label='Click to Copy']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FIX_PACK_DROPDOWN</td>
+	<td>//select[contains(@class,'form-control')]//option[text()='${key_version}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MODAL_SCREEN</td>
+	<td>//div[contains(@class,'onboarding-base-screen-root')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CLOSE_ONBOARDING_MODAL</td>
+	<td>//button[contains(@class,'close')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -120,13 +153,17 @@
 	<td>//div[contains(@class,'sheet')]//span[contains(@class,'loading-animation')]</td>
 	<td></td>
 </tr>
+
 <!-- DELETE DATA SOURCE SCREEN -->
+
 <tr>
 	<td>DELETE_BUTTON_DATA_SOURCE</td>
 	<td>xpath=(//button | //a)[contains(@class,'btn')][normalize-space(text())='Delete Data Source']</td>
 	<td></td>
 </tr>
+
 <!-- DATA SOURCE INFORMATION -->
+
 <tr>
 	<td>DATA_SOURCE_LIST_STATUS</td>
 	<td>//span[contains(@class,'label-item') and contains(.,'${key_listStatus}')]</td>
@@ -134,7 +171,7 @@
 </tr>
 <tr>
 	<td>DATA_SOURCE_STATUS</td>
-	<td>//div[contains(@class,'data-source-status-root')]//span[text()='${key_dataSourceStatus}']</td>
+	<td>//*[contains(text(),'${key_sectionStatus}')]/../..//*[text()='${key_dataSourceStatus}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -149,6 +186,7 @@
 </tr>
 
 <!-- PROPERTIES -->
+
 <tr>
 	<td>SEARCH_BAR</td>
 	<td>//input[@type='text' and @placeholder='Search' and not(@disabled)]</td>
@@ -156,12 +194,12 @@
 </tr>
 <tr>
 	<td>SEARCH_BAR_IN_SPECIFIC_CARD</td>
-	<td>//h5[@class='card-title'and text()='${key_cardTitle}']/parent::div/parent::div//input[@type='text' and @placeholder='Search' and not(@disabled)]</td>
+	<td>//div[contains(@class,'card-title') and text()='${key_cardTitle}']/parent::div/parent::div//input[@type='text' and @placeholder='Search' and not(@disabled)]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ITEM_ON_LIST</td>
-	<td>//*[contains(@class,'text-truncate')and text()='${itemName}']</td>
+	<td>//*[contains(@class,'text-truncate')and normalize-space()='${itemName}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -190,7 +228,7 @@
 	<td></td>
 </tr>
 <tr>
-	<td>DELETE_CONFIRMATION_BUTTON</td>
+	<td>CONFIRMATION_BUTTON</td>
 	<td>//button[contains(@class,'btn-warning')]</td>
 	<td></td>
 </tr>
@@ -212,11 +250,6 @@
 <tr>
 	<td>PROPERTY_INPUT</td>
 	<td>//input[@name='name']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>NO_PROPERTIES_FOUND</td>
-	<td>//span[contains(@class,'title') and text()='No Properties Found']</td>
 	<td></td>
 </tr>
 <tr>
@@ -246,7 +279,7 @@
 </tr>
 <tr>
 	<td>PROPERTIES_ADD_USER_BUTTON</td>
-	<td>//button[contains(@class,'button-root btn btn-primary nav-btn px-3') and text()='Add User']</td>
+	<td>//button[contains(@class,'btn-primary') and text()='Add User']</td>
 	<td></td>
 </tr>
 <tr>
@@ -261,7 +294,7 @@
 </tr>
 <tr>
 	<td>PROPERTIES_DEFAULT_SECONDARY_DESCRIPTION</td>
-	<td>//span[contains(@class,'secondary-info') and contains(text(),'Create a new property to get started')]</td>
+	<td>//*[contains(text(),'${key_messageValue}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -289,7 +322,9 @@
 	<td>//span[@class='text-truncate' and text()='${key_propertyName}']//ancestor::tr//input</td>
 	<td></td>
 </tr>
+
 <!-- USAGE -->
+
 <tr>
 	<td>INDIVIDUALS_USAGE_METRIC</td>
 	<td>//*[contains(@class,'metric-name') and contains(.,'Individuals')]/..//span[contains(@class,'metric-current')]</td>
@@ -300,7 +335,9 @@
 	<td>//*[contains(@class,'metric-name') and contains(.,'Page Views')]/..//span[contains(@class,'metric-current')]</td>
 	<td></td>
 </tr>
+
 <!-- USERS LIST -->
+
 <tr>
 	<td>USER_UNSELECTABLE</td>
 	<td>//tr[contains(@class,'clickable disabled')]//td[contains(text(),'${userEmail}')]</td>
@@ -308,12 +345,12 @@
 </tr>
 <tr>
 	<td>USER_LIST</td>
-	<td>//h4[contains(@class,'table')]</td>
+	<td>//div[contains(@class,'table-title')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>USER_LIST_EMAIL</td>
-	<td>//h4[contains(@class,'table')]/parent::td/following-sibling::td</td>
+	<td>//div[contains(@class,'table')]/parent::td/following-sibling::td</td>
 	<td></td>
 </tr>
 <tr>
@@ -363,12 +400,12 @@
 </tr>
 <tr>
 	<td>PERMISSION_DROPDOWN</td>
-	<td>//button[contains(@class,'show-caret') and contains(.,'${key_permissionType}')]</td>
+	<td>//button[contains(@class,'dropdown-toggle') and contains(.,'${key_permissionType}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SELECT_SITE_ROLE</td>
-	<td>//div[contains(@class,'dropdown-menu show')]//button[contains(@value,'Site ${key_siteRole}')]</td>
+	<td>//button[contains(@class,'dropdown-item') and contains(.,'${key_siteRole}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -384,6 +421,22 @@
 <tr>
 	<td>VIEW_STATUS_PENDING</td>
 	<td>//span[text()='Pending']</td>
+	<td></td>
+</tr>
+
+<!-- CONFIGURE CSV -->
+
+<tr>
+	<td>DATA_SOURCE_FIELD_NAME</td>
+	<td>xpath=(//button[contains(@class,'show-caret') and contains(.,'${key_fieldName}')])[${key_index}]</td>
+	<td></td>
+</tr>
+
+<!-- APIs -->
+
+<tr>
+	<td>EXPIRATION_DATE</td>
+	<td>//label[contains(text(), 'Expiration Date')]//following-sibling::select</td>
 	<td></td>
 </tr>
 </tbody>

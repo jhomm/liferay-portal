@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.hits;
@@ -25,8 +16,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Michael C. Han
@@ -39,7 +28,7 @@ public class SearchHitImpl implements SearchHit, Serializable {
 	}
 
 	public void addSources(Map<String, Object> sourcesMap) {
-		if (!MapUtil.isEmpty(sourcesMap)) {
+		if (MapUtil.isNotEmpty(sourcesMap)) {
 			_sourcesMap.putAll(sourcesMap);
 		}
 	}
@@ -75,6 +64,11 @@ public class SearchHitImpl implements SearchHit, Serializable {
 	}
 
 	@Override
+	public Object[] getSortValues() {
+		return _sortValues;
+	}
+
+	@Override
 	public Map<String, Object> getSourcesMap() {
 		return _sourcesMap;
 	}
@@ -90,6 +84,7 @@ public class SearchHitImpl implements SearchHit, Serializable {
 		_id = searchHitImpl._id;
 		_matchedQueries = searchHitImpl._matchedQueries;
 		_score = searchHitImpl._score;
+		_sortValues = searchHitImpl._sortValues;
 		_version = searchHitImpl._version;
 
 		_highlightFieldsMap.putAll(searchHitImpl._highlightFieldsMap);
@@ -102,35 +97,6 @@ public class SearchHitImpl implements SearchHit, Serializable {
 
 	protected void addSource(String name, Object value) {
 		_sourcesMap.put(name, value);
-	}
-
-	protected void setDocument(Document document) {
-		_document = document;
-	}
-
-	protected void setExplanation(String explanation) {
-		_explanation = explanation;
-	}
-
-	protected void setId(String id) {
-		_id = id;
-	}
-
-	protected void setMatchedQueries(String... matchedQueries) {
-		if (matchedQueries != null) {
-			_matchedQueries = matchedQueries;
-		}
-		else {
-			_matchedQueries = new String[0];
-		}
-	}
-
-	protected void setScore(float score) {
-		_score = score;
-	}
-
-	protected void setVersion(long version) {
-		_version = version;
 	}
 
 	protected static class Builder implements SearchHitBuilder {
@@ -149,21 +115,6 @@ public class SearchHitImpl implements SearchHit, Serializable {
 			Collection<HighlightField> highlightFields) {
 
 			_searchHitImpl.addHighlightFields(highlightFields);
-
-			return this;
-		}
-
-		/**
-		 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-		 *             #addHighlightFields(Collection)}
-		 */
-		@Deprecated
-		@Override
-		public SearchHitBuilder addHighlightFields(
-			Stream<HighlightField> highlightFieldStream) {
-
-			_searchHitImpl.addHighlightFields(
-				highlightFieldStream.collect(Collectors.toList()));
 
 			return this;
 		}
@@ -189,42 +140,49 @@ public class SearchHitImpl implements SearchHit, Serializable {
 
 		@Override
 		public SearchHitBuilder document(Document document) {
-			_searchHitImpl.setDocument(document);
+			_searchHitImpl._setDocument(document);
 
 			return this;
 		}
 
 		@Override
 		public SearchHitBuilder explanation(String explanation) {
-			_searchHitImpl.setExplanation(explanation);
+			_searchHitImpl._setExplanation(explanation);
 
 			return this;
 		}
 
 		@Override
 		public SearchHitBuilder id(String id) {
-			_searchHitImpl.setId(id);
+			_searchHitImpl._setId(id);
 
 			return this;
 		}
 
 		@Override
 		public SearchHitBuilder matchedQueries(String... matchedQueries) {
-			_searchHitImpl.setMatchedQueries(matchedQueries);
+			_searchHitImpl._setMatchedQueries(matchedQueries);
 
 			return this;
 		}
 
 		@Override
 		public SearchHitBuilder score(float score) {
-			_searchHitImpl.setScore(score);
+			_searchHitImpl._setScore(score);
+
+			return this;
+		}
+
+		@Override
+		public SearchHitBuilder sortValues(Object[] sortValues) {
+			_searchHitImpl._setSortValues(sortValues);
 
 			return this;
 		}
 
 		@Override
 		public SearchHitBuilder version(long version) {
-			_searchHitImpl.setVersion(version);
+			_searchHitImpl._setVersion(version);
 
 			return this;
 		}
@@ -236,6 +194,39 @@ public class SearchHitImpl implements SearchHit, Serializable {
 	private SearchHitImpl() {
 	}
 
+	private void _setDocument(Document document) {
+		_document = document;
+	}
+
+	private void _setExplanation(String explanation) {
+		_explanation = explanation;
+	}
+
+	private void _setId(String id) {
+		_id = id;
+	}
+
+	private void _setMatchedQueries(String... matchedQueries) {
+		if (matchedQueries != null) {
+			_matchedQueries = matchedQueries;
+		}
+		else {
+			_matchedQueries = new String[0];
+		}
+	}
+
+	private void _setScore(float score) {
+		_score = score;
+	}
+
+	private void _setSortValues(Object[] sortValues) {
+		_sortValues = sortValues;
+	}
+
+	private void _setVersion(long version) {
+		_version = version;
+	}
+
 	private Document _document;
 	private String _explanation;
 	private final Map<String, HighlightField> _highlightFieldsMap =
@@ -243,6 +234,7 @@ public class SearchHitImpl implements SearchHit, Serializable {
 	private String _id;
 	private String[] _matchedQueries = new String[0];
 	private float _score;
+	private Object[] _sortValues;
 	private final Map<String, Object> _sourcesMap = new LinkedHashMap<>();
 	private long _version;
 

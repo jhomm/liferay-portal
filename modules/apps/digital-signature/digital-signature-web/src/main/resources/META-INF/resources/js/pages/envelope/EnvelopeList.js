@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayBadge from '@clayui/badge';
 import {ClayButtonWithIcon} from '@clayui/button';
 import ClayLabel from '@clayui/label';
-import {createResourceURL, fetch} from 'frontend-js-web';
-import moment from 'moment';
+import {createResourceURL, dateUtils, fetch, sub} from 'frontend-js-web';
 import React, {useContext} from 'react';
 import {Link} from 'react-router-dom';
 
@@ -24,6 +14,7 @@ import {AppContext} from '../../AppContext';
 import ListView from '../../components/list-view/ListView';
 import {DOCUSIGN_STATUS} from '../../utils/contants';
 import {toDateFromNow} from '../../utils/moment';
+
 const COLUMNS = [
 	{
 		key: 'name',
@@ -52,56 +43,38 @@ const COLUMNS = [
 	},
 ];
 
+const intl = new Intl.DateTimeFormat(
+	Liferay.ThemeDisplay.getBCP47LanguageId(),
+	{
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric',
+	}
+);
+
 const FILTERS = [
 	{
 		defaultText: Liferay.Language.get('all'),
 		items: [
 			{
-				label: Liferay.Util.sub(
-					Liferay.Language.get('last-x-months'),
-					12
-				),
-				value: moment()
-					.subtract(12, 'months')
-					.format('YYYY-MM-DD')
-					.toString(),
+				label: sub(Liferay.Language.get('last-x-months'), 12),
+				value: intl.format(dateUtils.subMonths(new Date(), 12)),
 			},
 			{
-				label: Liferay.Util.sub(
-					Liferay.Language.get('last-x-months'),
-					6
-				),
-				value: moment()
-					.subtract(6, 'months')
-					.format('YYYY-MM-DD')
-					.toString(),
+				label: sub(Liferay.Language.get('last-x-months'), 6),
+				value: intl.format(dateUtils.subMonths(new Date(), 6)),
 			},
 			{
-				label: Liferay.Util.sub(
-					Liferay.Language.get('last-x-days'),
-					30
-				),
-				value: moment()
-					.subtract(1, 'months')
-					.format('YYYY-MM-DD')
-					.toString(),
+				label: sub(Liferay.Language.get('last-x-days'), 30),
+				value: intl.format(dateUtils.subMonths(new Date(), 1)),
 			},
 			{
 				label: Liferay.Language.get('last-week'),
-				value: moment()
-					.subtract(7, 'days')
-					.format('YYYY-MM-DD')
-					.toString(),
+				value: intl.format(dateUtils.subDays(new Date(), 7)),
 			},
 			{
-				label: Liferay.Util.sub(
-					Liferay.Language.get('last-x-hours'),
-					24
-				),
-				value: moment()
-					.subtract(1, 'days')
-					.format('YYYY-MM-DD')
-					.toString(),
+				label: sub(Liferay.Language.get('last-x-hours'), 24),
+				value: intl.format(dateUtils.subDays(new Date(), 1)),
 			},
 		],
 		key: 'from_date',
@@ -187,6 +160,7 @@ const EnvelopeList = ({history}) => {
 					recipients: (
 						<span className="d-flex flex-wrap">
 							{signers[0]?.name}
+
 							{signers.length > 1 && (
 								<ClayBadge
 									className="ml-1"

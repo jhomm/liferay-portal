@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -24,18 +15,24 @@ package com.liferay.portal.kernel.service;
 public class WebsiteServiceWrapper
 	implements ServiceWrapper<WebsiteService>, WebsiteService {
 
+	public WebsiteServiceWrapper() {
+		this(null);
+	}
+
 	public WebsiteServiceWrapper(WebsiteService websiteService) {
 		_websiteService = websiteService;
 	}
 
 	@Override
 	public com.liferay.portal.kernel.model.Website addWebsite(
-			java.lang.String className, long classPK, java.lang.String url,
-			long typeId, boolean primary, ServiceContext serviceContext)
+			java.lang.String externalReferenceCode, java.lang.String className,
+			long classPK, java.lang.String url, long typeId, boolean primary,
+			ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _websiteService.addWebsite(
-			className, classPK, url, typeId, primary, serviceContext);
+			externalReferenceCode, className, classPK, url, typeId, primary,
+			serviceContext);
 	}
 
 	@Override
@@ -43,6 +40,16 @@ public class WebsiteServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_websiteService.deleteWebsite(websiteId);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.model.Website
+			fetchWebsiteByExternalReferenceCode(
+				java.lang.String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _websiteService.fetchWebsiteByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -72,10 +79,12 @@ public class WebsiteServiceWrapper
 
 	@Override
 	public com.liferay.portal.kernel.model.Website updateWebsite(
-			long websiteId, java.lang.String url, long typeId, boolean primary)
+			java.lang.String externalReferenceCode, long websiteId,
+			java.lang.String url, long typeId, boolean primary)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _websiteService.updateWebsite(websiteId, url, typeId, primary);
+		return _websiteService.updateWebsite(
+			externalReferenceCode, websiteId, url, typeId, primary);
 	}
 
 	@Override

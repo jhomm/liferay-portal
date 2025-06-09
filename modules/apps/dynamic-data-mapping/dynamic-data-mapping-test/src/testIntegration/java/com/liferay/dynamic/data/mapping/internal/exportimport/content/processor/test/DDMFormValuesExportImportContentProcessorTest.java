@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.exportimport.content.processor.test;
@@ -18,6 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
+import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
@@ -83,6 +75,7 @@ import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import java.io.File;
 import java.io.InputStream;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -169,11 +162,11 @@ public class DDMFormValuesExportImportContentProcessorTest {
 		_journalArticleLocalService.deleteArticles(_liveGroup.getGroupId());
 
 		if (_ddmTemplate != null) {
-			_ddmTemplateLocalService.deleteDDMTemplate(_ddmTemplate);
+			_ddmTemplateLocalService.deleteTemplate(_ddmTemplate);
 		}
 
 		if (_ddmStructure != null) {
-			_ddmStructureLocalService.deleteDDMStructure(_ddmStructure);
+			_ddmStructureLocalService.deleteStructure(_ddmStructure);
 		}
 	}
 
@@ -225,13 +218,15 @@ public class DDMFormValuesExportImportContentProcessorTest {
 		DLFileEntry newDLFileEntry = _dlFileEntryLocalService.copyFileEntry(
 			TestPropsValues.getUserId(), _liveGroup.getGroupId(),
 			_liveGroup.getGroupId(), fileEntryId,
-			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, new ServiceContext());
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, null,
+			new ServiceContext());
 
 		newDLFileEntry.setUuid(_fileEntry.getUuid());
 
-		_dlFileEntryLocalService.deleteDLFileEntry(fileEntryId);
+		_dlFileEntryLocalService.deleteFileEntry(fileEntryId);
 
-		_dlFileEntryLocalService.updateDLFileEntry(newDLFileEntry);
+		newDLFileEntry = _dlFileEntryLocalService.updateDLFileEntry(
+			newDLFileEntry);
 
 		classPKs.put(fileEntryId, newDLFileEntry.getPrimaryKey());
 
@@ -250,7 +245,7 @@ public class DDMFormValuesExportImportContentProcessorTest {
 
 		long newDLFileEntryId = newDLFileEntry.getFileEntryId();
 
-		_dlFileEntryLocalService.deleteDLFileEntry(newDLFileEntry);
+		_dlFileEntryLocalService.deleteFileEntry(newDLFileEntry);
 
 		Assert.assertEquals(newDLFileEntryId, jsonObject2.getLong("classPK"));
 	}
@@ -284,7 +279,8 @@ public class DDMFormValuesExportImportContentProcessorTest {
 
 		newJournalArticle.setUuid(_journalArticle.getUuid());
 
-		_journalArticleLocalService.updateJournalArticle(newJournalArticle);
+		newJournalArticle = _journalArticleLocalService.updateJournalArticle(
+			newJournalArticle);
 
 		classPKs.put(resourcePrimKey, newJournalArticle.getResourcePrimKey());
 
@@ -305,18 +301,17 @@ public class DDMFormValuesExportImportContentProcessorTest {
 
 		Assert.assertEquals(
 			newArticleResourcePrimKey, jsonObject.getLong("classPK"));
-	}
 
-	protected DDMFormInstance createFormInstanceWithDocLib(Group group)
-		throws Exception {
+		long fileEntryId = _fileEntry.getPrimaryKey();
 
-		DDMForm ddmForm = DDMFormTestUtil.createDDMForm();
+		DLFileEntry dlFileEntry = _dlFileEntryLocalService.getDLFileEntry(
+			fileEntryId);
 
-		DDMFormTestUtil.addDocumentLibraryDDMFormField(
-			ddmForm, "DocumentsAndMedia9t17");
+		DLFileEntryType dlFileEntryType = dlFileEntry.getDLFileEntryType();
 
-		return DDMFormInstanceTestUtil.addDDMFormInstance(
-			ddmForm, group, TestPropsValues.getUserId());
+		_dlFileEntryLocalService.deleteFileEntry(dlFileEntry);
+
+		_dlFileEntryTypeLocalService.deleteFileEntryType(dlFileEntryType);
 	}
 
 	private DDMForm _createDDMFormWithJournalField(
@@ -352,14 +347,13 @@ public class DDMFormValuesExportImportContentProcessorTest {
 
 		ddmFormFields.add(webContentFormField);
 
-		long classNameId = ClassNameLocalServiceUtil.getClassNameId(
-			DLFileEntryMetadata.class);
-
+		_ddmStructure.setClassNameId(
+			ClassNameLocalServiceUtil.getClassNameId(
+				DLFileEntryMetadata.class));
 		_ddmStructure.setDDMForm(journalDDMForm);
 
-		_ddmStructure.setClassNameId(classNameId);
-
-		_ddmStructureLocalService.updateDDMStructure(_ddmStructure);
+		_ddmStructure = _ddmStructureLocalService.updateDDMStructure(
+			_ddmStructure);
 
 		_journalDDMFormValues = new DDMFormValues(journalDDMForm);
 
@@ -374,10 +368,10 @@ public class DDMFormValuesExportImportContentProcessorTest {
 			"title", journalArticle.getTitle()
 		);
 
-		List<DDMFormField> journalFormFields =
+		List<DDMFormField> journalDDMFormFields =
 			journalDDMForm.getDDMFormFields();
 
-		for (DDMFormField currentFormField : journalFormFields) {
+		for (DDMFormField journalDDMFormField : journalDDMFormFields) {
 			LocalizedValue value = new LocalizedValue();
 
 			value.addString(LocaleUtil.US, jsonObject.toString());
@@ -385,13 +379,26 @@ public class DDMFormValuesExportImportContentProcessorTest {
 			DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue();
 
 			ddmFormFieldValue.setDDMFormValues(_journalDDMFormValues);
-			ddmFormFieldValue.setName(currentFormField.getName());
+			ddmFormFieldValue.setName(journalDDMFormField.getName());
 			ddmFormFieldValue.setValue(value);
 
 			_journalDDMFormValues.addDDMFormFieldValue(ddmFormFieldValue);
 		}
 
 		return journalDDMForm;
+	}
+
+	private DDMFormInstance _createFormInstanceWithDocLib(
+			Group group, String className)
+		throws Exception {
+
+		DDMForm ddmForm = DDMFormTestUtil.createDDMForm();
+
+		DDMFormTestUtil.addDocumentLibraryDDMFormField(
+			ddmForm, "DocumentsAndMedia9t17");
+
+		return DDMFormInstanceTestUtil.addDDMFormInstance(
+			ddmForm, group, className, TestPropsValues.getUserId());
 	}
 
 	private void _initDLReferences() throws Exception {
@@ -403,7 +410,8 @@ public class DDMFormValuesExportImportContentProcessorTest {
 			null, TestPropsValues.getUserId(), _stagingGroup.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString() + ".txt", ContentTypes.TEXT_PLAIN,
-			TestDataConstants.TEST_BYTE_ARRAY, null, null, serviceContext);
+			TestDataConstants.TEST_BYTE_ARRAY, null, null, null,
+			serviceContext);
 
 		ThumbnailCapability thumbnailCapability =
 			_fileEntry.getRepositoryCapability(ThumbnailCapability.class);
@@ -411,18 +419,19 @@ public class DDMFormValuesExportImportContentProcessorTest {
 		_fileEntry = thumbnailCapability.setLargeImageId(
 			_fileEntry, _fileEntry.getFileEntryId());
 
-		_formInstance = createFormInstanceWithDocLib(_stagingGroup);
+		_formInstance = _createFormInstanceWithDocLib(
+			_stagingGroup, JournalArticle.class.getName());
 
 		DDMStructure structure = _formInstance.getStructure();
 
 		long classNameId = ClassNameLocalServiceUtil.getClassNameId(
 			JournalArticle.class);
 
-		structure.setDDMForm(_formInstance.getDDMForm());
-
 		structure.setClassNameId(classNameId);
 
-		_ddmStructureLocalService.updateDDMStructure(structure);
+		structure.setDDMForm(_formInstance.getDDMForm());
+
+		structure = _ddmStructureLocalService.updateDDMStructure(structure);
 
 		_ddmTemplate = DDMTemplateTestUtil.addTemplate(
 			_stagingGroup.getGroupId(), structure.getStructureId(),
@@ -456,7 +465,7 @@ public class DDMFormValuesExportImportContentProcessorTest {
 		_journalArticle = _journalArticleLocalService.addArticle(
 			null, TestPropsValues.getUserId(), _stagingGroup.getGroupId(),
 			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID, nameMap, nameMap,
-			content, structure.getStructureKey(), _ddmTemplate.getTemplateKey(),
+			content, structure.getStructureId(), _ddmTemplate.getTemplateKey(),
 			serviceContext);
 	}
 
@@ -486,9 +495,12 @@ public class DDMFormValuesExportImportContentProcessorTest {
 
 		DLFileEntryType dlFileEntryType =
 			_dlFileEntryTypeLocalService.addFileEntryType(
-				TestPropsValues.getUserId(), _stagingGroup.getGroupId(),
-				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-				new long[] {_ddmStructure.getStructureId()}, serviceContext);
+				null, TestPropsValues.getUserId(), _stagingGroup.getGroupId(),
+				_ddmStructure.getStructureId(), null,
+				Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
+				Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
+				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_SCOPE_DEFAULT,
+				serviceContext);
 
 		DLFileEntry dlFileEntry = _dlFileEntryLocalService.addFileEntry(
 			null, TestPropsValues.getUserId(), _stagingGroup.getGroupId(),
@@ -497,9 +509,9 @@ public class DDMFormValuesExportImportContentProcessorTest {
 			RandomTestUtil.randomString() + ".txt",
 			MimeTypesUtil.getExtensionContentType("txt"),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			StringPool.BLANK, dlFileEntryType.getFileEntryTypeId(),
-			ddmFormValuesMap, file, inputStream, size, null, null,
-			serviceContext);
+			RandomTestUtil.randomString(), StringPool.BLANK,
+			dlFileEntryType.getFileEntryTypeId(), ddmFormValuesMap, file,
+			inputStream, size, null, null, null, serviceContext);
 
 		_fileEntry = _dlAppLocalService.getFileEntry(
 			dlFileEntry.getFileEntryId());

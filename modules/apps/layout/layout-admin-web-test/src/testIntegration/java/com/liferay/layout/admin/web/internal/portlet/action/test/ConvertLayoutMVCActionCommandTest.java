@@ -1,22 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.portlet.action.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
+import com.liferay.layout.test.util.ContentLayoutTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.layout.util.constants.LayoutDataItemTypeConstants;
 import com.liferay.layout.util.structure.ColumnLayoutStructureItem;
@@ -26,37 +20,61 @@ import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.layout.util.structure.RootLayoutStructureItem;
 import com.liferay.layout.util.structure.RowStyledLayoutStructureItem;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutTypePortletConstants;
+import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.PortletPreferenceValueLocalService;
+import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionRequest;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionResponse;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.Sync;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.segments.constants.SegmentsExperienceConstants;
+import com.liferay.segments.model.SegmentsExperience;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
+
+import jakarta.portlet.GenericPortlet;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.io.IOException;
 
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -65,6 +83,11 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceRegistration;
 
 import org.springframework.mock.web.MockHttpServletRequest;
 
@@ -84,6 +107,10 @@ public class ConvertLayoutMVCActionCommandTest {
 
 	@Before
 	public void setUp() throws Exception {
+		Bundle bundle = FrameworkUtil.getBundle(getClass());
+
+		_bundleContext = bundle.getBundleContext();
+
 		_group = GroupTestUtil.addGroup();
 
 		_company = _companyLocalService.getCompany(_group.getCompanyId());
@@ -92,23 +119,30 @@ public class ConvertLayoutMVCActionCommandTest {
 			_group, TestPropsValues.getUserId());
 
 		ServiceContextThreadLocal.pushServiceContext(_serviceContext);
+
+		_testPortletName = "TEST_PORTLET_" + RandomTestUtil.randomString();
 	}
 
 	@After
 	public void tearDown() {
+		for (ServiceRegistration<?> serviceRegistration :
+				_serviceRegistrations) {
+
+			serviceRegistration.unregister();
+		}
+
+		_serviceRegistrations.clear();
+
 		ServiceContextThreadLocal.popServiceContext();
 	}
 
 	@Test
 	public void testConvertWidgetLayoutToContentLayout() throws Exception {
-		UnicodeProperties typeSettingsUnicodeProperties =
-			new UnicodeProperties();
-
-		typeSettingsUnicodeProperties.setProperty(
-			LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, "1_column");
-
-		Layout originalLayout = LayoutTestUtil.addLayout(
-			_group.getGroupId(), typeSettingsUnicodeProperties.toString());
+		Layout originalLayout = LayoutTestUtil.addTypePortletLayout(
+			_group.getGroupId(),
+			UnicodePropertiesBuilder.put(
+				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, "1_column"
+			).buildString());
 
 		_mvcActionCommand.processAction(
 			_getMockLiferayPortletActionRequest(originalLayout.getPlid()),
@@ -121,24 +155,178 @@ public class ConvertLayoutMVCActionCommandTest {
 	public void testConvertWidgetLayoutToContentLayoutWithExistingStructure()
 		throws Exception {
 
-		UnicodeProperties typeSettingsUnicodeProperties =
-			new UnicodeProperties();
+		Layout originalLayout = LayoutTestUtil.addTypePortletLayout(
+			_group.getGroupId(),
+			UnicodePropertiesBuilder.put(
+				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, "1_column"
+			).buildString());
 
-		typeSettingsUnicodeProperties.setProperty(
-			LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, "1_column");
-
-		Layout originalLayout = LayoutTestUtil.addLayout(
-			_group.getGroupId(), typeSettingsUnicodeProperties.toString());
+		SegmentsExperience segmentsExperience =
+			_segmentsExperienceLocalService.addDefaultSegmentsExperience(
+				null, TestPropsValues.getUserId(), originalLayout.getPlid(),
+				_serviceContext);
 
 		_layoutPageTemplateStructureLocalService.addLayoutPageTemplateStructure(
 			TestPropsValues.getUserId(), _group.getGroupId(),
-			originalLayout.getPlid(), StringPool.BLANK, _serviceContext);
+			originalLayout.getPlid(),
+			segmentsExperience.getSegmentsExperienceId(), StringPool.BLANK,
+			_serviceContext);
 
 		_mvcActionCommand.processAction(
 			_getMockLiferayPortletActionRequest(originalLayout.getPlid()),
 			new MockLiferayPortletActionResponse());
 
 		_validateLayoutConversion(originalLayout);
+	}
+
+	@Test
+	@TestInfo("LPS-98589")
+	public void testConvertWidgetLayoutToContentLayoutWithPortletDecorators()
+		throws Exception {
+
+		_registerTestPortlet(_testPortletName);
+
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
+			_group.getGroupId(),
+			UnicodePropertiesBuilder.put(
+				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, "1_column"
+			).buildString());
+
+		LayoutTestUtil.addPortletToLayout(
+			layout, _testPortletName,
+			HashMapBuilder.put(
+				"portletSetupPortletDecoratorId", new String[] {"borderless"}
+			).build());
+
+		_mvcActionCommand.processAction(
+			_getMockLiferayPortletActionRequest(layout.getPlid()),
+			new MockLiferayPortletActionResponse());
+
+		ContentLayoutTestUtil.publishLayout(layout.fetchDraftLayout(), layout);
+
+		Layout convertedLayout = _layoutLocalService.getLayout(
+			layout.getPlid());
+
+		List<FragmentEntryLink> fragmentEntryLinks =
+			_fragmentEntryLinkLocalService.getFragmentEntryLinksByPlid(
+				_group.getGroupId(), convertedLayout.getPlid());
+
+		Assert.assertEquals(
+			fragmentEntryLinks.toString(), 1, fragmentEntryLinks.size());
+
+		FragmentEntryLink fragmentEntryLink = fragmentEntryLinks.get(0);
+
+		JSONObject editableValuesJSONObject = _jsonFactory.createJSONObject(
+			fragmentEntryLink.getEditableValues());
+
+		PortletPreferences portletPreferences =
+			_portletPreferenceValueLocalService.getPreferences(
+				_portletPreferencesLocalService.getPortletPreferences(
+					PortletKeys.PREFS_OWNER_ID_DEFAULT,
+					PortletKeys.PREFS_OWNER_TYPE_LAYOUT,
+					convertedLayout.getPlid(),
+					PortletIdCodec.encode(
+						editableValuesJSONObject.getString("portletId"),
+						editableValuesJSONObject.getString("instanceId"))));
+
+		Assert.assertEquals(
+			"borderless",
+			portletPreferences.getValue(
+				"portletSetupPortletDecoratorId", StringPool.BLANK));
+	}
+
+	@Test
+	public void testConvertWidgetLayoutToContentLayoutWithTypeSettings()
+		throws Exception {
+
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
+			_group.getGroupId(),
+			UnicodePropertiesBuilder.put(
+				LayoutConstants.CUSTOMIZABLE_LAYOUT, "true"
+			).put(
+				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, "1_column"
+			).put(
+				"column-1-customizable", "false"
+			).put(
+				"column-2-customizable", "false"
+			).buildString());
+
+		UnicodeProperties typeSettingsPropertiesUnicodeProperties =
+			layout.getTypeSettingsProperties();
+
+		Assert.assertTrue(
+			typeSettingsPropertiesUnicodeProperties.containsKey(
+				LayoutConstants.CUSTOMIZABLE_LAYOUT));
+		Assert.assertTrue(
+			typeSettingsPropertiesUnicodeProperties.containsKey(
+				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID));
+		Assert.assertTrue(
+			typeSettingsPropertiesUnicodeProperties.containsKey(
+				"column-1-customizable"));
+		Assert.assertTrue(
+			typeSettingsPropertiesUnicodeProperties.containsKey(
+				"column-2-customizable"));
+
+		_mvcActionCommand.processAction(
+			_getMockLiferayPortletActionRequest(layout.getPlid()),
+			new MockLiferayPortletActionResponse());
+
+		ContentLayoutTestUtil.publishLayout(layout.fetchDraftLayout(), layout);
+
+		Layout convertedLayout = _layoutLocalService.getLayout(
+			layout.getPlid());
+
+		UnicodeProperties convertedTypeSettingsPropertiesUnicodeProperties =
+			convertedLayout.getTypeSettingsProperties();
+
+		Assert.assertFalse(
+			convertedTypeSettingsPropertiesUnicodeProperties.containsKey(
+				LayoutConstants.CUSTOMIZABLE_LAYOUT));
+		Assert.assertFalse(
+			convertedTypeSettingsPropertiesUnicodeProperties.containsKey(
+				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID));
+		Assert.assertFalse(
+			convertedTypeSettingsPropertiesUnicodeProperties.containsKey(
+				"column-1-customizable"));
+		Assert.assertFalse(
+			convertedTypeSettingsPropertiesUnicodeProperties.containsKey(
+				"column-2-customizable"));
+
+		Layout darftLayout = convertedLayout.fetchDraftLayout();
+
+		UnicodeProperties draftTypeSettingsPropertiesUnicodeProperties =
+			darftLayout.getTypeSettingsProperties();
+
+		Assert.assertFalse(
+			draftTypeSettingsPropertiesUnicodeProperties.containsKey(
+				LayoutConstants.CUSTOMIZABLE_LAYOUT));
+		Assert.assertFalse(
+			draftTypeSettingsPropertiesUnicodeProperties.containsKey(
+				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID));
+		Assert.assertFalse(
+			draftTypeSettingsPropertiesUnicodeProperties.containsKey(
+				"column-1-customizable"));
+		Assert.assertFalse(
+			draftTypeSettingsPropertiesUnicodeProperties.containsKey(
+				"column-2-customizable"));
+	}
+
+	private void _assertTypeSettingsProperties(
+		Layout originalLayout, Layout persistedLayout) {
+
+		UnicodeProperties originalLayoutTypeSettingsUnicodeProperties =
+			originalLayout.getTypeSettingsProperties();
+		UnicodeProperties persistedLayoutTypeSettingsUnicodeProperties =
+			persistedLayout.getTypeSettingsProperties();
+
+		for (Map.Entry<String, String> entry :
+				originalLayoutTypeSettingsUnicodeProperties.entrySet()) {
+
+			Assert.assertEquals(
+				entry.getValue(),
+				persistedLayoutTypeSettingsUnicodeProperties.getProperty(
+					entry.getKey()));
+		}
 	}
 
 	private MockLiferayPortletActionRequest _getMockLiferayPortletActionRequest(
@@ -152,12 +340,14 @@ public class ConvertLayoutMVCActionCommandTest {
 			WebKeys.THEME_DISPLAY, _getThemeDisplay());
 
 		mockLiferayPortletActionRequest.addParameter(
-			"selPlid", String.valueOf(plid));
+			"rowIds", new String[] {String.valueOf(plid)});
 
 		return mockLiferayPortletActionRequest;
 	}
 
-	private ServiceContext _getServiceContext(Group group, long userId) {
+	private ServiceContext _getServiceContext(Group group, long userId)
+		throws Exception {
+
 		HttpServletRequest httpServletRequest = new MockHttpServletRequest();
 
 		httpServletRequest.setAttribute(
@@ -176,12 +366,22 @@ public class ConvertLayoutMVCActionCommandTest {
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
 		themeDisplay.setCompany(_company);
-
 		themeDisplay.setPermissionChecker(
 			PermissionThreadLocal.getPermissionChecker());
 		themeDisplay.setUser(TestPropsValues.getUser());
 
 		return themeDisplay;
+	}
+
+	private void _registerTestPortlet(String portletId) {
+		_serviceRegistrations.add(
+			_bundleContext.registerService(
+				Portlet.class, new TestPortlet(),
+				HashMapDictionaryBuilder.put(
+					"com.liferay.portlet.instanceable", "true"
+				).put(
+					"jakarta.portlet.name", portletId
+				).build()));
 	}
 
 	private void _validateLayoutConversion(Layout originalLayout)
@@ -199,8 +399,7 @@ public class ConvertLayoutMVCActionCommandTest {
 		Assert.assertNotNull(layoutPageTemplateStructure);
 
 		LayoutStructure layoutStructure = LayoutStructure.of(
-			layoutPageTemplateStructure.getData(
-				SegmentsExperienceConstants.ID_DEFAULT));
+			layoutPageTemplateStructure.getDefaultSegmentsExperienceData());
 
 		Assert.assertNotNull(layoutStructure.getMainItemId());
 
@@ -309,10 +508,11 @@ public class ConvertLayoutMVCActionCommandTest {
 		Assert.assertEquals(
 			originalLayout.getRobotsMap(),
 			persistedPublishedLayout.getRobotsMap());
-		Assert.assertEquals("content", persistedPublishedLayout.getType());
 		Assert.assertEquals(
-			originalLayout.getTypeSettings(),
-			persistedPublishedLayout.getTypeSettings());
+			LayoutConstants.TYPE_CONTENT, persistedPublishedLayout.getType());
+
+		_assertTypeSettingsProperties(originalLayout, persistedDraftLayout);
+
 		Assert.assertEquals(
 			originalLayout.isSystem(), persistedPublishedLayout.isSystem());
 		Assert.assertEquals(
@@ -320,13 +520,20 @@ public class ConvertLayoutMVCActionCommandTest {
 			persistedPublishedLayout.getFriendlyURLMap());
 	}
 
+	private BundleContext _bundleContext;
 	private Company _company;
 
 	@Inject
 	private CompanyLocalService _companyLocalService;
 
+	@Inject
+	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private JSONFactory _jsonFactory;
 
 	@Inject
 	private LayoutLocalService _layoutLocalService;
@@ -341,6 +548,29 @@ public class ConvertLayoutMVCActionCommandTest {
 	@Inject
 	private Portal _portal;
 
+	@Inject
+	private PortletPreferencesLocalService _portletPreferencesLocalService;
+
+	@Inject
+	private PortletPreferenceValueLocalService
+		_portletPreferenceValueLocalService;
+
+	@Inject
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
+
 	private ServiceContext _serviceContext;
+	private final List<ServiceRegistration<?>> _serviceRegistrations =
+		new CopyOnWriteArrayList<>();
+	private String _testPortletName;
+
+	private class TestPortlet extends GenericPortlet {
+
+		@Override
+		protected void doView(
+				RenderRequest renderRequest, RenderResponse renderResponse)
+			throws IOException, PortletException {
+		}
+
+	}
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.captcha;
@@ -27,12 +18,11 @@ import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.taglib.servlet.PageContextFactoryUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Collections;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.PageContext;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -40,12 +30,8 @@ import org.osgi.service.component.annotations.Component;
  * @author Bruno Basto
  */
 @Component(
-	immediate = true,
 	property = "ddm.form.field.type.name=" + DDMFormFieldTypeConstants.CAPTCHA,
-	service = {
-		CaptchaDDMFormFieldTemplateContextContributor.class,
-		DDMFormFieldTemplateContextContributor.class
-	}
+	service = DDMFormFieldTemplateContextContributor.class
 )
 public class CaptchaDDMFormFieldTemplateContextContributor
 	implements DDMFormFieldTemplateContextContributor {
@@ -61,7 +47,7 @@ public class CaptchaDDMFormFieldTemplateContextContributor
 			html = renderCaptchaTag(ddmFormField, ddmFormFieldRenderingContext);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return Collections.singletonMap("html", html);
@@ -84,11 +70,11 @@ public class CaptchaDDMFormFieldTemplateContextContributor
 
 		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
 
-		PageContext pageContext = PageContextFactoryUtil.create(
-			httpServletRequest,
-			new PipingServletResponse(httpServletResponse, unsyncStringWriter));
-
-		captchaTag.setPageContext(pageContext);
+		captchaTag.setPageContext(
+			PageContextFactoryUtil.create(
+				httpServletRequest,
+				new PipingServletResponse(
+					httpServletResponse, unsyncStringWriter)));
 
 		captchaTag.runTag();
 

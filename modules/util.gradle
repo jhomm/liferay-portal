@@ -1,8 +1,10 @@
-import com.liferay.gradle.plugins.defaults.tasks.CopyIvyDependenciesTask
+import com.liferay.gradle.plugins.defaults.task.CopyIvyDependenciesTask
 import com.liferay.gradle.plugins.source.formatter.FormatSourceTask
 import com.liferay.gradle.plugins.util.PortalTools
 import com.liferay.gradle.util.FileUtil
 import com.liferay.gradle.util.StringUtil
+
+import java.nio.file.Files
 
 import java.util.regex.Matcher
 
@@ -160,8 +162,9 @@ updateYarnBinariesCache {
 wrapperPortal {
 	File wrapperDir = projectDir.parentFile
 
-	distributionUrl = "../../tools/gradle-${gradle.gradleVersion}.LIFERAY-PATCHED-1-bin.zip"
 	dependsOn wrapperSubrepo
+
+	distributionUrl = "../../tools/gradle-${gradle.gradleVersion}.LIFERAY-PATCHED-1-bin.zip"
 
 	doLast {
 		File gradlewFile = new File(wrapperDir, "gradlew")
@@ -169,17 +172,18 @@ wrapperPortal {
 		ant.replace(
 			failOnNoReplacements: true,
 			file: gradlewFile,
-			token: '# Escape application args',
+			token: '# Collect all arguments for the java command:',
 			value: '''\
-# Escape application args
-DEFAULT_JVM_OPTS="$DEFAULT_JVM_OPTS \\\"-Dgradle.user.home=$APP_HOME/.gradle\\\""'''
+DEFAULT_JVM_OPTS="$DEFAULT_JVM_OPTS \\\"-Dgradle.user.home=$APP_HOME/.gradle\\\""
+
+# Collect all arguments for the java command:'''
 		)
 
 		ant.replace(
 			failOnNoReplacements: true,
 			file: gradlewFile,
-			token: 'org.gradle.wrapper.GradleWrapperMain "$APP_ARGS"',
-			value: 'org.gradle.wrapper.GradleWrapperMain "--init-script=$APP_HOME/modules/init.gradle" "$APP_ARGS"'
+			token: 'org.gradle.wrapper.GradleWrapperMain ',
+			value: 'org.gradle.wrapper.GradleWrapperMain "--init-script=$APP_HOME/modules/init.gradle" '
 		)
 
 		File gradlewBatFile = new File(wrapperDir, "gradlew.bat")
@@ -208,6 +212,8 @@ set DEFAULT_JVM_OPTS=%DEFAULT_JVM_OPTS% "-Dgradle.user.home=%APP_HOME%\\.gradle"
 wrapperProjectTemplates {
 	File wrapperDir = new File(projectDir.parentFile, "modules/sdk/project-templates/project-templates/src/main/resources/gradle-wrapper")
 
+	// distributionUrl = "https://releases-cdn.liferay.com/tools/gradle/gradle-${gradle.gradleVersion}-bin.zip"
+
 	jarFile = new File(wrapperDir, "gradle/wrapper/gradle-wrapper.jar")
 	scriptFile = new File(wrapperDir, "gradlew")
 
@@ -221,16 +227,19 @@ wrapperProjectTemplates {
 wrapperSubrepo {
 	File wrapperDir = new File(projectDir.parentFile, "tools/subrepo")
 
+	// distributionUrl = "https://releases-cdn.liferay.com/tools/gradle/gradle-${gradle.gradleVersion}-bin.zip"
+
 	doLast {
 		File gradlewFile = new File(wrapperDir, "gradlew")
 
 		ant.replace(
 			failOnNoReplacements: true,
 			file: gradlewFile,
-			token: '# Escape application args',
+			token: '# Collect all arguments for the java command:',
 			value: '''\
-# Escape application args
-DEFAULT_JVM_OPTS="$DEFAULT_JVM_OPTS \\\"-Dgradle.user.home=$APP_HOME/.gradle\\\""'''
+DEFAULT_JVM_OPTS="$DEFAULT_JVM_OPTS \\\"-Dgradle.user.home=$APP_HOME/.gradle\\\""
+
+# Collect all arguments for the java command:'''
 		)
 
 		File gradlewBatFile = new File(wrapperDir, "gradlew.bat")
@@ -252,7 +261,6 @@ set DEFAULT_JVM_OPTS=%DEFAULT_JVM_OPTS% "-Dgradle.user.home=%APP_HOME%\\.gradle"
 tasks.withType(FormatSourceTask) {
 	baseDirName = "../"
 	group = "formatting"
-	showStatusUpdates = true
 }
 
 _createSetUpLibTasks(libDependenciesMap)
@@ -332,6 +340,7 @@ private void _createSetUpPortalToolTasks() {
 				}
 			}
 
+			duplicatesStrategy = DuplicatesStrategy.INCLUDE
 			inputFile = ivyXmlFile
 			into new File(portalToolDir, "lib")
 
@@ -369,6 +378,12 @@ private void _createYarnTasks() {
 			setUpYarnOfflineCache.finalizedBy yarnTask
 
 			yarnTask = tasks.create(name: "updateYarnBinariesCache" + _camelCase(yarnLockFile.parentFile.name), type: Copy) {
+				exclude {
+					FileTreeElement fileTreeElement ->
+
+					Files.isSymbolicLink(fileTreeElement.file.toPath())
+				}
+
 				from nodeModulesCacheDir
 				into offlineCacheDir
 

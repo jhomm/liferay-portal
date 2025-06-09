@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.initializer.util;
@@ -19,7 +10,7 @@ import com.liferay.blogs.service.BlogsEntryLocalService;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
@@ -29,7 +20,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.servlet.taglib.ui.ImageSelector;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.File;
 import com.liferay.portal.kernel.util.MimeTypesUtil;
 
 import java.io.InputStream;
@@ -42,7 +33,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Steven Smith
  */
-@Component(enabled = false, service = BlogsImporter.class)
+@Component(service = BlogsImporter.class)
 public class BlogsImporter {
 
 	public void importBlogsEntries(
@@ -72,7 +63,7 @@ public class BlogsImporter {
 		throws PortalException {
 
 		if (jsonArray == null) {
-			jsonArray = JSONFactoryUtil.createJSONArray(
+			jsonArray = _jsonFactory.createJSONArray(
 				"[{\"actionIds\": [\"VIEW\"], \"roleName\": \"Site Member\"," +
 					"\"scope\": 4}]");
 		}
@@ -143,13 +134,13 @@ public class BlogsImporter {
 			imageDependenciesPath + fileName);
 
 		ImageSelector imageSelector = new ImageSelector(
-			FileUtil.getBytes(inputStream), fileName,
+			_file.getBytes(inputStream), fileName,
 			MimeTypesUtil.getContentType(fileName), StringPool.BLANK);
 
 		_blogsEntryLocalService.addCoverImage(
 			blogsEntry.getEntryId(), imageSelector);
 
-		//Add Tags
+		// Add Tags
 
 		JSONArray tagsJSONArray = jsonObject.getJSONArray("tags");
 
@@ -164,6 +155,12 @@ public class BlogsImporter {
 
 	@Reference
 	private BlogsEntryLocalService _blogsEntryLocalService;
+
+	@Reference
+	private File _file;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private ResourcePermissionLocalService _resourcePermissionLocalService;

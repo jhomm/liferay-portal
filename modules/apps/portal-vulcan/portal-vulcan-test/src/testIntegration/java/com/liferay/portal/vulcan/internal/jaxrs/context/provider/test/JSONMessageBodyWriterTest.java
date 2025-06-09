@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.internal.jaxrs.context.provider.test;
@@ -17,19 +8,24 @@ package com.liferay.portal.vulcan.internal.jaxrs.context.provider.test;
 import com.fasterxml.jackson.annotation.JsonFilter;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.test.TestInfo;
+import com.liferay.portal.kernel.test.util.HTTPTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.vulcan.internal.test.util.URLConnectionUtil;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.MediaType;
 
 import java.util.Collections;
 import java.util.Set;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -117,7 +113,80 @@ public class JSONMessageBodyWriterTest {
 		Assert.assertTrue(testClassJSONObject.isNull("testClass"));
 	}
 
-	public static class TestApplication extends Application {
+	@Test
+	@TestInfo("LPD-50142")
+	public void testUnsafeSupplierFieldsJSONObject() throws Exception {
+		HTTPTestUtil.invokeToJSONObject(
+			null, "test-vulcan/test-class?fields=property1UnsafeSupplier",
+			Http.Method.GET);
+
+		Assert.assertTrue(_property1UnsafeSupplierComputed);
+		Assert.assertFalse(_property2UnsafeSupplierComputed);
+		Assert.assertFalse(_property3UnsafeSupplierComputed);
+
+		_property1UnsafeSupplierComputed = false;
+		_property2UnsafeSupplierComputed = false;
+		_property3UnsafeSupplierComputed = false;
+
+		HTTPTestUtil.invokeToJSONObject(
+			null, "test-vulcan/test-class?fields=property3UnsafeSupplier",
+			Http.Method.GET);
+
+		Assert.assertFalse(_property1UnsafeSupplierComputed);
+		Assert.assertFalse(_property2UnsafeSupplierComputed);
+		Assert.assertTrue(_property3UnsafeSupplierComputed);
+
+		_property1UnsafeSupplierComputed = false;
+		_property2UnsafeSupplierComputed = false;
+		_property3UnsafeSupplierComputed = false;
+
+		HTTPTestUtil.invokeToJSONObject(
+			null, "test-vulcan/test-class?fields=testClass", Http.Method.GET);
+
+		Assert.assertTrue(_property1UnsafeSupplierComputed);
+		Assert.assertTrue(_property2UnsafeSupplierComputed);
+		Assert.assertTrue(_property3UnsafeSupplierComputed);
+
+		_property1UnsafeSupplierComputed = false;
+		_property2UnsafeSupplierComputed = false;
+		_property3UnsafeSupplierComputed = false;
+
+		HTTPTestUtil.invokeToJSONObject(
+			null,
+			"test-vulcan/test-class?restrictFields=property1UnsafeSupplier",
+			Http.Method.GET);
+
+		Assert.assertTrue(_property1UnsafeSupplierComputed);
+		Assert.assertTrue(_property2UnsafeSupplierComputed);
+		Assert.assertTrue(_property3UnsafeSupplierComputed);
+
+		_property1UnsafeSupplierComputed = false;
+		_property2UnsafeSupplierComputed = false;
+		_property3UnsafeSupplierComputed = false;
+
+		HTTPTestUtil.invokeToJSONObject(
+			null,
+			"test-vulcan/test-class?restrictFields=property1UnsafeSupplier," +
+				"testClass",
+			Http.Method.GET);
+
+		Assert.assertFalse(_property1UnsafeSupplierComputed);
+		Assert.assertTrue(_property2UnsafeSupplierComputed);
+		Assert.assertTrue(_property3UnsafeSupplierComputed);
+
+		_property1UnsafeSupplierComputed = false;
+		_property2UnsafeSupplierComputed = false;
+		_property3UnsafeSupplierComputed = false;
+
+		HTTPTestUtil.invokeToJSONObject(
+			null, "test-vulcan/test-class", Http.Method.GET);
+
+		Assert.assertTrue(_property1UnsafeSupplierComputed);
+		Assert.assertTrue(_property2UnsafeSupplierComputed);
+		Assert.assertTrue(_property3UnsafeSupplierComputed);
+	}
+
+	public class TestApplication extends Application {
 
 		@Override
 		public Set<Object> getSingletons() {
@@ -128,17 +197,11 @@ public class JSONMessageBodyWriterTest {
 		@Path("/test-class")
 		@Produces(MediaType.APPLICATION_JSON)
 		public TestClass testClass() {
-			return TestClass.of(1L, "hello", TestClass.of(6L, "hi", null));
+			return new TestClass(1L, "hello", new TestClass(6L, "hi", null));
 		}
 
 		@JsonFilter("Liferay.Vulcan")
-		public static class TestClass {
-
-			public static TestClass of(
-				Long number, String string, TestClass testClass) {
-
-				return new TestClass(number, string, testClass);
-			}
+		public class TestClass {
 
 			public TestClass(Long number, String string, TestClass testClass) {
 				this.number = number;
@@ -147,6 +210,28 @@ public class JSONMessageBodyWriterTest {
 			}
 
 			public final Long number;
+
+			public UnsafeSupplier<String, Exception> property1UnsafeSupplier =
+				() -> {
+					_property1UnsafeSupplierComputed = true;
+
+					return RandomTestUtil.randomString();
+				};
+
+			public UnsafeSupplier<String, Exception> property2UnsafeSupplier =
+				() -> {
+					_property2UnsafeSupplierComputed = true;
+
+					return RandomTestUtil.randomString();
+				};
+
+			public UnsafeSupplier<String, Exception> property3UnsafeSupplier =
+				() -> {
+					_property3UnsafeSupplierComputed = true;
+
+					return null;
+				};
+
 			public final String string;
 			public final TestClass testClass;
 
@@ -159,6 +244,9 @@ public class JSONMessageBodyWriterTest {
 			URLConnectionUtil.read(urlString));
 	}
 
+	private boolean _property1UnsafeSupplierComputed;
+	private boolean _property2UnsafeSupplierComputed;
+	private boolean _property3UnsafeSupplierComputed;
 	private ServiceRegistration<Application> _serviceRegistration;
 
 }

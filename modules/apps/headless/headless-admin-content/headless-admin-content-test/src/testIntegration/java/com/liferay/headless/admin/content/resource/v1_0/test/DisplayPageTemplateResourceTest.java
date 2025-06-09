@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.content.resource.v1_0.test;
@@ -17,24 +8,31 @@ package com.liferay.headless.admin.content.resource.v1_0.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.headless.admin.content.client.dto.v1_0.DisplayPageTemplate;
-import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
+import com.liferay.headless.admin.content.client.pagination.Page;
+import com.liferay.headless.admin.content.client.pagination.Pagination;
+import com.liferay.headless.admin.content.client.resource.v1_0.DisplayPageTemplateResource;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.layout.page.template.test.util.DisplayPageTemplateTestUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.test.util.RandomTestUtil;
-import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.test.rule.Inject;
+import com.liferay.portal.util.PropsValues;
 
 import java.util.Collection;
 import java.util.Collections;
 
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -45,16 +43,112 @@ import org.junit.runner.RunWith;
 public class DisplayPageTemplateResourceTest
 	extends BaseDisplayPageTemplateResourceTestCase {
 
+	@Before
+	@Override
+	public void setUp() throws Exception {
+		super.setUp();
+
+		_originalName = PrincipalThreadLocal.getName();
+
+		PrincipalThreadLocal.setName(TestPropsValues.getUserId());
+	}
+
+	@After
+	@Override
+	public void tearDown() throws Exception {
+		super.tearDown();
+
+		PrincipalThreadLocal.setName(_originalName);
+	}
+
 	@Override
 	@Test
 	public void testGetSiteDisplayPageTemplate() throws Exception {
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
-			_getLayoutPageTemplateEntry(testGroup.getGroupId());
+			DisplayPageTemplateTestUtil.addDisplayPageTemplate(
+				testGroup.getGroupId(),
+				_portal.getClassNameId(BlogsEntry.class.getName()), 0, true,
+				WorkflowConstants.STATUS_APPROVED);
 
 		Assert.assertNotNull(
 			displayPageTemplateResource.getSiteDisplayPageTemplate(
 				testGroup.getGroupId(),
 				layoutPageTemplateEntry.getLayoutPageTemplateEntryKey()));
+	}
+
+	@Override
+	@Test
+	public void testGetSiteDisplayPageTemplatesPage() throws Exception {
+		super.testGetSiteDisplayPageTemplatesPage();
+
+		Page<DisplayPageTemplate> page =
+			displayPageTemplateResource.getSiteDisplayPageTemplatesPage(
+				testGroup.getGroupId(), Pagination.of(1, 10), null);
+
+		for (DisplayPageTemplate displayPageTemplate : page.getItems()) {
+			LayoutPageTemplateEntry layoutPageTemplateEntry =
+				_layoutPageTemplateEntryLocalService.getLayoutPageTemplateEntry(
+					testGroup.getGroupId(),
+					displayPageTemplate.getDisplayPageTemplateKey());
+
+			_layoutPageTemplateEntryLocalService.deleteLayoutPageTemplateEntry(
+				layoutPageTemplateEntry.getLayoutPageTemplateEntryId());
+		}
+
+		DisplayPageTemplate displayPageTemplate =
+			testGetSiteDisplayPageTemplatesPage_addDisplayPageTemplate(
+				testGroup.getGroupId(), randomDisplayPageTemplate());
+
+		displayPageTemplateResource = DisplayPageTemplateResource.builder(
+		).authentication(
+			"test@liferay.com", PropsValues.DEFAULT_ADMIN_PASSWORD
+		).locale(
+			LocaleUtil.getDefault()
+		).parameters(
+			"nestedFields", "profileURL"
+		).build();
+
+		page = displayPageTemplateResource.getSiteDisplayPageTemplatesPage(
+			testGroup.getGroupId(), Pagination.of(1, 10), null);
+
+		Assert.assertEquals(1, page.getTotalCount());
+		Assert.assertEquals(
+			displayPageTemplate.getDisplayPageTemplateKey(),
+			page.fetchFirstItem(
+			).getDisplayPageTemplateKey());
+		Assert.assertNotNull(
+			page.fetchFirstItem(
+			).getCreator(
+			).getProfileURL());
+		assertValid(page);
+
+		displayPageTemplateResource = DisplayPageTemplateResource.builder(
+		).authentication(
+			"test@liferay.com", PropsValues.DEFAULT_ADMIN_PASSWORD
+		).locale(
+			LocaleUtil.getDefault()
+		).parameters(
+			"restrictFields",
+			StringBundler.concat(
+				"actions,availableLanguages,creator,customFields,dateCreated,",
+				"dateModified,displayPageTemplateKey,",
+				"displayPageTemplateSettings,",
+				"openGraphSettingsMapping,seoSettingsMapping,markedAsDefault,",
+				"pageDefinition,settings,siteId,uuid")
+		).build();
+
+		page = displayPageTemplateResource.getSiteDisplayPageTemplatesPage(
+			testGroup.getGroupId(), Pagination.of(1, 10), null);
+
+		Assert.assertEquals(1, page.getTotalCount());
+		assertEquals(
+			new DisplayPageTemplate() {
+				{
+					title = displayPageTemplate.getTitle();
+				}
+			},
+			page.fetchFirstItem());
+		assertValid(page);
 	}
 
 	@Override
@@ -64,7 +158,9 @@ public class DisplayPageTemplateResourceTest
 		throws Exception {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
-			_getLayoutPageTemplateEntry(siteId);
+			DisplayPageTemplateTestUtil.addDisplayPageTemplate(
+				siteId, _portal.getClassNameId(BlogsEntry.class.getName()), 0,
+				true, WorkflowConstants.STATUS_APPROVED);
 
 		displayPageTemplate.setDateCreated(
 			layoutPageTemplateEntry.getCreateDate());
@@ -124,21 +220,11 @@ public class DisplayPageTemplateResourceTest
 				o -> null));
 	}
 
-	private LayoutPageTemplateEntry _getLayoutPageTemplateEntry(Long siteId)
-		throws Exception {
-
-		return _layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-			TestPropsValues.getUserId(), siteId, 0,
-			_portal.getClassNameId(BlogsEntry.class.getName()), 0,
-			RandomTestUtil.randomString(),
-			LayoutPageTemplateEntryTypeConstants.TYPE_DISPLAY_PAGE, 0, true, 0,
-			0, 0, WorkflowConstants.STATUS_APPROVED,
-			ServiceContextTestUtil.getServiceContext(testGroup.getGroupId()));
-	}
-
 	@Inject
 	private LayoutPageTemplateEntryLocalService
 		_layoutPageTemplateEntryLocalService;
+
+	private String _originalName;
 
 	@Inject
 	private Portal _portal;

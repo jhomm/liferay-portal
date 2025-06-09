@@ -1,22 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.product.navigation.control.menu.internal.util;
 
-import com.liferay.osgi.service.tracker.collections.ServiceTrackerMapBuilder;
 import com.liferay.osgi.service.tracker.collections.map.PropertyServiceReferenceComparator;
+import com.liferay.osgi.service.tracker.collections.map.PropertyServiceReferenceMapper;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -24,10 +16,10 @@ import com.liferay.product.navigation.control.menu.ProductNavigationControlMenuC
 import com.liferay.product.navigation.control.menu.ProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.util.ProductNavigationControlMenuEntryRegistry;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -37,9 +29,7 @@ import org.osgi.service.component.annotations.Deactivate;
 /**
  * @author Julio Camarero
  */
-@Component(
-	immediate = true, service = ProductNavigationControlMenuEntryRegistry.class
-)
+@Component(service = ProductNavigationControlMenuEntryRegistry.class)
 public class ProductNavigationControlMenuEntryRegistryImpl
 	implements ProductNavigationControlMenuEntryRegistry {
 
@@ -85,7 +75,7 @@ public class ProductNavigationControlMenuEntryRegistryImpl
 				}
 				catch (Exception exception) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(exception, exception);
+						_log.debug(exception);
 					}
 				}
 
@@ -95,16 +85,13 @@ public class ProductNavigationControlMenuEntryRegistryImpl
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_serviceTrackerMap =
-			ServiceTrackerMapBuilder.SelectorFactory.newSelector(
-				bundleContext, ProductNavigationControlMenuEntry.class
-			).map(
-				"product.navigation.control.menu.category.key"
-			).collectMultiValue(
-				Collections.reverseOrder(
-					new PropertyServiceReferenceComparator<>(
-						"product.navigation.control.menu.entry.order"))
-			).build();
+		_serviceTrackerMap = ServiceTrackerMapFactory.openMultiValueMap(
+			bundleContext, ProductNavigationControlMenuEntry.class, null,
+			new PropertyServiceReferenceMapper<>(
+				"product.navigation.control.menu.category.key"),
+			Collections.reverseOrder(
+				new PropertyServiceReferenceComparator<>(
+					"product.navigation.control.menu.entry.order")));
 	}
 
 	@Deactivate

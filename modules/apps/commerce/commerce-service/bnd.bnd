@@ -1,7 +1,7 @@
 Bundle-Name: Liferay Commerce Service
 Bundle-SymbolicName: com.liferay.commerce.service
-Bundle-Version: 11.0.33
-Liferay-Enterprise-App: product.id=9a473157-06a6-44b6-b017-a360ffaf5f38
-Liferay-Require-SchemaVersion: 7.3.0
+Bundle-Version: 11.0.199
+Liferay-Client-Extension-Batch: com/liferay/commerce/internal/batch
+Liferay-Require-SchemaVersion: 13.0.5
 Liferay-Service: true
 -dsannotations-options: inherit

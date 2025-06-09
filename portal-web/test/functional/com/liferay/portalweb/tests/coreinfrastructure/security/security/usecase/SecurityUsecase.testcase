@@ -1,9 +1,10 @@
-@component-name = "portal-security"
+@component-name = "portal-application-security"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Security";
+	property testray.main.component.name = "Security HTTP Headers";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -12,68 +13,379 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			PortalSettings.tearDownAuthenticationCP();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
-	@description = "This is a use case for LPS-107017. Creater user via JSONWSAPUI"
-	@priority = "4"
+	@description = "This is a use case for LPS-197701. TC-4: Verify that the list consists of the Site type ID when visiting Asset Libraries control panel page."
+	@priority = 3
+	test AssertAssetLibrariesControlPanelResponseHeaderIncludesSiteTypeID {
+		property custom.properties = "service.pre.action.track.theme.display=true";
+		property osgi.module.configuration.file.names = "com.liferay.portal.security.sso.token.configuration.TokenConfiguration.config";
+		property osgi.module.configurations = "enabled=\"true\"${line.separator}tokenLocation=\"REQUEST\"";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given: Add an Asset Library") {
+			JSONDepot.addDepot(
+				depotDescription = "This is the description of a depot",
+				depotName = "Test Depot Name");
+		}
+
+		task ("When: Get the Asset Libraries control panel page header info") {
+			var depotId = JSONGroupAPI._getDepotIdByName(depotName = "Test Depot Name");
+
+			var curl = '''http://localhost:8080/group/asset-library-${depotId}/~/control_panel/manage?SM_USER=test@liferay.com -I''';
+
+			var response = JSONCurlUtil.post(${curl});
+		}
+
+		task ("Then: Verify that 5t and 4x show in the response header") {
+			var groupId = JSONGroupAPI._getGroupIdByName(
+				groupName = "Test Depot Name",
+				site = "false");
+
+			TestUtils.assertPartialEquals(
+				actual = ${response},
+				expected = "X-Liferay-Request-Group: ${groupId} 5t 4x");
+		}
+	}
+
+	@description = "This is a use case for LPS-197701. TC-5: Verify that the list consists of the Site type ID when visiting Global control panel page."
+	@priority = 3
+	test AssertGlobalControlPanelResponseHeaderIncludesSiteTypeID {
+		property custom.properties = "service.pre.action.track.theme.display=true";
+		property osgi.module.configuration.file.names = "com.liferay.portal.security.sso.token.configuration.TokenConfiguration.config";
+		property osgi.module.configurations = "enabled=\"true\"${line.separator}tokenLocation=\"REQUEST\"";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("When: Get the Global control panel header info") {
+			var curl = '''http://localhost:8080/group/global/~/control_panel/manage?SM_USER=test@liferay.com -I''';
+
+			var response = JSONCurlUtil.post(${curl});
+		}
+
+		task ("Then: Verify that 0t, 1x, 4x, and s show in the response header.") {
+			var groupId = JSONGroupAPI._getGroupIdByName(
+				groupName = "Global",
+				site = "true");
+
+			TestUtils.assertPartialEquals(
+				actual = ${response},
+				expected = "X-Liferay-Request-Group: ${groupId} 0t 1x 4x s");
+		}
+	}
+
+	@description = "This is a use case for LPS-197701. TC-3: Verify that the list consists of the Site type ID when visiting organization site."
+	@priority = 3
+	test AssertOrganizationSiteResponseHeaderIncludesSiteTypeID {
+		property custom.properties = "service.pre.action.track.theme.display=true";
+		property osgi.module.configuration.file.names = "com.liferay.portal.security.sso.token.configuration.TokenConfiguration.config";
+		property osgi.module.configurations = "enabled=\"true\"${line.separator}tokenLocation=\"REQUEST\"";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given: Add an organization and an organization site with a public page") {
+			JSONOrganization.addOrganization(organizationName = "Organization Name");
+
+			Organization.openOrganizationsAdmin();
+
+			Organization.addSiteCP(orgName = "Organization Name");
+
+			PagesAdmin.openPagesAdmin(siteURLKey = "Organization Name");
+
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+
+			PagesAdmin.addPage(pageName = "Public Page");
+		}
+
+		task ("When: Get the organization site page header info") {
+			var curl = '''http://localhost:8080/web/organization-name?SM_USER=test@liferay.com -I''';
+
+			var response = JSONCurlUtil.post(${curl});
+		}
+
+		task ("Then: Verify that 3t, 9x, and s show in the response header") {
+			var groupId = JSONGroupAPI._getGroupIdByName(
+				groupName = "Organization Name",
+				site = "true");
+
+			TestUtils.assertPartialEquals(
+				actual = ${response},
+				expected = "X-Liferay-Request-Group: ${groupId} 3t 9x s");
+		}
+	}
+
+	@description = "This is a use case for LPS-197701. TC-8: Verify that the list consists of the Site type ID when visiting page template page."
+	@priority = 3
+	test AssertPageTemplatePageResponseHeaderIncludesSiteTypeID {
+		property custom.properties = "service.pre.action.track.theme.display=true";
+		property osgi.module.configuration.file.names = "com.liferay.portal.security.sso.token.configuration.TokenConfiguration.config";
+		property osgi.module.configurations = "enabled=\"true\"${line.separator}tokenLocation=\"REQUEST\"";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given: Create a page template and add a widget page template") {
+			JSONLayoutpagetemplate.addLayoutPageTemplateCollection(
+				groupName = "Guest",
+				layoutPageTemplateCollectionName = "Test Page Template Set");
+
+			JSONLayoutpagetemplate.addLayoutPageTemplateEntry(
+				groupName = "Guest",
+				layoutPageTemplateCollectionName = "Test Page Template Set",
+				layoutPageTemplateEntryName = "Test Widget Page Template Name",
+				layoutPageTemplateStatus = "Approved",
+				layoutPageTemplateType = "Widget Page Template");
+		}
+
+		task ("When: Get the page template page header info") {
+			var layoutPrototypeId = JSONLayoutpagetemplate.getLayoutPrototypeId(
+				groupName = "Guest",
+				layoutPageTemplateEntryName = "Test Widget Page Template Name",
+				layoutPageTemplateType = "Widget Page Template");
+
+			var curl = '''http://localhost:8080/group/template-${layoutPrototypeId}?SM_USER=test@liferay.com -I''';
+
+			var response = JSONCurlUtil.post(${curl});
+		}
+
+		task ("Then: Verify that 0t and 8x show in the response header.") {
+			var groupId = JSONGroupAPI._getGroupIdByName(
+				groupName = "Test Widget Page Template Name",
+				site = "false");
+
+			TestUtils.assertPartialEquals(
+				actual = ${response},
+				expected = "X-Liferay-Request-Group: ${groupId} 0t 8x");
+		}
+	}
+
+	@description = "This is a use case for LPS-197701. TC-6: Verify that the list consists of the Site type ID when visiting Profile page and Dashboard page which are inherited from User Group."
+	@priority = 3
+	test AssertProfileAndDashboardPagesResponseHeadersIncludeSiteTypeID {
+		property custom.properties = "service.pre.action.track.theme.display=true";
+		property osgi.module.configuration.file.names = "com.liferay.portal.security.sso.token.configuration.TokenConfiguration.config";
+		property osgi.module.configurations = "enabled=\"true\"${line.separator}tokenLocation=\"REQUEST\"";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given: Create a user group with a public page and add user to user group") {
+			JSONUserGroup.addUserGroup(
+				userGroupDescription = "UG UserGroup Name Description",
+				userGroupName = "UG UserGroup Name");
+
+			JSONUserGroup.addLayout(
+				layoutName = "UG Public Page",
+				userGroupName = "UG UserGroup Name");
+
+			JSONUser.addUserToUserGroup(
+				userEmailAddress = "test@liferay.com",
+				userGroupName = "UG UserGroup Name");
+		}
+
+		task ("When: Get the My profile and My Dashboard pages header info") {
+			var userGroupId = JSONUserGroupAPI._getUserGroupIdByName(userGroupName = "UG UserGroup Name");
+			var dashboardCurl = '''http://localhost:8080/user/test/home?SM_USER=test@liferay.com -I''';
+
+			var dashboardResponse = JSONCurlUtil.post(${dashboardCurl});
+			var profileCurl = '''http://localhost:8080/web/test/~/${userGroupId}/ug-public-page?SM_USER=test@liferay.com -I''';
+
+			var profileResponse = JSONCurlUtil.post(${profileCurl});
+		}
+
+		task ("Then: Verify that 0t, 10x and 6x show in the response header.") {
+			var userId = JSONUserAPI._getUserIdByEmailAddress(userEmailAddress = "test@liferay.com");
+
+			var groupId = JSONGroupAPI._getGroupIdByGroupKey(
+				groupKey = ${userId},
+				site = "false");
+
+			TestUtils.assertPartialEquals(
+				actual = ${profileResponse},
+				expected = "X-Liferay-Request-Group: ${groupId} 0t 10x 6x");
+		}
+
+		task ("And: Verify that 0t and 5x show in the response header.") {
+			TestUtils.assertPartialEquals(
+				actual = ${dashboardResponse},
+				expected = "X-Liferay-Request-Group: ${groupId} 0t 5x");
+		}
+	}
+
+	@description = "This is a use case for LPS-197701. TC-2: Verify that the list consists of the Site type ID when visiting restricted child site."
+	@priority = 3
+	test AssertRestrictedChildSiteResponseHeaderIncludesSiteTypeID {
+		property custom.properties = "service.pre.action.track.theme.display=true";
+		property osgi.module.configuration.file.names = "com.liferay.portal.security.sso.token.configuration.TokenConfiguration.config";
+		property osgi.module.configurations = "enabled=\"true\"${line.separator}tokenLocation=\"REQUEST\"";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given: Add a site and a restricted child site with a public page") {
+			HeadlessSite.addSite(siteName = "Site Name");
+
+			HeadlessSite.addSite(
+				membershipType = "Restricted",
+				parentSiteName = "Site Name",
+				siteName = "Child Site Name");
+
+			JSONLayout.addPublicLayout(
+				groupName = "Child Site Name",
+				layoutName = "Test Page",
+				parentGroupName = "Site Name");
+		}
+
+		task ("When: Get the child site page header info") {
+			var curl = '''http://localhost:8080/web/child-site-name?SM_USER=test@liferay.com -I''';
+
+			var response = JSONCurlUtil.post(${curl});
+		}
+
+		task ("Then: Verify that 2t, 2x, and s show in the response header") {
+			var groupId = JSONGroupAPI._getGroupIdByName(
+				groupName = "Child Site Name",
+				parentGroupName = "Site Name",
+				site = "true");
+
+			TestUtils.assertPartialEquals(
+				actual = ${response},
+				expected = "X-Liferay-Request-Group: ${groupId} 2t 2x s");
+		}
+	}
+
+	@description = "This is a use case for LPS-197701. TC-7: Verify that the list consists of the Site type ID when visiting site template page."
+	@priority = 3
+	test AssertSiteTemplatePageResponseHeaderIncludesSiteTypeID {
+		property custom.properties = "service.pre.action.track.theme.display=true";
+		property osgi.module.configuration.file.names = "com.liferay.portal.security.sso.token.configuration.TokenConfiguration.config";
+		property osgi.module.configurations = "enabled=\"true\"${line.separator}tokenLocation=\"REQUEST\"";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given: Create a site template") {
+			SiteTemplates.addCP(siteTemplateName = "Site Template Name");
+		}
+
+		task ("When: Get the site template page header info") {
+			var siteTemplateId = JSONSiteTemplate.getSiteTemplateIdByName(siteTemplateName = "Site Template Name");
+
+			var curl = '''http://localhost:8080/group/${siteTemplateId}?SM_USER=test@liferay.com -I''';
+
+			var response = JSONCurlUtil.post(${curl});
+		}
+
+		task ("Then: Verify that 0t and 7x show in the response header.") {
+			var groupId = JSONGroupAPI._getGroupIdByName(
+				groupName = "Site Template Name",
+				site = "false");
+
+			TestUtils.assertPartialEquals(
+				actual = ${response},
+				expected = "X-Liferay-Request-Group: ${groupId} 0t 7x");
+		}
+	}
+
+	@description = "This is a use case for LPS-197701. TC-1: Verify that the list consists of the Site type ID when visiting staging site and live site."
+	@priority = 3
+	test AssertStagingAndLiveSiteResponseHeadersIncludeSiteTypeID {
+		property custom.properties = "service.pre.action.track.theme.display=true";
+		property osgi.module.configuration.file.names = "com.liferay.portal.security.sso.token.configuration.TokenConfiguration.config";
+		property osgi.module.configurations = "enabled=\"true\"${line.separator}tokenLocation=\"REQUEST\"";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given: Add a site with a public page and enable local staging") {
+			HeadlessSite.addSite(siteName = "Site Name");
+
+			JSONLayout.addPublicLayout(
+				groupName = "Site Name",
+				layoutName = "Staging Test Page");
+
+			JSONStaging.enableLocalStaging(groupName = "Site Name");
+		}
+
+		task ("When: Get the staging and live sites page header info") {
+			var curl = '''http://localhost:8080/web/site-name-staging?SM_USER=test@liferay.com -I''';
+
+			var stagingSiteResponse = JSONCurlUtil.post(${curl});
+			var curl = '''http://localhost:8080/web/site-name?SM_USER=test@liferay.com -I''';
+
+			var liveSiteResponse = JSONCurlUtil.post(${curl});
+		}
+
+		task ("Then: Verify that 1t and 3x show in the response header of staging site page") {
+			var groupId = JSONGroupAPI._getGroupIdByName(
+				groupName = "Site Name (Staging)",
+				site = "false");
+
+			TestUtils.assertPartialEquals(
+				actual = ${stagingSiteResponse},
+				expected = "X-Liferay-Request-Group: ${groupId} 1t 3x");
+		}
+
+		task ("And: Verify that 1t, 3x, and s show in the response header of live site page") {
+			var groupId = JSONGroupAPI._getGroupIdByName(
+				groupName = "Site Name",
+				site = "true");
+
+			TestUtils.assertPartialEquals(
+				actual = ${liveSiteResponse},
+				expected = "X-Liferay-Request-Group: ${groupId} 1t 3x s");
+		}
+	}
+
+	@description = "This is a use case for LPS-107017. Create user via JSONWSAPUI."
+	@priority = 5
 	test CreateUserViaJSONWSAPIUI {
 		var portalURL = PropsUtil.get("portal.url");
+		var userfn = "testfUI";
+		var userln = "testlUI";
+		var key_userScreenName = "testui";
 
 		task ("Add user via JSONWSUI") {
 			Navigator.openSpecificURL(url = "${portalURL}/api/jsonws?contextName=&signature=/user/add-user-31-long-boolean-java.lang.String-java.lang.String-boolean-java.lang.String-java.lang.String-long-java.lang.String-java.util.Locale-java.lang.String-java.lang.String-java.lang.String-long-long-boolean-int-int-int-java.lang.String-%5BJ-%5BJ-%5BJ-%5BJ-java.util.List-java.util.List-java.util.List-java.util.List-java.util.List-boolean-com.liferay.portal.kernel.service.ServiceContext");
 
 			JSONUser.addUserByJSONWSUI(
-				userFirstName = "testfUI",
-				userLastName = "testlUI");
+				userFirstName = ${userfn},
+				userLastName = ${userln});
 		}
 
-		task ("Assert message present in HTLM source") {
-			Pause(locator1 = "3000");
-
-			User.viewWelcomeMEssageHTML(
-				userfn = "testfUI",
-				userln = "testfUI");
+		task ("Assert message present in HTML source") {
+			while (IsElementPresent(locator1 = "JSONWS#SECURITY_RESULT", value1 = "Welcome ${userfn} ${userln}!")) {
+				Pause(value1 = 500);
+			}
 		}
 
 		task ("Assert user created in users page") {
-			Navigator.openURL();
-
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
-
-			var key_userScreenName = "testui";
+			User.openUsersAdmin();
 
 			User.viewUserTableName(
-				userfn = "testfUI",
-				userln = "testfUI");
-			AssertTextEquals(
-				locator1 = "UsersAndOrganizations#USER_TABLE_NAME",
-				value1 = "${userfn} ${userln}");
+				key_userScreenName = ${key_userScreenName},
+				userfn = ${userfn},
+				userln = ${userln});
 		}
 	}
 
-	@description = "This is a use case for LPS-83566. Escape url redirect with groovy script"
-	@priority = "5"
+	@description = "This is a use case for LPS-83566. Escape url redirect with groovy script."
+	@priority = 5
 	test EscapeUrlRedirectWithGroovyScript {
-		property test.name.skip.portal.instance = "SecurityUsecase#EscapeUrlRedirectWithGroovyScript";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		task ("Escape url redirect with groovy script") {
-			ApplicationsMenu.gotoPortlet(
-				category = "System",
-				panel = "Control Panel",
-				portlet = "Server Administration");
+			ServerAdministration.openServerAdmin();
 
 			ServerAdministration.executeScript(
 				language = "Groovy",
@@ -89,18 +401,15 @@ out.println(PortalUtil.escapeRedirect("/"));
 		}
 	}
 
-	@description = "This is a use case for LPS-87768. No permission from unauthorized url as power user"
-	@priority = "5"
+	@description = "This is a use case for LPS-87768. No permission from unauthorized url as power user."
+	@priority = 5
 	test NoPermissionFromUnauthorizedURLAsPowerUser {
-		property test.name.skip.portal.instance = "SecurityUsecase#NoPermissionFromUnauthorizedURLAsPowerUser";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		task ("Add new user") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
-
-			User.addCP(
+			JSONUser.addUser(
 				userEmailAddress = "userea@liferay.com",
 				userFirstName = "userfn",
 				userLastName = "userln",
@@ -108,25 +417,16 @@ out.println(PortalUtil.escapeRedirect("/"));
 		}
 
 		task ("Assign power user to new user") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
-
-			User.assignRegularRoleCP(
+			JSONRole.assignRoleToUser(
 				roleTitle = "Power User",
-				userScreenName = "usersn");
+				userEmailAddress = "userea@liferay.com");
 		}
 
 		task ("Edit user password") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
-
-			User.editPasswordCP(
-				userEmailAddress = "userea@liferay.com",
-				userScreenName = "usersn");
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				requireReset = "false",
+				userEmailAddress = "userea@liferay.com");
 		}
 
 		task ("Logout and login with new user") {
@@ -148,49 +448,40 @@ out.println(PortalUtil.escapeRedirect("/"));
 
 			Navigator.openSpecificURL(url = '''${portalURL}/c/portal/update_layout?cmd=add&p_p_col_id=column-1&p_p_col_pos=0&p_p_id=com_liferay_marketplace_store_web_portlet_MarketplacePurchasedPortlet&p_auth=${authToken}&p_l_id=${plid}''');
 
+			Navigator.openURL();
+
 			UserBar.gotoDropdownItem(dropdownItem = "My Profile");
 
 			Portlet.viewPortletBodyNotPresent(portletName = "Purchased");
 		}
 	}
 
-	@description = "This is a use case for LPS-80905. User can access permissions window with permission from admin"
-	@priority = "5"
+	@description = "This is a use case for LPS-80905. User can access permissions window with permission from admin."
+	@priority = 5
 	test UserCanAccessPermissionsWindowWithPermissionFromAdmin {
-		property test.name.skip.portal.instance = "SecurityUsecase#UserCanAccessPermissionsWindowWithPermissionFromAdmin";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		var portalURL = PropsUtil.get("portal.url");
 
 		task ("Define user permissions view control panel menu") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Roles");
-
-			Role.definePermissionsCP(
-				permissionDefinitionKeys = "CONTROL_PANEL_GENERAL_PERMISSIONS_GO_TO_CONTROL_PANEL_CHECKBOX",
-				permissionDefinitionValue = "View Control Panel Menu",
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "VIEW_CONTROL_PANEL",
+				resourceName = 90,
 				roleTitle = "User");
 		}
 
 		task ("Define user permissions") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Roles");
-
-			Role.definePermissionsCP(
-				permissionDefinitionKeys = "CONTROL_PANEL_SITES_SITES_GENERAL_PERMISSIONS_ACCESS_IN_CONTROL_PANEL_CHECKBOX,CONTROL_PANEL_SITES_SITES_GENERAL_PERMISSIONS_VIEW_CHECKBOX",
-				roleTitle = "User");
+			for (var resourceActionIndex : list "ACCESS_IN_CONTROL_PANEL,VIEW") {
+				Permissions.definePermissionViaJSONAPI(
+					resourceAction = ${resourceActionIndex},
+					resourceName = "com_liferay_site_admin_web_portlet_SiteAdminPortlet",
+					roleTitle = "User");
+			}
 		}
 
 		task ("Add user") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
-
-			User.addCP(
+			JSONUser.addUser(
 				userEmailAddress = "userea@liferay.com",
 				userFirstName = "userfn",
 				userLastName = "userln",
@@ -198,14 +489,10 @@ out.println(PortalUtil.escapeRedirect("/"));
 		}
 
 		task ("Edit user password") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
-
-			User.editPasswordCP(
-				userEmailAddress = "userea@liferay.com",
-				userScreenName = "usersn");
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				requireReset = "false",
+				userEmailAddress = "userea@liferay.com");
 		}
 
 		task ("Add calendar") {
@@ -237,38 +524,33 @@ out.println(PortalUtil.escapeRedirect("/"));
 		}
 	}
 
-	@description = "This is a use case for LPS-68070. Validate cannot overwrite OSGi service identifier"
-	@priority = "5"
+	@description = "This is a use case for LPS-68070. Validate cannot overwrite OSGi service identifier."
+	@priority = 5
 	test ValidateCannotOverwriteOSGiServiceIdentifier {
 		property portal.acceptance = "true";
 
-		var portalURL = PropsUtil.get("portal.url");
-		var url = "${portalURL}/c/portal/json_service?serviceClassName=com.liferay.portal.kernel.service.AccountServiceUtil&amp;serviceMethodName=getOSGiServiceIdentifier&amp;p_auth=";
+		var portalURL = JSONCompany.getPortalURL();
+
+		var url = "${portalURL}/c/portal/json_service?serviceClassName=com.liferay.portal.kernel.service.AccountServiceUtil&serviceMethodName=getOSGiServiceIdentifier&p_auth=";
 
 		task ("Assert JSONWS empty page") {
-			Api.gotoPAuthURL(url = "${url}");
+			Api.gotoPAuthURL(url = ${url});
 
 			ServerAdministration.viewJSONWSSecurityEmptyPage();
 		}
 	}
 
 	@description = "This is a use case for LPS-49848."
-	@priority = "4"
+	@priority = 5
 	test ValidateCannotStealAdminAccount {
-		property test.name.skip.portal.instance = "SecurityUsecase#ValidateCannotStealAdminAccount";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		var pAuth = Api.getPAuth();
 		var portalURL = PropsUtil.get("portal.url");
 
 		task ("Add new user") {
-			Navigator.openURL();
-
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
-
-			User.addCP(
+			JSONUser.addUser(
 				userEmailAddress = "userea@liferay.com",
 				userFirstName = "userfn",
 				userLastName = "userln",
@@ -276,14 +558,10 @@ out.println(PortalUtil.escapeRedirect("/"));
 		}
 
 		task ("Edit user password") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
-
-			User.editPasswordCP(
-				userEmailAddress = "userea@liferay.com",
-				userScreenName = "usersn");
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				requireReset = "false",
+				userEmailAddress = "userea@liferay.com");
 		}
 
 		task ("Logout, login and assert forbiden error message when trying to access admin account") {
@@ -297,32 +575,8 @@ out.println(PortalUtil.escapeRedirect("/"));
 		}
 	}
 
-	@description = "This is a use case for LPS-114470. Validate crafted or corrupted files cannot cause out of memory errors"
-	@priority = "5"
-	test ValidateCraftedOrCorruptedFilesCannotCauseOutOfMemoryErrors {
-		task ("Add new document") {
-			ProductMenu.gotoPortlet(
-				category = "Content &amp; Data",
-				portlet = "Documents and Media");
-
-			DMDocument.addCP(
-				dmDocumentDescription = "DM Document Description",
-				dmDocumentFile = "tika.mp3",
-				dmDocumentFilePath = "coreinfrastructure/security/security/usecase",
-				dmDocumentTitle = "DM Document Title");
-		}
-
-		task ("Assert out of memmory error message") {
-			AssertConsoleTextPresent(value1 = "java.io.IOException: Record size");
-
-			AssertConsoleTextPresent(value1 = "is larger than the allowed record size");
-
-			AssertConsoleTextNotPresent(value1 = "java.lang.OutOfMemoryError");
-		}
-	}
-
-	@description = "This is a use case for LRQA-14382. Validate forward url PG"
-	@priority = "5"
+	@description = "This is a use case for LRQA-14382. Validate forward url PG."
+	@priority = 5
 	test ValidateForwardURLPG {
 		property custom.properties = "virtual.hosts.valid.hosts=localhost,127.0.0.1,${ip.address}";
 		property portal.acceptance = "true";
@@ -332,9 +586,7 @@ out.println(PortalUtil.escapeRedirect("/"));
 
 			Navigator.openSpecificURL(url = "${portalURL}/html/common/forward_jsp.jsp?FORWARD_URL=http://www.msn.com");
 
-			Pause(locator1 = "3000");
-
-			Portlet.viewHomePage(pageName = "Home");
+			Portlet.waitForHomePage(pageName = "Home");
 		}
 
 		task ("View welcome content page") {
@@ -342,31 +594,29 @@ out.println(PortalUtil.escapeRedirect("/"));
 		}
 
 		task ("Add public page") {
-			ProductMenu.gotoPortlet(
-				category = "Site Builder",
-				portlet = "Pages");
-
-			SitePages.addPublicPage(pageName = "Test");
+			JSONLayout.addPublicLayout(
+				groupName = "Guest",
+				layoutName = "Test");
 		}
 
 		task ("Assert test present in home page") {
 			Navigator.openSpecificURL(url = '''${portalURL}/html/common/forward_jsp.jsp?FORWARD_URL=${portalURL}/web/guest/test''');
 
-			Portlet.viewHomePage(pageName = "Test");
+			Portlet.waitForHomePage(pageName = "Test");
 		}
 	}
 
-	@description = "This is a use case for LPS-57776. Validate no LAR remote code execution"
-	@priority = "5"
+	@description = "This is a use case for LPS-57776. Validate no LAR remote code execution."
+	@priority = 5
 	test ValidateNoLARRemoteCodeExecution {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
 		task ("Assert remote-code-execution.lar dependency is forbidden") {
-			ProductMenu.gotoPortlet(
-				category = "Content &amp; Data",
-				portlet = "Blogs");
+			BlogsNavigator.openBlogsAdmin(siteURLKey = "guest");
 
 			LAR.importPortlet(
 				failureExpected = "true",
-				filePath = "coreinfrastructure/security/security/usecase",
 				larFileName = "blogs-remote-code-execution.lar",
 				portletName = "Blogs",
 				uploadFrom = "dependencies");
@@ -377,30 +627,21 @@ out.println(PortalUtil.escapeRedirect("/"));
 		}
 	}
 
-	@description = "This is a use case for LPS-85112. Validate view permission cannot update other users password"
-	@priority = "5"
+	@description = "This is a use case for LPS-85112. Validate view permission cannot update other users password."
+	@priority = 5
 	test ValidateViewPermissionCanNotUpdateOtherUsersPassword {
-		property test.name.skip.portal.instance = "SecurityUsecase#ValidateViewPermissionCanNotUpdateOtherUsersPassword";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		task ("Define user permission") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Roles");
-
-			Role.definePermissionCmdCP(
-				permissionDefinitionKeys = "CONTROL_PANEL_USERS_USERS_AND_ORGANIZATIONS_RESOURCE_PERMISSIONS_USER_VIEW_CHECKBOX",
-				permissionDefinitionValue = "View",
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "VIEW",
+				resourceName = "com.liferay.portal.kernel.model.User",
 				roleTitle = "User");
 		}
 
 		task ("Add new user") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
-
-			User.addCP(
+			JSONUser.addUser(
 				userEmailAddress = "userea@liferay.com",
 				userFirstName = "userfn",
 				userLastName = "userln",
@@ -408,22 +649,18 @@ out.println(PortalUtil.escapeRedirect("/"));
 		}
 
 		task ("Edit user password") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
-
-			User.editPasswordCP(
-				userEmailAddress = "userea@liferay.com",
-				userScreenName = "usersn");
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				requireReset = "false",
+				userEmailAddress = "userea@liferay.com");
 		}
 
 		task ("Logout and login") {
 			User.logoutPG();
 
-			User.loginUserPG(
-				password = "test",
-				userEmailAddress = "userea@liferay.com");
+			User.logoutAndLoginPG(
+				userLoginEmailAddress = "userea@liferay.com",
+				userLoginFullName = "userfn userln");
 		}
 
 		task ("Assert cannot view other organizations info message") {
@@ -433,26 +670,8 @@ out.println(PortalUtil.escapeRedirect("/"));
 		}
 	}
 
-	@description = "This is a use case for LPS-73595. View JS loader modules URL no wiki"
-	@priority = "5"
-	test ViewJSLoaderModulesURLNoWiki {
-		task ("View JS loader modules") {
-			var portalURL = PropsUtil.get("portal.url");
-
-			Open.openNoError(locator1 = "${portalURL}/o/js_loader_modules");
-
-			AssertConsoleTextPresent(value1 = "com.liferay.wiki.engine.html");
-
-			AssertConsoleTextPresent(value1 = "com.liferay.wiki.engine.text");
-
-			AssertTextNotPresent(value1 = "com.liferay.wiki.engine.html");
-
-			AssertTextNotPresent(value1 = "com.liferay.wiki.engine.text");
-		}
-	}
-
-	@description = "This is a use case for LPS-55622. View no invoked portlet via URL"
-	@priority = "5"
+	@description = "This is a use case for LPS-55622. View no invoked portlet via URL."
+	@priority = 5
 	test ViewNoInvokedPortletViaURL {
 		property portal.acceptance = "true";
 
@@ -464,23 +683,23 @@ out.println(PortalUtil.escapeRedirect("/"));
 		}
 
 		task ("Configure page") {
-			SitePages.configurePage(
+			PagesAdmin.configurePage(
 				columnName = "1 Column",
 				pageName = "Test Widget Page",
-				privacy = "Public Pages",
 				sitePageType = "Widget Page");
 		}
 
 		task ("Add Iframe") {
-			Navigator.gotoPage(pageName = "Test Widget Page");
-
-			Portlet.addPG(portletName = "IFrame");
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Guest",
+				layoutName = "Test Widget Page",
+				widgetName = "IFrame");
 		}
 
 		task ("Assert test widget page not present") {
-			var portalURL = PropsUtil.get("portal.url");
+			var portalURL = JSONCompany.getPortalURL();
 
-			Navigator.openSpecificURL(url = "${portalURL}/web/guest/test-widget-page/?p_p_id=asdf&amp;p_p_lifecycle=0&amp;p_p_state=maximized&amp;_asdf_mvcPath=/html/portlet/portal_settings/edit_company.jsp");
+			Navigator.openSpecificURL(url = "${portalURL}/web/guest/test-widget-page/?p_p_id=asdf&p_p_lifecycle=0&p_p_state=maximized&_asdf_mvcPath=/html/portlet/portal_settings/edit_company.jsp");
 
 			Portlet.viewPortletCouldNotBeFoundInfo();
 		}

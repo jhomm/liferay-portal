@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.util;
@@ -24,6 +15,11 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.SearchContext;
+import com.liferay.portal.search.hits.SearchHits;
+
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.Serializable;
 
@@ -32,10 +28,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -56,7 +48,7 @@ public interface AssetHelper {
 	};
 
 	public Set<String> addLayoutTags(
-		HttpServletRequest httpServletRequest, List<AssetTag> tags);
+		HttpServletRequest httpServletRequest, List<AssetTag> assetTags);
 
 	public PortletURL getAddPortletURL(
 			LiferayPortletRequest liferayPortletRequest,
@@ -71,7 +63,12 @@ public interface AssetHelper {
 
 	public List<AssetEntry> getAssetEntries(Hits hits);
 
+	public List<AssetEntry> getAssetEntries(SearchHits searchHits);
+
 	public String getAssetKeywords(String className, long classPK);
+
+	public String getAssetKeywords(
+		String className, long classPK, Locale locale);
 
 	public List<AssetPublisherAddItemHolder> getAssetPublisherAddItemHolders(
 			LiferayPortletRequest liferayPortletRequest,
@@ -95,6 +92,11 @@ public interface AssetHelper {
 			int start, int end)
 		throws Exception;
 
+	public SearchHits search(
+			SearchContext searchContext,
+			List<AssetEntryQuery> assetEntryQueries, int start, int end)
+		throws Exception;
+
 	public BaseModelSearchResult<AssetEntry> searchAssetEntries(
 			AssetEntryQuery assetEntryQuery, long[] assetCategoryIds,
 			String[] assetTagNames, Map<String, Serializable> attributes,
@@ -115,6 +117,11 @@ public interface AssetHelper {
 
 	public long searchCount(
 			SearchContext searchContext, AssetEntryQuery assetEntryQuery)
+		throws Exception;
+
+	public long searchCount(
+			SearchContext searchContext,
+			List<AssetEntryQuery> assetEntryQueries, int start, int end)
 		throws Exception;
 
 }

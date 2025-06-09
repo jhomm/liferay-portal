@@ -1,21 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.service.impl;
 
+import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.blogs.model.BlogsEntry;
+import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.journal.model.JournalArticle;
+import com.liferay.knowledge.base.model.KBArticle;
+import com.liferay.object.constants.ObjectDefinitionConstants;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
@@ -24,19 +27,26 @@ import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.service.WorkflowInstanceLinkLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
-import com.liferay.search.experiences.exception.SXPBlueprintConfigurationJSONException;
+import com.liferay.portal.search.asset.AssetSubtypeIdentifier;
+import com.liferay.portal.search.asset.AssetSubtypeIdentifierBuilder;
 import com.liferay.search.experiences.exception.SXPBlueprintTitleException;
 import com.liferay.search.experiences.model.SXPBlueprint;
+import com.liferay.search.experiences.rest.dto.v1_0.Configuration;
+import com.liferay.search.experiences.rest.dto.v1_0.GeneralConfiguration;
+import com.liferay.search.experiences.rest.dto.v1_0.util.ConfigurationUtil;
 import com.liferay.search.experiences.service.base.SXPBlueprintLocalServiceBaseImpl;
 import com.liferay.search.experiences.validator.SXPBlueprintValidator;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,6 +56,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Petteri Karttunen
  */
 @Component(
+	enabled = false,
 	property = "model.class.name=com.liferay.search.experiences.model.SXPBlueprint",
 	service = AopService.class
 )
@@ -55,15 +66,18 @@ public class SXPBlueprintLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public SXPBlueprint addSXPBlueprint(
-			long userId, String configurationJSON,
+			String externalReferenceCode, long userId, String configurationJSON,
 			Map<Locale, String> descriptionMap, String elementInstancesJSON,
-			Map<Locale, String> titleMap, ServiceContext serviceContext)
+			String schemaVersion, Map<Locale, String> titleMap,
+			ServiceContext serviceContext)
 		throws PortalException {
 
-		_validate(configurationJSON, titleMap, serviceContext);
+		_validate(titleMap, serviceContext);
 
 		SXPBlueprint sxpBlueprint = sxpBlueprintPersistence.create(
 			counterLocalService.increment());
+
+		sxpBlueprint.setExternalReferenceCode(externalReferenceCode);
 
 		User user = _userLocalService.getUser(userId);
 
@@ -71,21 +85,39 @@ public class SXPBlueprintLocalServiceImpl
 		sxpBlueprint.setUserId(user.getUserId());
 		sxpBlueprint.setUserName(user.getFullName());
 
-		sxpBlueprint.setConfigurationJSON(configurationJSON);
+		sxpBlueprint.setConfigurationJSON(
+			_enhanceConfiguration(configurationJSON));
 		sxpBlueprint.setDescriptionMap(descriptionMap);
 		sxpBlueprint.setElementInstancesJSON(elementInstancesJSON);
+		sxpBlueprint.setSchemaVersion(schemaVersion);
 		sxpBlueprint.setTitleMap(titleMap);
-		sxpBlueprint.setStatus(WorkflowConstants.STATUS_DRAFT);
+		sxpBlueprint.setVersion(
+			String.format(
+				"%.1f",
+				GetterUtil.getFloat(sxpBlueprint.getVersion(), 0.9F) + 0.1));
+		sxpBlueprint.setStatus(WorkflowConstants.STATUS_APPROVED);
 		sxpBlueprint.setStatusByUserId(user.getUserId());
 		sxpBlueprint.setStatusDate(serviceContext.getModifiedDate(null));
+
+		sxpBlueprint = _upgradeSXPBlueprint(sxpBlueprint);
 
 		sxpBlueprint = sxpBlueprintPersistence.update(sxpBlueprint);
 
 		_resourceLocalService.addModelResources(sxpBlueprint, serviceContext);
 
-		_startWorkflowInstance(userId, sxpBlueprint, serviceContext);
-
 		return sxpBlueprint;
+	}
+
+	@Override
+	public void deleteCompanySXPBlueprints(long companyId)
+		throws PortalException {
+
+		List<SXPBlueprint> sxpBlueprints =
+			sxpBlueprintPersistence.findByCompanyId(companyId);
+
+		for (SXPBlueprint sxpBlueprint : sxpBlueprints) {
+			sxpBlueprintLocalService.deleteSXPBlueprint(sxpBlueprint);
+		}
 	}
 
 	@Indexable(type = IndexableType.DELETE)
@@ -111,11 +143,12 @@ public class SXPBlueprintLocalServiceImpl
 		_resourceLocalService.deleteResource(
 			sxpBlueprint, ResourceConstants.SCOPE_INDIVIDUAL);
 
-		_workflowInstanceLinkLocalService.deleteWorkflowInstanceLinks(
-			sxpBlueprint.getCompanyId(), 0, SXPBlueprint.class.getName(),
-			sxpBlueprint.getSXPBlueprintId());
-
 		return sxpBlueprint;
+	}
+
+	@Override
+	public List<SXPBlueprint> getSXPBlueprints(long companyId) {
+		return sxpBlueprintPersistence.findByCompanyId(companyId);
 	}
 
 	@Override
@@ -152,52 +185,188 @@ public class SXPBlueprintLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public SXPBlueprint updateSXPBlueprint(
-			long userId, long sxpBlueprintId, String configurationJSON,
-			Map<Locale, String> descriptionMap, String elementInstancesJSON,
+			String externalReferenceCode, long userId, long sxpBlueprintId,
+			String configurationJSON, Map<Locale, String> descriptionMap,
+			String elementInstancesJSON, String schemaVersion,
 			Map<Locale, String> titleMap, ServiceContext serviceContext)
 		throws PortalException {
 
-		_validate(configurationJSON, titleMap, serviceContext);
+		_validate(titleMap, serviceContext);
 
 		SXPBlueprint sxpBlueprint = sxpBlueprintPersistence.findByPrimaryKey(
 			sxpBlueprintId);
 
-		sxpBlueprint.setConfigurationJSON(configurationJSON);
+		sxpBlueprint.setExternalReferenceCode(externalReferenceCode);
+		sxpBlueprint.setConfigurationJSON(
+			_enhanceConfiguration(configurationJSON));
 		sxpBlueprint.setDescriptionMap(descriptionMap);
 		sxpBlueprint.setElementInstancesJSON(elementInstancesJSON);
 		sxpBlueprint.setTitleMap(titleMap);
+		sxpBlueprint.setVersion(
+			String.format(
+				"%.1f",
+				GetterUtil.getFloat(sxpBlueprint.getVersion(), 0.9F) + 0.1));
 
 		return updateSXPBlueprint(sxpBlueprint);
 	}
 
-	private void _startWorkflowInstance(
-			long userId, SXPBlueprint sxpBlueprint,
-			ServiceContext serviceContext)
+	private String _enhanceConfiguration(String configuration)
 		throws PortalException {
 
-		WorkflowHandlerRegistryUtil.startWorkflowInstance(
-			sxpBlueprint.getCompanyId(), 0, userId,
-			SXPBlueprint.class.getName(), sxpBlueprint.getSXPBlueprintId(),
-			sxpBlueprint, serviceContext);
+		if (!FeatureFlagManagerUtil.isEnabled("LPS-129412")) {
+			return configuration;
+		}
+
+		try {
+			JSONObject configurationJSONObject = _jsonFactory.createJSONObject(
+				configuration);
+
+			JSONObject generalConfigurationJSONObject =
+				configurationJSONObject.getJSONObject("generalConfiguration");
+
+			if (generalConfigurationJSONObject == null) {
+				return configuration;
+			}
+
+			JSONArray searchableAssetTypesJSONArray =
+				(JSONArray)generalConfigurationJSONObject.get(
+					"searchableAssetTypes");
+
+			if (searchableAssetTypesJSONArray == null) {
+				return _setCollectionProviderType(
+					configurationJSONObject, generalConfigurationJSONObject,
+					AssetEntry.class.getName());
+			}
+
+			String[] searchableAssetTypesArray = JSONUtil.toStringArray(
+				searchableAssetTypesJSONArray);
+
+			if (searchableAssetTypesArray.length == 0) {
+				return _setCollectionProviderType(
+					configurationJSONObject, generalConfigurationJSONObject,
+					AssetEntry.class.getName());
+			}
+
+			if (searchableAssetTypesArray.length == 1) {
+				return _setCollectionProviderType(
+					configurationJSONObject, generalConfigurationJSONObject,
+					searchableAssetTypesArray[0]);
+			}
+
+			AssetSubtypeIdentifier assetSubtypeIdentifier1 =
+				_assetSubtypeIdentifierBuilder.searchableAssetType(
+					searchableAssetTypesArray[0]
+				).build();
+
+			for (int i = 1; i < searchableAssetTypesArray.length; i++) {
+				AssetSubtypeIdentifier assetSubtypeIdentifier2 =
+					_assetSubtypeIdentifierBuilder.searchableAssetType(
+						searchableAssetTypesArray[i]
+					).build();
+
+				if (!StringUtil.equals(
+						assetSubtypeIdentifier1.getClassName(),
+						assetSubtypeIdentifier2.getClassName())) {
+
+					return _setCollectionProviderType(
+						configurationJSONObject, generalConfigurationJSONObject,
+						AssetEntry.class.getName());
+				}
+			}
+
+			return _setCollectionProviderType(
+				configurationJSONObject, generalConfigurationJSONObject,
+				assetSubtypeIdentifier1.getClassName());
+		}
+		catch (Exception exception) {
+			throw new PortalException(exception);
+		}
+	}
+
+	private String _setCollectionProviderType(
+		JSONObject configurationJSONObject,
+		JSONObject generalConfigurationJSONObject, String type) {
+
+		AssetSubtypeIdentifier assetSubtypeIdentifier =
+			_assetSubtypeIdentifierBuilder.searchableAssetType(
+				type
+			).build();
+
+		String className = assetSubtypeIdentifier.getClassName();
+
+		if (!_collectionProviderTypes.contains(className) &&
+			!className.startsWith(
+				ObjectDefinitionConstants.
+					CLASS_NAME_PREFIX_CUSTOM_OBJECT_DEFINITION)) {
+
+			type = AssetEntry.class.getName();
+		}
+
+		generalConfigurationJSONObject.put("collectionProviderType", type);
+
+		return configurationJSONObject.toString();
+	}
+
+	private SXPBlueprint _upgradeSXPBlueprint(SXPBlueprint sxpBlueprint) {
+		if (!Objects.equals(sxpBlueprint.getSchemaVersion(), "1.0")) {
+			return sxpBlueprint;
+		}
+
+		sxpBlueprint.setSchemaVersion("1.1");
+
+		Configuration configuration = ConfigurationUtil.toConfiguration(
+			sxpBlueprint.getConfigurationJSON());
+
+		GeneralConfiguration generalConfiguration =
+			configuration.getGeneralConfiguration();
+
+		String[] clauseContributorsExcludes =
+			generalConfiguration.getClauseContributorsExcludes();
+		String[] clauseContributorsIncludes =
+			generalConfiguration.getClauseContributorsIncludes();
+
+		if (clauseContributorsExcludes.length == 0) {
+			generalConfiguration.setClauseContributorsIncludes(() -> _WILDCARD);
+		}
+		else if (clauseContributorsIncludes.length == 0) {
+			generalConfiguration.setClauseContributorsExcludes(() -> _WILDCARD);
+		}
+		else {
+			generalConfiguration.setClauseContributorsExcludes(
+				() -> new String[0]);
+		}
+
+		sxpBlueprint.setConfigurationJSON(configuration.toString());
+
+		return sxpBlueprint;
 	}
 
 	private void _validate(
-			String configurationJSON, Map<Locale, String> titleMap,
-			ServiceContext serviceContext)
-		throws SXPBlueprintConfigurationJSONException,
-			   SXPBlueprintTitleException {
+			Map<Locale, String> titleMap, ServiceContext serviceContext)
+		throws SXPBlueprintTitleException {
 
-		if (!GetterUtil.getBoolean(
+		if (GetterUtil.getBoolean(
 				serviceContext.getAttribute(
 					SXPBlueprintLocalServiceImpl.class.getName() +
 						"#_validate"),
 				true)) {
 
-			return;
+			_sxpBlueprintValidator.validate(titleMap);
 		}
-
-		_sxpBlueprintValidator.validate(configurationJSON, titleMap);
 	}
+
+	private static final String[] _WILDCARD = {StringPool.STAR};
+
+	@Reference
+	private AssetSubtypeIdentifierBuilder _assetSubtypeIdentifierBuilder;
+
+	private final List<String> _collectionProviderTypes = new ArrayList<>(
+		Arrays.asList(
+			BlogsEntry.class.getName(), DLFileEntry.class.getName(),
+			JournalArticle.class.getName(), KBArticle.class.getName()));
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private ResourceLocalService _resourceLocalService;
@@ -207,8 +376,5 @@ public class SXPBlueprintLocalServiceImpl
 
 	@Reference
 	private UserLocalService _userLocalService;
-
-	@Reference
-	private WorkflowInstanceLinkLocalService _workflowInstanceLinkLocalService;
 
 }

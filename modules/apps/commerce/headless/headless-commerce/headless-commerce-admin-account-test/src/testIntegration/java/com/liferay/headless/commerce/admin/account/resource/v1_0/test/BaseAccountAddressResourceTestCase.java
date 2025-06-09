@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.account.resource.v1_0.test;
@@ -22,12 +13,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.commerce.admin.account.client.dto.v1_0.AccountAddress;
+import com.liferay.headless.commerce.admin.account.client.dto.v1_0.User;
 import com.liferay.headless.commerce.admin.account.client.http.HttpInvoker;
 import com.liferay.headless.commerce.admin.account.client.pagination.Page;
 import com.liferay.headless.commerce.admin.account.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.account.client.resource.v1_0.AccountAddressResource;
 import com.liferay.headless.commerce.admin.account.client.serdes.v1_0.AccountAddressSerDes;
+import com.liferay.oauth2.provider.scope.ScopeChecker;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -35,39 +31,59 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegate;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegateBuilderRegistry;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import jakarta.annotation.Generated;
 
-import java.text.DateFormat;
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+
+import java.lang.reflect.Method;
+
+import java.net.URI;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtilsBean;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -76,6 +92,9 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * @author Alessio Antonio Rendina
@@ -86,12 +105,14 @@ public abstract class BaseAccountAddressResourceTestCase {
 
 	@ClassRule
 	@Rule
-	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
-		new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -105,11 +126,25 @@ public abstract class BaseAccountAddressResourceTestCase {
 
 		_accountAddressResource.setContextCompany(testCompany);
 
-		AccountAddressResource.Builder builder =
-			AccountAddressResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		accountAddressResource = builder.authentication(
-			"test@liferay.com", "test"
+		accountAddressResource = AccountAddressResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -123,7 +158,32 @@ public abstract class BaseAccountAddressResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		AccountAddress accountAddress1 = randomAccountAddress();
+
+		String json = objectMapper.writeValueAsString(accountAddress1);
+
+		AccountAddress accountAddress2 = AccountAddressSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(accountAddress1, accountAddress2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		AccountAddress accountAddress = randomAccountAddress();
+
+		String json1 = objectMapper.writeValueAsString(accountAddress);
+		String json2 = AccountAddressSerDes.toJSON(accountAddress);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -138,40 +198,6 @@ public abstract class BaseAccountAddressResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		AccountAddress accountAddress1 = randomAccountAddress();
-
-		String json = objectMapper.writeValueAsString(accountAddress1);
-
-		AccountAddress accountAddress2 = AccountAddressSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(accountAddress1, accountAddress2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		AccountAddress accountAddress = randomAccountAddress();
-
-		String json1 = objectMapper.writeValueAsString(accountAddress);
-		String json2 = AccountAddressSerDes.toJSON(accountAddress);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -212,6 +238,187 @@ public abstract class BaseAccountAddressResourceTestCase {
 	}
 
 	@Test
+	public void testDeleteAccountAddress() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountAddress accountAddress =
+			testDeleteAccountAddress_addAccountAddress();
+
+		assertHttpResponseStatusCode(
+			204,
+			accountAddressResource.deleteAccountAddressHttpResponse(
+				accountAddress.getId()));
+
+		assertHttpResponseStatusCode(
+			404,
+			accountAddressResource.getAccountAddressHttpResponse(
+				accountAddress.getId()));
+		assertHttpResponseStatusCode(
+			404, accountAddressResource.getAccountAddressHttpResponse(0L));
+	}
+
+	protected AccountAddress testDeleteAccountAddress_addAccountAddress()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLDeleteAccountAddress() throws Exception {
+
+		// No namespace
+
+		AccountAddress accountAddress1 =
+			testGraphQLDeleteAccountAddress_addAccountAddress();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteAccountAddress",
+						new HashMap<String, Object>() {
+							{
+								put("id", accountAddress1.getId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteAccountAddress"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"accountAddress",
+					new HashMap<String, Object>() {
+						{
+							put("id", accountAddress1.getId());
+						}
+					},
+					new GraphQLField("id"))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		AccountAddress accountAddress2 =
+			testGraphQLDeleteAccountAddress_addAccountAddress();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"deleteAccountAddress",
+							new HashMap<String, Object>() {
+								{
+									put("id", accountAddress2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminAccount_v1_0",
+				"Object/deleteAccountAddress"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminAccount_v1_0",
+					new GraphQLField(
+						"accountAddress",
+						new HashMap<String, Object>() {
+							{
+								put("id", accountAddress2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected AccountAddress testGraphQLDeleteAccountAddress_addAccountAddress()
+		throws Exception {
+
+		return testGraphQLAccountAddress_addAccountAddress();
+	}
+
+	@Test
+	public void testDeleteAccountAddressBatch() throws Exception {
+		AccountAddress accountAddress1 =
+			testDeleteAccountAddressBatch_addAccountAddress();
+
+		testDeleteAccountAddressBatch_deleteAccountAddress(
+			"COMPLETED", null, accountAddress1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			accountAddressResource.getAccountAddressHttpResponse(
+				accountAddress1.getId()));
+
+		AccountAddress accountAddress2 =
+			testDeleteAccountAddressBatch_addAccountAddress();
+
+		testDeleteAccountAddressBatch_deleteAccountAddress(
+			"COMPLETED", accountAddress2.getExternalReferenceCode(), null);
+
+		assertHttpResponseStatusCode(
+			404,
+			accountAddressResource.getAccountAddressHttpResponse(
+				accountAddress2.getId()));
+
+		accountAddress1 = testDeleteAccountAddressBatch_addAccountAddress();
+		accountAddress2 = testDeleteAccountAddressBatch_addAccountAddress();
+
+		testDeleteAccountAddressBatch_deleteAccountAddress(
+			"COMPLETED", accountAddress2.getExternalReferenceCode(),
+			accountAddress1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			accountAddressResource.getAccountAddressHttpResponse(
+				accountAddress1.getId()));
+		assertHttpResponseStatusCode(
+			200,
+			accountAddressResource.getAccountAddressHttpResponse(
+				accountAddress2.getId()));
+
+		testDeleteAccountAddressBatch_deleteAccountAddress(
+			"COMPLETED", accountAddress2.getExternalReferenceCode(),
+			accountAddress1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			accountAddressResource.getAccountAddressHttpResponse(
+				accountAddress2.getId()));
+	}
+
+	protected AccountAddress testDeleteAccountAddressBatch_addAccountAddress()
+		throws Exception {
+
+		return testDeleteAccountAddress_addAccountAddress();
+	}
+
+	protected void testDeleteAccountAddressBatch_deleteAccountAddress(
+			String expectedExecuteStatus, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			accountAddressResource.deleteAccountAddressBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"id", () -> id
+					)));
+
+		Assert.assertEquals(202, httpResponse.getStatusCode());
+
+		waitForFinish(
+			expectedExecuteStatus,
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+	}
+
+	@Test
 	public void testDeleteAccountAddressByExternalReferenceCode()
 		throws Exception {
 
@@ -230,12 +437,10 @@ public abstract class BaseAccountAddressResourceTestCase {
 			accountAddressResource.
 				getAccountAddressByExternalReferenceCodeHttpResponse(
 					accountAddress.getExternalReferenceCode()));
-
 		assertHttpResponseStatusCode(
 			404,
 			accountAddressResource.
-				getAccountAddressByExternalReferenceCodeHttpResponse(
-					accountAddress.getExternalReferenceCode()));
+				getAccountAddressByExternalReferenceCodeHttpResponse("-"));
 	}
 
 	protected AccountAddress
@@ -244,6 +449,311 @@ public abstract class BaseAccountAddressResourceTestCase {
 
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGetAccountAddress() throws Exception {
+		AccountAddress postAccountAddress =
+			testGetAccountAddress_addAccountAddress();
+
+		AccountAddress getAccountAddress =
+			accountAddressResource.getAccountAddress(
+				postAccountAddress.getId());
+
+		assertEquals(postAccountAddress, getAccountAddress);
+		assertValid(getAccountAddress);
+	}
+
+	@Test
+	public void testVulcanCRUDItemDelegateGetItem() throws Exception {
+		AccountAddress postAccountAddress =
+			testGetAccountAddress_addAccountAddress();
+
+		AccountAddress getAccountAddress =
+			accountAddressResource.getAccountAddress(
+				postAccountAddress.getId());
+
+		VulcanCRUDItemDelegate vulcanCRUDItemDelegate =
+			_vulcanCRUDItemDelegateBuilderRegistry.builder(
+				testCompany,
+				"com.liferay.headless.commerce.admin.account.dto.v1_0.AccountAddress"
+			).acceptLanguage(
+				new AcceptLanguage() {
+
+					@Override
+					public List<Locale> getLocales() {
+						return Arrays.asList(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public String getPreferredLanguageId() {
+						return LocaleUtil.toLanguageId(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public Locale getPreferredLocale() {
+						return LocaleUtil.getDefault();
+					}
+
+				}
+			).groupLocalService(
+				_groupLocalService
+			).httpServletRequest(
+				testVulcanCRUDItemDelegate_getHttpServletRequest()
+			).httpServletResponse(
+				new MockHttpServletResponse()
+			).resourceActionLocalService(
+				_resourceActionLocalService
+			).resourcePermissionLocalService(
+				_resourcePermissionLocalService
+			).roleLocalService(
+				_roleLocalService
+			).scopeChecker(
+				_scopeChecker
+			).uriInfo(
+				testVulcanCRUDItemDelegate_getUriInfo()
+			).user(
+				testVulcanCRUDItemDelegate_getUser()
+			).build();
+
+		Object item = vulcanCRUDItemDelegate.getItem(
+			postAccountAddress.getId());
+
+		assertEquals(
+			getAccountAddress, AccountAddressSerDes.toDTO(item.toString()));
+	}
+
+	protected HttpServletRequest
+		testVulcanCRUDItemDelegate_getHttpServletRequest() {
+
+		return new MockHttpServletRequest() {
+
+			@Override
+			public StringBuffer getRequestURL() {
+				return new StringBuffer(
+					StringBundler.concat(
+						"http://localhost:8080/o/v1.0/",
+						RandomTestUtil.randomString(), "/",
+						RandomTestUtil.randomString()));
+			}
+
+		};
+	}
+
+	protected UriInfo testVulcanCRUDItemDelegate_getUriInfo() {
+		String applicationPath = RandomTestUtil.randomString() + "/";
+		String resourcePath = RandomTestUtil.randomString();
+
+		return new UriInfo() {
+
+			@Override
+			public String getPath() {
+				return resourcePath;
+			}
+
+			@Override
+			public String getPath(boolean decode) {
+				return getPath();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments(boolean decode) {
+				return getPathSegments();
+			}
+
+			@Override
+			public URI getRequestUri() {
+				return URI.create(
+					"http://localhost:8080/o/" + applicationPath +
+						resourcePath);
+			}
+
+			@Override
+			public UriBuilder getRequestUriBuilder() {
+				return UriBuilder.fromUri(getRequestUri());
+			}
+
+			@Override
+			public URI getAbsolutePath() {
+				return getRequestUri();
+			}
+
+			@Override
+			public UriBuilder getAbsolutePathBuilder() {
+				return getRequestUriBuilder();
+			}
+
+			@Override
+			public URI getBaseUri() {
+				return URI.create("http://localhost:8080/o/" + applicationPath);
+			}
+
+			@Override
+			public UriBuilder getBaseUriBuilder() {
+				return UriBuilder.fromUri(getBaseUri());
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters(
+				boolean decode) {
+
+				return getPathParameters();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters(
+				boolean decode) {
+
+				return getQueryParameters();
+			}
+
+			@Override
+			public List<String> getMatchedURIs() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<String> getMatchedURIs(boolean decode) {
+				return getMatchedURIs();
+			}
+
+			@Override
+			public List<Object> getMatchedResources() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public URI resolve(URI requestUri) {
+				return getBaseUri().resolve(requestUri);
+			}
+
+			@Override
+			public URI relativize(URI uri) {
+				return getBaseUri().relativize(uri);
+			}
+
+		};
+	}
+
+	protected com.liferay.portal.kernel.model.User
+		testVulcanCRUDItemDelegate_getUser() {
+
+		return _testCompanyAdminUser;
+	}
+
+	protected AccountAddress testGetAccountAddress_addAccountAddress()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetAccountAddress() throws Exception {
+		AccountAddress accountAddress =
+			testGraphQLGetAccountAddress_addAccountAddress();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				accountAddress,
+				AccountAddressSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"accountAddress",
+								new HashMap<String, Object>() {
+									{
+										put("id", accountAddress.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data", "Object/accountAddress"))));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertTrue(
+			equals(
+				accountAddress,
+				AccountAddressSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminAccount_v1_0",
+								new GraphQLField(
+									"accountAddress",
+									new HashMap<String, Object>() {
+										{
+											put("id", accountAddress.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminAccount_v1_0",
+						"Object/accountAddress"))));
+	}
+
+	@Test
+	public void testGraphQLGetAccountAddressNotFound() throws Exception {
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"accountAddress",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"accountAddress",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected AccountAddress testGraphQLGetAccountAddress_addAccountAddress()
+		throws Exception {
+
+		return testGraphQLAccountAddress_addAccountAddress();
 	}
 
 	@Test
@@ -274,7 +784,9 @@ public abstract class BaseAccountAddressResourceTestCase {
 		throws Exception {
 
 		AccountAddress accountAddress =
-			testGraphQLAccountAddress_addAccountAddress();
+			testGraphQLGetAccountAddressByExternalReferenceCode_addAccountAddress();
+
+		// No namespace
 
 		Assert.assertTrue(
 			equals(
@@ -297,6 +809,33 @@ public abstract class BaseAccountAddressResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/accountAddressByExternalReferenceCode"))));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertTrue(
+			equals(
+				accountAddress,
+				AccountAddressSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminAccount_v1_0",
+								new GraphQLField(
+									"accountAddressByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"externalReferenceCode",
+												"\"" +
+													accountAddress.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminAccount_v1_0",
+						"Object/accountAddressByExternalReferenceCode"))));
 	}
 
 	@Test
@@ -305,6 +844,8 @@ public abstract class BaseAccountAddressResourceTestCase {
 
 		String irrelevantExternalReferenceCode =
 			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -322,136 +863,427 @@ public abstract class BaseAccountAddressResourceTestCase {
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
-	}
 
-	@Test
-	public void testPatchAccountAddressByExternalReferenceCode()
-		throws Exception {
-
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testDeleteAccountAddress() throws Exception {
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		AccountAddress accountAddress =
-			testDeleteAccountAddress_addAccountAddress();
-
-		assertHttpResponseStatusCode(
-			204,
-			accountAddressResource.deleteAccountAddressHttpResponse(
-				accountAddress.getId()));
-
-		assertHttpResponseStatusCode(
-			404,
-			accountAddressResource.getAccountAddressHttpResponse(
-				accountAddress.getId()));
-
-		assertHttpResponseStatusCode(
-			404,
-			accountAddressResource.getAccountAddressHttpResponse(
-				accountAddress.getId()));
-	}
-
-	protected AccountAddress testDeleteAccountAddress_addAccountAddress()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLDeleteAccountAddress() throws Exception {
-		AccountAddress accountAddress =
-			testGraphQLAccountAddress_addAccountAddress();
-
-		Assert.assertTrue(
-			JSONUtil.getValueAsBoolean(
-				invokeGraphQLMutation(
-					new GraphQLField(
-						"deleteAccountAddress",
-						new HashMap<String, Object>() {
-							{
-								put("id", accountAddress.getId());
-							}
-						})),
-				"JSONObject/data", "Object/deleteAccountAddress"));
-
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
-			invokeGraphQLQuery(
-				new GraphQLField(
-					"accountAddress",
-					new HashMap<String, Object>() {
-						{
-							put("id", accountAddress.getId());
-						}
-					},
-					new GraphQLField("id"))),
-			"JSONArray/errors");
-
-		Assert.assertTrue(errorsJSONArray.length() > 0);
-	}
-
-	@Test
-	public void testGetAccountAddress() throws Exception {
-		AccountAddress postAccountAddress =
-			testGetAccountAddress_addAccountAddress();
-
-		AccountAddress getAccountAddress =
-			accountAddressResource.getAccountAddress(
-				postAccountAddress.getId());
-
-		assertEquals(postAccountAddress, getAccountAddress);
-		assertValid(getAccountAddress);
-	}
-
-	protected AccountAddress testGetAccountAddress_addAccountAddress()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLGetAccountAddress() throws Exception {
-		AccountAddress accountAddress =
-			testGraphQLAccountAddress_addAccountAddress();
-
-		Assert.assertTrue(
-			equals(
-				accountAddress,
-				AccountAddressSerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"accountAddress",
-								new HashMap<String, Object>() {
-									{
-										put("id", accountAddress.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data", "Object/accountAddress"))));
-	}
-
-	@Test
-	public void testGraphQLGetAccountAddressNotFound() throws Exception {
-		Long irrelevantId = RandomTestUtil.randomLong();
+		// Using the namespace headlessCommerceAdminAccount_v1_0
 
 		Assert.assertEquals(
 			"Not Found",
 			JSONUtil.getValueAsString(
 				invokeGraphQLQuery(
 					new GraphQLField(
-						"accountAddress",
-						new HashMap<String, Object>() {
-							{
-								put("id", irrelevantId);
-							}
-						},
-						getGraphQLFields())),
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"accountAddressByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+	}
+
+	protected AccountAddress
+			testGraphQLGetAccountAddressByExternalReferenceCode_addAccountAddress()
+		throws Exception {
+
+		return testGraphQLAccountAddress_addAccountAddress();
+	}
+
+	@Test
+	public void testGetAccountByExternalReferenceCodeAccountAddressesPage()
+		throws Exception {
+
+		String externalReferenceCode =
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_getExternalReferenceCode();
+		String irrelevantExternalReferenceCode =
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_getIrrelevantExternalReferenceCode();
+
+		Page<AccountAddress> page =
+			accountAddressResource.
+				getAccountByExternalReferenceCodeAccountAddressesPage(
+					externalReferenceCode, Pagination.of(1, 10));
+
+		long totalCount = page.getTotalCount();
+
+		if (irrelevantExternalReferenceCode != null) {
+			AccountAddress irrelevantAccountAddress =
+				testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
+					irrelevantExternalReferenceCode,
+					randomIrrelevantAccountAddress());
+
+			page =
+				accountAddressResource.
+					getAccountByExternalReferenceCodeAccountAddressesPage(
+						irrelevantExternalReferenceCode,
+						Pagination.of(1, (int)totalCount + 1));
+
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
+
+			assertContains(
+				irrelevantAccountAddress,
+				(List<AccountAddress>)page.getItems());
+			assertValid(
+				page,
+				testGetAccountByExternalReferenceCodeAccountAddressesPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
+		}
+
+		AccountAddress accountAddress1 =
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
+				externalReferenceCode, randomAccountAddress());
+
+		AccountAddress accountAddress2 =
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
+				externalReferenceCode, randomAccountAddress());
+
+		page =
+			accountAddressResource.
+				getAccountByExternalReferenceCodeAccountAddressesPage(
+					externalReferenceCode, Pagination.of(1, 10));
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(accountAddress1, (List<AccountAddress>)page.getItems());
+		assertContains(accountAddress2, (List<AccountAddress>)page.getItems());
+		assertValid(
+			page,
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_getExpectedActions(
+				externalReferenceCode));
+
+		accountAddressResource.deleteAccountAddress(accountAddress1.getId());
+
+		accountAddressResource.deleteAccountAddress(accountAddress2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	@Test
+	public void testGetAccountByExternalReferenceCodeAccountAddressesPageWithPagination()
+		throws Exception {
+
+		String externalReferenceCode =
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_getExternalReferenceCode();
+
+		Page<AccountAddress> accountAddressesPage =
+			accountAddressResource.
+				getAccountByExternalReferenceCodeAccountAddressesPage(
+					externalReferenceCode, null);
+
+		int totalCount = GetterUtil.getInteger(
+			accountAddressesPage.getTotalCount());
+
+		AccountAddress accountAddress1 =
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
+				externalReferenceCode, randomAccountAddress());
+
+		AccountAddress accountAddress2 =
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
+				externalReferenceCode, randomAccountAddress());
+
+		AccountAddress accountAddress3 =
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
+				externalReferenceCode, randomAccountAddress());
+
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
+
+		int pageSizeLimit = 500;
+
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountAddress> page1 =
+				accountAddressResource.
+					getAccountByExternalReferenceCodeAccountAddressesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
+
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
+
+			assertContains(
+				accountAddress1, (List<AccountAddress>)page1.getItems());
+
+			Page<AccountAddress> page2 =
+				accountAddressResource.
+					getAccountByExternalReferenceCodeAccountAddressesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
+
+			assertContains(
+				accountAddress2, (List<AccountAddress>)page2.getItems());
+
+			Page<AccountAddress> page3 =
+				accountAddressResource.
+					getAccountByExternalReferenceCodeAccountAddressesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
+
+			assertContains(
+				accountAddress3, (List<AccountAddress>)page3.getItems());
+		}
+		else {
+			Page<AccountAddress> page1 =
+				accountAddressResource.
+					getAccountByExternalReferenceCodeAccountAddressesPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<AccountAddress> accountAddresses1 =
+				(List<AccountAddress>)page1.getItems();
+
+			Assert.assertEquals(
+				accountAddresses1.toString(), totalCount + 2,
+				accountAddresses1.size());
+
+			Page<AccountAddress> page2 =
+				accountAddressResource.
+					getAccountByExternalReferenceCodeAccountAddressesPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountAddress> accountAddresses2 =
+				(List<AccountAddress>)page2.getItems();
+
+			Assert.assertEquals(
+				accountAddresses2.toString(), 1, accountAddresses2.size());
+
+			Page<AccountAddress> page3 =
+				accountAddressResource.
+					getAccountByExternalReferenceCodeAccountAddressesPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountAddress1, (List<AccountAddress>)page3.getItems());
+			assertContains(
+				accountAddress2, (List<AccountAddress>)page3.getItems());
+			assertContains(
+				accountAddress3, (List<AccountAddress>)page3.getItems());
+		}
+	}
+
+	protected AccountAddress
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
+				String externalReferenceCode, AccountAddress accountAddress)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_getExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetAccountByExternalReferenceCodeAccountAddressesPage_getIrrelevantExternalReferenceCode()
+		throws Exception {
+
+		return null;
+	}
+
+	@Test
+	public void testGetAccountIdAccountAddressesPage() throws Exception {
+		Long id = testGetAccountIdAccountAddressesPage_getId();
+		Long irrelevantId =
+			testGetAccountIdAccountAddressesPage_getIrrelevantId();
+
+		Page<AccountAddress> page =
+			accountAddressResource.getAccountIdAccountAddressesPage(
+				id, Pagination.of(1, 10));
+
+		long totalCount = page.getTotalCount();
+
+		if (irrelevantId != null) {
+			AccountAddress irrelevantAccountAddress =
+				testGetAccountIdAccountAddressesPage_addAccountAddress(
+					irrelevantId, randomIrrelevantAccountAddress());
+
+			page = accountAddressResource.getAccountIdAccountAddressesPage(
+				irrelevantId, Pagination.of(1, (int)totalCount + 1));
+
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
+
+			assertContains(
+				irrelevantAccountAddress,
+				(List<AccountAddress>)page.getItems());
+			assertValid(
+				page,
+				testGetAccountIdAccountAddressesPage_getExpectedActions(
+					irrelevantId));
+		}
+
+		AccountAddress accountAddress1 =
+			testGetAccountIdAccountAddressesPage_addAccountAddress(
+				id, randomAccountAddress());
+
+		AccountAddress accountAddress2 =
+			testGetAccountIdAccountAddressesPage_addAccountAddress(
+				id, randomAccountAddress());
+
+		page = accountAddressResource.getAccountIdAccountAddressesPage(
+			id, Pagination.of(1, 10));
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(accountAddress1, (List<AccountAddress>)page.getItems());
+		assertContains(accountAddress2, (List<AccountAddress>)page.getItems());
+		assertValid(
+			page, testGetAccountIdAccountAddressesPage_getExpectedActions(id));
+
+		accountAddressResource.deleteAccountAddress(accountAddress1.getId());
+
+		accountAddressResource.deleteAccountAddress(accountAddress2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetAccountIdAccountAddressesPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	@Test
+	public void testGetAccountIdAccountAddressesPageWithPagination()
+		throws Exception {
+
+		Long id = testGetAccountIdAccountAddressesPage_getId();
+
+		Page<AccountAddress> accountAddressesPage =
+			accountAddressResource.getAccountIdAccountAddressesPage(id, null);
+
+		int totalCount = GetterUtil.getInteger(
+			accountAddressesPage.getTotalCount());
+
+		AccountAddress accountAddress1 =
+			testGetAccountIdAccountAddressesPage_addAccountAddress(
+				id, randomAccountAddress());
+
+		AccountAddress accountAddress2 =
+			testGetAccountIdAccountAddressesPage_addAccountAddress(
+				id, randomAccountAddress());
+
+		AccountAddress accountAddress3 =
+			testGetAccountIdAccountAddressesPage_addAccountAddress(
+				id, randomAccountAddress());
+
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
+
+		int pageSizeLimit = 500;
+
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountAddress> page1 =
+				accountAddressResource.getAccountIdAccountAddressesPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
+
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
+
+			assertContains(
+				accountAddress1, (List<AccountAddress>)page1.getItems());
+
+			Page<AccountAddress> page2 =
+				accountAddressResource.getAccountIdAccountAddressesPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
+
+			assertContains(
+				accountAddress2, (List<AccountAddress>)page2.getItems());
+
+			Page<AccountAddress> page3 =
+				accountAddressResource.getAccountIdAccountAddressesPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
+
+			assertContains(
+				accountAddress3, (List<AccountAddress>)page3.getItems());
+		}
+		else {
+			Page<AccountAddress> page1 =
+				accountAddressResource.getAccountIdAccountAddressesPage(
+					id, Pagination.of(1, totalCount + 2));
+
+			List<AccountAddress> accountAddresses1 =
+				(List<AccountAddress>)page1.getItems();
+
+			Assert.assertEquals(
+				accountAddresses1.toString(), totalCount + 2,
+				accountAddresses1.size());
+
+			Page<AccountAddress> page2 =
+				accountAddressResource.getAccountIdAccountAddressesPage(
+					id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountAddress> accountAddresses2 =
+				(List<AccountAddress>)page2.getItems();
+
+			Assert.assertEquals(
+				accountAddresses2.toString(), 1, accountAddresses2.size());
+
+			Page<AccountAddress> page3 =
+				accountAddressResource.getAccountIdAccountAddressesPage(
+					id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountAddress1, (List<AccountAddress>)page3.getItems());
+			assertContains(
+				accountAddress2, (List<AccountAddress>)page3.getItems());
+			assertContains(
+				accountAddress3, (List<AccountAddress>)page3.getItems());
+		}
+	}
+
+	protected AccountAddress
+			testGetAccountIdAccountAddressesPage_addAccountAddress(
+				Long id, AccountAddress accountAddress)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long testGetAccountIdAccountAddressesPage_getId()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long testGetAccountIdAccountAddressesPage_getIrrelevantId()
+		throws Exception {
+
+		return null;
 	}
 
 	@Test
@@ -468,8 +1300,8 @@ public abstract class BaseAccountAddressResourceTestCase {
 
 		AccountAddress expectedPatchAccountAddress = postAccountAddress.clone();
 
-		_beanUtilsBean.copyProperties(
-			expectedPatchAccountAddress, randomPatchAccountAddress);
+		BeanTestUtil.copyProperties(
+			randomPatchAccountAddress, expectedPatchAccountAddress);
 
 		AccountAddress getAccountAddress =
 			accountAddressResource.getAccountAddress(
@@ -480,6 +1312,56 @@ public abstract class BaseAccountAddressResourceTestCase {
 	}
 
 	protected AccountAddress testPatchAccountAddress_addAccountAddress()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPatchAccountAddressByExternalReferenceCode()
+		throws Exception {
+
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testPostAccountByExternalReferenceCodeAccountAddress()
+		throws Exception {
+
+		AccountAddress randomAccountAddress = randomAccountAddress();
+
+		AccountAddress postAccountAddress =
+			testPostAccountByExternalReferenceCodeAccountAddress_addAccountAddress(
+				randomAccountAddress);
+
+		assertEquals(randomAccountAddress, postAccountAddress);
+		assertValid(postAccountAddress);
+	}
+
+	protected AccountAddress
+			testPostAccountByExternalReferenceCodeAccountAddress_addAccountAddress(
+				AccountAddress accountAddress)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountIdAccountAddress() throws Exception {
+		AccountAddress randomAccountAddress = randomAccountAddress();
+
+		AccountAddress postAccountAddress =
+			testPostAccountIdAccountAddress_addAccountAddress(
+				randomAccountAddress);
+
+		assertEquals(randomAccountAddress, postAccountAddress);
+		assertValid(postAccountAddress);
+	}
+
+	protected AccountAddress testPostAccountIdAccountAddress_addAccountAddress(
+			AccountAddress accountAddress)
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -508,308 +1390,6 @@ public abstract class BaseAccountAddressResourceTestCase {
 	}
 
 	protected AccountAddress testPutAccountAddress_addAccountAddress()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGetAccountByExternalReferenceCodeAccountAddressesPage()
-		throws Exception {
-
-		String externalReferenceCode =
-			testGetAccountByExternalReferenceCodeAccountAddressesPage_getExternalReferenceCode();
-		String irrelevantExternalReferenceCode =
-			testGetAccountByExternalReferenceCodeAccountAddressesPage_getIrrelevantExternalReferenceCode();
-
-		Page<AccountAddress> page =
-			accountAddressResource.
-				getAccountByExternalReferenceCodeAccountAddressesPage(
-					externalReferenceCode, Pagination.of(1, 10));
-
-		Assert.assertEquals(0, page.getTotalCount());
-
-		if (irrelevantExternalReferenceCode != null) {
-			AccountAddress irrelevantAccountAddress =
-				testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
-					irrelevantExternalReferenceCode,
-					randomIrrelevantAccountAddress());
-
-			page =
-				accountAddressResource.
-					getAccountByExternalReferenceCodeAccountAddressesPage(
-						irrelevantExternalReferenceCode, Pagination.of(1, 2));
-
-			Assert.assertEquals(1, page.getTotalCount());
-
-			assertEquals(
-				Arrays.asList(irrelevantAccountAddress),
-				(List<AccountAddress>)page.getItems());
-			assertValid(page);
-		}
-
-		AccountAddress accountAddress1 =
-			testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
-				externalReferenceCode, randomAccountAddress());
-
-		AccountAddress accountAddress2 =
-			testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
-				externalReferenceCode, randomAccountAddress());
-
-		page =
-			accountAddressResource.
-				getAccountByExternalReferenceCodeAccountAddressesPage(
-					externalReferenceCode, Pagination.of(1, 10));
-
-		Assert.assertEquals(2, page.getTotalCount());
-
-		assertEqualsIgnoringOrder(
-			Arrays.asList(accountAddress1, accountAddress2),
-			(List<AccountAddress>)page.getItems());
-		assertValid(page);
-
-		accountAddressResource.deleteAccountAddress(accountAddress1.getId());
-
-		accountAddressResource.deleteAccountAddress(accountAddress2.getId());
-	}
-
-	@Test
-	public void testGetAccountByExternalReferenceCodeAccountAddressesPageWithPagination()
-		throws Exception {
-
-		String externalReferenceCode =
-			testGetAccountByExternalReferenceCodeAccountAddressesPage_getExternalReferenceCode();
-
-		AccountAddress accountAddress1 =
-			testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
-				externalReferenceCode, randomAccountAddress());
-
-		AccountAddress accountAddress2 =
-			testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
-				externalReferenceCode, randomAccountAddress());
-
-		AccountAddress accountAddress3 =
-			testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
-				externalReferenceCode, randomAccountAddress());
-
-		Page<AccountAddress> page1 =
-			accountAddressResource.
-				getAccountByExternalReferenceCodeAccountAddressesPage(
-					externalReferenceCode, Pagination.of(1, 2));
-
-		List<AccountAddress> accountAddresses1 =
-			(List<AccountAddress>)page1.getItems();
-
-		Assert.assertEquals(
-			accountAddresses1.toString(), 2, accountAddresses1.size());
-
-		Page<AccountAddress> page2 =
-			accountAddressResource.
-				getAccountByExternalReferenceCodeAccountAddressesPage(
-					externalReferenceCode, Pagination.of(2, 2));
-
-		Assert.assertEquals(3, page2.getTotalCount());
-
-		List<AccountAddress> accountAddresses2 =
-			(List<AccountAddress>)page2.getItems();
-
-		Assert.assertEquals(
-			accountAddresses2.toString(), 1, accountAddresses2.size());
-
-		Page<AccountAddress> page3 =
-			accountAddressResource.
-				getAccountByExternalReferenceCodeAccountAddressesPage(
-					externalReferenceCode, Pagination.of(1, 3));
-
-		assertEqualsIgnoringOrder(
-			Arrays.asList(accountAddress1, accountAddress2, accountAddress3),
-			(List<AccountAddress>)page3.getItems());
-	}
-
-	protected AccountAddress
-			testGetAccountByExternalReferenceCodeAccountAddressesPage_addAccountAddress(
-				String externalReferenceCode, AccountAddress accountAddress)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected String
-			testGetAccountByExternalReferenceCodeAccountAddressesPage_getExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected String
-			testGetAccountByExternalReferenceCodeAccountAddressesPage_getIrrelevantExternalReferenceCode()
-		throws Exception {
-
-		return null;
-	}
-
-	@Test
-	public void testPostAccountByExternalReferenceCodeAccountAddress()
-		throws Exception {
-
-		AccountAddress randomAccountAddress = randomAccountAddress();
-
-		AccountAddress postAccountAddress =
-			testPostAccountByExternalReferenceCodeAccountAddress_addAccountAddress(
-				randomAccountAddress);
-
-		assertEquals(randomAccountAddress, postAccountAddress);
-		assertValid(postAccountAddress);
-	}
-
-	protected AccountAddress
-			testPostAccountByExternalReferenceCodeAccountAddress_addAccountAddress(
-				AccountAddress accountAddress)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGetAccountIdAccountAddressesPage() throws Exception {
-		Long id = testGetAccountIdAccountAddressesPage_getId();
-		Long irrelevantId =
-			testGetAccountIdAccountAddressesPage_getIrrelevantId();
-
-		Page<AccountAddress> page =
-			accountAddressResource.getAccountIdAccountAddressesPage(
-				id, Pagination.of(1, 10));
-
-		Assert.assertEquals(0, page.getTotalCount());
-
-		if (irrelevantId != null) {
-			AccountAddress irrelevantAccountAddress =
-				testGetAccountIdAccountAddressesPage_addAccountAddress(
-					irrelevantId, randomIrrelevantAccountAddress());
-
-			page = accountAddressResource.getAccountIdAccountAddressesPage(
-				irrelevantId, Pagination.of(1, 2));
-
-			Assert.assertEquals(1, page.getTotalCount());
-
-			assertEquals(
-				Arrays.asList(irrelevantAccountAddress),
-				(List<AccountAddress>)page.getItems());
-			assertValid(page);
-		}
-
-		AccountAddress accountAddress1 =
-			testGetAccountIdAccountAddressesPage_addAccountAddress(
-				id, randomAccountAddress());
-
-		AccountAddress accountAddress2 =
-			testGetAccountIdAccountAddressesPage_addAccountAddress(
-				id, randomAccountAddress());
-
-		page = accountAddressResource.getAccountIdAccountAddressesPage(
-			id, Pagination.of(1, 10));
-
-		Assert.assertEquals(2, page.getTotalCount());
-
-		assertEqualsIgnoringOrder(
-			Arrays.asList(accountAddress1, accountAddress2),
-			(List<AccountAddress>)page.getItems());
-		assertValid(page);
-
-		accountAddressResource.deleteAccountAddress(accountAddress1.getId());
-
-		accountAddressResource.deleteAccountAddress(accountAddress2.getId());
-	}
-
-	@Test
-	public void testGetAccountIdAccountAddressesPageWithPagination()
-		throws Exception {
-
-		Long id = testGetAccountIdAccountAddressesPage_getId();
-
-		AccountAddress accountAddress1 =
-			testGetAccountIdAccountAddressesPage_addAccountAddress(
-				id, randomAccountAddress());
-
-		AccountAddress accountAddress2 =
-			testGetAccountIdAccountAddressesPage_addAccountAddress(
-				id, randomAccountAddress());
-
-		AccountAddress accountAddress3 =
-			testGetAccountIdAccountAddressesPage_addAccountAddress(
-				id, randomAccountAddress());
-
-		Page<AccountAddress> page1 =
-			accountAddressResource.getAccountIdAccountAddressesPage(
-				id, Pagination.of(1, 2));
-
-		List<AccountAddress> accountAddresses1 =
-			(List<AccountAddress>)page1.getItems();
-
-		Assert.assertEquals(
-			accountAddresses1.toString(), 2, accountAddresses1.size());
-
-		Page<AccountAddress> page2 =
-			accountAddressResource.getAccountIdAccountAddressesPage(
-				id, Pagination.of(2, 2));
-
-		Assert.assertEquals(3, page2.getTotalCount());
-
-		List<AccountAddress> accountAddresses2 =
-			(List<AccountAddress>)page2.getItems();
-
-		Assert.assertEquals(
-			accountAddresses2.toString(), 1, accountAddresses2.size());
-
-		Page<AccountAddress> page3 =
-			accountAddressResource.getAccountIdAccountAddressesPage(
-				id, Pagination.of(1, 3));
-
-		assertEqualsIgnoringOrder(
-			Arrays.asList(accountAddress1, accountAddress2, accountAddress3),
-			(List<AccountAddress>)page3.getItems());
-	}
-
-	protected AccountAddress
-			testGetAccountIdAccountAddressesPage_addAccountAddress(
-				Long id, AccountAddress accountAddress)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Long testGetAccountIdAccountAddressesPage_getId()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Long testGetAccountIdAccountAddressesPage_getIrrelevantId()
-		throws Exception {
-
-		return null;
-	}
-
-	@Test
-	public void testPostAccountIdAccountAddress() throws Exception {
-		AccountAddress randomAccountAddress = randomAccountAddress();
-
-		AccountAddress postAccountAddress =
-			testPostAccountIdAccountAddress_addAccountAddress(
-				randomAccountAddress);
-
-		assertEquals(randomAccountAddress, postAccountAddress);
-		assertValid(postAccountAddress);
-	}
-
-	protected AccountAddress testPostAccountIdAccountAddress_addAccountAddress(
-			AccountAddress accountAddress)
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -1042,6 +1622,13 @@ public abstract class BaseAccountAddressResourceTestCase {
 	}
 
 	protected void assertValid(Page<AccountAddress> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<AccountAddress> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<AccountAddress> accountAddresses = page.getItems();
@@ -1056,6 +1643,25 @@ public abstract class BaseAccountAddressResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1347,14 +1953,20 @@ public abstract class BaseAccountAddressResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
+
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -1371,6 +1983,10 @@ public abstract class BaseAccountAddressResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -1380,18 +1996,18 @@ public abstract class BaseAccountAddressResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1409,17 +2025,93 @@ public abstract class BaseAccountAddressResourceTestCase {
 		sb.append(" ");
 
 		if (entityFieldName.equals("city")) {
-			sb.append("'");
-			sb.append(String.valueOf(accountAddress.getCity()));
-			sb.append("'");
+			Object object = accountAddress.getCity();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("countryISOCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(accountAddress.getCountryISOCode()));
-			sb.append("'");
+			Object object = accountAddress.getCountryISOCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1435,18 +2127,93 @@ public abstract class BaseAccountAddressResourceTestCase {
 		}
 
 		if (entityFieldName.equals("description")) {
-			sb.append("'");
-			sb.append(String.valueOf(accountAddress.getDescription()));
-			sb.append("'");
+			Object object = accountAddress.getDescription();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("externalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(accountAddress.getExternalReferenceCode()));
-			sb.append("'");
+			Object object = accountAddress.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1457,72 +2224,341 @@ public abstract class BaseAccountAddressResourceTestCase {
 		}
 
 		if (entityFieldName.equals("latitude")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(accountAddress.getLatitude()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("longitude")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(accountAddress.getLongitude()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("name")) {
-			sb.append("'");
-			sb.append(String.valueOf(accountAddress.getName()));
-			sb.append("'");
+			Object object = accountAddress.getName();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("phoneNumber")) {
-			sb.append("'");
-			sb.append(String.valueOf(accountAddress.getPhoneNumber()));
-			sb.append("'");
+			Object object = accountAddress.getPhoneNumber();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("regionISOCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(accountAddress.getRegionISOCode()));
-			sb.append("'");
+			Object object = accountAddress.getRegionISOCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("street1")) {
-			sb.append("'");
-			sb.append(String.valueOf(accountAddress.getStreet1()));
-			sb.append("'");
+			Object object = accountAddress.getStreet1();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("street2")) {
-			sb.append("'");
-			sb.append(String.valueOf(accountAddress.getStreet2()));
-			sb.append("'");
+			Object object = accountAddress.getStreet2();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("street3")) {
-			sb.append("'");
-			sb.append(String.valueOf(accountAddress.getStreet3()));
-			sb.append("'");
+			Object object = accountAddress.getStreet3();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("type")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(accountAddress.getType()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("zip")) {
-			sb.append("'");
-			sb.append(String.valueOf(accountAddress.getZip()));
-			sb.append("'");
+			Object object = accountAddress.getZip();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1541,7 +2577,8 @@ public abstract class BaseAccountAddressResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1607,10 +2644,155 @@ public abstract class BaseAccountAddressResourceTestCase {
 		return randomAccountAddress();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected AccountAddressResource accountAddressResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = source.getClass();
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					_getAllDeclaredFields(sourceClass)) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
+
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1686,22 +2868,34 @@ public abstract class BaseAccountAddressResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseAccountAddressResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
+	private static Format _format;
 
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
-	private static DateFormat _dateFormat;
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.account.resource.v1_0.
 		AccountAddressResource _accountAddressResource;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private ScopeChecker _scopeChecker;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
+	@Inject
+	private VulcanCRUDItemDelegateBuilderRegistry
+		_vulcanCRUDItemDelegateBuilderRegistry;
 
 }

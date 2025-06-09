@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.security.auth;
@@ -39,6 +30,9 @@ import java.util.Map;
  */
 public class DefaultFullNameGenerator implements FullNameGenerator {
 
+	public static final DefaultFullNameGenerator INSTANCE =
+		new DefaultFullNameGenerator();
+
 	@Override
 	public String getFullName(
 		String firstName, String middleName, String lastName) {
@@ -61,17 +55,19 @@ public class DefaultFullNameGenerator implements FullNameGenerator {
 	@Override
 	public String getLocalizedFullName(
 		String firstName, String middleName, String lastName, Locale locale,
-		long prefixId, long suffixId) {
+		long prefixListTypeId, long suffixListTypeId) {
 
 		String fullName = buildLocalizedFullName(
-			firstName, middleName, lastName, locale, prefixId, suffixId, false);
+			firstName, middleName, lastName, locale, prefixListTypeId,
+			suffixListTypeId, false);
 
 		if (!isFullNameTooLong(fullName)) {
 			return fullName;
 		}
 
 		fullName = buildLocalizedFullName(
-			firstName, middleName, lastName, locale, prefixId, suffixId, true);
+			firstName, middleName, lastName, locale, prefixListTypeId,
+			suffixListTypeId, true);
 
 		if (!isFullNameTooLong(fullName)) {
 			return fullName;
@@ -145,7 +141,7 @@ public class DefaultFullNameGenerator implements FullNameGenerator {
 
 	protected String buildLocalizedFullName(
 		String firstName, String middleName, String lastName, Locale locale,
-		long prefixId, long suffixId, boolean useInitials) {
+		long prefixListTypeId, long suffixListTypeId, boolean useInitials) {
 
 		Map<String, String> namesMap = new HashMap<>();
 
@@ -169,9 +165,10 @@ public class DefaultFullNameGenerator implements FullNameGenerator {
 			namesMap.put("last-name", lastName);
 		}
 
-		if (prefixId != 0) {
+		if (prefixListTypeId != 0) {
 			try {
-				ListType listType = ListTypeServiceUtil.getListType(suffixId);
+				ListType listType = ListTypeServiceUtil.getListType(
+					suffixListTypeId);
 
 				String prefix = listType.getName();
 
@@ -182,7 +179,7 @@ public class DefaultFullNameGenerator implements FullNameGenerator {
 			catch (NoSuchListTypeException noSuchListTypeException) {
 				if (_log.isDebugEnabled()) {
 					_log.debug(
-						"Ignoring full name prefix " + prefixId,
+						"Ignoring full name prefix " + prefixListTypeId,
 						noSuchListTypeException);
 				}
 			}
@@ -191,9 +188,10 @@ public class DefaultFullNameGenerator implements FullNameGenerator {
 			}
 		}
 
-		if (suffixId != 0) {
+		if (suffixListTypeId != 0) {
 			try {
-				ListType listType = ListTypeServiceUtil.getListType(suffixId);
+				ListType listType = ListTypeServiceUtil.getListType(
+					suffixListTypeId);
 
 				String suffix = listType.getName();
 
@@ -204,7 +202,7 @@ public class DefaultFullNameGenerator implements FullNameGenerator {
 			catch (NoSuchListTypeException noSuchListTypeException) {
 				if (_log.isDebugEnabled()) {
 					_log.debug(
-						"Ignoring full name suffix " + suffixId,
+						"Ignoring full name suffix " + suffixListTypeId,
 						noSuchListTypeException);
 				}
 			}

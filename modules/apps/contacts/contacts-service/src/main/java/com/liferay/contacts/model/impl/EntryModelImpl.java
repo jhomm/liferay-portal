@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.contacts.model.impl;
@@ -21,6 +12,7 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.User;
@@ -33,7 +25,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -59,6 +50,7 @@ import java.util.function.Function;
  * @see EntryImpl
  * @generated
  */
+@JSON(strict = true)
 public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 
 	/*
@@ -212,90 +204,82 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 	}
 
 	public Map<String, Function<Entry, Object>> getAttributeGetterFunctions() {
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<Entry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, Entry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			Entry.class.getClassLoader(), Entry.class, ModelWrapper.class);
+		private static final Map<String, Function<Entry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<Entry> constructor =
-				(Constructor<Entry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<Entry, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<Entry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put("entryId", Entry::getEntryId);
+			attributeGetterFunctions.put("groupId", Entry::getGroupId);
+			attributeGetterFunctions.put("companyId", Entry::getCompanyId);
+			attributeGetterFunctions.put("userId", Entry::getUserId);
+			attributeGetterFunctions.put("userName", Entry::getUserName);
+			attributeGetterFunctions.put("createDate", Entry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", Entry::getModifiedDate);
+			attributeGetterFunctions.put("fullName", Entry::getFullName);
+			attributeGetterFunctions.put(
+				"emailAddress", Entry::getEmailAddress);
+			attributeGetterFunctions.put("comments", Entry::getComments);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
+
+	}
+
+	private static class AttributeSetterBiConsumersHolder {
+
+		private static final Map<String, BiConsumer<Entry, Object>>
+			_attributeSetterBiConsumers;
+
+		static {
+			Map<String, BiConsumer<Entry, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<Entry, ?>>();
+
+			attributeSetterBiConsumers.put(
+				"entryId", (BiConsumer<Entry, Long>)Entry::setEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId", (BiConsumer<Entry, Long>)Entry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId", (BiConsumer<Entry, Long>)Entry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<Entry, Long>)Entry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName", (BiConsumer<Entry, String>)Entry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate", (BiConsumer<Entry, Date>)Entry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<Entry, Date>)Entry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"fullName", (BiConsumer<Entry, String>)Entry::setFullName);
+			attributeSetterBiConsumers.put(
+				"emailAddress",
+				(BiConsumer<Entry, String>)Entry::setEmailAddress);
+			attributeSetterBiConsumers.put(
+				"comments", (BiConsumer<Entry, String>)Entry::setComments);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
 		}
+
 	}
 
-	private static final Map<String, Function<Entry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<Entry, Object>>
-		_attributeSetterBiConsumers;
-
-	static {
-		Map<String, Function<Entry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<Entry, Object>>();
-		Map<String, BiConsumer<Entry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<Entry, ?>>();
-
-		attributeGetterFunctions.put("entryId", Entry::getEntryId);
-		attributeSetterBiConsumers.put(
-			"entryId", (BiConsumer<Entry, Long>)Entry::setEntryId);
-		attributeGetterFunctions.put("groupId", Entry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<Entry, Long>)Entry::setGroupId);
-		attributeGetterFunctions.put("companyId", Entry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<Entry, Long>)Entry::setCompanyId);
-		attributeGetterFunctions.put("userId", Entry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<Entry, Long>)Entry::setUserId);
-		attributeGetterFunctions.put("userName", Entry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName", (BiConsumer<Entry, String>)Entry::setUserName);
-		attributeGetterFunctions.put("createDate", Entry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate", (BiConsumer<Entry, Date>)Entry::setCreateDate);
-		attributeGetterFunctions.put("modifiedDate", Entry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate", (BiConsumer<Entry, Date>)Entry::setModifiedDate);
-		attributeGetterFunctions.put("fullName", Entry::getFullName);
-		attributeSetterBiConsumers.put(
-			"fullName", (BiConsumer<Entry, String>)Entry::setFullName);
-		attributeGetterFunctions.put("emailAddress", Entry::getEmailAddress);
-		attributeSetterBiConsumers.put(
-			"emailAddress", (BiConsumer<Entry, String>)Entry::setEmailAddress);
-		attributeGetterFunctions.put("comments", Entry::getComments);
-		attributeSetterBiConsumers.put(
-			"comments", (BiConsumer<Entry, String>)Entry::setComments);
-
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
-	}
-
+	@JSON
 	@Override
 	public long getEntryId() {
 		return _entryId;
@@ -310,6 +294,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_entryId = entryId;
 	}
 
+	@JSON
 	@Override
 	public long getGroupId() {
 		return _groupId;
@@ -324,6 +309,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_groupId = groupId;
 	}
 
+	@JSON
 	@Override
 	public long getCompanyId() {
 		return _companyId;
@@ -338,6 +324,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_companyId = companyId;
 	}
 
+	@JSON
 	@Override
 	public long getUserId() {
 		return _userId;
@@ -377,6 +364,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("userId"));
 	}
 
+	@JSON
 	@Override
 	public String getUserName() {
 		if (_userName == null) {
@@ -396,6 +384,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_userName = userName;
 	}
 
+	@JSON
 	@Override
 	public Date getCreateDate() {
 		return _createDate;
@@ -410,6 +399,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_createDate = createDate;
 	}
 
+	@JSON
 	@Override
 	public Date getModifiedDate() {
 		return _modifiedDate;
@@ -430,6 +420,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_modifiedDate = modifiedDate;
 	}
 
+	@JSON
 	@Override
 	public String getFullName() {
 		if (_fullName == null) {
@@ -449,6 +440,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_fullName = fullName;
 	}
 
+	@JSON
 	@Override
 	public String getEmailAddress() {
 		if (_emailAddress == null) {
@@ -477,6 +469,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		return getColumnOriginalValue("emailAddress");
 	}
 
+	@JSON
 	@Override
 	public String getComments() {
 		if (_comments == null) {
@@ -769,40 +762,12 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<Entry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<Entry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<Entry, Object> attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((Entry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, Entry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					Entry.class, ModelWrapper.class);
 
 	}
 
@@ -819,8 +784,9 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 	private String _comments;
 
 	public <T> T getColumnValue(String columnName) {
-		Function<Entry, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<Entry, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

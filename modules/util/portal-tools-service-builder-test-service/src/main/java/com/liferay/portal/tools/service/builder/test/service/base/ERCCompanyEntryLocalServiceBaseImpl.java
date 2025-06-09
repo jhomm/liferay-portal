@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service.base;
@@ -18,8 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -28,16 +18,16 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
-import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.spring.extender.service.ServiceReference;
 import com.liferay.portal.tools.service.builder.test.model.ERCCompanyEntry;
 import com.liferay.portal.tools.service.builder.test.service.ERCCompanyEntryLocalService;
@@ -46,7 +36,7 @@ import com.liferay.portal.tools.service.builder.test.service.persistence.ERCComp
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import java.util.List;
 
@@ -245,47 +235,35 @@ public abstract class ERCCompanyEntryLocalServiceBaseImpl
 	}
 
 	/**
-	 * Returns the erc company entry with the matching external reference code and company.
+	 * Returns the erc company entry with the matching UUID and company.
 	 *
+	 * @param uuid the erc company entry's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the erc company entry's external reference code
 	 * @return the matching erc company entry, or <code>null</code> if a matching erc company entry could not be found
 	 */
 	@Override
-	public ERCCompanyEntry fetchERCCompanyEntryByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
+	public ERCCompanyEntry fetchERCCompanyEntryByUuidAndCompanyId(
+		String uuid, long companyId) {
 
-		return ercCompanyEntryPersistence.fetchByC_ERC(
-			companyId, externalReferenceCode);
+		return ercCompanyEntryPersistence.fetchByUuid_C_First(
+			uuid, companyId, null);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchERCCompanyEntryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
 	@Override
-	public ERCCompanyEntry fetchERCCompanyEntryByReferenceCode(
-		long companyId, String externalReferenceCode) {
+	public ERCCompanyEntry fetchERCCompanyEntryByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
 
-		return fetchERCCompanyEntryByExternalReferenceCode(
-			companyId, externalReferenceCode);
+		return ercCompanyEntryPersistence.fetchByERC_C(
+			externalReferenceCode, companyId);
 	}
 
-	/**
-	 * Returns the erc company entry with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the erc company entry's external reference code
-	 * @return the matching erc company entry
-	 * @throws PortalException if a matching erc company entry could not be found
-	 */
 	@Override
 	public ERCCompanyEntry getERCCompanyEntryByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
-		return ercCompanyEntryPersistence.findByC_ERC(
-			companyId, externalReferenceCode);
+		return ercCompanyEntryPersistence.findByERC_C(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -362,6 +340,11 @@ public abstract class ERCCompanyEntryLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement ERCCompanyEntryLocalServiceImpl#deleteERCCompanyEntry(ERCCompanyEntry) to avoid orphaned data");
+		}
+
 		return ercCompanyEntryLocalService.deleteERCCompanyEntry(
 			(ERCCompanyEntry)persistedModel);
 	}
@@ -379,6 +362,23 @@ public abstract class ERCCompanyEntryLocalServiceBaseImpl
 		throws PortalException {
 
 		return ercCompanyEntryPersistence.findByPrimaryKey(primaryKeyObj);
+	}
+
+	/**
+	 * Returns the erc company entry with the matching UUID and company.
+	 *
+	 * @param uuid the erc company entry's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching erc company entry
+	 * @throws PortalException if a matching erc company entry could not be found
+	 */
+	@Override
+	public ERCCompanyEntry getERCCompanyEntryByUuidAndCompanyId(
+			String uuid, long companyId)
+		throws PortalException {
+
+		return ercCompanyEntryPersistence.findByUuid_C_First(
+			uuid, companyId, null);
 	}
 
 	/**
@@ -489,18 +489,11 @@ public abstract class ERCCompanyEntryLocalServiceBaseImpl
 	}
 
 	public void afterPropertiesSet() {
-		persistedModelLocalServiceRegistry.register(
-			"com.liferay.portal.tools.service.builder.test.model.ERCCompanyEntry",
-			ercCompanyEntryLocalService);
-
-		_setLocalServiceUtilService(ercCompanyEntryLocalService);
+		ERCCompanyEntryLocalServiceUtil.setService(ercCompanyEntryLocalService);
 	}
 
 	public void destroy() {
-		persistedModelLocalServiceRegistry.unregister(
-			"com.liferay.portal.tools.service.builder.test.model.ERCCompanyEntry");
-
-		_setLocalServiceUtilService(null);
+		ERCCompanyEntryLocalServiceUtil.setService(null);
 	}
 
 	/**
@@ -527,38 +520,26 @@ public abstract class ERCCompanyEntryLocalServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource = ercCompanyEntryPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource = ercCompanyEntryPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
-		}
-	}
-
-	private void _setLocalServiceUtilService(
-		ERCCompanyEntryLocalService ercCompanyEntryLocalService) {
-
-		try {
-			Field field =
-				ERCCompanyEntryLocalServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, ercCompanyEntryLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
 		}
 	}
 
@@ -574,8 +555,7 @@ public abstract class ERCCompanyEntryLocalServiceBaseImpl
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@ServiceReference(type = PersistedModelLocalServiceRegistry.class)
-	protected PersistedModelLocalServiceRegistry
-		persistedModelLocalServiceRegistry;
+	private static final Log _log = LogFactoryUtil.getLog(
+		ERCCompanyEntryLocalServiceBaseImpl.class);
 
 }

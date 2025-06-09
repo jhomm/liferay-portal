@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.web.internal.info.field.converter;
@@ -17,21 +8,29 @@ package com.liferay.dynamic.data.mapping.web.internal.info.field.converter;
 import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.info.field.converter.DDMFormFieldInfoFieldConverter;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
+import com.liferay.dynamic.data.mapping.model.DDMFormFieldOptions;
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.storage.constants.FieldConstants;
 import com.liferay.info.field.InfoField;
 import com.liferay.info.field.type.BooleanInfoFieldType;
 import com.liferay.info.field.type.DateInfoFieldType;
 import com.liferay.info.field.type.GridInfoFieldType;
+import com.liferay.info.field.type.HTMLInfoFieldType;
 import com.liferay.info.field.type.ImageInfoFieldType;
 import com.liferay.info.field.type.InfoFieldType;
+import com.liferay.info.field.type.MultiselectInfoFieldType;
 import com.liferay.info.field.type.NumberInfoFieldType;
-import com.liferay.info.field.type.RadioInfoFieldType;
+import com.liferay.info.field.type.OptionInfoFieldType;
 import com.liferay.info.field.type.SelectInfoFieldType;
 import com.liferay.info.field.type.TextInfoFieldType;
+import com.liferay.info.field.type.URLInfoFieldType;
 import com.liferay.info.localized.InfoLocalizedValue;
+import com.liferay.info.localized.bundle.FunctionInfoLocalizedValue;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
@@ -45,16 +44,21 @@ public class DDMFormFieldInfoFieldConverterImpl
 
 	@Override
 	public InfoField convert(DDMFormField ddmFormField) {
+		InfoFieldType infoFieldType = _getInfoFieldType(ddmFormField);
 		LocalizedValue label = ddmFormField.getLabel();
 
-		return _addAttributes(
+		InfoField.FinalStep finalStep = _addAttributes(
 			ddmFormField,
 			InfoField.builder(
 			).infoFieldType(
-				_getInfoFieldType(ddmFormField)
+				infoFieldType
+			).namespace(
+				DDMStructure.class.getSimpleName()
 			).name(
 				ddmFormField.getName()
 			)
+		).editable(
+			_isInfoFieldEditable(infoFieldType)
 		).labelInfoLocalizedValue(
 			InfoLocalizedValue.<String>builder(
 			).values(
@@ -64,7 +68,13 @@ public class DDMFormFieldInfoFieldConverterImpl
 			).build()
 		).localizable(
 			ddmFormField.isLocalizable()
-		).build();
+		).required(
+			ddmFormField.isRequired()
+		).repeatable(
+			ddmFormField.isRepeatable()
+		);
+
+		return finalStep.build();
 	}
 
 	private InfoField.FinalStep _addAttributes(
@@ -74,7 +84,9 @@ public class DDMFormFieldInfoFieldConverterImpl
 				ddmFormField.getType(),
 				DDMFormFieldTypeConstants.CHECKBOX_MULTIPLE)) {
 
-			finalStep.attribute(SelectInfoFieldType.MULTIPLE, true);
+			finalStep.attribute(
+				MultiselectInfoFieldType.OPTIONS,
+				_getOptionInfoFieldTypes(ddmFormField));
 		}
 
 		if (Objects.equals(
@@ -85,10 +97,26 @@ public class DDMFormFieldInfoFieldConverterImpl
 		}
 
 		if (Objects.equals(
-				ddmFormField.getType(), DDMFormFieldTypeConstants.SELECT) &&
-			GetterUtil.getBoolean(ddmFormField.getProperty("multiple"))) {
+				ddmFormField.getType(), DDMFormFieldTypeConstants.RADIO)) {
 
-			finalStep.attribute(SelectInfoFieldType.MULTIPLE, true);
+			finalStep.attribute(
+				SelectInfoFieldType.OPTIONS,
+				_getOptionInfoFieldTypes(ddmFormField));
+		}
+
+		if (Objects.equals(
+				ddmFormField.getType(), DDMFormFieldTypeConstants.SELECT)) {
+
+			if (GetterUtil.getBoolean(ddmFormField.getProperty("multiple"))) {
+				finalStep.attribute(
+					MultiselectInfoFieldType.OPTIONS,
+					_getOptionInfoFieldTypes(ddmFormField));
+			}
+			else {
+				finalStep.attribute(
+					SelectInfoFieldType.OPTIONS,
+					_getOptionInfoFieldTypes(ddmFormField));
+			}
 		}
 
 		if (Objects.equals(
@@ -96,13 +124,6 @@ public class DDMFormFieldInfoFieldConverterImpl
 			Objects.equals(
 				ddmFormField.getProperty("displayStyle"), "multiline")) {
 
-			finalStep.attribute(TextInfoFieldType.MULTILINE, true);
-		}
-
-		if (Objects.equals(
-				ddmFormField.getType(), DDMFormFieldTypeConstants.RICH_TEXT)) {
-
-			finalStep.attribute(TextInfoFieldType.HTML, true);
 			finalStep.attribute(TextInfoFieldType.MULTILINE, true);
 		}
 
@@ -119,27 +140,19 @@ public class DDMFormFieldInfoFieldConverterImpl
 		}
 		else if (Objects.equals(
 					ddmFormFieldType,
-					DDMFormFieldTypeConstants.CHECKBOX_MULTIPLE) ||
-				 Objects.equals(
-					 ddmFormFieldType, DDMFormFieldTypeConstants.SELECT)) {
+					DDMFormFieldTypeConstants.CHECKBOX_MULTIPLE)) {
 
-			return SelectInfoFieldType.INSTANCE;
+			return MultiselectInfoFieldType.INSTANCE;
 		}
 		else if (Objects.equals(
-					ddmFormFieldType, DDMFormFieldTypeConstants.DATE) ||
-				 Objects.equals(ddmFormFieldType, "date")) {
+					ddmFormFieldType, DDMFormFieldTypeConstants.DATE)) {
 
 			return DateInfoFieldType.INSTANCE;
 		}
 		else if (Objects.equals(
-					ddmFormFieldType, DDMFormFieldTypeConstants.IMAGE)) {
+					ddmFormFieldType, DDMFormFieldTypeConstants.DATE_TIME)) {
 
-			return ImageInfoFieldType.INSTANCE;
-		}
-		else if (Objects.equals(
-					ddmFormFieldType, DDMFormFieldTypeConstants.NUMERIC)) {
-
-			return NumberInfoFieldType.INSTANCE;
+			return DateInfoFieldType.INSTANCE;
 		}
 		else if (Objects.equals(
 					ddmFormFieldType, DDMFormFieldTypeConstants.GRID)) {
@@ -147,12 +160,70 @@ public class DDMFormFieldInfoFieldConverterImpl
 			return GridInfoFieldType.INSTANCE;
 		}
 		else if (Objects.equals(
-					ddmFormFieldType, DDMFormFieldTypeConstants.RADIO)) {
+					ddmFormFieldType, DDMFormFieldTypeConstants.IMAGE)) {
 
-			return RadioInfoFieldType.INSTANCE;
+			return ImageInfoFieldType.INSTANCE;
+		}
+		else if (Objects.equals(
+					ddmFormFieldType,
+					DDMFormFieldTypeConstants.LINK_TO_LAYOUT)) {
+
+			return URLInfoFieldType.INSTANCE;
+		}
+		else if (Objects.equals(
+					ddmFormFieldType, DDMFormFieldTypeConstants.NUMERIC)) {
+
+			return NumberInfoFieldType.INSTANCE;
+		}
+		else if (Objects.equals(
+					ddmFormFieldType, DDMFormFieldTypeConstants.RADIO) ||
+				 Objects.equals(
+					 ddmFormFieldType, DDMFormFieldTypeConstants.SELECT)) {
+
+			return SelectInfoFieldType.INSTANCE;
+		}
+		else if (Objects.equals(
+					ddmFormField.getType(),
+					DDMFormFieldTypeConstants.RICH_TEXT)) {
+
+			return HTMLInfoFieldType.INSTANCE;
 		}
 
 		return TextInfoFieldType.INSTANCE;
+	}
+
+	private List<OptionInfoFieldType> _getOptionInfoFieldTypes(
+		DDMFormField ddmFormField) {
+
+		DDMFormFieldOptions ddmFormFieldOptions =
+			ddmFormField.getDDMFormFieldOptions();
+
+		return TransformUtil.transform(
+			ddmFormFieldOptions.getOptionsValues(),
+			value -> {
+				LocalizedValue localizedValue =
+					ddmFormFieldOptions.getOptionLabels(value);
+
+				return new OptionInfoFieldType(
+					new FunctionInfoLocalizedValue<>(localizedValue::getString),
+					value);
+			});
+	}
+
+	private boolean _isInfoFieldEditable(InfoFieldType infoFieldType) {
+		if (Objects.equals(infoFieldType, BooleanInfoFieldType.INSTANCE) ||
+			Objects.equals(infoFieldType, SelectInfoFieldType.INSTANCE) ||
+			Objects.equals(infoFieldType, DateInfoFieldType.INSTANCE) ||
+			Objects.equals(infoFieldType, HTMLInfoFieldType.INSTANCE) ||
+			Objects.equals(infoFieldType, ImageInfoFieldType.INSTANCE) ||
+			Objects.equals(infoFieldType, MultiselectInfoFieldType.INSTANCE) ||
+			Objects.equals(infoFieldType, NumberInfoFieldType.INSTANCE) ||
+			Objects.equals(infoFieldType, TextInfoFieldType.INSTANCE)) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 }

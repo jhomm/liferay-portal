@@ -1,69 +1,60 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.admin.web.internal.portlet.action;
 
-import com.liferay.portal.instances.service.PortalInstancesLocalService;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManager;
 import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants;
+import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskContextMapConstants;
 import com.liferay.portal.kernel.messaging.DestinationNames;
-import com.liferay.portal.kernel.messaging.Message;
-import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.messaging.MessageListener;
-import com.liferay.portal.kernel.messaging.MessageListenerException;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.search.IndexWriterHelper;
+import com.liferay.portal.kernel.search.background.task.ReindexBackgroundTaskConstants;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.kernel.uuid.PortalUUID;
+import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.search.admin.web.internal.constants.SearchAdminPortletKeys;
 import com.liferay.portal.search.admin.web.internal.util.DictionaryReindexer;
-import com.liferay.portal.search.spi.reindexer.IndexReindexer;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletSession;
 
 import java.io.Serializable;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletSession;
-
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Wade Cao
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + SearchAdminPortletKeys.SEARCH_ADMIN,
+		"jakarta.portlet.name=" + SearchAdminPortletKeys.SEARCH_ADMIN,
 		"mvc.command.name=/portal_search_admin/edit"
 	},
 	service = MVCActionCommand.class
@@ -81,65 +72,81 @@ public class EditMVCActionCommand extends BaseMVCActionCommand {
 		PermissionChecker permissionChecker =
 			themeDisplay.getPermissionChecker();
 
+		long[] companyIds = ParamUtil.getLongValues(
+			actionRequest, "companyIds");
+
 		if (!permissionChecker.isOmniadmin()) {
-			SessionErrors.add(
-				actionRequest,
-				PrincipalException.MustBeOmniadmin.class.getName());
+			for (long companyId : companyIds) {
+				if (!permissionChecker.isCompanyAdmin(companyId)) {
+					SessionErrors.add(
+						actionRequest,
+						PrincipalException.MustHavePermission.class.getName());
 
-			actionResponse.setRenderParameter("mvcPath", "/error.jsp");
+					actionResponse.setRenderParameter("mvcPath", "/error.jsp");
 
-			return;
+					return;
+				}
+			}
 		}
 
 		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
 
-		if (cmd.equals("reindex")) {
-			reindex(actionRequest);
+		String className = ParamUtil.getString(actionRequest, "className");
+		String executionMode = ParamUtil.getString(
+			actionRequest, "executionMode");
 
-			reindexIndexReindexers(actionRequest);
+		if (cmd.equals("reindex")) {
+			_reindex(
+				ParamUtil.getBoolean(actionRequest, "blocking"), className,
+				companyIds, executionMode, actionRequest.getPortletSession(),
+				themeDisplay,
+				ParamUtil.getLong(actionRequest, "timeout", Time.HOUR));
+
+			if (Validator.isBlank(className)) {
+				_reindexIndexReindexer(
+					className, companyIds, executionMode, themeDisplay);
+			}
 		}
 		else if (cmd.equals("reindexDictionaries")) {
-			reindexDictionaries(actionRequest);
+			_reindexDictionaries(companyIds);
 		}
 		else if (cmd.equals("reindexIndexReindexer")) {
-			reindexIndexReindexer(actionRequest);
+			_reindexIndexReindexer(
+				className, companyIds, executionMode, themeDisplay);
 		}
 
 		String redirect = ParamUtil.getString(actionRequest, "redirect");
 
-		redirect = _http.setParameter(
-			redirect, actionResponse.getNamespace() + "companyIds",
-			StringUtil.merge(
-				ParamUtil.getLongValues(actionRequest, "companyIds")));
-		redirect = _http.setParameter(
-			redirect, actionResponse.getNamespace() + "scope",
+		String namespace = actionResponse.getNamespace();
+
+		redirect = HttpComponentsUtil.setParameter(
+			redirect, namespace + "companyIds", StringUtil.merge(companyIds));
+		redirect = HttpComponentsUtil.setParameter(
+			redirect, namespace + "executionMode", executionMode);
+		redirect = HttpComponentsUtil.setParameter(
+			redirect, namespace + "scope",
 			ParamUtil.getString(actionRequest, "scope"));
 
 		sendRedirect(actionRequest, actionResponse, redirect);
 	}
 
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	protected void addIndexReindexer(IndexReindexer indexReindexer) {
-		Class<?> clazz = indexReindexer.getClass();
-
-		_indexReindexers.put(clazz.getName(), indexReindexer);
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_bundleContext = bundleContext;
 	}
 
-	protected void reindex(final ActionRequest actionRequest) throws Exception {
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
+	private void _reindex(
+			boolean blocking, String className, long[] companyIds,
+			String executionMode, PortletSession portletSession,
+			ThemeDisplay themeDisplay, long timeout)
+		throws Exception {
 
-		long[] companyIds = ParamUtil.getLongValues(
-			actionRequest, "companyIds");
+		Map<String, Serializable> taskContextMap =
+			new HashMapBuilder<>().<String, Serializable>put(
+				ReindexBackgroundTaskConstants.EXECUTION_MODE, executionMode
+			).build();
 
-		String className = ParamUtil.getString(actionRequest, "className");
-		Map<String, Serializable> taskContextMap = new HashMap<>();
-
-		if (!ParamUtil.getBoolean(actionRequest, "blocking")) {
+		if (!blocking) {
 			_indexWriterHelper.reindex(
 				themeDisplay.getUserId(), "reindex", companyIds, className,
 				taskContextMap);
@@ -147,121 +154,93 @@ public class EditMVCActionCommand extends BaseMVCActionCommand {
 			return;
 		}
 
-		final String jobName = "reindex-".concat(_portalUUID.generate());
+		String jobName = "reindex-".concat(PortalUUIDUtil.generate());
 
-		final CountDownLatch countDownLatch = new CountDownLatch(1);
+		CountDownLatch countDownLatch = new CountDownLatch(1);
 
-		MessageListener messageListener = new MessageListener() {
+		MessageListener messageListener = message -> {
+			int status = message.getInteger("status");
 
-			@Override
-			public void receive(Message message)
-				throws MessageListenerException {
+			if ((status != BackgroundTaskConstants.STATUS_CANCELLED) &&
+				(status != BackgroundTaskConstants.STATUS_FAILED) &&
+				(status != BackgroundTaskConstants.STATUS_SUCCESSFUL)) {
 
-				int status = message.getInteger("status");
-
-				if ((status != BackgroundTaskConstants.STATUS_CANCELLED) &&
-					(status != BackgroundTaskConstants.STATUS_FAILED) &&
-					(status != BackgroundTaskConstants.STATUS_SUCCESSFUL)) {
-
-					return;
-				}
-
-				if (!jobName.equals(message.getString("name"))) {
-					return;
-				}
-
-				PortletSession portletSession =
-					actionRequest.getPortletSession();
-
-				long lastAccessedTime = portletSession.getLastAccessedTime();
-				int maxInactiveInterval =
-					portletSession.getMaxInactiveInterval();
-
-				int extendedMaxInactiveIntervalTime =
-					(int)(System.currentTimeMillis() - lastAccessedTime +
-						maxInactiveInterval);
-
-				portletSession.setMaxInactiveInterval(
-					extendedMaxInactiveIntervalTime);
-
-				countDownLatch.countDown();
+				return;
 			}
 
+			if (!jobName.equals(message.getString("name"))) {
+				return;
+			}
+
+			int extendedMaxInactiveIntervalTime =
+				(int)(System.currentTimeMillis() -
+					portletSession.getLastAccessedTime() +
+						portletSession.getMaxInactiveInterval());
+
+			portletSession.setMaxInactiveInterval(
+				extendedMaxInactiveIntervalTime);
+
+			countDownLatch.countDown();
 		};
 
-		_messageBus.registerMessageListener(
-			DestinationNames.BACKGROUND_TASK_STATUS, messageListener);
+		ServiceRegistration<MessageListener> serviceRegistration =
+			_bundleContext.registerService(
+				MessageListener.class, messageListener,
+				MapUtil.singletonDictionary(
+					"destination.name",
+					DestinationNames.BACKGROUND_TASK_STATUS));
 
 		try {
 			_indexWriterHelper.reindex(
 				themeDisplay.getUserId(), jobName, companyIds, className,
 				taskContextMap);
 
-			countDownLatch.await(
-				ParamUtil.getLong(actionRequest, "timeout", Time.HOUR),
-				TimeUnit.MILLISECONDS);
+			countDownLatch.await(timeout, TimeUnit.MILLISECONDS);
 		}
 		finally {
-			_messageBus.unregisterMessageListener(
-				DestinationNames.BACKGROUND_TASK_STATUS, messageListener);
+			serviceRegistration.unregister();
 		}
 	}
 
-	protected void reindexDictionaries(ActionRequest actionRequest)
-		throws Exception {
-
+	private void _reindexDictionaries(long[] companyIds) throws Exception {
 		DictionaryReindexer dictionaryReindexer = new DictionaryReindexer(
-			_indexWriterHelper, _portalInstancesLocalService);
+			_indexWriterHelper);
 
-		dictionaryReindexer.reindexDictionaries(
-			ParamUtil.getLongValues(actionRequest, "companyIds"));
+		dictionaryReindexer.reindexDictionaries(companyIds);
 	}
 
-	protected void reindexIndexReindexer(ActionRequest actionRequest)
+	private void _reindexIndexReindexer(
+			String className, long[] companyIds, String executionMode,
+			ThemeDisplay themeDisplay)
 		throws Exception {
 
-		String className = ParamUtil.getString(actionRequest, "className");
-
-		IndexReindexer indexReindexer = _indexReindexers.get(className);
-
-		indexReindexer.reindex(
-			ParamUtil.getLongValues(actionRequest, "companyIds"));
+		_backgroundTaskManager.addBackgroundTask(
+			themeDisplay.getUserId(), CompanyConstants.SYSTEM,
+			"reindexIndexReindexer",
+			_CLASS_NAME_REINDEX_INDEX_REINDEXER_BACKGROUND_TASK_EXECUTOR,
+			HashMapBuilder.<String, Serializable>put(
+				BackgroundTaskContextMapConstants.DELETE_ON_SUCCESS, true
+			).put(
+				ReindexBackgroundTaskConstants.CLASS_NAME, className
+			).put(
+				ReindexBackgroundTaskConstants.COMPANY_IDS, companyIds
+			).put(
+				ReindexBackgroundTaskConstants.EXECUTION_MODE, executionMode
+			).build(),
+			new ServiceContext());
 	}
 
-	protected void reindexIndexReindexers(ActionRequest actionRequest)
-		throws Exception {
-
-		for (IndexReindexer indexReindexer : _indexReindexers.values()) {
-			indexReindexer.reindex(
-				ParamUtil.getLongValues(actionRequest, "companyIds"));
-		}
-	}
-
-	protected void removeIndexReindexer(IndexReindexer indexReindexer) {
-		Class<?> clazz = indexReindexer.getClass();
-
-		_indexReindexers.remove(clazz.getName());
-	}
+	private static final String
+		_CLASS_NAME_REINDEX_INDEX_REINDEXER_BACKGROUND_TASK_EXECUTOR =
+			"com.liferay.portal.search.internal.background.task." +
+				"ReindexIndexReindexerBackgroundTaskExecutor";
 
 	@Reference
 	private BackgroundTaskManager _backgroundTaskManager;
 
-	@Reference
-	private Http _http;
-
-	private final Map<String, IndexReindexer> _indexReindexers =
-		new ConcurrentHashMap<>();
+	private BundleContext _bundleContext;
 
 	@Reference
 	private IndexWriterHelper _indexWriterHelper;
-
-	@Reference
-	private MessageBus _messageBus;
-
-	@Reference
-	private PortalInstancesLocalService _portalInstancesLocalService;
-
-	@Reference
-	private PortalUUID _portalUUID;
 
 }

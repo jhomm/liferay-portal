@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -41,9 +32,9 @@ DLOpenerGoogleDriveFileReference dlOpenerGoogleDriveFileReference = (DLOpenerGoo
 			var url;
 
 			showStatusMessage = Liferay.lazyLoad(
-				'frontend-js-web/liferay/toast/commands/OpenToast.es',
-				(toastCommands, data) => {
-					toastCommands.openToast(data);
+				'frontend-js-web',
+				({openToast}, data) => {
+					openToast(data);
 				}
 			);
 
@@ -101,21 +92,12 @@ DLOpenerGoogleDriveFileReference dlOpenerGoogleDriveFileReference = (DLOpenerGoo
 			}
 			%>
 
-			Liferay.Util.openWindow(
-				{
-					id: dialogId,
-					dialog: {
-						bodyContent:
-							'<p><liferay-ui:message key="<%= messageKey %>" /></p><div aria-hidden="true" class="loading-animation"></div>',
-						cssClass: 'google-docs-redirect-modal',
-						height: 172,
-						modal: true,
-						resizable: false,
-						title: '',
-						width: 320,
-					},
-				},
-				() => {
+			Liferay.Util.openModal({
+				className: 'google-docs-redirect-modal',
+				containerProps: {},
+				html: '<p><liferay-ui:message key="<%= messageKey %>" /></p><div aria-hidden="true" class="loading-animation"></div>',
+				id: dialogId,
+				onOpen: () => {
 					setTimeout(polling, TIME_POLLING);
 
 					setTimeout(() => {
@@ -123,12 +105,12 @@ DLOpenerGoogleDriveFileReference dlOpenerGoogleDriveFileReference = (DLOpenerGoo
 
 						navigate();
 					}, TIME_SHOW_MSG);
-				}
-			);
+				},
+			});
 		})();
 	</aui:script>
 </c:if>
 
 <liferay-util:html-top>
-	<link href="<%= HtmlUtil.escapeAttribute(PortalUtil.getStaticResourceURL(request, StringBundler.concat(themeDisplay.getCDNBaseURL(), PortalUtil.getPathProxy(), application.getContextPath(), "/css/document_library.css"))) %>" rel="stylesheet" type="text/css" />
+	<aui:link href='<%= HtmlUtil.escapeAttribute(PortalUtil.getStaticResourceURL(request, StringBundler.concat(themeDisplay.getCDNBaseURL(), PortalUtil.getPathProxy(), application.getContextPath(), "/css/document_library.css"))) %>' rel="stylesheet" type="text/css" />
 </liferay-util:html-top>

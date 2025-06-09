@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service.test;
@@ -19,17 +10,21 @@ import com.liferay.blogs.service.BlogsEntryLocalService;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.settings.LocalizedValuesMap;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.security.script.management.test.rule.ScriptManagementConfigurationTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.SynchronousMailTestRule;
-import com.liferay.portal.workflow.kaleo.definition.Action;
+import com.liferay.portal.workflow.constants.WorkflowDefinitionConstants;
 import com.liferay.portal.workflow.kaleo.definition.Assignment;
+import com.liferay.portal.workflow.kaleo.definition.ScriptAction;
 import com.liferay.portal.workflow.kaleo.definition.Task;
 import com.liferay.portal.workflow.kaleo.model.KaleoAction;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinition;
@@ -75,7 +70,9 @@ public abstract class BaseKaleoLocalServiceTestCase {
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
 		new AggregateTestRule(
-			new LiferayIntegrationTestRule(), SynchronousMailTestRule.INSTANCE);
+			new LiferayIntegrationTestRule(),
+			ScriptManagementConfigurationTestRule.INSTANCE,
+			SynchronousMailTestRule.INSTANCE);
 
 	@Before
 	public void setUp() throws Exception {
@@ -90,7 +87,7 @@ public abstract class BaseKaleoLocalServiceTestCase {
 			KaleoNode.class.getName(), kaleoNode.getKaleoNodeId(),
 			kaleoInstance.getKaleoDefinitionId(),
 			kaleoInstance.getKaleoDefinitionVersionId(), kaleoNode.getName(),
-			new Action(
+			new ScriptAction(
 				StringUtil.randomString(), StringUtil.randomString(),
 				"onAssignment", StringPool.BLANK, "groovy", StringPool.BLANK,
 				0),
@@ -102,18 +99,20 @@ public abstract class BaseKaleoLocalServiceTestCase {
 
 		return addKaleoDefinition(
 			StringUtil.randomString(), StringUtil.randomString(),
-			StringUtil.randomString());
+			StringUtil.randomString(), StringUtil.randomString());
 	}
 
 	protected KaleoDefinition addKaleoDefinition(
-			String name, String title, String description)
+			String externalReferenceCode, String name, String title,
+			String description)
 		throws IOException, PortalException {
 
 		KaleoDefinition kaleoDefinition =
 			_kaleoDefinitionLocalService.addKaleoDefinition(
-				name, title, description,
-				_read("legal-marketing-workflow-definition.xml"),
-				StringPool.BLANK, 1, serviceContext);
+				externalReferenceCode, name,
+				LocalizationUtil.getXml(new LocalizedValuesMap(title), "title"),
+				description, _read("legal-marketing-workflow-definition.xml"),
+				WorkflowDefinitionConstants.SCOPE_ALL, 1, serviceContext);
 
 		_kaleoDefinitionLocalService.activateKaleoDefinition(
 			kaleoDefinition.getKaleoDefinitionId(), serviceContext);
@@ -241,7 +240,7 @@ public abstract class BaseKaleoLocalServiceTestCase {
 			KaleoInstance kaleoInstance)
 		throws Exception, PortalException {
 
-		return kaleoLogLocalService.addWorkflowInstanceEndKaleoLog(
+		return kaleoLogLocalService.addInstanceEndKaleoLog(
 			addKaleoInstanceToken(kaleoInstance), serviceContext);
 	}
 
@@ -274,6 +273,7 @@ public abstract class BaseKaleoLocalServiceTestCase {
 		throws IOException, PortalException {
 
 		kaleoDefinition = _kaleoDefinitionLocalService.updatedKaleoDefinition(
+			kaleoDefinition.getExternalReferenceCode(),
 			kaleoDefinition.getKaleoDefinitionId(), StringUtil.randomString(),
 			StringUtil.randomString(), kaleoDefinition.getContent(),
 			serviceContext);

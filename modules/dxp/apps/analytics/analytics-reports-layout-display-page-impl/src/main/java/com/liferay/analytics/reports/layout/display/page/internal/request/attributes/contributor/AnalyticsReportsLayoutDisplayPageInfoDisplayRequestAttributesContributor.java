@@ -1,32 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.analytics.reports.layout.display.page.internal.request.attributes.contributor;
 
 import com.liferay.analytics.reports.constants.AnalyticsReportsWebKeys;
-import com.liferay.analytics.reports.info.item.AnalyticsReportsInfoItemTracker;
+import com.liferay.analytics.reports.info.item.AnalyticsReportsInfoItem;
+import com.liferay.analytics.reports.info.item.AnalyticsReportsInfoItemRegistry;
 import com.liferay.analytics.reports.info.item.ClassNameClassPKInfoItemIdentifier;
 import com.liferay.info.display.request.attributes.contributor.InfoDisplayRequestAttributesContributor;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.constants.LayoutDisplayPageWebKeys;
-import com.liferay.portal.kernel.model.ClassName;
-import com.liferay.portal.kernel.service.ClassNameLocalService;
 
-import java.util.Optional;
-
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,31 +37,28 @@ public class
 			return;
 		}
 
-		ClassName className = _classNameLocalService.fetchClassName(
-			layoutDisplayPageObjectProvider.getClassNameId());
+		InfoItemReference infoItemReference = new InfoItemReference(
+			layoutDisplayPageObjectProvider.getClassName(),
+			layoutDisplayPageObjectProvider.getClassPK());
+
+		AnalyticsReportsInfoItem<?> analyticsReportsInfoItem =
+			_analyticsReportsInfoItemRegistry.getAnalyticsReportsInfoItem(
+				layoutDisplayPageObjectProvider.getClassName());
+
+		if (analyticsReportsInfoItem == null) {
+			infoItemReference = new InfoItemReference(
+				LayoutDisplayPageObjectProvider.class.getName(),
+				new ClassNameClassPKInfoItemIdentifier(
+					layoutDisplayPageObjectProvider.getClassName(),
+					layoutDisplayPageObjectProvider.getClassPK()));
+		}
 
 		httpServletRequest.setAttribute(
-			AnalyticsReportsWebKeys.INFO_ITEM_REFERENCE,
-			Optional.ofNullable(
-				_analyticsReportsInfoItemTracker.getAnalyticsReportsInfoItem(
-					className.getClassName())
-			).map(
-				analyticsReportsInfoItem -> new InfoItemReference(
-					className.getClassName(),
-					layoutDisplayPageObjectProvider.getClassPK())
-			).orElseGet(
-				() -> new InfoItemReference(
-					LayoutDisplayPageObjectProvider.class.getName(),
-					new ClassNameClassPKInfoItemIdentifier(
-						className.getClassName(),
-						layoutDisplayPageObjectProvider.getClassPK()))
-			));
+			AnalyticsReportsWebKeys.ANALYTICS_INFO_ITEM_REFERENCE,
+			infoItemReference);
 	}
 
 	@Reference
-	private AnalyticsReportsInfoItemTracker _analyticsReportsInfoItemTracker;
-
-	@Reference
-	private ClassNameLocalService _classNameLocalService;
+	private AnalyticsReportsInfoItemRegistry _analyticsReportsInfoItemRegistry;
 
 }

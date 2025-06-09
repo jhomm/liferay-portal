@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.resource.v1_0.test;
@@ -22,13 +13,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.OptionCategory;
 import com.liferay.headless.commerce.admin.catalog.client.http.HttpInvoker;
 import com.liferay.headless.commerce.admin.catalog.client.pagination.Page;
 import com.liferay.headless.commerce.admin.catalog.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.OptionCategoryResource;
 import com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0.OptionCategorySerDes;
+import com.liferay.oauth2.provider.scope.ScopeChecker;
 import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -36,45 +31,61 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegate;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegateBuilderRegistry;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import jakarta.annotation.Generated;
 
-import java.text.DateFormat;
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+
+import java.lang.reflect.Method;
+
+import java.net.URI;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.BeanUtilsBean;
-import org.apache.commons.lang.time.DateUtils;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -83,6 +94,9 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * @author Zoltán Takács
@@ -93,12 +107,14 @@ public abstract class BaseOptionCategoryResourceTestCase {
 
 	@ClassRule
 	@Rule
-	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
-		new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -112,11 +128,25 @@ public abstract class BaseOptionCategoryResourceTestCase {
 
 		_optionCategoryResource.setContextCompany(testCompany);
 
-		OptionCategoryResource.Builder builder =
-			OptionCategoryResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		optionCategoryResource = builder.authentication(
-			"test@liferay.com", "test"
+		optionCategoryResource = OptionCategoryResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -130,7 +160,32 @@ public abstract class BaseOptionCategoryResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		OptionCategory optionCategory1 = randomOptionCategory();
+
+		String json = objectMapper.writeValueAsString(optionCategory1);
+
+		OptionCategory optionCategory2 = OptionCategorySerDes.toDTO(json);
+
+		Assert.assertTrue(equals(optionCategory1, optionCategory2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		OptionCategory optionCategory = randomOptionCategory();
+
+		String json1 = objectMapper.writeValueAsString(optionCategory);
+		String json2 = OptionCategorySerDes.toJSON(optionCategory);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -145,40 +200,6 @@ public abstract class BaseOptionCategoryResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		OptionCategory optionCategory1 = randomOptionCategory();
-
-		String json = objectMapper.writeValueAsString(optionCategory1);
-
-		OptionCategory optionCategory2 = OptionCategorySerDes.toDTO(json);
-
-		Assert.assertTrue(equals(optionCategory1, optionCategory2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		OptionCategory optionCategory = randomOptionCategory();
-
-		String json1 = objectMapper.writeValueAsString(optionCategory);
-		String json2 = OptionCategorySerDes.toJSON(optionCategory);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -187,6 +208,7 @@ public abstract class BaseOptionCategoryResourceTestCase {
 
 		OptionCategory optionCategory = randomOptionCategory();
 
+		optionCategory.setExternalReferenceCode(regex);
 		optionCategory.setKey(regex);
 
 		String json = OptionCategorySerDes.toJSON(optionCategory);
@@ -195,7 +217,222 @@ public abstract class BaseOptionCategoryResourceTestCase {
 
 		optionCategory = OptionCategorySerDes.toDTO(json);
 
+		Assert.assertEquals(regex, optionCategory.getExternalReferenceCode());
 		Assert.assertEquals(regex, optionCategory.getKey());
+	}
+
+	@Test
+	public void testDeleteOptionCategory() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		OptionCategory optionCategory =
+			testDeleteOptionCategory_addOptionCategory();
+
+		assertHttpResponseStatusCode(
+			204,
+			optionCategoryResource.deleteOptionCategoryHttpResponse(
+				optionCategory.getId()));
+
+		assertHttpResponseStatusCode(
+			404,
+			optionCategoryResource.getOptionCategoryHttpResponse(
+				optionCategory.getId()));
+		assertHttpResponseStatusCode(
+			404, optionCategoryResource.getOptionCategoryHttpResponse(0L));
+	}
+
+	protected OptionCategory testDeleteOptionCategory_addOptionCategory()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLDeleteOptionCategory() throws Exception {
+
+		// No namespace
+
+		OptionCategory optionCategory1 =
+			testGraphQLDeleteOptionCategory_addOptionCategory();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteOptionCategory",
+						new HashMap<String, Object>() {
+							{
+								put("id", optionCategory1.getId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteOptionCategory"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"optionCategory",
+					new HashMap<String, Object>() {
+						{
+							put("id", optionCategory1.getId());
+						}
+					},
+					new GraphQLField("id"))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		OptionCategory optionCategory2 =
+			testGraphQLDeleteOptionCategory_addOptionCategory();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"deleteOptionCategory",
+							new HashMap<String, Object>() {
+								{
+									put("id", optionCategory2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminCatalog_v1_0",
+				"Object/deleteOptionCategory"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminCatalog_v1_0",
+					new GraphQLField(
+						"optionCategory",
+						new HashMap<String, Object>() {
+							{
+								put("id", optionCategory2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected OptionCategory testGraphQLDeleteOptionCategory_addOptionCategory()
+		throws Exception {
+
+		return testGraphQLOptionCategory_addOptionCategory();
+	}
+
+	@Test
+	public void testDeleteOptionCategoryBatch() throws Exception {
+		OptionCategory optionCategory1 =
+			testDeleteOptionCategoryBatch_addOptionCategory();
+
+		testDeleteOptionCategoryBatch_deleteOptionCategory(
+			"COMPLETED", null, optionCategory1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			optionCategoryResource.getOptionCategoryHttpResponse(
+				optionCategory1.getId()));
+
+		OptionCategory optionCategory2 =
+			testDeleteOptionCategoryBatch_addOptionCategory();
+
+		testDeleteOptionCategoryBatch_deleteOptionCategory(
+			"COMPLETED", optionCategory2.getExternalReferenceCode(), null);
+
+		assertHttpResponseStatusCode(
+			404,
+			optionCategoryResource.getOptionCategoryHttpResponse(
+				optionCategory2.getId()));
+
+		optionCategory1 = testDeleteOptionCategoryBatch_addOptionCategory();
+		optionCategory2 = testDeleteOptionCategoryBatch_addOptionCategory();
+
+		testDeleteOptionCategoryBatch_deleteOptionCategory(
+			"COMPLETED", optionCategory2.getExternalReferenceCode(),
+			optionCategory1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			optionCategoryResource.getOptionCategoryHttpResponse(
+				optionCategory1.getId()));
+		assertHttpResponseStatusCode(
+			200,
+			optionCategoryResource.getOptionCategoryHttpResponse(
+				optionCategory2.getId()));
+
+		testDeleteOptionCategoryBatch_deleteOptionCategory(
+			"COMPLETED", optionCategory2.getExternalReferenceCode(),
+			optionCategory1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			optionCategoryResource.getOptionCategoryHttpResponse(
+				optionCategory2.getId()));
+	}
+
+	protected OptionCategory testDeleteOptionCategoryBatch_addOptionCategory()
+		throws Exception {
+
+		return testDeleteOptionCategory_addOptionCategory();
+	}
+
+	protected void testDeleteOptionCategoryBatch_deleteOptionCategory(
+			String expectedExecuteStatus, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			optionCategoryResource.deleteOptionCategoryBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"id", () -> id
+					)));
+
+		Assert.assertEquals(202, httpResponse.getStatusCode());
+
+		waitForFinish(
+			expectedExecuteStatus,
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+	}
+
+	@Test
+	public void testDeleteOptionCategoryByExternalReferenceCode()
+		throws Exception {
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		OptionCategory optionCategory =
+			testDeleteOptionCategoryByExternalReferenceCode_addOptionCategory();
+
+		assertHttpResponseStatusCode(
+			204,
+			optionCategoryResource.
+				deleteOptionCategoryByExternalReferenceCodeHttpResponse(
+					optionCategory.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			optionCategoryResource.
+				getOptionCategoryByExternalReferenceCodeHttpResponse(
+					optionCategory.getExternalReferenceCode()));
+		assertHttpResponseStatusCode(
+			404,
+			optionCategoryResource.
+				getOptionCategoryByExternalReferenceCodeHttpResponse("-"));
+	}
+
+	protected OptionCategory
+			testDeleteOptionCategoryByExternalReferenceCode_addOptionCategory()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
@@ -221,11 +458,20 @@ public abstract class BaseOptionCategoryResourceTestCase {
 
 		assertContains(optionCategory1, (List<OptionCategory>)page.getItems());
 		assertContains(optionCategory2, (List<OptionCategory>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetOptionCategoriesPage_getExpectedActions());
 
 		optionCategoryResource.deleteOptionCategory(optionCategory1.getId());
 
 		optionCategoryResource.deleteOptionCategory(optionCategory2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetOptionCategoriesPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -257,11 +503,40 @@ public abstract class BaseOptionCategoryResourceTestCase {
 	}
 
 	@Test
+	public void testGetOptionCategoriesPageWithFilterDoubleEquals()
+		throws Exception {
+
+		testGetOptionCategoriesPageWithFilter("eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetOptionCategoriesPageWithFilterStringContains()
+		throws Exception {
+
+		testGetOptionCategoriesPageWithFilter(
+			"contains", EntityField.Type.STRING);
+	}
+
+	@Test
 	public void testGetOptionCategoriesPageWithFilterStringEquals()
 		throws Exception {
 
-		List<EntityField> entityFields = getEntityFields(
-			EntityField.Type.STRING);
+		testGetOptionCategoriesPageWithFilter("eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetOptionCategoriesPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetOptionCategoriesPageWithFilter(
+			"startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetOptionCategoriesPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
 
 		if (entityFields.isEmpty()) {
 			return;
@@ -279,7 +554,7 @@ public abstract class BaseOptionCategoryResourceTestCase {
 		for (EntityField entityField : entityFields) {
 			Page<OptionCategory> page =
 				optionCategoryResource.getOptionCategoriesPage(
-					getFilterString(entityField, "eq", optionCategory1),
+					getFilterString(entityField, operator, optionCategory1),
 					Pagination.of(1, 2), null);
 
 			assertEquals(
@@ -290,10 +565,11 @@ public abstract class BaseOptionCategoryResourceTestCase {
 
 	@Test
 	public void testGetOptionCategoriesPageWithPagination() throws Exception {
-		Page<OptionCategory> totalPage =
+		Page<OptionCategory> optionCategoriesPage =
 			optionCategoryResource.getOptionCategoriesPage(null, null, null);
 
-		int totalCount = GetterUtil.getInteger(totalPage.getTotalCount());
+		int totalCount = GetterUtil.getInteger(
+			optionCategoriesPage.getTotalCount());
 
 		OptionCategory optionCategory1 =
 			testGetOptionCategoriesPage_addOptionCategory(
@@ -307,36 +583,81 @@ public abstract class BaseOptionCategoryResourceTestCase {
 			testGetOptionCategoriesPage_addOptionCategory(
 				randomOptionCategory());
 
-		Page<OptionCategory> page1 =
-			optionCategoryResource.getOptionCategoriesPage(
-				null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<OptionCategory> optionCategories1 =
-			(List<OptionCategory>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			optionCategories1.toString(), totalCount + 2,
-			optionCategories1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<OptionCategory> page1 =
+				optionCategoryResource.getOptionCategoriesPage(
+					null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<OptionCategory> page2 =
-			optionCategoryResource.getOptionCategoriesPage(
-				null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				optionCategory1, (List<OptionCategory>)page1.getItems());
 
-		List<OptionCategory> optionCategories2 =
-			(List<OptionCategory>)page2.getItems();
+			Page<OptionCategory> page2 =
+				optionCategoryResource.getOptionCategoriesPage(
+					null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			optionCategories2.toString(), 1, optionCategories2.size());
+			assertContains(
+				optionCategory2, (List<OptionCategory>)page2.getItems());
 
-		Page<OptionCategory> page3 =
-			optionCategoryResource.getOptionCategoriesPage(
-				null, Pagination.of(1, totalCount + 3), null);
+			Page<OptionCategory> page3 =
+				optionCategoryResource.getOptionCategoriesPage(
+					null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(optionCategory1, (List<OptionCategory>)page3.getItems());
-		assertContains(optionCategory2, (List<OptionCategory>)page3.getItems());
-		assertContains(optionCategory3, (List<OptionCategory>)page3.getItems());
+			assertContains(
+				optionCategory3, (List<OptionCategory>)page3.getItems());
+		}
+		else {
+			Page<OptionCategory> page1 =
+				optionCategoryResource.getOptionCategoriesPage(
+					null, Pagination.of(1, totalCount + 2), null);
+
+			List<OptionCategory> optionCategories1 =
+				(List<OptionCategory>)page1.getItems();
+
+			Assert.assertEquals(
+				optionCategories1.toString(), totalCount + 2,
+				optionCategories1.size());
+
+			Page<OptionCategory> page2 =
+				optionCategoryResource.getOptionCategoriesPage(
+					null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<OptionCategory> optionCategories2 =
+				(List<OptionCategory>)page2.getItems();
+
+			Assert.assertEquals(
+				optionCategories2.toString(), 1, optionCategories2.size());
+
+			Page<OptionCategory> page3 =
+				optionCategoryResource.getOptionCategoriesPage(
+					null, Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(
+				optionCategory1, (List<OptionCategory>)page3.getItems());
+			assertContains(
+				optionCategory2, (List<OptionCategory>)page3.getItems());
+			assertContains(
+				optionCategory3, (List<OptionCategory>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -344,9 +665,21 @@ public abstract class BaseOptionCategoryResourceTestCase {
 		testGetOptionCategoriesPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, optionCategory1, optionCategory2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					optionCategory1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
+			});
+	}
+
+	@Test
+	public void testGetOptionCategoriesPageWithSortDouble() throws Exception {
+		testGetOptionCategoriesPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, optionCategory1, optionCategory2) -> {
+				BeanTestUtil.setProperty(
+					optionCategory1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					optionCategory2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -355,9 +688,9 @@ public abstract class BaseOptionCategoryResourceTestCase {
 		testGetOptionCategoriesPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, optionCategory1, optionCategory2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					optionCategory1, entityField.getName(), 0);
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					optionCategory2, entityField.getName(), 1);
 			});
 	}
@@ -371,27 +704,27 @@ public abstract class BaseOptionCategoryResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						optionCategory1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						optionCategory2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						optionCategory1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						optionCategory2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -399,12 +732,12 @@ public abstract class BaseOptionCategoryResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						optionCategory1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						optionCategory2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -440,22 +773,29 @@ public abstract class BaseOptionCategoryResourceTestCase {
 		optionCategory2 = testGetOptionCategoriesPage_addOptionCategory(
 			optionCategory2);
 
+		Page<OptionCategory> page =
+			optionCategoryResource.getOptionCategoriesPage(null, null, null);
+
 		for (EntityField entityField : entityFields) {
 			Page<OptionCategory> ascPage =
 				optionCategoryResource.getOptionCategoriesPage(
-					null, Pagination.of(1, 2), entityField.getName() + ":asc");
+					null, Pagination.of(1, (int)page.getTotalCount() + 1),
+					entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(optionCategory1, optionCategory2),
-				(List<OptionCategory>)ascPage.getItems());
+			assertContains(
+				optionCategory1, (List<OptionCategory>)ascPage.getItems());
+			assertContains(
+				optionCategory2, (List<OptionCategory>)ascPage.getItems());
 
 			Page<OptionCategory> descPage =
 				optionCategoryResource.getOptionCategoriesPage(
-					null, Pagination.of(1, 2), entityField.getName() + ":desc");
+					null, Pagination.of(1, (int)page.getTotalCount() + 1),
+					entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(optionCategory2, optionCategory1),
-				(List<OptionCategory>)descPage.getItems());
+			assertContains(
+				optionCategory2, (List<OptionCategory>)descPage.getItems());
+			assertContains(
+				optionCategory1, (List<OptionCategory>)descPage.getItems());
 		}
 	}
 
@@ -480,6 +820,8 @@ public abstract class BaseOptionCategoryResourceTestCase {
 			new GraphQLField("items", getGraphQLFields()),
 			new GraphQLField("page"), new GraphQLField("totalCount"));
 
+		// No namespace
+
 		JSONObject optionCategoriesJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
 			"JSONObject/optionCategories");
@@ -487,9 +829,9 @@ public abstract class BaseOptionCategoryResourceTestCase {
 		long totalCount = optionCategoriesJSONObject.getLong("totalCount");
 
 		OptionCategory optionCategory1 =
-			testGraphQLOptionCategory_addOptionCategory();
+			testGraphQLGetOptionCategoriesPage_addOptionCategory();
 		OptionCategory optionCategory2 =
-			testGraphQLOptionCategory_addOptionCategory();
+			testGraphQLGetOptionCategoriesPage_addOptionCategory();
 
 		optionCategoriesJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
@@ -508,6 +850,519 @@ public abstract class BaseOptionCategoryResourceTestCase {
 			Arrays.asList(
 				OptionCategorySerDes.toDTOs(
 					optionCategoriesJSONObject.getString("items"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		optionCategoriesJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminCatalog_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/headlessCommerceAdminCatalog_v1_0",
+			"JSONObject/optionCategories");
+
+		Assert.assertEquals(
+			totalCount + 2, optionCategoriesJSONObject.getLong("totalCount"));
+
+		assertContains(
+			optionCategory1,
+			Arrays.asList(
+				OptionCategorySerDes.toDTOs(
+					optionCategoriesJSONObject.getString("items"))));
+		assertContains(
+			optionCategory2,
+			Arrays.asList(
+				OptionCategorySerDes.toDTOs(
+					optionCategoriesJSONObject.getString("items"))));
+	}
+
+	protected OptionCategory
+			testGraphQLGetOptionCategoriesPage_addOptionCategory()
+		throws Exception {
+
+		return testGraphQLOptionCategory_addOptionCategory();
+	}
+
+	@Test
+	public void testGetOptionCategory() throws Exception {
+		OptionCategory postOptionCategory =
+			testGetOptionCategory_addOptionCategory();
+
+		OptionCategory getOptionCategory =
+			optionCategoryResource.getOptionCategory(
+				postOptionCategory.getId());
+
+		assertEquals(postOptionCategory, getOptionCategory);
+		assertValid(getOptionCategory);
+	}
+
+	@Test
+	public void testVulcanCRUDItemDelegateGetItem() throws Exception {
+		OptionCategory postOptionCategory =
+			testGetOptionCategory_addOptionCategory();
+
+		OptionCategory getOptionCategory =
+			optionCategoryResource.getOptionCategory(
+				postOptionCategory.getId());
+
+		VulcanCRUDItemDelegate vulcanCRUDItemDelegate =
+			_vulcanCRUDItemDelegateBuilderRegistry.builder(
+				testCompany,
+				"com.liferay.headless.commerce.admin.catalog.dto.v1_0.OptionCategory"
+			).acceptLanguage(
+				new AcceptLanguage() {
+
+					@Override
+					public List<Locale> getLocales() {
+						return Arrays.asList(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public String getPreferredLanguageId() {
+						return LocaleUtil.toLanguageId(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public Locale getPreferredLocale() {
+						return LocaleUtil.getDefault();
+					}
+
+				}
+			).groupLocalService(
+				_groupLocalService
+			).httpServletRequest(
+				testVulcanCRUDItemDelegate_getHttpServletRequest()
+			).httpServletResponse(
+				new MockHttpServletResponse()
+			).resourceActionLocalService(
+				_resourceActionLocalService
+			).resourcePermissionLocalService(
+				_resourcePermissionLocalService
+			).roleLocalService(
+				_roleLocalService
+			).scopeChecker(
+				_scopeChecker
+			).uriInfo(
+				testVulcanCRUDItemDelegate_getUriInfo()
+			).user(
+				testVulcanCRUDItemDelegate_getUser()
+			).build();
+
+		Object item = vulcanCRUDItemDelegate.getItem(
+			postOptionCategory.getId());
+
+		assertEquals(
+			getOptionCategory, OptionCategorySerDes.toDTO(item.toString()));
+	}
+
+	protected HttpServletRequest
+		testVulcanCRUDItemDelegate_getHttpServletRequest() {
+
+		return new MockHttpServletRequest() {
+
+			@Override
+			public StringBuffer getRequestURL() {
+				return new StringBuffer(
+					StringBundler.concat(
+						"http://localhost:8080/o/v1.0/",
+						RandomTestUtil.randomString(), "/",
+						RandomTestUtil.randomString()));
+			}
+
+		};
+	}
+
+	protected UriInfo testVulcanCRUDItemDelegate_getUriInfo() {
+		String applicationPath = RandomTestUtil.randomString() + "/";
+		String resourcePath = RandomTestUtil.randomString();
+
+		return new UriInfo() {
+
+			@Override
+			public String getPath() {
+				return resourcePath;
+			}
+
+			@Override
+			public String getPath(boolean decode) {
+				return getPath();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments(boolean decode) {
+				return getPathSegments();
+			}
+
+			@Override
+			public URI getRequestUri() {
+				return URI.create(
+					"http://localhost:8080/o/" + applicationPath +
+						resourcePath);
+			}
+
+			@Override
+			public UriBuilder getRequestUriBuilder() {
+				return UriBuilder.fromUri(getRequestUri());
+			}
+
+			@Override
+			public URI getAbsolutePath() {
+				return getRequestUri();
+			}
+
+			@Override
+			public UriBuilder getAbsolutePathBuilder() {
+				return getRequestUriBuilder();
+			}
+
+			@Override
+			public URI getBaseUri() {
+				return URI.create("http://localhost:8080/o/" + applicationPath);
+			}
+
+			@Override
+			public UriBuilder getBaseUriBuilder() {
+				return UriBuilder.fromUri(getBaseUri());
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters(
+				boolean decode) {
+
+				return getPathParameters();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters(
+				boolean decode) {
+
+				return getQueryParameters();
+			}
+
+			@Override
+			public List<String> getMatchedURIs() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<String> getMatchedURIs(boolean decode) {
+				return getMatchedURIs();
+			}
+
+			@Override
+			public List<Object> getMatchedResources() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public URI resolve(URI requestUri) {
+				return getBaseUri().resolve(requestUri);
+			}
+
+			@Override
+			public URI relativize(URI uri) {
+				return getBaseUri().relativize(uri);
+			}
+
+		};
+	}
+
+	protected com.liferay.portal.kernel.model.User
+		testVulcanCRUDItemDelegate_getUser() {
+
+		return _testCompanyAdminUser;
+	}
+
+	protected OptionCategory testGetOptionCategory_addOptionCategory()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetOptionCategory() throws Exception {
+		OptionCategory optionCategory =
+			testGraphQLGetOptionCategory_addOptionCategory();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				optionCategory,
+				OptionCategorySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"optionCategory",
+								new HashMap<String, Object>() {
+									{
+										put("id", optionCategory.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data", "Object/optionCategory"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				optionCategory,
+				OptionCategorySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminCatalog_v1_0",
+								new GraphQLField(
+									"optionCategory",
+									new HashMap<String, Object>() {
+										{
+											put("id", optionCategory.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminCatalog_v1_0",
+						"Object/optionCategory"))));
+	}
+
+	@Test
+	public void testGraphQLGetOptionCategoryNotFound() throws Exception {
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"optionCategory",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"optionCategory",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected OptionCategory testGraphQLGetOptionCategory_addOptionCategory()
+		throws Exception {
+
+		return testGraphQLOptionCategory_addOptionCategory();
+	}
+
+	@Test
+	public void testGetOptionCategoryByExternalReferenceCode()
+		throws Exception {
+
+		OptionCategory postOptionCategory =
+			testGetOptionCategoryByExternalReferenceCode_addOptionCategory();
+
+		OptionCategory getOptionCategory =
+			optionCategoryResource.getOptionCategoryByExternalReferenceCode(
+				postOptionCategory.getExternalReferenceCode());
+
+		assertEquals(postOptionCategory, getOptionCategory);
+		assertValid(getOptionCategory);
+	}
+
+	protected OptionCategory
+			testGetOptionCategoryByExternalReferenceCode_addOptionCategory()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetOptionCategoryByExternalReferenceCode()
+		throws Exception {
+
+		OptionCategory optionCategory =
+			testGraphQLGetOptionCategoryByExternalReferenceCode_addOptionCategory();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				optionCategory,
+				OptionCategorySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"optionCategoryByExternalReferenceCode",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"externalReferenceCode",
+											"\"" +
+												optionCategory.
+													getExternalReferenceCode() +
+														"\"");
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/optionCategoryByExternalReferenceCode"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				optionCategory,
+				OptionCategorySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminCatalog_v1_0",
+								new GraphQLField(
+									"optionCategoryByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"externalReferenceCode",
+												"\"" +
+													optionCategory.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminCatalog_v1_0",
+						"Object/optionCategoryByExternalReferenceCode"))));
+	}
+
+	@Test
+	public void testGraphQLGetOptionCategoryByExternalReferenceCodeNotFound()
+		throws Exception {
+
+		String irrelevantExternalReferenceCode =
+			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"optionCategoryByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"externalReferenceCode",
+									irrelevantExternalReferenceCode);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"optionCategoryByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected OptionCategory
+			testGraphQLGetOptionCategoryByExternalReferenceCode_addOptionCategory()
+		throws Exception {
+
+		return testGraphQLOptionCategory_addOptionCategory();
+	}
+
+	@Test
+	public void testPatchOptionCategory() throws Exception {
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testPatchOptionCategoryByExternalReferenceCode()
+		throws Exception {
+
+		OptionCategory postOptionCategory =
+			testPatchOptionCategoryByExternalReferenceCode_addOptionCategory();
+
+		OptionCategory randomPatchOptionCategory = randomPatchOptionCategory();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		OptionCategory patchOptionCategory =
+			optionCategoryResource.patchOptionCategoryByExternalReferenceCode(
+				postOptionCategory.getExternalReferenceCode(),
+				randomPatchOptionCategory);
+
+		OptionCategory expectedPatchOptionCategory = postOptionCategory.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchOptionCategory, expectedPatchOptionCategory);
+
+		OptionCategory getOptionCategory =
+			optionCategoryResource.getOptionCategoryByExternalReferenceCode(
+				patchOptionCategory.getExternalReferenceCode());
+
+		assertEquals(expectedPatchOptionCategory, getOptionCategory);
+		assertValid(getOptionCategory);
+	}
+
+	protected OptionCategory
+			testPatchOptionCategoryByExternalReferenceCode_addOptionCategory()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
@@ -530,131 +1385,64 @@ public abstract class BaseOptionCategoryResourceTestCase {
 	}
 
 	@Test
-	public void testDeleteOptionCategory() throws Exception {
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		OptionCategory optionCategory =
-			testDeleteOptionCategory_addOptionCategory();
-
-		assertHttpResponseStatusCode(
-			204,
-			optionCategoryResource.deleteOptionCategoryHttpResponse(
-				optionCategory.getId()));
-
-		assertHttpResponseStatusCode(
-			404,
-			optionCategoryResource.getOptionCategoryHttpResponse(
-				optionCategory.getId()));
-
-		assertHttpResponseStatusCode(
-			404,
-			optionCategoryResource.getOptionCategoryHttpResponse(
-				optionCategory.getId()));
-	}
-
-	protected OptionCategory testDeleteOptionCategory_addOptionCategory()
+	public void testPutOptionCategoryByExternalReferenceCode()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLDeleteOptionCategory() throws Exception {
-		OptionCategory optionCategory =
-			testGraphQLOptionCategory_addOptionCategory();
-
-		Assert.assertTrue(
-			JSONUtil.getValueAsBoolean(
-				invokeGraphQLMutation(
-					new GraphQLField(
-						"deleteOptionCategory",
-						new HashMap<String, Object>() {
-							{
-								put("id", optionCategory.getId());
-							}
-						})),
-				"JSONObject/data", "Object/deleteOptionCategory"));
-
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
-			invokeGraphQLQuery(
-				new GraphQLField(
-					"optionCategory",
-					new HashMap<String, Object>() {
-						{
-							put("id", optionCategory.getId());
-						}
-					},
-					new GraphQLField("id"))),
-			"JSONArray/errors");
-
-		Assert.assertTrue(errorsJSONArray.length() > 0);
-	}
-
-	@Test
-	public void testGetOptionCategory() throws Exception {
 		OptionCategory postOptionCategory =
-			testGetOptionCategory_addOptionCategory();
+			testPutOptionCategoryByExternalReferenceCode_addOptionCategory();
+
+		OptionCategory randomOptionCategory = randomOptionCategory();
+
+		OptionCategory putOptionCategory =
+			optionCategoryResource.putOptionCategoryByExternalReferenceCode(
+				postOptionCategory.getExternalReferenceCode(),
+				randomOptionCategory);
+
+		assertEquals(randomOptionCategory, putOptionCategory);
+		assertValid(putOptionCategory);
 
 		OptionCategory getOptionCategory =
-			optionCategoryResource.getOptionCategory(
-				postOptionCategory.getId());
+			optionCategoryResource.getOptionCategoryByExternalReferenceCode(
+				putOptionCategory.getExternalReferenceCode());
 
-		assertEquals(postOptionCategory, getOptionCategory);
+		assertEquals(randomOptionCategory, getOptionCategory);
 		assertValid(getOptionCategory);
+
+		OptionCategory newOptionCategory =
+			testPutOptionCategoryByExternalReferenceCode_createOptionCategory();
+
+		putOptionCategory =
+			optionCategoryResource.putOptionCategoryByExternalReferenceCode(
+				newOptionCategory.getExternalReferenceCode(),
+				newOptionCategory);
+
+		assertEquals(newOptionCategory, putOptionCategory);
+		assertValid(putOptionCategory);
+
+		getOptionCategory =
+			optionCategoryResource.getOptionCategoryByExternalReferenceCode(
+				putOptionCategory.getExternalReferenceCode());
+
+		assertEquals(newOptionCategory, getOptionCategory);
+
+		Assert.assertEquals(
+			newOptionCategory.getExternalReferenceCode(),
+			putOptionCategory.getExternalReferenceCode());
 	}
 
-	protected OptionCategory testGetOptionCategory_addOptionCategory()
+	protected OptionCategory
+			testPutOptionCategoryByExternalReferenceCode_createOptionCategory()
+		throws Exception {
+
+		return randomOptionCategory();
+	}
+
+	protected OptionCategory
+			testPutOptionCategoryByExternalReferenceCode_addOptionCategory()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLGetOptionCategory() throws Exception {
-		OptionCategory optionCategory =
-			testGraphQLOptionCategory_addOptionCategory();
-
-		Assert.assertTrue(
-			equals(
-				optionCategory,
-				OptionCategorySerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"optionCategory",
-								new HashMap<String, Object>() {
-									{
-										put("id", optionCategory.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data", "Object/optionCategory"))));
-	}
-
-	@Test
-	public void testGraphQLGetOptionCategoryNotFound() throws Exception {
-		Long irrelevantId = RandomTestUtil.randomLong();
-
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
-					new GraphQLField(
-						"optionCategory",
-						new HashMap<String, Object>() {
-							{
-								put("id", irrelevantId);
-							}
-						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
-	}
-
-	@Test
-	public void testPatchOptionCategory() throws Exception {
-		Assert.assertTrue(false);
 	}
 
 	@Rule
@@ -755,6 +1543,16 @@ public abstract class BaseOptionCategoryResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (optionCategory.getExternalReferenceCode() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("key", additionalAssertFieldName)) {
 				if (optionCategory.getKey() == null) {
 					valid = false;
@@ -788,6 +1586,13 @@ public abstract class BaseOptionCategoryResourceTestCase {
 	}
 
 	protected void assertValid(Page<OptionCategory> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<OptionCategory> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<OptionCategory> optionCategories = page.getItems();
@@ -802,6 +1607,25 @@ public abstract class BaseOptionCategoryResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -876,6 +1700,19 @@ public abstract class BaseOptionCategoryResourceTestCase {
 				if (!equals(
 						(Map)optionCategory1.getDescription(),
 						(Map)optionCategory2.getDescription())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						optionCategory1.getExternalReferenceCode(),
+						optionCategory2.getExternalReferenceCode())) {
 
 					return false;
 				}
@@ -962,14 +1799,20 @@ public abstract class BaseOptionCategoryResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
+
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -986,6 +1829,10 @@ public abstract class BaseOptionCategoryResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -995,18 +1842,18 @@ public abstract class BaseOptionCategoryResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1028,22 +1875,107 @@ public abstract class BaseOptionCategoryResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("externalReferenceCode")) {
+			Object object = optionCategory.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
 		if (entityFieldName.equals("id")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
 		}
 
 		if (entityFieldName.equals("key")) {
-			sb.append("'");
-			sb.append(String.valueOf(optionCategory.getKey()));
-			sb.append("'");
+			Object object = optionCategory.getKey();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("priority")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(optionCategory.getPriority()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("title")) {
@@ -1065,7 +1997,8 @@ public abstract class BaseOptionCategoryResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1095,6 +2028,8 @@ public abstract class BaseOptionCategoryResourceTestCase {
 	protected OptionCategory randomOptionCategory() throws Exception {
 		return new OptionCategory() {
 			{
+				externalReferenceCode = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				id = RandomTestUtil.randomLong();
 				key = StringUtil.toLowerCase(RandomTestUtil.randomString());
 				priority = RandomTestUtil.randomDouble();
@@ -1112,10 +2047,155 @@ public abstract class BaseOptionCategoryResourceTestCase {
 		return randomOptionCategory();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected OptionCategoryResource optionCategoryResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = source.getClass();
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					_getAllDeclaredFields(sourceClass)) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
+
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1191,22 +2271,34 @@ public abstract class BaseOptionCategoryResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseOptionCategoryResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
+	private static Format _format;
 
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
-	private static DateFormat _dateFormat;
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.catalog.resource.v1_0.
 		OptionCategoryResource _optionCategoryResource;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private ScopeChecker _scopeChecker;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
+	@Inject
+	private VulcanCRUDItemDelegateBuilderRegistry
+		_vulcanCRUDItemDelegateBuilderRegistry;
 
 }

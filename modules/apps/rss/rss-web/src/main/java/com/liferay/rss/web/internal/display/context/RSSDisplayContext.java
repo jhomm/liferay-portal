@@ -1,35 +1,33 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.rss.web.internal.display.context;
 
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.TabsItem;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.TabsItemListBuilder;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.rss.web.internal.configuration.RSSPortletInstanceConfiguration;
 import com.liferay.rss.web.internal.configuration.RSSWebCacheConfiguration;
 import com.liferay.rss.web.internal.util.RSSFeed;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -44,34 +42,68 @@ public class RSSDisplayContext {
 		_httpServletRequest = httpServletRequest;
 		_rssWebCacheConfiguration = rssWebCacheConfiguration;
 
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
-
 		_rssPortletInstanceConfiguration =
-			portletDisplay.getPortletInstanceConfiguration(
-				RSSPortletInstanceConfiguration.class);
+			ConfigurationProviderUtil.getPortletInstanceConfiguration(
+				RSSPortletInstanceConfiguration.class,
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY));
+
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 	}
 
 	public long getDisplayStyleGroupId() {
-		if (_displayStyleGroupId != 0) {
+		if (_displayStyleGroupId != null) {
 			return _displayStyleGroupId;
 		}
 
-		_displayStyleGroupId =
-			_rssPortletInstanceConfiguration.displayStyleGroupId();
+		String displayStyleGroupExternalReferenceCode =
+			_rssPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode();
 
-		if (_displayStyleGroupId <= 0) {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)_httpServletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
+		Group group = _themeDisplay.getScopeGroup();
 
-			_displayStyleGroupId = themeDisplay.getScopeGroupId();
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = GroupLocalServiceUtil.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				_themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupId = group.getGroupId();
+		}
+		else {
+			_displayStyleGroupId = _themeDisplay.getScopeGroupId();
 		}
 
 		return _displayStyleGroupId;
+	}
+
+	public String getDisplayStyleGroupKey() {
+		if (Validator.isNotNull(_displayStyleGroupKey)) {
+			return _displayStyleGroupKey;
+		}
+
+		String displayStyleGroupExternalReferenceCode =
+			_rssPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode();
+
+		Group group = _themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = GroupLocalServiceUtil.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				_themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupKey = group.getGroupKey();
+		}
+		else {
+			_displayStyleGroupKey = StringPool.BLANK;
+		}
+
+		return _displayStyleGroupKey;
 	}
 
 	public List<RSSFeed> getRSSFeeds() {
@@ -102,6 +134,19 @@ public class RSSDisplayContext {
 		return _rssPortletInstanceConfiguration;
 	}
 
+	public List<TabsItem> getTabsItems() {
+		return TabsItemListBuilder.add(
+			tabsItem -> {
+				tabsItem.setActive(true);
+				tabsItem.setLabel(
+					LanguageUtil.get(_httpServletRequest, "feeds"));
+			}
+		).add(
+			tabsItem -> tabsItem.setLabel(
+				LanguageUtil.get(_httpServletRequest, "display-settings"))
+		).build();
+	}
+
 	public boolean isShowConfigurationLink() throws PortalException {
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)_httpServletRequest.getAttribute(
@@ -114,10 +159,12 @@ public class RSSDisplayContext {
 			portletDisplay.getId(), ActionKeys.CONFIGURATION);
 	}
 
-	private long _displayStyleGroupId;
+	private Long _displayStyleGroupId;
+	private String _displayStyleGroupKey;
 	private final HttpServletRequest _httpServletRequest;
 	private final RSSPortletInstanceConfiguration
 		_rssPortletInstanceConfiguration;
 	private final RSSWebCacheConfiguration _rssWebCacheConfiguration;
+	private final ThemeDisplay _themeDisplay;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.image.uploader.web.internal.portlet.action;
@@ -17,8 +8,10 @@ package com.liferay.image.uploader.web.internal.portlet.action;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.image.uploader.web.internal.constants.ImageUploaderPortletKeys;
 import com.liferay.image.uploader.web.internal.util.UploadImageUtil;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.image.ImageToolUtil;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.image.ImageBag;
-import com.liferay.portal.kernel.image.ImageToolUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletResponseUtil;
@@ -29,11 +22,11 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import java.io.InputStream;
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
-import javax.portlet.MimeResponse;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import java.io.InputStream;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -41,9 +34,8 @@ import org.osgi.service.component.annotations.Component;
  * @author Peter Fellwock
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + ImageUploaderPortletKeys.IMAGE_UPLOADER,
+		"jakarta.portlet.name=" + ImageUploaderPortletKeys.IMAGE_UPLOADER,
 		"mvc.command.name=/image_uploader/upload_image"
 	},
 	service = MVCResourceCommand.class
@@ -55,14 +47,21 @@ public class UploadImageMVCResourceCommand extends BaseMVCResourceCommand {
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws Exception {
 
-		try {
+		long ctCollectionId = ParamUtil.getLong(
+			resourceRequest, "ctCollectionId",
+			CTCollectionThreadLocal.getCTCollectionId());
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ctCollectionId)) {
+
 			String cmd = ParamUtil.getString(resourceRequest, Constants.CMD);
 
 			if (cmd.equals(Constants.GET_TEMP)) {
 				FileEntry tempFileEntry = UploadImageUtil.getTempImageFileEntry(
 					resourceRequest);
 
-				serveTempImageFile(
+				_serveTempImageFile(
 					resourceResponse, tempFileEntry.getContentStream());
 			}
 		}
@@ -71,7 +70,7 @@ public class UploadImageMVCResourceCommand extends BaseMVCResourceCommand {
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchFileEntryException, noSuchFileEntryException);
+				_log.debug(noSuchFileEntryException);
 			}
 		}
 		catch (Exception exception) {
@@ -79,7 +78,7 @@ public class UploadImageMVCResourceCommand extends BaseMVCResourceCommand {
 		}
 	}
 
-	protected void serveTempImageFile(
+	private void _serveTempImageFile(
 			MimeResponse mimeResponse, InputStream tempImageInputStream)
 		throws Exception {
 
@@ -88,10 +87,8 @@ public class UploadImageMVCResourceCommand extends BaseMVCResourceCommand {
 		byte[] bytes = ImageToolUtil.getBytes(
 			imageBag.getRenderedImage(), imageBag.getType());
 
-		String contentType = MimeTypesUtil.getExtensionContentType(
-			imageBag.getType());
-
-		mimeResponse.setContentType(contentType);
+		mimeResponse.setContentType(
+			MimeTypesUtil.getExtensionContentType(imageBag.getType()));
 
 		PortletResponseUtil.write(mimeResponse, bytes);
 	}

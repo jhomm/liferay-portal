@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -31,7 +22,7 @@ MasterLayoutManagementToolbarDisplayContext masterLayoutManagementToolbarDisplay
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= masterLayoutManagementToolbarDisplayContext %>"
-	propsTransformer="js/propsTransformers/MasterLayoutManagementToolbarPropsTransformer"
+	propsTransformer="{MasterLayoutManagementToolbarPropsTransformer} from layout-page-template-admin-web"
 />
 
 <liferay-ui:success key="masterPagePublished" message="the-master-page-was-published-successfully" />
@@ -40,7 +31,7 @@ MasterLayoutManagementToolbarDisplayContext masterLayoutManagementToolbarDisplay
 	<portlet:param name="redirect" value="<%= currentURL %>" />
 </portlet:actionURL>
 
-<aui:form action="<%= deleteMasterLayoutURL %>" cssClass="container-fluid container-fluid-max-xl" name="fm">
+<aui:form action="<%= deleteMasterLayoutURL %>" cssClass="container-fluid container-fluid-max-xxxl" name="fm">
 	<liferay-ui:error key="<%= PortalException.class.getName() %>" message="one-or-more-entries-could-not-be-deleted" />
 	<liferay-ui:error key="<%= RequiredLayoutPageTemplateEntryException.class.getName() %>" message="you-cannot-delete-master-pages-that-are-used-by-a-page,-a-page-template,-or-a-display-page-template" />
 
@@ -64,7 +55,7 @@ MasterLayoutManagementToolbarDisplayContext masterLayoutManagementToolbarDisplay
 
 			<liferay-ui:search-container-column-text>
 				<clay:vertical-card
-					propsTransformer="js/propsTransformers/MasterLayoutDropdownPropsTransformer"
+					propsTransformer="{MasterLayoutDropdownPropsTransformer} from layout-page-template-admin-web"
 					verticalCard="<%= new MasterLayoutVerticalCard(layoutPageTemplateEntry, renderRequest, renderResponse, searchContainer.getRowChecker()) %>"
 				/>
 			</liferay-ui:search-container-column-text>

@@ -1,0 +1,29 @@
+.fragmentcss-product-update-container h5 {
+	max-width: 300px;
+}
+
+.fragmentcss-product-update-container .icon-container {
+	align-items: center;
+	display: flex;
+	justify-content: center;
+	position: relative;
+}
+
+.fragmentcss-product-update-container .product-update-container {
+	border-radius: 10px;
+	border-style: solid;
+	border-width: 1px;
+	display: flex;
+	flex-direction: row;
+	padding: 16px;
+}
+
+.fragmentcss-product-update-container .product-update-info {
+	display: flex;
+	flex-direction: column;
+	margin-left: 20px;
+}
+
+.fragmentcss-product-update-container .product-update-info .info-item {
+	margin-bottom: 4px;
+}

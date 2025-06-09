@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -32,28 +23,14 @@ if (accountRole != null) {
 SearchContainer<AccountUserDisplay> accountRoleUserDisplaySearchContainer = AccountUserDisplaySearchContainerFactory.create(accountEntryId, role.getRoleId(), liferayPortletRequest, liferayPortletResponse);
 %>
 
-<portlet:actionURL name="/account_admin/assign_account_role_users" var="assignAccountUsersURL">
-	<portlet:param name="redirect" value="<%= currentURL %>" />
-</portlet:actionURL>
-
-<portlet:renderURL var="selectAccountUsersURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
-	<portlet:param name="mvcPath" value="/account_entries_admin/select_account_users.jsp" />
-	<portlet:param name="accountEntryId" value="<%= String.valueOf(accountEntryId) %>" />
-	<portlet:param name="accountRoleId" value="<%= String.valueOf(accountRoleId) %>" />
-</portlet:renderURL>
-
 <clay:management-toolbar
 	additionalProps='<%=
 		HashMapBuilder.<String, Object>put(
 			"accountEntryName", role.getTitle(locale)
-		).put(
-			"assignAccountUsersURL", assignAccountUsersURL
-		).put(
-			"selectAccountUsersURL", selectAccountUsersURL
 		).build()
 	%>'
 	managementToolbarDisplayContext="<%= new ViewAccountRoleAssigneesManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, accountRoleUserDisplaySearchContainer) %>"
-	propsTransformer="account_entries_admin/js/AccountUsersManagementToolbarPropsTransformer"
+	propsTransformer="{AccountUsersManagementToolbarPropsTransformer} from account-admin-web"
 />
 
 <clay:container-fluid>
@@ -73,7 +50,7 @@ SearchContainer<AccountUserDisplay> accountRoleUserDisplaySearchContainer = Acco
 				<liferay-ui:search-container-column-text
 					cssClass="table-cell-expand-small table-cell-minw-150"
 					name="name"
-					property="name"
+					value="<%= HtmlUtil.escape(accountUser.getName()) %>"
 				/>
 
 				<liferay-ui:search-container-column-text
@@ -85,7 +62,7 @@ SearchContainer<AccountUserDisplay> accountRoleUserDisplaySearchContainer = Acco
 				<liferay-ui:search-container-column-text
 					cssClass="table-cell-expand-small table-cell-minw-150"
 					name="job-title"
-					property="jobTitle"
+					value="<%= HtmlUtil.escape(accountUser.getJobTitle()) %>"
 				/>
 			</liferay-ui:search-container-row>
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.account.resource.v1_0.test;
@@ -23,50 +14,53 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
 import com.liferay.headless.commerce.admin.account.client.dto.v1_0.AccountMember;
+import com.liferay.headless.commerce.admin.account.client.dto.v1_0.User;
 import com.liferay.headless.commerce.admin.account.client.http.HttpInvoker;
 import com.liferay.headless.commerce.admin.account.client.pagination.Page;
 import com.liferay.headless.commerce.admin.account.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.account.client.resource.v1_0.AccountMemberResource;
 import com.liferay.headless.commerce.admin.account.client.serdes.v1_0.AccountMemberSerDes;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import jakarta.annotation.Generated;
 
-import java.text.DateFormat;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
+import java.lang.reflect.Method;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtilsBean;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -90,7 +84,7 @@ public abstract class BaseAccountMemberResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -104,10 +98,15 @@ public abstract class BaseAccountMemberResourceTestCase {
 
 		_accountMemberResource.setContextCompany(testCompany);
 
-		AccountMemberResource.Builder builder = AccountMemberResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		accountMemberResource = builder.authentication(
-			"test@liferay.com", "test"
+		accountMemberResource = AccountMemberResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -121,7 +120,32 @@ public abstract class BaseAccountMemberResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		AccountMember accountMember1 = randomAccountMember();
+
+		String json = objectMapper.writeValueAsString(accountMember1);
+
+		AccountMember accountMember2 = AccountMemberSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(accountMember1, accountMember2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		AccountMember accountMember = randomAccountMember();
+
+		String json1 = objectMapper.writeValueAsString(accountMember);
+		String json2 = AccountMemberSerDes.toJSON(accountMember);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -136,40 +160,6 @@ public abstract class BaseAccountMemberResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		AccountMember accountMember1 = randomAccountMember();
-
-		String json = objectMapper.writeValueAsString(accountMember1);
-
-		AccountMember accountMember2 = AccountMemberSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(accountMember1, accountMember2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		AccountMember accountMember = randomAccountMember();
-
-		String json1 = objectMapper.writeValueAsString(accountMember);
-		String json2 = AccountMemberSerDes.toJSON(accountMember);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -197,6 +187,39 @@ public abstract class BaseAccountMemberResourceTestCase {
 	}
 
 	@Test
+	public void testDeleteAccountByExternalReferenceCodeAccountMember()
+		throws Exception {
+
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testDeleteAccountIdAccountMember() throws Exception {
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testGetAccountByExternalReferenceCodeAccountMember()
+		throws Exception {
+
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testGraphQLGetAccountByExternalReferenceCodeAccountMember()
+		throws Exception {
+
+		Assert.assertTrue(true);
+	}
+
+	@Test
+	public void testGraphQLGetAccountByExternalReferenceCodeAccountMemberNotFound()
+		throws Exception {
+
+		Assert.assertTrue(true);
+	}
+
+	@Test
 	public void testGetAccountByExternalReferenceCodeAccountMembersPage()
 		throws Exception {
 
@@ -210,7 +233,7 @@ public abstract class BaseAccountMemberResourceTestCase {
 				getAccountByExternalReferenceCodeAccountMembersPage(
 					externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantExternalReferenceCode != null) {
 			AccountMember irrelevantAccountMember =
@@ -221,14 +244,17 @@ public abstract class BaseAccountMemberResourceTestCase {
 			page =
 				accountMemberResource.
 					getAccountByExternalReferenceCodeAccountMembersPage(
-						irrelevantExternalReferenceCode, Pagination.of(1, 2));
+						irrelevantExternalReferenceCode,
+						Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantAccountMember),
-				(List<AccountMember>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantAccountMember, (List<AccountMember>)page.getItems());
+			assertValid(
+				page,
+				testGetAccountByExternalReferenceCodeAccountMembersPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		AccountMember accountMember1 =
@@ -244,12 +270,24 @@ public abstract class BaseAccountMemberResourceTestCase {
 				getAccountByExternalReferenceCodeAccountMembersPage(
 					externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(accountMember1, accountMember2),
-			(List<AccountMember>)page.getItems());
-		assertValid(page);
+		assertContains(accountMember1, (List<AccountMember>)page.getItems());
+		assertContains(accountMember2, (List<AccountMember>)page.getItems());
+		assertValid(
+			page,
+			testGetAccountByExternalReferenceCodeAccountMembersPage_getExpectedActions(
+				externalReferenceCode));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetAccountByExternalReferenceCodeAccountMembersPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -258,6 +296,14 @@ public abstract class BaseAccountMemberResourceTestCase {
 
 		String externalReferenceCode =
 			testGetAccountByExternalReferenceCodeAccountMembersPage_getExternalReferenceCode();
+
+		Page<AccountMember> accountMembersPage =
+			accountMemberResource.
+				getAccountByExternalReferenceCodeAccountMembersPage(
+					externalReferenceCode, null);
+
+		int totalCount = GetterUtil.getInteger(
+			accountMembersPage.getTotalCount());
 
 		AccountMember accountMember1 =
 			testGetAccountByExternalReferenceCodeAccountMembersPage_addAccountMember(
@@ -271,38 +317,87 @@ public abstract class BaseAccountMemberResourceTestCase {
 			testGetAccountByExternalReferenceCodeAccountMembersPage_addAccountMember(
 				externalReferenceCode, randomAccountMember());
 
-		Page<AccountMember> page1 =
-			accountMemberResource.
-				getAccountByExternalReferenceCodeAccountMembersPage(
-					externalReferenceCode, Pagination.of(1, 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountMember> accountMembers1 =
-			(List<AccountMember>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountMembers1.toString(), 2, accountMembers1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountMember> page1 =
+				accountMemberResource.
+					getAccountByExternalReferenceCodeAccountMembersPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountMember> page2 =
-			accountMemberResource.
-				getAccountByExternalReferenceCodeAccountMembersPage(
-					externalReferenceCode, Pagination.of(2, 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(
+				accountMember1, (List<AccountMember>)page1.getItems());
 
-		List<AccountMember> accountMembers2 =
-			(List<AccountMember>)page2.getItems();
+			Page<AccountMember> page2 =
+				accountMemberResource.
+					getAccountByExternalReferenceCodeAccountMembersPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountMembers2.toString(), 1, accountMembers2.size());
+			assertContains(
+				accountMember2, (List<AccountMember>)page2.getItems());
 
-		Page<AccountMember> page3 =
-			accountMemberResource.
-				getAccountByExternalReferenceCodeAccountMembersPage(
-					externalReferenceCode, Pagination.of(1, 3));
+			Page<AccountMember> page3 =
+				accountMemberResource.
+					getAccountByExternalReferenceCodeAccountMembersPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(accountMember1, accountMember2, accountMember3),
-			(List<AccountMember>)page3.getItems());
+			assertContains(
+				accountMember3, (List<AccountMember>)page3.getItems());
+		}
+		else {
+			Page<AccountMember> page1 =
+				accountMemberResource.
+					getAccountByExternalReferenceCodeAccountMembersPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<AccountMember> accountMembers1 =
+				(List<AccountMember>)page1.getItems();
+
+			Assert.assertEquals(
+				accountMembers1.toString(), totalCount + 2,
+				accountMembers1.size());
+
+			Page<AccountMember> page2 =
+				accountMemberResource.
+					getAccountByExternalReferenceCodeAccountMembersPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountMember> accountMembers2 =
+				(List<AccountMember>)page2.getItems();
+
+			Assert.assertEquals(
+				accountMembers2.toString(), 1, accountMembers2.size());
+
+			Page<AccountMember> page3 =
+				accountMemberResource.
+					getAccountByExternalReferenceCodeAccountMembersPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountMember1, (List<AccountMember>)page3.getItems());
+			assertContains(
+				accountMember2, (List<AccountMember>)page3.getItems());
+			assertContains(
+				accountMember3, (List<AccountMember>)page3.getItems());
+		}
 	}
 
 	protected AccountMember
@@ -330,6 +425,210 @@ public abstract class BaseAccountMemberResourceTestCase {
 	}
 
 	@Test
+	public void testGetAccountIdAccountMember() throws Exception {
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testGraphQLGetAccountIdAccountMember() throws Exception {
+		Assert.assertTrue(true);
+	}
+
+	@Test
+	public void testGraphQLGetAccountIdAccountMemberNotFound()
+		throws Exception {
+
+		Assert.assertTrue(true);
+	}
+
+	@Test
+	public void testGetAccountIdAccountMembersPage() throws Exception {
+		Long id = testGetAccountIdAccountMembersPage_getId();
+		Long irrelevantId =
+			testGetAccountIdAccountMembersPage_getIrrelevantId();
+
+		Page<AccountMember> page =
+			accountMemberResource.getAccountIdAccountMembersPage(
+				id, Pagination.of(1, 10));
+
+		long totalCount = page.getTotalCount();
+
+		if (irrelevantId != null) {
+			AccountMember irrelevantAccountMember =
+				testGetAccountIdAccountMembersPage_addAccountMember(
+					irrelevantId, randomIrrelevantAccountMember());
+
+			page = accountMemberResource.getAccountIdAccountMembersPage(
+				irrelevantId, Pagination.of(1, (int)totalCount + 1));
+
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
+
+			assertContains(
+				irrelevantAccountMember, (List<AccountMember>)page.getItems());
+			assertValid(
+				page,
+				testGetAccountIdAccountMembersPage_getExpectedActions(
+					irrelevantId));
+		}
+
+		AccountMember accountMember1 =
+			testGetAccountIdAccountMembersPage_addAccountMember(
+				id, randomAccountMember());
+
+		AccountMember accountMember2 =
+			testGetAccountIdAccountMembersPage_addAccountMember(
+				id, randomAccountMember());
+
+		page = accountMemberResource.getAccountIdAccountMembersPage(
+			id, Pagination.of(1, 10));
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(accountMember1, (List<AccountMember>)page.getItems());
+		assertContains(accountMember2, (List<AccountMember>)page.getItems());
+		assertValid(
+			page, testGetAccountIdAccountMembersPage_getExpectedActions(id));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetAccountIdAccountMembersPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	@Test
+	public void testGetAccountIdAccountMembersPageWithPagination()
+		throws Exception {
+
+		Long id = testGetAccountIdAccountMembersPage_getId();
+
+		Page<AccountMember> accountMembersPage =
+			accountMemberResource.getAccountIdAccountMembersPage(id, null);
+
+		int totalCount = GetterUtil.getInteger(
+			accountMembersPage.getTotalCount());
+
+		AccountMember accountMember1 =
+			testGetAccountIdAccountMembersPage_addAccountMember(
+				id, randomAccountMember());
+
+		AccountMember accountMember2 =
+			testGetAccountIdAccountMembersPage_addAccountMember(
+				id, randomAccountMember());
+
+		AccountMember accountMember3 =
+			testGetAccountIdAccountMembersPage_addAccountMember(
+				id, randomAccountMember());
+
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
+
+		int pageSizeLimit = 500;
+
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountMember> page1 =
+				accountMemberResource.getAccountIdAccountMembersPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
+
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
+
+			assertContains(
+				accountMember1, (List<AccountMember>)page1.getItems());
+
+			Page<AccountMember> page2 =
+				accountMemberResource.getAccountIdAccountMembersPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
+
+			assertContains(
+				accountMember2, (List<AccountMember>)page2.getItems());
+
+			Page<AccountMember> page3 =
+				accountMemberResource.getAccountIdAccountMembersPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
+
+			assertContains(
+				accountMember3, (List<AccountMember>)page3.getItems());
+		}
+		else {
+			Page<AccountMember> page1 =
+				accountMemberResource.getAccountIdAccountMembersPage(
+					id, Pagination.of(1, totalCount + 2));
+
+			List<AccountMember> accountMembers1 =
+				(List<AccountMember>)page1.getItems();
+
+			Assert.assertEquals(
+				accountMembers1.toString(), totalCount + 2,
+				accountMembers1.size());
+
+			Page<AccountMember> page2 =
+				accountMemberResource.getAccountIdAccountMembersPage(
+					id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountMember> accountMembers2 =
+				(List<AccountMember>)page2.getItems();
+
+			Assert.assertEquals(
+				accountMembers2.toString(), 1, accountMembers2.size());
+
+			Page<AccountMember> page3 =
+				accountMemberResource.getAccountIdAccountMembersPage(
+					id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountMember1, (List<AccountMember>)page3.getItems());
+			assertContains(
+				accountMember2, (List<AccountMember>)page3.getItems());
+			assertContains(
+				accountMember3, (List<AccountMember>)page3.getItems());
+		}
+	}
+
+	protected AccountMember testGetAccountIdAccountMembersPage_addAccountMember(
+			Long id, AccountMember accountMember)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long testGetAccountIdAccountMembersPage_getId() throws Exception {
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long testGetAccountIdAccountMembersPage_getIrrelevantId()
+		throws Exception {
+
+		return null;
+	}
+
+	@Test
+	public void testPatchAccountByExternalReferenceCodeAccountMember()
+		throws Exception {
+
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testPatchAccountIdAccountMember() throws Exception {
+		Assert.assertTrue(false);
+	}
+
+	@Test
 	public void testPostAccountByExternalReferenceCodeAccountMember()
 		throws Exception {
 
@@ -353,156 +652,6 @@ public abstract class BaseAccountMemberResourceTestCase {
 	}
 
 	@Test
-	public void testDeleteAccountByExternalReferenceCodeAccountMember()
-		throws Exception {
-
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testGetAccountByExternalReferenceCodeAccountMember()
-		throws Exception {
-
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testGraphQLGetAccountByExternalReferenceCodeAccountMember()
-		throws Exception {
-
-		Assert.assertTrue(true);
-	}
-
-	@Test
-	public void testGraphQLGetAccountByExternalReferenceCodeAccountMemberNotFound()
-		throws Exception {
-
-		Assert.assertTrue(true);
-	}
-
-	@Test
-	public void testPatchAccountByExternalReferenceCodeAccountMember()
-		throws Exception {
-
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testGetAccountIdAccountMembersPage() throws Exception {
-		Long id = testGetAccountIdAccountMembersPage_getId();
-		Long irrelevantId =
-			testGetAccountIdAccountMembersPage_getIrrelevantId();
-
-		Page<AccountMember> page =
-			accountMemberResource.getAccountIdAccountMembersPage(
-				id, Pagination.of(1, 10));
-
-		Assert.assertEquals(0, page.getTotalCount());
-
-		if (irrelevantId != null) {
-			AccountMember irrelevantAccountMember =
-				testGetAccountIdAccountMembersPage_addAccountMember(
-					irrelevantId, randomIrrelevantAccountMember());
-
-			page = accountMemberResource.getAccountIdAccountMembersPage(
-				irrelevantId, Pagination.of(1, 2));
-
-			Assert.assertEquals(1, page.getTotalCount());
-
-			assertEquals(
-				Arrays.asList(irrelevantAccountMember),
-				(List<AccountMember>)page.getItems());
-			assertValid(page);
-		}
-
-		AccountMember accountMember1 =
-			testGetAccountIdAccountMembersPage_addAccountMember(
-				id, randomAccountMember());
-
-		AccountMember accountMember2 =
-			testGetAccountIdAccountMembersPage_addAccountMember(
-				id, randomAccountMember());
-
-		page = accountMemberResource.getAccountIdAccountMembersPage(
-			id, Pagination.of(1, 10));
-
-		Assert.assertEquals(2, page.getTotalCount());
-
-		assertEqualsIgnoringOrder(
-			Arrays.asList(accountMember1, accountMember2),
-			(List<AccountMember>)page.getItems());
-		assertValid(page);
-	}
-
-	@Test
-	public void testGetAccountIdAccountMembersPageWithPagination()
-		throws Exception {
-
-		Long id = testGetAccountIdAccountMembersPage_getId();
-
-		AccountMember accountMember1 =
-			testGetAccountIdAccountMembersPage_addAccountMember(
-				id, randomAccountMember());
-
-		AccountMember accountMember2 =
-			testGetAccountIdAccountMembersPage_addAccountMember(
-				id, randomAccountMember());
-
-		AccountMember accountMember3 =
-			testGetAccountIdAccountMembersPage_addAccountMember(
-				id, randomAccountMember());
-
-		Page<AccountMember> page1 =
-			accountMemberResource.getAccountIdAccountMembersPage(
-				id, Pagination.of(1, 2));
-
-		List<AccountMember> accountMembers1 =
-			(List<AccountMember>)page1.getItems();
-
-		Assert.assertEquals(
-			accountMembers1.toString(), 2, accountMembers1.size());
-
-		Page<AccountMember> page2 =
-			accountMemberResource.getAccountIdAccountMembersPage(
-				id, Pagination.of(2, 2));
-
-		Assert.assertEquals(3, page2.getTotalCount());
-
-		List<AccountMember> accountMembers2 =
-			(List<AccountMember>)page2.getItems();
-
-		Assert.assertEquals(
-			accountMembers2.toString(), 1, accountMembers2.size());
-
-		Page<AccountMember> page3 =
-			accountMemberResource.getAccountIdAccountMembersPage(
-				id, Pagination.of(1, 3));
-
-		assertEqualsIgnoringOrder(
-			Arrays.asList(accountMember1, accountMember2, accountMember3),
-			(List<AccountMember>)page3.getItems());
-	}
-
-	protected AccountMember testGetAccountIdAccountMembersPage_addAccountMember(
-			Long id, AccountMember accountMember)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Long testGetAccountIdAccountMembersPage_getId() throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Long testGetAccountIdAccountMembersPage_getIrrelevantId()
-		throws Exception {
-
-		return null;
-	}
-
-	@Test
 	public void testPostAccountIdAccountMember() throws Exception {
 		AccountMember randomAccountMember = randomAccountMember();
 
@@ -520,33 +669,6 @@ public abstract class BaseAccountMemberResourceTestCase {
 
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testDeleteAccountIdAccountMember() throws Exception {
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testGetAccountIdAccountMember() throws Exception {
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testGraphQLGetAccountIdAccountMember() throws Exception {
-		Assert.assertTrue(true);
-	}
-
-	@Test
-	public void testGraphQLGetAccountIdAccountMemberNotFound()
-		throws Exception {
-
-		Assert.assertTrue(true);
-	}
-
-	@Test
-	public void testPatchAccountIdAccountMember() throws Exception {
-		Assert.assertTrue(false);
 	}
 
 	protected void assertContains(
@@ -694,6 +816,13 @@ public abstract class BaseAccountMemberResourceTestCase {
 	}
 
 	protected void assertValid(Page<AccountMember> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<AccountMember> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<AccountMember> accountMembers = page.getItems();
@@ -708,6 +837,25 @@ public abstract class BaseAccountMemberResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -894,14 +1042,20 @@ public abstract class BaseAccountMemberResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
+
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -918,6 +1072,10 @@ public abstract class BaseAccountMemberResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -927,18 +1085,18 @@ public abstract class BaseAccountMemberResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -965,34 +1123,185 @@ public abstract class BaseAccountMemberResourceTestCase {
 		}
 
 		if (entityFieldName.equals("email")) {
-			sb.append("'");
-			sb.append(String.valueOf(accountMember.getEmail()));
-			sb.append("'");
+			Object object = accountMember.getEmail();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("externalReferenceCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(accountMember.getExternalReferenceCode()));
-			sb.append("'");
+			Object object = accountMember.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("name")) {
-			sb.append("'");
-			sb.append(String.valueOf(accountMember.getName()));
-			sb.append("'");
+			Object object = accountMember.getName();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("userExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(accountMember.getUserExternalReferenceCode()));
-			sb.append("'");
+			Object object = accountMember.getUserExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1016,7 +1325,8 @@ public abstract class BaseAccountMemberResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1071,9 +1381,131 @@ public abstract class BaseAccountMemberResourceTestCase {
 	}
 
 	protected AccountMemberResource accountMemberResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = source.getClass();
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					_getAllDeclaredFields(sourceClass)) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
+
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1149,19 +1581,9 @@ public abstract class BaseAccountMemberResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseAccountMemberResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
+	private static Format _format;
 
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
-	private static DateFormat _dateFormat;
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.account.resource.v1_0.

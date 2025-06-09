@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.planner.model.impl;
 
 import com.liferay.batch.planner.model.BatchPlannerPlan;
 import com.liferay.batch.planner.model.BatchPlannerPlanModel;
-import com.liferay.batch.planner.model.BatchPlannerPlanSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -36,18 +26,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -82,8 +69,9 @@ public class BatchPlannerPlanModelImpl
 		{"modifiedDate", Types.TIMESTAMP}, {"active_", Types.BOOLEAN},
 		{"export", Types.BOOLEAN}, {"externalType", Types.VARCHAR},
 		{"externalURL", Types.VARCHAR}, {"internalClassName", Types.VARCHAR},
-		{"name", Types.VARCHAR}, {"taskItemDelegateName", Types.VARCHAR},
-		{"template", Types.BOOLEAN}
+		{"name", Types.VARCHAR}, {"size_", Types.INTEGER},
+		{"taskItemDelegateName", Types.VARCHAR}, {"total", Types.INTEGER},
+		{"template", Types.BOOLEAN}, {"status", Types.INTEGER}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -103,12 +91,15 @@ public class BatchPlannerPlanModelImpl
 		TABLE_COLUMNS_MAP.put("externalURL", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("internalClassName", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("size_", Types.INTEGER);
 		TABLE_COLUMNS_MAP.put("taskItemDelegateName", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("total", Types.INTEGER);
 		TABLE_COLUMNS_MAP.put("template", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("status", Types.INTEGER);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table BatchPlannerPlan (mvccVersion LONG default 0 not null,batchPlannerPlanId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,active_ BOOLEAN,export BOOLEAN,externalType VARCHAR(75) null,externalURL STRING null,internalClassName VARCHAR(75) null,name VARCHAR(75) null,taskItemDelegateName VARCHAR(75) null,template BOOLEAN)";
+		"create table BatchPlannerPlan (mvccVersion LONG default 0 not null,batchPlannerPlanId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,active_ BOOLEAN,export BOOLEAN,externalType VARCHAR(75) null,externalURL STRING null,internalClassName VARCHAR(75) null,name VARCHAR(75) null,size_ INTEGER,taskItemDelegateName VARCHAR(75) null,total INTEGER,template BOOLEAN,status INTEGER)";
 
 	public static final String TABLE_SQL_DROP = "drop table BatchPlannerPlan";
 
@@ -117,6 +108,9 @@ public class BatchPlannerPlanModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY BatchPlannerPlan.modifiedDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY batchPlannerPlan.modifiedDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -173,65 +167,6 @@ public class BatchPlannerPlanModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static BatchPlannerPlan toModel(BatchPlannerPlanSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		BatchPlannerPlan model = new BatchPlannerPlanImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setBatchPlannerPlanId(soapModel.getBatchPlannerPlanId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setActive(soapModel.isActive());
-		model.setExport(soapModel.isExport());
-		model.setExternalType(soapModel.getExternalType());
-		model.setExternalURL(soapModel.getExternalURL());
-		model.setInternalClassName(soapModel.getInternalClassName());
-		model.setName(soapModel.getName());
-		model.setTaskItemDelegateName(soapModel.getTaskItemDelegateName());
-		model.setTemplate(soapModel.isTemplate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<BatchPlannerPlan> toModels(
-		BatchPlannerPlanSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<BatchPlannerPlan> models = new ArrayList<BatchPlannerPlan>(
-			soapModels.length);
-
-		for (BatchPlannerPlanSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public BatchPlannerPlanModelImpl() {
@@ -310,140 +245,151 @@ public class BatchPlannerPlanModelImpl
 	public Map<String, Function<BatchPlannerPlan, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<BatchPlannerPlan, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, BatchPlannerPlan>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			BatchPlannerPlan.class.getClassLoader(), BatchPlannerPlan.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<BatchPlannerPlan, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<BatchPlannerPlan> constructor =
-				(Constructor<BatchPlannerPlan>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<BatchPlannerPlan, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<BatchPlannerPlan, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", BatchPlannerPlan::getMvccVersion);
+			attributeGetterFunctions.put(
+				"batchPlannerPlanId", BatchPlannerPlan::getBatchPlannerPlanId);
+			attributeGetterFunctions.put(
+				"companyId", BatchPlannerPlan::getCompanyId);
+			attributeGetterFunctions.put("userId", BatchPlannerPlan::getUserId);
+			attributeGetterFunctions.put(
+				"userName", BatchPlannerPlan::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", BatchPlannerPlan::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", BatchPlannerPlan::getModifiedDate);
+			attributeGetterFunctions.put("active", BatchPlannerPlan::getActive);
+			attributeGetterFunctions.put("export", BatchPlannerPlan::getExport);
+			attributeGetterFunctions.put(
+				"externalType", BatchPlannerPlan::getExternalType);
+			attributeGetterFunctions.put(
+				"externalURL", BatchPlannerPlan::getExternalURL);
+			attributeGetterFunctions.put(
+				"internalClassName", BatchPlannerPlan::getInternalClassName);
+			attributeGetterFunctions.put("name", BatchPlannerPlan::getName);
+			attributeGetterFunctions.put("size", BatchPlannerPlan::getSize);
+			attributeGetterFunctions.put(
+				"taskItemDelegateName",
+				BatchPlannerPlan::getTaskItemDelegateName);
+			attributeGetterFunctions.put("total", BatchPlannerPlan::getTotal);
+			attributeGetterFunctions.put(
+				"template", BatchPlannerPlan::getTemplate);
+			attributeGetterFunctions.put("status", BatchPlannerPlan::getStatus);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<BatchPlannerPlan, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<BatchPlannerPlan, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<BatchPlannerPlan, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<BatchPlannerPlan, Object>>();
-		Map<String, BiConsumer<BatchPlannerPlan, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<BatchPlannerPlan, ?>>();
+		private static final Map<String, BiConsumer<BatchPlannerPlan, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", BatchPlannerPlan::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<BatchPlannerPlan, Long>)
-				BatchPlannerPlan::setMvccVersion);
-		attributeGetterFunctions.put(
-			"batchPlannerPlanId", BatchPlannerPlan::getBatchPlannerPlanId);
-		attributeSetterBiConsumers.put(
-			"batchPlannerPlanId",
-			(BiConsumer<BatchPlannerPlan, Long>)
-				BatchPlannerPlan::setBatchPlannerPlanId);
-		attributeGetterFunctions.put(
-			"companyId", BatchPlannerPlan::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<BatchPlannerPlan, Long>)BatchPlannerPlan::setCompanyId);
-		attributeGetterFunctions.put("userId", BatchPlannerPlan::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<BatchPlannerPlan, Long>)BatchPlannerPlan::setUserId);
-		attributeGetterFunctions.put("userName", BatchPlannerPlan::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<BatchPlannerPlan, String>)
-				BatchPlannerPlan::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", BatchPlannerPlan::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<BatchPlannerPlan, Date>)
-				BatchPlannerPlan::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", BatchPlannerPlan::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<BatchPlannerPlan, Date>)
-				BatchPlannerPlan::setModifiedDate);
-		attributeGetterFunctions.put("active", BatchPlannerPlan::getActive);
-		attributeSetterBiConsumers.put(
-			"active",
-			(BiConsumer<BatchPlannerPlan, Boolean>)BatchPlannerPlan::setActive);
-		attributeGetterFunctions.put("export", BatchPlannerPlan::getExport);
-		attributeSetterBiConsumers.put(
-			"export",
-			(BiConsumer<BatchPlannerPlan, Boolean>)BatchPlannerPlan::setExport);
-		attributeGetterFunctions.put(
-			"externalType", BatchPlannerPlan::getExternalType);
-		attributeSetterBiConsumers.put(
-			"externalType",
-			(BiConsumer<BatchPlannerPlan, String>)
-				BatchPlannerPlan::setExternalType);
-		attributeGetterFunctions.put(
-			"externalURL", BatchPlannerPlan::getExternalURL);
-		attributeSetterBiConsumers.put(
-			"externalURL",
-			(BiConsumer<BatchPlannerPlan, String>)
-				BatchPlannerPlan::setExternalURL);
-		attributeGetterFunctions.put(
-			"internalClassName", BatchPlannerPlan::getInternalClassName);
-		attributeSetterBiConsumers.put(
-			"internalClassName",
-			(BiConsumer<BatchPlannerPlan, String>)
-				BatchPlannerPlan::setInternalClassName);
-		attributeGetterFunctions.put("name", BatchPlannerPlan::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<BatchPlannerPlan, String>)BatchPlannerPlan::setName);
-		attributeGetterFunctions.put(
-			"taskItemDelegateName", BatchPlannerPlan::getTaskItemDelegateName);
-		attributeSetterBiConsumers.put(
-			"taskItemDelegateName",
-			(BiConsumer<BatchPlannerPlan, String>)
-				BatchPlannerPlan::setTaskItemDelegateName);
-		attributeGetterFunctions.put("template", BatchPlannerPlan::getTemplate);
-		attributeSetterBiConsumers.put(
-			"template",
-			(BiConsumer<BatchPlannerPlan, Boolean>)
-				BatchPlannerPlan::setTemplate);
+		static {
+			Map<String, BiConsumer<BatchPlannerPlan, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<BatchPlannerPlan, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<BatchPlannerPlan, Long>)
+					BatchPlannerPlan::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"batchPlannerPlanId",
+				(BiConsumer<BatchPlannerPlan, Long>)
+					BatchPlannerPlan::setBatchPlannerPlanId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<BatchPlannerPlan, Long>)
+					BatchPlannerPlan::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<BatchPlannerPlan, Long>)
+					BatchPlannerPlan::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<BatchPlannerPlan, String>)
+					BatchPlannerPlan::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<BatchPlannerPlan, Date>)
+					BatchPlannerPlan::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<BatchPlannerPlan, Date>)
+					BatchPlannerPlan::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"active",
+				(BiConsumer<BatchPlannerPlan, Boolean>)
+					BatchPlannerPlan::setActive);
+			attributeSetterBiConsumers.put(
+				"export",
+				(BiConsumer<BatchPlannerPlan, Boolean>)
+					BatchPlannerPlan::setExport);
+			attributeSetterBiConsumers.put(
+				"externalType",
+				(BiConsumer<BatchPlannerPlan, String>)
+					BatchPlannerPlan::setExternalType);
+			attributeSetterBiConsumers.put(
+				"externalURL",
+				(BiConsumer<BatchPlannerPlan, String>)
+					BatchPlannerPlan::setExternalURL);
+			attributeSetterBiConsumers.put(
+				"internalClassName",
+				(BiConsumer<BatchPlannerPlan, String>)
+					BatchPlannerPlan::setInternalClassName);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<BatchPlannerPlan, String>)
+					BatchPlannerPlan::setName);
+			attributeSetterBiConsumers.put(
+				"size",
+				(BiConsumer<BatchPlannerPlan, Integer>)
+					BatchPlannerPlan::setSize);
+			attributeSetterBiConsumers.put(
+				"taskItemDelegateName",
+				(BiConsumer<BatchPlannerPlan, String>)
+					BatchPlannerPlan::setTaskItemDelegateName);
+			attributeSetterBiConsumers.put(
+				"total",
+				(BiConsumer<BatchPlannerPlan, Integer>)
+					BatchPlannerPlan::setTotal);
+			attributeSetterBiConsumers.put(
+				"template",
+				(BiConsumer<BatchPlannerPlan, Boolean>)
+					BatchPlannerPlan::setTemplate);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<BatchPlannerPlan, Integer>)
+					BatchPlannerPlan::setStatus);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -740,6 +686,21 @@ public class BatchPlannerPlanModelImpl
 
 	@JSON
 	@Override
+	public int getSize() {
+		return _size;
+	}
+
+	@Override
+	public void setSize(int size) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_size = size;
+	}
+
+	@JSON
+	@Override
 	public String getTaskItemDelegateName() {
 		if (_taskItemDelegateName == null) {
 			return "";
@@ -756,6 +717,21 @@ public class BatchPlannerPlanModelImpl
 		}
 
 		_taskItemDelegateName = taskItemDelegateName;
+	}
+
+	@JSON
+	@Override
+	public int getTotal() {
+		return _total;
+	}
+
+	@Override
+	public void setTotal(int total) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_total = total;
 	}
 
 	@JSON
@@ -787,6 +763,21 @@ public class BatchPlannerPlanModelImpl
 	public boolean getOriginalTemplate() {
 		return GetterUtil.getBoolean(
 			this.<Boolean>getColumnOriginalValue("template"));
+	}
+
+	@JSON
+	@Override
+	public int getStatus() {
+		return _status;
+	}
+
+	@Override
+	public void setStatus(int status) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_status = status;
 	}
 
 	public long getColumnBitmask() {
@@ -858,8 +849,11 @@ public class BatchPlannerPlanModelImpl
 		batchPlannerPlanImpl.setExternalURL(getExternalURL());
 		batchPlannerPlanImpl.setInternalClassName(getInternalClassName());
 		batchPlannerPlanImpl.setName(getName());
+		batchPlannerPlanImpl.setSize(getSize());
 		batchPlannerPlanImpl.setTaskItemDelegateName(getTaskItemDelegateName());
+		batchPlannerPlanImpl.setTotal(getTotal());
 		batchPlannerPlanImpl.setTemplate(isTemplate());
+		batchPlannerPlanImpl.setStatus(getStatus());
 
 		batchPlannerPlanImpl.resetOriginalValues();
 
@@ -896,10 +890,16 @@ public class BatchPlannerPlanModelImpl
 			this.<String>getColumnOriginalValue("internalClassName"));
 		batchPlannerPlanImpl.setName(
 			this.<String>getColumnOriginalValue("name"));
+		batchPlannerPlanImpl.setSize(
+			this.<Integer>getColumnOriginalValue("size_"));
 		batchPlannerPlanImpl.setTaskItemDelegateName(
 			this.<String>getColumnOriginalValue("taskItemDelegateName"));
+		batchPlannerPlanImpl.setTotal(
+			this.<Integer>getColumnOriginalValue("total"));
 		batchPlannerPlanImpl.setTemplate(
 			this.<Boolean>getColumnOriginalValue("template"));
+		batchPlannerPlanImpl.setStatus(
+			this.<Integer>getColumnOriginalValue("status"));
 
 		return batchPlannerPlanImpl;
 	}
@@ -1049,6 +1049,8 @@ public class BatchPlannerPlanModelImpl
 			batchPlannerPlanCacheModel.name = null;
 		}
 
+		batchPlannerPlanCacheModel.size = getSize();
+
 		batchPlannerPlanCacheModel.taskItemDelegateName =
 			getTaskItemDelegateName();
 
@@ -1061,7 +1063,11 @@ public class BatchPlannerPlanModelImpl
 			batchPlannerPlanCacheModel.taskItemDelegateName = null;
 		}
 
+		batchPlannerPlanCacheModel.total = getTotal();
+
 		batchPlannerPlanCacheModel.template = isTemplate();
+
+		batchPlannerPlanCacheModel.status = getStatus();
 
 		return batchPlannerPlanCacheModel;
 	}
@@ -1116,41 +1122,12 @@ public class BatchPlannerPlanModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<BatchPlannerPlan, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<BatchPlannerPlan, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<BatchPlannerPlan, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((BatchPlannerPlan)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, BatchPlannerPlan>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					BatchPlannerPlan.class, ModelWrapper.class);
 
 	}
 
@@ -1168,14 +1145,18 @@ public class BatchPlannerPlanModelImpl
 	private String _externalURL;
 	private String _internalClassName;
 	private String _name;
+	private int _size;
 	private String _taskItemDelegateName;
+	private int _total;
 	private boolean _template;
+	private int _status;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<BatchPlannerPlan, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1213,9 +1194,12 @@ public class BatchPlannerPlanModelImpl
 		_columnOriginalValues.put("externalURL", _externalURL);
 		_columnOriginalValues.put("internalClassName", _internalClassName);
 		_columnOriginalValues.put("name", _name);
+		_columnOriginalValues.put("size_", _size);
 		_columnOriginalValues.put(
 			"taskItemDelegateName", _taskItemDelegateName);
+		_columnOriginalValues.put("total", _total);
 		_columnOriginalValues.put("template", _template);
+		_columnOriginalValues.put("status", _status);
 	}
 
 	private static final Map<String, String> _attributeNames;
@@ -1224,6 +1208,7 @@ public class BatchPlannerPlanModelImpl
 		Map<String, String> attributeNames = new HashMap<>();
 
 		attributeNames.put("active_", "active");
+		attributeNames.put("size_", "size");
 
 		_attributeNames = Collections.unmodifiableMap(attributeNames);
 	}
@@ -1265,9 +1250,15 @@ public class BatchPlannerPlanModelImpl
 
 		columnBitmasks.put("name", 4096L);
 
-		columnBitmasks.put("taskItemDelegateName", 8192L);
+		columnBitmasks.put("size_", 8192L);
 
-		columnBitmasks.put("template", 16384L);
+		columnBitmasks.put("taskItemDelegateName", 16384L);
+
+		columnBitmasks.put("total", 32768L);
+
+		columnBitmasks.put("template", 65536L);
+
+		columnBitmasks.put("status", 131072L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

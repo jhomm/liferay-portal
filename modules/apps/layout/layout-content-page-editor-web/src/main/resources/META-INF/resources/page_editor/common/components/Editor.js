@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {EventHandler} from 'frontend-js-web';
@@ -23,6 +14,7 @@ export default function Editor({
 	configurationName,
 	id,
 	initialValue,
+	label,
 	onChange,
 	placeholder,
 }) {
@@ -73,7 +65,7 @@ export default function Editor({
 			...editorConfig,
 			enterMode: 1,
 			startupFocus: autoFocus,
-			title: false,
+			title: label,
 		});
 
 		let ready = false;
@@ -82,6 +74,8 @@ export default function Editor({
 			.get('nativeEditor')
 			.once('instanceReady', () => {
 				ready = true;
+
+				wrapperRef.current.removeAttribute('title');
 
 				setEditor(newEditor);
 			});
@@ -106,24 +100,19 @@ export default function Editor({
 
 			}
 		};
-	}, [autoFocus, editorConfig]);
+	}, [autoFocus, editorConfig, label]);
 
 	return (
-		<div
-			className="alloy-editor-container"
-			id={`${config.portletNamespace}${id}`}
-		>
+		<div className="alloy-editor-container">
 			<div
-				className="alloy-editor form-control form-control-sm page-editor__editor"
+				className="alloy-editor form-control form-control-sm page-editor__editor page-editor__editor-placeholder"
 				contentEditable={false}
 				data-placeholder={placeholder}
 				data-required={false}
-				id={`${config.portletNamespace}${id}`}
+				id={id}
 				name={id}
 				ref={wrapperRef}
 			/>
-
-			<div className="alloy-editor-placeholder">{placeholder}</div>
 		</div>
 	);
 }

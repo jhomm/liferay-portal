@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.workflow;
 
-import com.liferay.portal.kernel.messaging.proxy.MessagingProxy;
-import com.liferay.portal.kernel.messaging.proxy.ProxyMode;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.workflow.search.WorkflowModelSearchResult;
@@ -34,7 +24,6 @@ import org.osgi.annotation.versioning.ProviderType;
  * @author Brian Wing Shun Chan
  * @author Marcellus Tavares
  */
-@MessagingProxy(mode = ProxyMode.SYNC)
 @ProviderType
 public interface WorkflowTaskManager {
 
@@ -48,20 +37,20 @@ public interface WorkflowTaskManager {
 			long companyId, long userId, long workflowTaskId,
 			long assigneeUserId, String comment, Date dueDate,
 			Map<String, Serializable> workflowContext)
-		throws WorkflowException;
+		throws PortalException;
 
 	public WorkflowTask completeWorkflowTask(
 			long companyId, long userId, long workflowTaskId,
 			String transitionName, String comment,
 			Map<String, Serializable> workflowContext)
-		throws WorkflowException;
+		throws PortalException;
 
 	public default WorkflowTask completeWorkflowTask(
 			long companyId, long userId, long workflowTaskId,
 			String transitionName, String comment,
 			Map<String, Serializable> workflowContext,
 			boolean waitForCompletion)
-		throws WorkflowException {
+		throws PortalException {
 
 		if (waitForCompletion) {
 			throw new UnsupportedOperationException();
@@ -72,21 +61,29 @@ public interface WorkflowTaskManager {
 			workflowContext);
 	}
 
-	public WorkflowTask fetchWorkflowTask(long companyId, long workflowTaskId)
+	public WorkflowTask fetchWorkflowTask(long workflowTaskId)
 		throws WorkflowException;
 
-	public default List<User> getAssignableUsers(
-			long companyId, long workflowTaskId)
+	public default List<User> getAssignableUsers(long workflowTaskId)
 		throws WorkflowException {
 
 		throw new UnsupportedOperationException();
 	}
 
-	public List<String> getNextTransitionNames(
-			long companyId, long userId, long workflowTaskId)
+	public List<String> getNextTransitionNames(long userId, long workflowTaskId)
 		throws WorkflowException;
 
-	public WorkflowTask getWorkflowTask(long companyId, long workflowTaskId)
+	public List<WorkflowTransition> getNextWorkflowTransitions(
+			long workflowTaskId)
+		throws WorkflowException;
+
+	public default List<User> getNotifiableUsers(long workflowTaskId)
+		throws WorkflowException {
+
+		throw new UnsupportedOperationException();
+	}
+
+	public WorkflowTask getWorkflowTask(long workflowTaskId)
 		throws WorkflowException;
 
 	public int getWorkflowTaskCount(long companyId, Boolean completed)
@@ -149,8 +146,18 @@ public interface WorkflowTaskManager {
 			OrderByComparator<WorkflowTask> orderByComparator)
 		throws WorkflowException;
 
-	public boolean hasAssignableUsers(long companyId, long workflowTaskId)
+	public List<WorkflowTransition> getWorkflowTaskWorkflowTransitions(
+			long workflowTaskId)
 		throws WorkflowException;
+
+	public boolean hasAssignableUsers(long workflowTaskId)
+		throws WorkflowException;
+
+	public default boolean isNotifiableUser(long userId, long workflowTaskId)
+		throws PortalException {
+
+		throw new UnsupportedOperationException();
+	}
 
 	public default List<WorkflowTask> search(
 			long companyId, long userId, String assetTitle, String[] taskNames,

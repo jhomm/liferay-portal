@@ -1,110 +1,116 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {ReactPortal} from '@liferay/frontend-js-react-web';
+import {ClayIconSpriteContext} from '@clayui/icon';
+import {getControlPanelSpritemap} from '@liferay/frontend-icons-web';
 import PropTypes from 'prop-types';
-import React, {useEffect, useMemo} from 'react';
+import React from 'react';
 
-import {StyleBookContextProvider} from '../../plugins/page-design-options/hooks/useStyleBook';
+import ConvertToPageTemplateModal from '../../plugins/convert_to_page_template_modal/components/ConvertToPageTemplateModal';
+import {StyleBookContextProvider} from '../../plugins/page_design_options/hooks/useStyleBook';
 import {INIT} from '../actions/types';
-import {LAYOUT_TYPES} from '../config/constants/layoutTypes';
-import {config} from '../config/index';
+import {ClipboardContextProvider} from '../contexts/ClipboardContext';
 import {CollectionActiveItemContextProvider} from '../contexts/CollectionActiveItemContext';
 import {ControlsProvider} from '../contexts/ControlsContext';
 import {DisplayPagePreviewItemContextProvider} from '../contexts/DisplayPagePreviewItemContext';
 import {EditableProcessorContextProvider} from '../contexts/EditableProcessorContext';
+import {FormValidationContextProvider} from '../contexts/FormValidationContext';
 import {GlobalContextProvider} from '../contexts/GlobalContext';
-import {StoreContextProvider, useSelector} from '../contexts/StoreContext';
+import {
+	KeyboardMovementContextProvider,
+	useMovementSources,
+} from '../contexts/KeyboardMovementContext';
+import {LayoutKeyboardContextProvider} from '../contexts/LayoutKeyboardContext';
+import {LocalConfigContextProvider} from '../contexts/LocalConfigContext';
+import {PortletContentContextProvider} from '../contexts/PortletContentContext';
+import {ShortcutContextProvider} from '../contexts/ShortcutContext';
+import {StoreContextProvider} from '../contexts/StoreContext';
 import {WidgetsContextProvider} from '../contexts/WidgetsContext';
+import AppHooks from '../hooks/app_hooks/index';
 import {reducer} from '../reducers/index';
-import selectLanguageId from '../selectors/selectLanguageId';
-import selectSegmentsExperienceId from '../selectors/selectSegmentsExperienceId';
-import {DragAndDropContextProvider} from '../utils/drag-and-drop/useDragAndDrop';
+import {DragAndDropContextProvider} from '../utils/drag_and_drop/useDragAndDrop';
+import CommonStylesManager from './CommonStylesManager';
 import {DisplayPagePreviewItemSelector} from './DisplayPagePreviewItemSelector';
-import DragPreview from './DragPreview';
+import DragPreviewWrapper from './DragPreviewWrapper';
+import FocusManager from './FocusManager';
+import ItemConfigurationSidebar from './ItemConfigurationSidebar';
+import {LayoutBreadcrumbs} from './LayoutBreadcrumbs';
 import LayoutViewport from './LayoutViewport';
+import MultiSelectManager from './MultiSelectManager';
 import ShortcutManager from './ShortcutManager';
 import Sidebar from './Sidebar';
 import Toolbar from './Toolbar';
-import URLParser from './URLParser';
-
-const DEFAULT_SESSION_LENGTH = 60 * 1000;
+import ExperienceCustomizerModal from './cms/ExperienceCustomizerModal';
+import KeyboardMovementManager from './keyboard_movement/KeyboardMovementManager';
+import KeyboardMovementPreview from './keyboard_movement/KeyboardMovementPreview';
 
 export default function App({state}) {
-	const displayPagePreviewItemSelectorWrapper = useMemo(
-		() =>
-			config.layoutType === LAYOUT_TYPES.display &&
-			document.getElementById('infoItemSelectorContainer'),
-		[]
-	);
-
 	const initialState = reducer(state, {type: INIT});
 
-	useEffect(() => {
-		if (Liferay.Session && config.autoExtendSessionEnabled) {
-			const sessionLength =
-				Liferay.Session.get('sessionLength') || DEFAULT_SESSION_LENGTH;
-
-			const interval = setInterval(() => {
-				Liferay.Session.extend();
-			}, sessionLength / 2);
-
-			return () => clearInterval(interval);
-		}
-	}, []);
-
 	return (
-		<StoreContextProvider initialState={initialState} reducer={reducer}>
-			<BackURL />
-			<LanguageDirection />
-			<URLParser />
-			<ControlsProvider>
-				<CollectionActiveItemContextProvider>
-					<DragAndDropContextProvider>
-						<EditableProcessorContextProvider>
-							<DisplayPagePreviewItemContextProvider>
-								<WidgetsContextProvider>
-									{displayPagePreviewItemSelectorWrapper ? (
-										<ReactPortal
-											container={
-												displayPagePreviewItemSelectorWrapper
-											}
-										>
-											<DisplayPagePreviewItemSelector
-												dark
-											/>
-										</ReactPortal>
-									) : null}
+		<ClayIconSpriteContext.Provider value={getControlPanelSpritemap()}>
+			<StoreContextProvider initialState={initialState} reducer={reducer}>
+				<ConvertToPageTemplateModal />
 
-									<DragPreview />
-									<Toolbar />
-									<ShortcutManager />
+				<ExperienceCustomizerModal />
 
-									<GlobalContextProvider>
-										<LayoutViewport />
+				<ControlsProvider>
+					<CollectionActiveItemContextProvider>
+						<DragAndDropContextProvider>
+							<EditableProcessorContextProvider>
+								<DisplayPagePreviewItemContextProvider>
+									<WidgetsContextProvider>
+										<AppHooks />
 
-										<StyleBookContextProvider>
-											<Sidebar />
-										</StyleBookContextProvider>
-									</GlobalContextProvider>
-								</WidgetsContextProvider>
-							</DisplayPagePreviewItemContextProvider>
-						</EditableProcessorContextProvider>
-					</DragAndDropContextProvider>
-				</CollectionActiveItemContextProvider>
-			</ControlsProvider>
-		</StoreContextProvider>
+										<DisplayPagePreviewItemSelector dark />
+
+										<DragPreviewWrapper />
+
+										<FocusManager />
+
+										<FormValidationContextProvider>
+											<Toolbar />
+
+											<KeyboardMovementContextProvider>
+												<ClipboardContextProvider>
+													<ShortcutContextProvider>
+														<KeyboardManager />
+
+														<KeyboardMovementPreview />
+
+														<PortletContentContextProvider>
+															<LocalConfigContextProvider>
+																<GlobalContextProvider>
+																	<CommonStylesManager />
+
+																	<StyleBookContextProvider>
+																		<Sidebar />
+
+																		<LayoutKeyboardContextProvider>
+																			<LayoutViewport />
+																		</LayoutKeyboardContextProvider>
+
+																		<LayoutBreadcrumbs />
+
+																		<ItemConfigurationSidebar />
+																	</StyleBookContextProvider>
+																</GlobalContextProvider>
+															</LocalConfigContextProvider>
+														</PortletContentContextProvider>
+													</ShortcutContextProvider>
+												</ClipboardContextProvider>
+											</KeyboardMovementContextProvider>
+										</FormValidationContextProvider>
+									</WidgetsContextProvider>
+								</DisplayPagePreviewItemContextProvider>
+							</EditableProcessorContextProvider>
+						</DragAndDropContextProvider>
+					</CollectionActiveItemContextProvider>
+				</ControlsProvider>
+			</StoreContextProvider>
+		</ClayIconSpriteContext.Provider>
 	);
 }
 
@@ -112,57 +118,15 @@ App.propTypes = {
 	state: PropTypes.object.isRequired,
 };
 
-const BackURL = () => {
-	const [backLinkElement, backLinkURL] = useMemo(() => {
-		const backLinkElement = document.querySelector('.lfr-back-link');
+function KeyboardManager() {
+	const movementSources = useMovementSources();
 
-		try {
-			return [backLinkElement, new URL(backLinkElement?.href)];
-		}
-		catch (error) {
-			return [];
-		}
-	}, []);
-
-	const segmentsExperienceId = useSelector(selectSegmentsExperienceId);
-
-	useEffect(() => {
-		if (backLinkElement && backLinkURL && segmentsExperienceId) {
-			backLinkURL.searchParams.set('p_s_e_id', segmentsExperienceId);
-			backLinkElement.href = backLinkURL.toString();
-
-			const currentURL = new URL(window.location.href);
-
-			if (currentURL.searchParams.has('p_l_back_url')) {
-				currentURL.searchParams.set(
-					'p_l_back_url',
-					backLinkURL.toString()
-				);
-
-				window.history.replaceState(
-					null,
-					document.title,
-					currentURL.toString()
-				);
-			}
-		}
-	}, [backLinkElement, backLinkURL, segmentsExperienceId]);
-
-	return null;
-};
-
-const LanguageDirection = () => {
-	const languageId = useSelector(selectLanguageId);
-
-	useEffect(() => {
-		const currentLanguageDirection = Liferay.Language.direction[languageId];
-		const wrapper = document.getElementById('wrapper');
-
-		if (wrapper) {
-			wrapper.dir = currentLanguageDirection;
-			wrapper.lang = languageId;
-		}
-	}, [languageId]);
-
-	return null;
-};
+	return movementSources.length ? (
+		<KeyboardMovementManager />
+	) : (
+		<>
+			<ShortcutManager />
+			<MultiSelectManager />
+		</>
+	);
+}

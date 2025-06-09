@@ -1,25 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.portlet.action;
 
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
 import com.liferay.layout.content.page.editor.web.internal.util.MappingContentUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
@@ -30,8 +21,10 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,9 +34,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jorge Ferrer
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/get_mapping_fields"
 	},
 	service = MVCResourceCommand.class
@@ -63,14 +55,11 @@ public class GetMappingFieldsMVCResourceCommand extends BaseMVCResourceCommand {
 		long classNameId = ParamUtil.getLong(resourceRequest, "classNameId");
 
 		try {
-			JSONArray mappingFieldsJSONArray =
-				MappingContentUtil.getMappingFieldsJSONArray(
-					classTypeId, themeDisplay.getScopeGroupId(),
-					_infoItemServiceTracker, _portal.getClassName(classNameId),
-					themeDisplay.getLocale());
-
 			JSONPortletResponseUtil.writeJSON(
-				resourceRequest, resourceResponse, mappingFieldsJSONArray);
+				resourceRequest, resourceResponse,
+				_getMappingFieldsJSONArray(
+					classNameId, classTypeId, themeDisplay.getScopeGroupId(),
+					themeDisplay.getLocale()));
 		}
 		catch (Exception exception) {
 			_log.error("Unable to get mapping fields", exception);
@@ -79,17 +68,29 @@ public class GetMappingFieldsMVCResourceCommand extends BaseMVCResourceCommand {
 				resourceRequest, resourceResponse,
 				JSONUtil.put(
 					"error",
-					LanguageUtil.get(
+					_language.get(
 						themeDisplay.getRequest(),
 						"an-unexpected-error-occurred")));
 		}
+	}
+
+	private JSONArray _getMappingFieldsJSONArray(
+			long classNameId, String classTypeId, long groupId, Locale locale)
+		throws Exception {
+
+		return MappingContentUtil.getMappingFieldsJSONArray(
+			classTypeId, groupId, _infoItemServiceRegistry,
+			_portal.fetchClassName(classNameId), locale);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		GetMappingFieldsMVCResourceCommand.class);
 
 	@Reference
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

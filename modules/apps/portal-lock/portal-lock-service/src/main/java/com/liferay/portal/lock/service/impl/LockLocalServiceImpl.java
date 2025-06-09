@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.lock.service.impl;
@@ -20,7 +11,6 @@ import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.change.tracking.CTAware;
-import com.liferay.portal.kernel.dao.jdbc.aop.MasterDataSource;
 import com.liferay.portal.kernel.dao.orm.ORMException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.lock.LockListener;
@@ -37,10 +27,11 @@ import com.liferay.portal.lock.exception.NoSuchLockException;
 import com.liferay.portal.lock.model.Lock;
 import com.liferay.portal.lock.service.base.LockLocalServiceBaseImpl;
 
+import jakarta.persistence.PersistenceException;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Callable;
 
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.exception.LockAcquisitionException;
@@ -82,7 +73,7 @@ public class LockLocalServiceImpl extends LockLocalServiceBaseImpl {
 		Lock lock = lockPersistence.fetchByC_K(className, key);
 
 		if ((lock != null) && lock.isExpired()) {
-			expireLock(lock);
+			_expireLock(lock);
 
 			lock = null;
 		}
@@ -107,12 +98,22 @@ public class LockLocalServiceImpl extends LockLocalServiceBaseImpl {
 		Lock lock = lockPersistence.findByC_K(className, key);
 
 		if (lock.isExpired()) {
-			expireLock(lock);
+			_expireLock(lock);
 
 			throw new ExpiredLockException();
 		}
 
 		return lock;
+	}
+
+	@Override
+	public List<Lock> getLocks(long companyId, long userId, String className) {
+		return lockPersistence.findByC_U_C(companyId, userId, className);
+	}
+
+	@Override
+	public List<Lock> getLocks(long companyId, String className) {
+		return lockPersistence.findByC_C(companyId, className);
 	}
 
 	@Override
@@ -189,7 +190,7 @@ public class LockLocalServiceImpl extends LockLocalServiceBaseImpl {
 
 		if (lock != null) {
 			if (lock.isExpired()) {
-				expireLock(lock);
+				_expireLock(lock);
 
 				lock = null;
 			}
@@ -241,65 +242,60 @@ public class LockLocalServiceImpl extends LockLocalServiceBaseImpl {
 		return lock;
 	}
 
-	@MasterDataSource
 	@Override
 	public Lock lock(String className, String key, String owner) {
 		return lock(className, key, null, owner);
 	}
 
-	@MasterDataSource
 	@Override
 	public Lock lock(
-		final String className, final String key, final String expectedOwner,
-		final String updatedOwner) {
+		String className, String key, String expectedOwner,
+		String updatedOwner) {
 
 		while (true) {
 			try {
 				return TransactionInvokerUtil.invoke(
 					_transactionConfig,
-					new Callable<Lock>() {
+					() -> {
+						Lock lock = lockPersistence.fetchByC_K(
+							className, key, false);
 
-						@Override
-						public Lock call() {
-							Lock lock = lockPersistence.fetchByC_K(
-								className, key, false);
+						if (lock == null) {
+							long lockId = counterLocalService.increment();
 
-							if (lock == null) {
-								long lockId = counterLocalService.increment();
+							lock = lockPersistence.create(lockId);
 
-								lock = lockPersistence.create(lockId);
+							lock.setCreateDate(new Date());
+							lock.setClassName(className);
+							lock.setKey(key);
+							lock.setOwner(updatedOwner);
 
-								lock.setCreateDate(new Date());
-								lock.setClassName(className);
-								lock.setKey(key);
-								lock.setOwner(updatedOwner);
+							lock = lockPersistence.update(lock);
 
-								lock = lockPersistence.update(lock);
+							lock.setNew(true);
+						}
+						else if (Objects.equals(
+									lock.getOwner(), expectedOwner)) {
 
-								lock.setNew(true);
-							}
-							else if (Objects.equals(
-										lock.getOwner(), expectedOwner)) {
+							lock.setCreateDate(new Date());
+							lock.setClassName(className);
+							lock.setKey(key);
+							lock.setOwner(updatedOwner);
 
-								lock.setCreateDate(new Date());
-								lock.setClassName(className);
-								lock.setKey(key);
-								lock.setOwner(updatedOwner);
+							lock = lockPersistence.update(lock);
 
-								lock = lockPersistence.update(lock);
-
-								lock.setNew(true);
-							}
-
-							return lock;
+							lock.setNew(true);
 						}
 
+						return lock;
 					});
 			}
 			catch (Throwable throwable) {
 				Throwable causeThrowable = throwable;
 
-				if (throwable instanceof ORMException) {
+				if (throwable instanceof ORMException ||
+					throwable instanceof PersistenceException) {
+
 					causeThrowable = throwable.getCause();
 				}
 
@@ -376,33 +372,25 @@ public class LockLocalServiceImpl extends LockLocalServiceBaseImpl {
 		}
 	}
 
-	@MasterDataSource
 	@Override
-	public void unlock(
-		final String className, final String key, final String owner) {
-
+	public void unlock(String className, String key, String owner) {
 		while (true) {
 			try {
 				TransactionInvokerUtil.invoke(
 					_transactionConfig,
-					new Callable<Void>() {
+					() -> {
+						Lock lock = lockPersistence.fetchByC_K(
+							className, key, false);
 
-						@Override
-						public Void call() {
-							Lock lock = lockPersistence.fetchByC_K(
-								className, key, false);
-
-							if (lock == null) {
-								return null;
-							}
-
-							if (Objects.equals(lock.getOwner(), owner)) {
-								lockPersistence.remove(lock);
-							}
-
+						if (lock == null) {
 							return null;
 						}
 
+						if (Objects.equals(lock.getOwner(), owner)) {
+							lockPersistence.remove(lock);
+						}
+
+						return null;
 					});
 
 				return;
@@ -439,24 +427,38 @@ public class LockLocalServiceImpl extends LockLocalServiceBaseImpl {
 		}
 	}
 
-	protected void expireLock(Lock lock) {
-		LockListener lockListener = _getLockListener(lock.getClassName());
-
-		String key = lock.getKey();
-
-		if (lockListener != null) {
-			lockListener.onBeforeExpire(key);
-		}
-
+	private void _expireLock(Lock lock) {
 		try {
-			lockPersistence.remove(lock);
+			TransactionInvokerUtil.invoke(
+				_transactionConfig,
+				() -> {
+					LockListener lockListener = _getLockListener(
+						lock.getClassName());
 
-			lockPersistence.flush();
+					String key = lock.getKey();
+
+					if (lockListener != null) {
+						lockListener.onBeforeExpire(key);
+					}
+
+					try {
+						lockPersistence.remove(lock);
+
+						lockPersistence.flush();
+					}
+					finally {
+						if (lockListener != null) {
+							lockListener.onAfterExpire(key);
+						}
+					}
+
+					return null;
+				});
 		}
-		finally {
-			if (lockListener != null) {
-				lockListener.onAfterExpire(key);
-			}
+		catch (Throwable throwable) {
+			_log.error("Unable to expire lock", throwable);
+
+			ReflectionUtil.throwException(throwable);
 		}
 	}
 

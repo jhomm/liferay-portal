@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bookmarks.service.persistence;
@@ -17,6 +8,7 @@ package com.liferay.bookmarks.service.persistence;
 import com.liferay.bookmarks.exception.NoSuchEntryException;
 import com.liferay.bookmarks.model.BookmarksEntry;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -33,7 +25,7 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface BookmarksEntryPersistence
-	extends BasePersistence<BookmarksEntry> {
+	extends BasePersistence<BookmarksEntry>, CTPersistence<BookmarksEntry> {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -833,7 +825,7 @@ public interface BookmarksEntryPersistence
 	 * </p>
 	 *
 	 * @param groupId the group ID
-	 * @param folderId the folder ID
+	 * @param folderIds the folder IDs
 	 * @param start the lower bound of the range of bookmarks entries
 	 * @param end the upper bound of the range of bookmarks entries (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -2296,7 +2288,7 @@ public interface BookmarksEntryPersistence
 	 * </p>
 	 *
 	 * @param groupId the group ID
-	 * @param folderId the folder ID
+	 * @param folderIds the folder IDs
 	 * @param status the status
 	 * @param start the lower bound of the range of bookmarks entries
 	 * @param end the upper bound of the range of bookmarks entries (not inclusive)
@@ -2679,7 +2671,7 @@ public interface BookmarksEntryPersistence
 	 * </p>
 	 *
 	 * @param groupId the group ID
-	 * @param folderId the folder ID
+	 * @param folderIds the folder IDs
 	 * @param status the status
 	 * @param start the lower bound of the range of bookmarks entries
 	 * @param end the upper bound of the range of bookmarks entries (not inclusive)
@@ -3092,7 +3084,7 @@ public interface BookmarksEntryPersistence
 	 *
 	 * @param groupId the group ID
 	 * @param userId the user ID
-	 * @param folderId the folder ID
+	 * @param folderIds the folder IDs
 	 * @param status the status
 	 * @param start the lower bound of the range of bookmarks entries
 	 * @param end the upper bound of the range of bookmarks entries (not inclusive)

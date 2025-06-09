@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -42,6 +33,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -54,12 +51,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * Contains context information about a given API call.
@@ -130,12 +121,13 @@ public class ServiceContext implements Cloneable, Serializable {
 		}
 
 		serviceContext.setPortalURL(getPortalURL());
-		serviceContext.setPortletPreferencesIds(getPortletPreferencesIds());
+		serviceContext.setPortletPreferencesIds(_portletPreferencesIds);
 		serviceContext.setRemoteAddr(getRemoteAddr());
 		serviceContext.setRemoteHost(getRemoteHost());
 		serviceContext.setRequest(getRequest());
 		serviceContext.setScopeGroupId(getScopeGroupId());
 		serviceContext.setSignedIn(isSignedIn());
+		serviceContext.setStrictAdd(isStrictAdd());
 
 		if (_userDisplayURL != null) {
 			serviceContext.setUserDisplayURL(_userDisplayURL);
@@ -388,7 +380,7 @@ public class ServiceContext implements Cloneable, Serializable {
 		long companyId = getCompanyId();
 
 		if (companyId > 0) {
-			return UserLocalServiceUtil.getDefaultUserId(getCompanyId());
+			return UserLocalServiceUtil.getGuestUserId(getCompanyId());
 		}
 
 		return 0;
@@ -913,6 +905,10 @@ public class ServiceContext implements Cloneable, Serializable {
 	 */
 	public boolean isSignedIn() {
 		return _signedIn;
+	}
+
+	public boolean isStrictAdd() {
+		return _strictAdd;
 	}
 
 	/**
@@ -1472,6 +1468,10 @@ public class ServiceContext implements Cloneable, Serializable {
 		_signedIn = signedIn;
 	}
 
+	public void setStrictAdd(boolean strictAdd) {
+		_strictAdd = strictAdd;
+	}
+
 	public void setTimeZone(TimeZone timeZone) {
 		_timeZone = timeZone;
 	}
@@ -1576,6 +1576,7 @@ public class ServiceContext implements Cloneable, Serializable {
 	private String _remoteHost;
 	private long _scopeGroupId;
 	private boolean _signedIn;
+	private boolean _strictAdd;
 	private TimeZone _timeZone;
 	private String _userDisplayURL;
 	private long _userId;

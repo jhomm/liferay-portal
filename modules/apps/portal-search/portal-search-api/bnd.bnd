@@ -1,6 +1,6 @@
 Bundle-Name: Liferay Portal Search API
 Bundle-SymbolicName: com.liferay.portal.search.api
-Bundle-Version: 5.4.4
+Bundle-Version: 17.2.2
 Export-Package:\
 	com.liferay.portal.search.aggregation,\
 	com.liferay.portal.search.aggregation.bucket,\
@@ -9,8 +9,10 @@ Export-Package:\
 	com.liferay.portal.search.analysis,\
 	com.liferay.portal.search.asset,\
 	com.liferay.portal.search.batch,\
-	com.liferay.portal.search.buffer,\
+	com.liferay.portal.search.capabilities,\
 	com.liferay.portal.search.ccr,\
+	com.liferay.portal.search.cluster,\
+	com.liferay.portal.search.collapse,\
 	com.liferay.portal.search.configuration,\
 	com.liferay.portal.search.constants,\
 	com.liferay.portal.search.context,\
@@ -19,12 +21,16 @@ Export-Package:\
 	com.liferay.portal.search.contributor.sort,\
 	com.liferay.portal.search.document,\
 	com.liferay.portal.search.engine,\
+	com.liferay.portal.search.expando,\
+	com.liferay.portal.search.experiences,\
 	com.liferay.portal.search.facet,\
 	com.liferay.portal.search.facet.category,\
 	com.liferay.portal.search.facet.custom,\
+	com.liferay.portal.search.facet.date.range,\
 	com.liferay.portal.search.facet.folder,\
 	com.liferay.portal.search.facet.modified,\
 	com.liferay.portal.search.facet.nested,\
+	com.liferay.portal.search.facet.range,\
 	com.liferay.portal.search.facet.site,\
 	com.liferay.portal.search.facet.tag,\
 	com.liferay.portal.search.facet.type,\
@@ -41,8 +47,11 @@ Export-Package:\
 	com.liferay.portal.search.legacy.searcher,\
 	com.liferay.portal.search.legacy.stats,\
 	com.liferay.portal.search.localization,\
+	com.liferay.portal.search.ml.embedding,\
+	com.liferay.portal.search.ml.embedding.text,\
 	com.liferay.portal.search.model.uid,\
 	com.liferay.portal.search.permission,\
+	com.liferay.portal.search.pit,\
 	com.liferay.portal.search.query,\
 	com.liferay.portal.search.query.field,\
 	com.liferay.portal.search.query.function,\
@@ -57,6 +66,7 @@ Export-Package:\
 	com.liferay.portal.search.sort,\
 	com.liferay.portal.search.stats,\
 	com.liferay.portal.search.suggest,\
+	com.liferay.portal.search.suggestions,\
 	com.liferay.portal.search.summary,\
 	com.liferay.portal.search.synonym
 -dsannotations-options: inherit

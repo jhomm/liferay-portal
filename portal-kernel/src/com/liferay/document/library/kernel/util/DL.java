@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.util;
@@ -20,17 +11,16 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
-import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -55,7 +45,8 @@ public interface DL {
 
 	public int compareVersions(String version1, String version2);
 
-	public String getAbsolutePath(PortletRequest portletRequest, long folderId)
+	public String getAbsolutePath(
+			PortletRequest portletRequest, long rootFolderId, long folderId)
 		throws PortalException;
 
 	public Set<String> getAllMediaGalleryMimeTypes();
@@ -69,47 +60,6 @@ public interface DL {
 	public String getDeprecatedDDMStructureKey(long fileEntryTypeId);
 
 	public String getDividedPath(long id);
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             com.liferay.document.library.util.DLURLHelper#getFileEntryControlPanelLink(
-	 *             PortletRequest, long)}
-	 */
-	@Deprecated
-	public String getDLFileEntryControlPanelLink(
-			PortletRequest portletRequest, long fileEntryId)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             com.liferay.document.library.util.DLURLHelper#getFolderControlPanelLink(
-	 *             PortletRequest, long)}
-	 */
-	@Deprecated
-	public String getDLFolderControlPanelLink(
-			PortletRequest portletRequest, long folderId)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             com.liferay.document.library.util.DLURLHelper#getDownloadURL(
-	 *             FileEntry, FileVersion, ThemeDisplay, String)}
-	 */
-	@Deprecated
-	public String getDownloadURL(
-		FileEntry fileEntry, FileVersion fileVersion, ThemeDisplay themeDisplay,
-		String queryString);
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             com.liferay.document.library.util.DLURLHelper#getDownloadURL(
-	 *             FileEntry, FileVersion, ThemeDisplay, String, boolean,
-	 *             boolean)}
-	 */
-	@Deprecated
-	public String getDownloadURL(
-		FileEntry fileEntry, FileVersion fileVersion, ThemeDisplay themeDisplay,
-		String queryString, boolean appendVersion, boolean absoluteURL);
 
 	public Map<String, String> getEmailDefinitionTerms(
 		PortletRequest portletRequest, String emailFromAddress,
@@ -129,40 +79,6 @@ public interface DL {
 	public String getFileIconCssClass(String extension);
 
 	public String getGenericName(String extension);
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             com.liferay.document.library.util.DLURLHelper#getImagePreviewURL(
-	 *             FileEntry, FileVersion, ThemeDisplay)}
-	 */
-	@Deprecated
-	public String getImagePreviewURL(
-			FileEntry fileEntry, FileVersion fileVersion,
-			ThemeDisplay themeDisplay)
-		throws Exception;
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             com.liferay.document.library.util.DLURLHelper#getImagePreviewURL(
-	 *             FileEntry, FileVersion, ThemeDisplay, String, boolean,
-	 *             boolean)}
-	 */
-	@Deprecated
-	public String getImagePreviewURL(
-			FileEntry fileEntry, FileVersion fileVersion,
-			ThemeDisplay themeDisplay, String queryString,
-			boolean appendVersion, boolean absoluteURL)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             com.liferay.document.library.util.DLURLHelper#getImagePreviewURL(
-	 *             FileEntry, FileVersion, ThemeDisplay)}
-	 */
-	@Deprecated
-	public String getImagePreviewURL(
-			FileEntry fileEntry, ThemeDisplay themeDisplay)
-		throws Exception;
 
 	/**
 	 * @deprecated As of Mueller (7.2.x), replaced by {@link
@@ -197,27 +113,6 @@ public interface DL {
 
 	public String getTempFileId(long id, String version, String languageId);
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             com.liferay.document.library.util.DLURLHelper#getThumbnailSrc(
-	 *             FileEntry, FileVersion, ThemeDisplay)}
-	 */
-	@Deprecated
-	public String getThumbnailSrc(
-			FileEntry fileEntry, FileVersion fileVersion,
-			ThemeDisplay themeDisplay)
-		throws Exception;
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             com.liferay.document.library.util.DLURLHelper#getThumbnailSrc(
-	 *             FileEntry, ThemeDisplay)}
-	 */
-	@Deprecated
-	public String getThumbnailSrc(
-			FileEntry fileEntry, ThemeDisplay themeDisplay)
-		throws Exception;
-
 	public String getThumbnailStyle();
 
 	public String getThumbnailStyle(boolean max, int margin);
@@ -230,39 +125,10 @@ public interface DL {
 	public String getTitleWithExtension(String title, String extension);
 
 	public String getUniqueFileName(
-		long groupId, long folderId, String fileName);
+		long groupId, long folderId, String fileName,
+		boolean ignoreDuplicateTitle);
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             com.liferay.document.library.util.DLURLHelper#getWebDavURL(
-	 *             ThemeDisplay, Folder, FileEntry)}
-	 */
-	@Deprecated
-	public String getWebDavURL(
-			ThemeDisplay themeDisplay, Folder folder, FileEntry fileEntry)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             com.liferay.document.library.util.DLURLHelper#getWebDavURL(
-	 *             ThemeDisplay, Folder, FileEntry, boolean)}
-	 */
-	@Deprecated
-	public String getWebDavURL(
-			ThemeDisplay themeDisplay, Folder folder, FileEntry fileEntry,
-			boolean manualCheckInRequired)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             com.liferay.document.library.util.DLURLHelper#getWebDavURL(
-	 *             ThemeDisplay, Folder, FileEntry, boolean, boolean)}
-	 */
-	@Deprecated
-	public String getWebDavURL(
-			ThemeDisplay themeDisplay, Folder folder, FileEntry fileEntry,
-			boolean manualCheckInRequired, boolean officeExtensionRequired)
-		throws PortalException;
+	public String getUniqueTitle(long groupId, long folderId, String title);
 
 	public boolean hasWorkflowDefinitionLink(
 		long companyId, long groupId, long folderId, long fileEntryTypeId);

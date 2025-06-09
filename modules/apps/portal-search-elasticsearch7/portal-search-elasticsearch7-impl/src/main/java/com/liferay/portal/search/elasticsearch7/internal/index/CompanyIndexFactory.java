@@ -1,81 +1,36 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.index;
 
-import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.PortalRunMode;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.CompanyConstants;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationObserver;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationWrapper;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionManager;
-import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionNotInitializedException;
-import com.liferay.portal.search.elasticsearch7.internal.index.contributor.IndexContributorReceiver;
-import com.liferay.portal.search.elasticsearch7.internal.settings.SettingsBuilder;
-import com.liferay.portal.search.elasticsearch7.internal.util.ResourceUtil;
-import com.liferay.portal.search.elasticsearch7.internal.util.SearchLogHelperUtil;
-import com.liferay.portal.search.index.IndexNameBuilder;
-import com.liferay.portal.search.spi.model.index.contributor.IndexContributor;
-import com.liferay.portal.search.spi.settings.IndexSettingsContributor;
-import com.liferay.portal.search.spi.settings.IndexSettingsHelper;
+import com.liferay.portal.search.elasticsearch7.internal.index.util.IndexFactoryCompanyIdRegistryUtil;
 
-import java.io.IOException;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.BiConsumer;
-
-import org.elasticsearch.action.ActionResponse;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.client.IndicesClient;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.XContentType;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Michael C. Han
  */
-@Component(
-	immediate = true,
-	service = {IndexContributorReceiver.class, IndexFactory.class}
-)
+@Component(service = IndexFactory.class)
 public class CompanyIndexFactory
-	implements ElasticsearchConfigurationObserver, IndexContributorReceiver,
-			   IndexFactory {
-
-	@Override
-	public void addIndexContributor(IndexContributor indexContributor) {
-		_indexContributors.add(indexContributor);
-	}
+	implements ElasticsearchConfigurationObserver, IndexFactory {
 
 	@Override
 	public int compareTo(
@@ -86,38 +41,25 @@ public class CompanyIndexFactory
 	}
 
 	@Override
-	public void createIndices(IndicesClient indicesClient, long companyId) {
-		String indexName = getIndexName(companyId);
+	public boolean deleteIndex(long companyId, IndicesClient indicesClient) {
+		String indexName = _companyIndexHelper.getIndexName(companyId);
 
-		if (hasIndex(indicesClient, indexName)) {
-			return;
+		Company company = _companyLocalService.fetchCompany(companyId);
+
+		if ((company != null) &&
+			!Validator.isBlank(company.getIndexNameCurrent())) {
+
+			indexName = company.getIndexNameCurrent();
 		}
 
-		createIndex(indexName, indicesClient);
-	}
-
-	@Override
-	public void deleteIndices(IndicesClient indicesClient, long companyId) {
-		String indexName = getIndexName(companyId);
-
-		if (!hasIndex(indicesClient, indexName)) {
-			return;
+		if (!_companyIndexHelper.hasIndex(indexName, indicesClient)) {
+			return false;
 		}
 
-		executeIndexContributorsBeforeRemove(indexName);
+		_companyIndexHelper.deleteIndex(
+			companyId, indexName, indicesClient, true);
 
-		DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest(
-			indexName);
-
-		try {
-			ActionResponse actionResponse = indicesClient.delete(
-				deleteIndexRequest, RequestOptions.DEFAULT);
-
-			SearchLogHelperUtil.logActionResponse(_log, actionResponse);
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
-		}
+		return true;
 	}
 
 	@Override
@@ -126,125 +68,47 @@ public class CompanyIndexFactory
 	}
 
 	@Override
+	public boolean initializeIndex(
+		long companyId, IndicesClient indicesClient) {
+
+		String indexName = _companyIndexHelper.getIndexName(companyId);
+
+		if (_companyIndexHelper.hasIndex(indexName, indicesClient)) {
+			if ((companyId != CompanyConstants.SYSTEM) &&
+				FeatureFlagManagerUtil.isEnabled(companyId, "LPD-7822")) {
+
+				_companyIndexHelper.updateIndex(
+					companyId, indexName, indicesClient);
+			}
+
+			return false;
+		}
+
+		_companyIndexHelper.createIndex(companyId, indexName, indicesClient);
+
+		return true;
+	}
+
+	@Override
 	public void onElasticsearchConfigurationUpdate() {
-		createCompanyIndexes();
+		_initializeCompanyIndexes();
 	}
 
 	@Override
 	public synchronized void registerCompanyId(long companyId) {
-		_companyIds.add(companyId);
-	}
-
-	@Override
-	public void removeIndexContributor(IndexContributor indexContributor) {
-		_indexContributors.remove(indexContributor);
+		IndexFactoryCompanyIdRegistryUtil.registerCompanyId(companyId);
 	}
 
 	@Override
 	public synchronized void unregisterCompanyId(long companyId) {
-		_companyIds.remove(companyId);
+		IndexFactoryCompanyIdRegistryUtil.unregisterCompanyId(companyId);
 	}
 
 	@Activate
 	protected void activate() {
 		_elasticsearchConfigurationWrapper.register(this);
 
-		createCompanyIndexes();
-	}
-
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	protected void addElasticsearchIndexSettingsContributor(
-		com.liferay.portal.search.elasticsearch7.settings.
-			IndexSettingsContributor indexSettingsContributor) {
-
-		_elasticsearchIndexSettingsContributors.add(indexSettingsContributor);
-
-		processContributions(
-			(indexName, liferayDocumentTypeFactory) ->
-				indexSettingsContributor.contribute(
-					indexName, liferayDocumentTypeFactory));
-	}
-
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	protected void addIndexSettingsContributor(
-		IndexSettingsContributor indexSettingsContributor) {
-
-		_indexSettingsContributors.add(indexSettingsContributor);
-
-		processContributions(
-			(indexName, liferayDocumentTypeFactory) ->
-				indexSettingsContributor.contribute(
-					indexName, liferayDocumentTypeFactory));
-	}
-
-	protected void addLiferayDocumentTypeMappings(
-		CreateIndexRequest createIndexRequest,
-		LiferayDocumentTypeFactory liferayDocumentTypeFactory) {
-
-		if (Validator.isNotNull(
-				_elasticsearchConfigurationWrapper.overrideTypeMappings())) {
-
-			liferayDocumentTypeFactory.createLiferayDocumentTypeMappings(
-				createIndexRequest,
-				_elasticsearchConfigurationWrapper.overrideTypeMappings());
-		}
-		else {
-			liferayDocumentTypeFactory.createRequiredDefaultTypeMappings(
-				createIndexRequest);
-		}
-	}
-
-	protected synchronized void createCompanyIndexes() {
-		for (Long companyId : _companyIds) {
-			try {
-				RestHighLevelClient restHighLevelClient =
-					_elasticsearchConnectionManager.getRestHighLevelClient();
-
-				createIndices(restHighLevelClient.indices(), companyId);
-			}
-			catch (Exception exception) {
-				if (_log.isWarnEnabled()) {
-					_log.warn(
-						"Unable to reinitialize index for company " + companyId,
-						exception);
-				}
-			}
-		}
-	}
-
-	protected void createIndex(String indexName, IndicesClient indicesClient) {
-		CreateIndexRequest createIndexRequest = new CreateIndexRequest(
-			indexName);
-
-		LiferayDocumentTypeFactory liferayDocumentTypeFactory =
-			new LiferayDocumentTypeFactory(indicesClient, _jsonFactory);
-
-		setSettings(createIndexRequest, liferayDocumentTypeFactory);
-
-		addLiferayDocumentTypeMappings(
-			createIndexRequest, liferayDocumentTypeFactory);
-
-		try {
-			ActionResponse actionResponse = indicesClient.create(
-				createIndexRequest, RequestOptions.DEFAULT);
-
-			SearchLogHelperUtil.logActionResponse(_log, actionResponse);
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
-		}
-
-		updateLiferayDocumentType(indexName, liferayDocumentTypeFactory);
-
-		executeIndexContributorsAfterCreate(indexName);
+		_initializeCompanyIndexes();
 	}
 
 	@Deactivate
@@ -252,290 +116,42 @@ public class CompanyIndexFactory
 		_elasticsearchConfigurationWrapper.unregister(this);
 	}
 
-	protected void executeIndexContributorAfterCreate(
-		IndexContributor indexContributor, String indexName) {
+	private synchronized void _initializeCompanyIndexes() {
+		_companyLocalService.forEachCompanyId(
+			companyId -> _initializeIndex(companyId),
+			IndexFactoryCompanyIdRegistryUtil.getCompanyIds());
+	}
 
+	private void _initializeIndex(long companyId) {
 		try {
-			indexContributor.onAfterCreate(indexName);
-		}
-		catch (Throwable throwable) {
-			_log.error(
-				StringBundler.concat(
-					"Unable to apply contributor ", indexContributor,
-					"to index ", indexName),
-				throwable);
-		}
-	}
-
-	protected void executeIndexContributorBeforeRemove(
-		IndexContributor indexContributor, String indexName) {
-
-		try {
-			indexContributor.onBeforeRemove(indexName);
-		}
-		catch (Throwable throwable) {
-			_log.error(
-				StringBundler.concat(
-					"Unable to apply contributor ", indexContributor,
-					" when removing index ", indexName),
-				throwable);
-		}
-	}
-
-	protected void executeIndexContributorsAfterCreate(String indexName) {
-		for (IndexContributor indexContributor : _indexContributors) {
-			executeIndexContributorAfterCreate(indexContributor, indexName);
-		}
-	}
-
-	protected void executeIndexContributorsBeforeRemove(String indexName) {
-		for (IndexContributor indexContributor : _indexContributors) {
-			executeIndexContributorBeforeRemove(indexContributor, indexName);
-		}
-	}
-
-	protected String getIndexName(long companyId) {
-		return _indexNameBuilder.getIndexName(companyId);
-	}
-
-	protected boolean hasIndex(IndicesClient indicesClient, String indexName) {
-		GetIndexRequest getIndexRequest = new GetIndexRequest(indexName);
-
-		try {
-			return indicesClient.exists(
-				getIndexRequest, RequestOptions.DEFAULT);
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
-		}
-	}
-
-	protected void loadAdditionalIndexConfigurations(
-		SettingsBuilder settingsBuilder) {
-
-		settingsBuilder.loadFromSource(
-			_elasticsearchConfigurationWrapper.additionalIndexConfigurations());
-	}
-
-	protected void loadAdditionalTypeMappings(
-		String indexName,
-		LiferayDocumentTypeFactory liferayDocumentTypeFactory) {
-
-		if (Validator.isNull(
-				_elasticsearchConfigurationWrapper.additionalTypeMappings())) {
-
-			return;
-		}
-
-		liferayDocumentTypeFactory.addTypeMappings(
-			indexName,
-			_elasticsearchConfigurationWrapper.additionalTypeMappings());
-	}
-
-	protected void loadDefaultIndexSettings(SettingsBuilder settingsBuilder) {
-		Settings.Builder builder = settingsBuilder.getBuilder();
-
-		String defaultIndexSettings = ResourceUtil.getResourceAsString(
-			getClass(), "/META-INF/index-settings-defaults.json");
-
-		builder.loadFromSource(defaultIndexSettings, XContentType.JSON);
-	}
-
-	protected void loadIndexConfigurations(SettingsBuilder settingsBuilder) {
-		settingsBuilder.put(
-			"index.number_of_replicas",
-			_elasticsearchConfigurationWrapper.indexNumberOfReplicas());
-		settingsBuilder.put(
-			"index.number_of_shards",
-			_elasticsearchConfigurationWrapper.indexNumberOfShards());
-	}
-
-	protected void loadIndexSettingsContributors(Settings.Builder builder) {
-		com.liferay.portal.search.elasticsearch7.settings.IndexSettingsHelper
-			elasticsearchIndexSettingsHelper = (setting, value) -> builder.put(
-				setting, value);
-
-		for (com.liferay.portal.search.elasticsearch7.settings.
-				IndexSettingsContributor indexSettingsContributor :
-					_elasticsearchIndexSettingsContributors) {
-
-			indexSettingsContributor.populate(elasticsearchIndexSettingsHelper);
-		}
-
-		IndexSettingsHelper indexSettingsHelper =
-			(setting, value) -> builder.put(setting, value);
-
-		for (IndexSettingsContributor indexSettingsContributor1 :
-				_indexSettingsContributors) {
-
-			indexSettingsContributor1.populate(indexSettingsHelper);
-		}
-	}
-
-	protected void loadTestModeIndexSettings(SettingsBuilder settingsBuilder) {
-		if (!PortalRunMode.isTestMode()) {
-			return;
-		}
-
-		settingsBuilder.put("index.refresh_interval", "1ms");
-		settingsBuilder.put("index.search.slowlog.threshold.fetch.warn", "-1");
-		settingsBuilder.put("index.search.slowlog.threshold.query.warn", "-1");
-		settingsBuilder.put("index.translog.sync_interval", "100ms");
-	}
-
-	protected void loadTypeMappingsContributors(
-		String indexName,
-		LiferayDocumentTypeFactory liferayDocumentTypeFactory) {
-
-		for (com.liferay.portal.search.elasticsearch7.settings.
-				IndexSettingsContributor elasticsearchIndexSettingsContributor :
-					_elasticsearchIndexSettingsContributors) {
-
-			elasticsearchIndexSettingsContributor.contribute(
-				indexName, liferayDocumentTypeFactory);
-		}
-
-		for (IndexSettingsContributor indexSettingsContributor :
-				_indexSettingsContributors) {
-
-			indexSettingsContributor.contribute(
-				indexName, liferayDocumentTypeFactory);
-		}
-	}
-
-	protected void processContributions(
-		BiConsumer<String, LiferayDocumentTypeFactory> biConsumer) {
-
-		if (Validator.isNotNull(
-				_elasticsearchConfigurationWrapper.overrideTypeMappings())) {
-
-			return;
-		}
-
-		RestHighLevelClient restHighLevelClient = null;
-
-		try {
-			restHighLevelClient =
+			RestHighLevelClient restHighLevelClient =
 				_elasticsearchConnectionManager.getRestHighLevelClient();
-		}
-		catch (ElasticsearchConnectionNotInitializedException
-					elasticsearchConnectionNotInitializedException) {
 
-			if (_log.isInfoEnabled()) {
-				_log.info("Skipping index settings contributor");
+			initializeIndex(companyId, restHighLevelClient.indices());
+		}
+		catch (Exception exception) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to initialize index for company " + companyId,
+					exception);
 			}
-
-			return;
 		}
-
-		LiferayDocumentTypeFactory liferayDocumentTypeFactory =
-			new LiferayDocumentTypeFactory(
-				restHighLevelClient.indices(), _jsonFactory);
-
-		for (Long companyId : _companyIds) {
-			biConsumer.accept(
-				getIndexName(companyId), liferayDocumentTypeFactory);
-		}
-	}
-
-	protected void removeElasticsearchIndexSettingsContributor(
-		com.liferay.portal.search.elasticsearch7.settings.
-			IndexSettingsContributor indexSettingsContributor) {
-
-		_elasticsearchIndexSettingsContributors.remove(
-			indexSettingsContributor);
-	}
-
-	protected void removeIndexSettingsContributor(
-		IndexSettingsContributor indexSettingsContributor) {
-
-		_indexSettingsContributors.remove(indexSettingsContributor);
-	}
-
-	@Reference(unbind = "-")
-	protected void setElasticsearchConfigurationWrapper(
-		ElasticsearchConfigurationWrapper elasticsearchConfigurationWrapper) {
-
-		_elasticsearchConfigurationWrapper = elasticsearchConfigurationWrapper;
-	}
-
-	@Reference(unbind = "-")
-	protected void setElasticsearchConnectionManager(
-		ElasticsearchConnectionManager elasticsearchConnectionManager) {
-
-		_elasticsearchConnectionManager = elasticsearchConnectionManager;
-	}
-
-	@Reference(unbind = "-")
-	protected void setIndexNameBuilder(IndexNameBuilder indexNameBuilder) {
-		_indexNameBuilder = indexNameBuilder;
-	}
-
-	@Reference(unbind = "-")
-	protected void setJsonFactory(JSONFactory jsonFactory) {
-		_jsonFactory = jsonFactory;
-	}
-
-	protected void setSettings(
-		CreateIndexRequest createIndexRequest,
-		LiferayDocumentTypeFactory liferayDocumentTypeFactory) {
-
-		Settings.Builder builder = Settings.builder();
-
-		liferayDocumentTypeFactory.createRequiredDefaultAnalyzers(builder);
-
-		SettingsBuilder settingsBuilder = new SettingsBuilder(builder);
-
-		loadDefaultIndexSettings(settingsBuilder);
-
-		loadTestModeIndexSettings(settingsBuilder);
-
-		loadIndexConfigurations(settingsBuilder);
-
-		loadAdditionalIndexConfigurations(settingsBuilder);
-
-		loadIndexSettingsContributors(builder);
-
-		if (Validator.isNotNull(builder.get("index.number_of_replicas"))) {
-			builder.put("index.auto_expand_replicas", false);
-		}
-
-		createIndexRequest.settings(builder);
-	}
-
-	protected void updateLiferayDocumentType(
-		String indexName,
-		LiferayDocumentTypeFactory liferayDocumentTypeFactory) {
-
-		if (Validator.isNotNull(
-				_elasticsearchConfigurationWrapper.overrideTypeMappings())) {
-
-			return;
-		}
-
-		loadAdditionalTypeMappings(indexName, liferayDocumentTypeFactory);
-
-		loadTypeMappingsContributors(indexName, liferayDocumentTypeFactory);
-
-		liferayDocumentTypeFactory.createOptionalDefaultTypeMappings(indexName);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CompanyIndexFactory.class);
 
-	private final Set<Long> _companyIds = new HashSet<>();
-	private volatile ElasticsearchConfigurationWrapper
+	@Reference
+	private CompanyIndexHelper _companyIndexHelper;
+
+	@Reference
+	private CompanyLocalService _companyLocalService;
+
+	@Reference
+	private ElasticsearchConfigurationWrapper
 		_elasticsearchConfigurationWrapper;
+
+	@Reference
 	private ElasticsearchConnectionManager _elasticsearchConnectionManager;
-	private final Set
-		<com.liferay.portal.search.elasticsearch7.settings.
-			IndexSettingsContributor> _elasticsearchIndexSettingsContributors =
-				new ConcurrentSkipListSet<>();
-	private final List<IndexContributor> _indexContributors =
-		new CopyOnWriteArrayList<>();
-	private IndexNameBuilder _indexNameBuilder;
-	private final Set<IndexSettingsContributor> _indexSettingsContributors =
-		ConcurrentHashMap.newKeySet();
-	private JSONFactory _jsonFactory;
 
 }

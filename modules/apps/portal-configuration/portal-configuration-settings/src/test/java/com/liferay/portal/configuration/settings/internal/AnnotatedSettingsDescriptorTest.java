@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.configuration.settings.internal;
@@ -38,32 +29,47 @@ public class AnnotatedSettingsDescriptorTest {
 
 	@Test
 	public void testGetAllKeys() {
-		Set<String> allKeys = _annotatedSettingsDescriptor.getAllKeys();
+		Set<String> allKeys1 = _annotatedSettingsDescriptor.getAllKeys();
 
 		Collection<String> expectedAllKeys = Arrays.asList(
 			"boolean", "long", "string", "stringArray1", "stringArray2",
 			"unrenamedProperty");
 
 		Assert.assertEquals(
-			allKeys.toString(), expectedAllKeys.size(), allKeys.size());
-		Assert.assertTrue(allKeys.containsAll(expectedAllKeys));
+			allKeys1.toString(), expectedAllKeys.size(), allKeys1.size());
+		Assert.assertTrue(allKeys1.containsAll(expectedAllKeys));
+
+		allKeys1.remove("long");
+
+		Set<String> allKeys2 = _annotatedSettingsDescriptor.getAllKeys();
+
+		Assert.assertTrue(allKeys2.containsAll(expectedAllKeys));
 	}
 
 	@Test
 	public void testGetMultiValuedKeys() {
-		Set<String> multiValuedKeys =
+		Set<String> multiValuedKeys1 =
 			_annotatedSettingsDescriptor.getMultiValuedKeys();
 
 		Collection<String> expectedMultiValuedKeys = Arrays.asList(
 			"stringArray1", "stringArray2");
 
 		Assert.assertEquals(
-			multiValuedKeys.toString(), expectedMultiValuedKeys.size(),
-			multiValuedKeys.size());
-		Assert.assertTrue(multiValuedKeys.containsAll(expectedMultiValuedKeys));
+			multiValuedKeys1.toString(), expectedMultiValuedKeys.size(),
+			multiValuedKeys1.size());
+		Assert.assertTrue(
+			multiValuedKeys1.containsAll(expectedMultiValuedKeys));
+
+		multiValuedKeys1.remove("stringArray1");
+
+		Set<String> multiValuedKeys2 =
+			_annotatedSettingsDescriptor.getMultiValuedKeys();
+
+		Assert.assertTrue(
+			multiValuedKeys2.containsAll(expectedMultiValuedKeys));
 	}
 
-	@Settings.Config(settingsIds = {"settingsId.1", "settingsId.2"})
+	@Settings.Config
 	public class MockSettings {
 
 		public boolean getBoolean() {

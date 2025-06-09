@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.4.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_4_0.dtd">
 
-<service-builder auto-namespace-tables="false" mvcc-enabled="false" package-path="com.liferay.commerce.price.list">
+<service-builder auto-import-default-references="false" auto-namespace-tables="false" change-tracking-enabled="true" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.commerce.price.list">
 	<author>Alessio Antonio Rendina</author>
 	<namespace>Commerce</namespace>
-	<entity external-reference-code="true" local-service="true" name="CommercePriceEntry" remote-service="true" uuid="true">
+	<entity external-reference-code="company" local-service="true" name="CommercePriceEntry" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -23,17 +23,21 @@
 		<column name="commercePriceListId" type="long" />
 		<column name="CPInstanceUuid" type="String" />
 		<column name="CProductId" type="long" />
-		<column name="price" type="BigDecimal" />
-		<column name="promoPrice" type="BigDecimal" />
+		<column name="bulkPricing" type="boolean" />
 		<column name="discountDiscovery" type="boolean" />
 		<column name="discountLevel1" type="BigDecimal" />
 		<column name="discountLevel2" type="BigDecimal" />
 		<column name="discountLevel3" type="BigDecimal" />
 		<column name="discountLevel4" type="BigDecimal" />
-		<column name="hasTierPrice" type="boolean" />
-		<column name="bulkPricing" type="boolean" />
 		<column name="displayDate" type="Date" />
 		<column name="expirationDate" type="Date" />
+		<column name="hasTierPrice" type="boolean" />
+		<column name="price" type="BigDecimal" />
+		<column name="priceOnApplication" type="boolean" />
+		<column name="pricingQuantity" type="BigDecimal" />
+		<column name="promoPrice" type="BigDecimal" />
+		<column name="quantity" type="BigDecimal" />
+		<column name="unitOfMeasureKey" type="String" />
 		<column name="lastPublishDate" type="Date" />
 		<column name="status" type="int" />
 		<column name="statusByUserId" type="long" />
@@ -57,7 +61,7 @@
 		<finder name="CPInstanceUuid" return-type="Collection">
 			<finder-column name="CPInstanceUuid" />
 		</finder>
-		<finder name="C_C" return-type="CommercePriceEntry" unique="true">
+		<finder name="C_C" return-type="Collection">
 			<finder-column name="commercePriceListId" />
 			<finder-column name="CPInstanceUuid" />
 		</finder>
@@ -69,13 +73,18 @@
 			<finder-column comparator="&lt;" name="expirationDate" />
 			<finder-column name="status" />
 		</finder>
-		<finder name="C_C_S" return-type="CommercePriceEntry" unique="true">
+		<finder name="C_C_S" return-type="Collection">
 			<finder-column name="commercePriceListId" />
 			<finder-column name="CPInstanceUuid" />
 			<finder-column name="status" />
 		</finder>
+		<finder name="C_Q_U" return-type="Collection">
+			<finder-column name="CPInstanceUuid" />
+			<finder-column name="quantity" />
+			<finder-column name="unitOfMeasureKey" />
+		</finder>
 	</entity>
-	<entity external-reference-code="true" local-service="true" name="CommercePriceList" remote-service="true" uuid="true">
+	<entity external-reference-code="company" local-service="true" name="CommercePriceList" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -95,7 +104,7 @@
 
 		<!-- Other fields -->
 
-		<column name="commerceCurrencyId" type="long" />
+		<column name="commerceCurrencyCode" type="String" />
 		<column name="parentCommercePriceListId" type="long" />
 		<column name="catalogBasePriceList" type="boolean" />
 		<column name="netPrice" type="boolean" />
@@ -123,9 +132,6 @@
 		<finder name="CompanyId" return-type="Collection">
 			<finder-column name="companyId" />
 		</finder>
-		<finder name="CommerceCurrencyId" return-type="Collection">
-			<finder-column name="commerceCurrencyId" />
-		</finder>
 		<finder name="ParentCommercePriceListId" return-type="CommercePriceList">
 			<finder-column name="parentCommercePriceListId" />
 		</finder>
@@ -133,9 +139,13 @@
 			<finder-column arrayable-operator="OR" name="groupId" />
 			<finder-column name="companyId" />
 		</finder>
-		<finder name="G_CatalogBasePriceList" return-type="CommercePriceList">
+		<finder name="G_CBPL" return-type="CommercePriceList">
 			<finder-column name="groupId" />
 			<finder-column name="catalogBasePriceList" />
+		</finder>
+		<finder name="C_C" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="commerceCurrencyCode" />
 		</finder>
 		<finder name="LtD_S" return-type="Collection">
 			<finder-column comparator="&lt;" name="displayDate" />
@@ -155,6 +165,18 @@
 			<finder-column name="groupId" />
 			<finder-column name="catalogBasePriceList" />
 			<finder-column name="type" />
+		</finder>
+		<finder name="G_C_T_S" return-type="Collection">
+			<finder-column arrayable-operator="OR" name="groupId" />
+			<finder-column name="companyId" />
+			<finder-column name="type" />
+			<finder-column name="status" />
+		</finder>
+		<finder name="G_C_T_NotS" return-type="Collection">
+			<finder-column arrayable-operator="OR" name="groupId" />
+			<finder-column name="companyId" />
+			<finder-column name="type" />
+			<finder-column comparator="!=" name="status" />
 		</finder>
 	</entity>
 	<entity local-service="true" name="CommercePriceListAccountRel" remote-service="true" uuid="true">
@@ -342,7 +364,7 @@
 			<finder-column name="commerceOrderTypeId" />
 		</finder>
 	</entity>
-	<entity external-reference-code="true" local-service="true" name="CommerceTierPriceEntry" remote-service="true" uuid="true">
+	<entity external-reference-code="company" local-service="true" name="CommerceTierPriceEntry" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -366,7 +388,7 @@
 		<column name="discountLevel2" type="BigDecimal" />
 		<column name="discountLevel3" type="BigDecimal" />
 		<column name="discountLevel4" type="BigDecimal" />
-		<column name="minQuantity" type="int" />
+		<column name="minQuantity" type="BigDecimal" />
 		<column name="displayDate" type="Date" />
 		<column name="expirationDate" type="Date" />
 		<column name="lastPublishDate" type="Date" />
@@ -397,6 +419,10 @@
 			<finder-column name="commercePriceEntryId" />
 			<finder-column comparator="&lt;=" name="minQuantity" />
 		</finder>
+		<finder name="C_S" return-type="Collection">
+			<finder-column name="commercePriceEntryId" />
+			<finder-column name="status" />
+		</finder>
 		<finder name="LtD_S" return-type="Collection">
 			<finder-column comparator="&lt;" name="displayDate" />
 			<finder-column name="status" />
@@ -412,18 +438,29 @@
 		</finder>
 	</entity>
 	<exceptions>
-		<exception>CommerceBasePriceListCannotDelete</exception>
 		<exception>CommercePriceEntryDisplayDate</exception>
 		<exception>CommercePriceEntryExpirationDate</exception>
+		<exception>CommercePriceEntryPrice</exception>
+		<exception>CommercePriceEntryUnitOfMeasureKey</exception>
 		<exception>CommercePriceListCurrency</exception>
 		<exception>CommercePriceListDisplayDate</exception>
 		<exception>CommercePriceListExpirationDate</exception>
+		<exception>CommercePriceListMaxPriceValue</exception>
+		<exception>CommercePriceListMinPriceValue</exception>
 		<exception>CommercePriceListParentPriceListGroupId</exception>
 		<exception>CommerceTierPriceEntryDisplayDate</exception>
 		<exception>CommerceTierPriceEntryExpirationDate</exception>
+		<exception>CommerceTierPriceEntryMinQuantity</exception>
+		<exception>CommerceTierPriceEntryPrice</exception>
+		<exception>CommerceTierPriceEntryQuantity</exception>
 		<exception>DuplicateCommerceBasePriceList</exception>
 		<exception>DuplicateCommercePriceEntry</exception>
 		<exception>DuplicateCommercePriceList</exception>
+		<exception>DuplicateCommercePriceListAccountRel</exception>
+		<exception>DuplicateCommercePriceListChannelRel</exception>
+		<exception>DuplicateCommercePriceListCommerceAccountGroupRel</exception>
+		<exception>DuplicateCommercePriceListOrderTypeRel</exception>
 		<exception>DuplicateCommerceTierPriceEntry</exception>
+		<exception>RequiredCommerceBasePriceList</exception>
 	</exceptions>
 </service-builder>

@@ -1,35 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.portlet.container.upload.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -41,19 +31,17 @@ import com.liferay.portal.theme.ThemeDisplayFactory;
 import com.liferay.portal.upload.LiferayServletRequest;
 import com.liferay.upload.UniqueFileNameProvider;
 
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 import java.io.PrintWriter;
-
-import java.util.Map;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -97,16 +85,12 @@ public class UploadPortletTest extends BasePortletContainerTestCase {
 
 				PortletURL portletURL = resourceResponse.createActionURL();
 
-				String queryString = HttpUtil.getQueryString(
-					portletURL.toString());
-
-				Map<String, String[]> parameterMap = HttpUtil.getParameterMap(
-					queryString);
-
-				String portalAuthenticationToken = MapUtil.getString(
-					parameterMap, "p_auth");
-
-				printWriter.write(portalAuthenticationToken);
+				printWriter.write(
+					MapUtil.getString(
+						HttpComponentsUtil.getParameterMap(
+							HttpComponentsUtil.getQueryString(
+								portletURL.toString())),
+						"p_auth"));
 			}
 
 		};
@@ -172,7 +156,7 @@ public class UploadPortletTest extends BasePortletContainerTestCase {
 			bundleContext.registerService(
 				MVCActionCommand.class, mvcActionCommand,
 				HashMapDictionaryBuilder.<String, Object>put(
-					"javax.portlet.name", TestUploadPortlet.PORTLET_NAME
+					"jakarta.portlet.name", TestUploadPortlet.PORTLET_NAME
 				).put(
 					"mvc.command.name", TestUploadPortlet.MVC_COMMAND_NAME
 				).build());
@@ -197,28 +181,28 @@ public class UploadPortletTest extends BasePortletContainerTestCase {
 				"com.liferay.portlet.use-default-template",
 				Boolean.TRUE.toString()
 			).put(
-				"javax.portlet.display-name", "Test Upload Portlet"
+				"jakarta.portlet.display-name", "Test Upload Portlet"
 			).put(
-				"javax.portlet.expiration-cache", "0"
+				"jakarta.portlet.expiration-cache", "0"
 			).put(
-				"javax.portlet.init-param.check-auth-token",
+				"jakarta.portlet.init-param.check-auth-token",
 				Boolean.FALSE.toString()
 			).put(
-				"javax.portlet.init-param.single-page-application-cacheable",
+				"jakarta.portlet.init-param.single-page-application-cacheable",
 				Boolean.FALSE.toString()
 			).put(
-				"javax.portlet.init-param.template-path", "/"
+				"jakarta.portlet.init-param.template-path", "/"
 			).put(
-				"javax.portlet.init-param.view-template",
+				"jakarta.portlet.init-param.view-template",
 				"/" + TestUploadPortlet.PORTLET_NAME + "/view.jsp"
 			).put(
-				"javax.portlet.name", TestUploadPortlet.PORTLET_NAME
+				"jakarta.portlet.name", TestUploadPortlet.PORTLET_NAME
 			).put(
-				"javax.portlet.resource-bundle", "content.Language"
+				"jakarta.portlet.resource-bundle", "content.Language"
 			).put(
-				"javax.portlet.security-role-ref", "guest,power-user,user"
+				"jakarta.portlet.security-role-ref", "guest,power-user,user"
 			).put(
-				"javax.portlet.supports.mime-type", "text/html"
+				"jakarta.portlet.supports.mime-type", "text/html"
 			).build(),
 			TestUploadPortlet.PORTLET_NAME);
 	}
@@ -243,15 +227,11 @@ public class UploadPortletTest extends BasePortletContainerTestCase {
 
 		ThemeDisplay themeDisplay = ThemeDisplayFactory.create();
 
-		Company company = CompanyLocalServiceUtil.getCompany(
-			layout.getCompanyId());
-
-		themeDisplay.setCompany(company);
-
+		themeDisplay.setCompany(
+			CompanyLocalServiceUtil.getCompany(layout.getCompanyId()));
 		themeDisplay.setLayout(layout);
 		themeDisplay.setLayoutSet(layout.getLayoutSet());
 		themeDisplay.setPlid(layout.getPlid());
-
 		themeDisplay.setPortalURL(TestPropsValues.PORTAL_URL);
 		themeDisplay.setRequest(httpServletRequest);
 

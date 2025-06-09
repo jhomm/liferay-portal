@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.test.util;
@@ -91,11 +82,9 @@ public class DepotTestUtil {
 			UnsafeRunnable<Exception> unsafeRunnable)
 		throws Exception {
 
-		Role role = RoleLocalServiceUtil.getRole(
-			group.getCompanyId(), roleName);
-
 		RoleTestUtil.addResourcePermission(
-			role, resourceName, ResourceConstants.SCOPE_GROUP,
+			RoleLocalServiceUtil.getRole(group.getCompanyId(), roleName),
+			resourceName, ResourceConstants.SCOPE_GROUP,
 			String.valueOf(group.getGroupId()), actionId);
 
 		try {
@@ -105,6 +94,33 @@ public class DepotTestUtil {
 			RoleTestUtil.removeResourcePermission(
 				roleName, resourceName, ResourceConstants.SCOPE_GROUP,
 				String.valueOf(group.getGroupId()), actionId);
+		}
+	}
+
+	public static void withLocalStagingEnabled(
+			DepotEntry depotEntry,
+			UnsafeConsumer<DepotEntry, Exception> unsafeConsumer)
+		throws Exception {
+
+		try {
+			unsafeConsumer.accept(
+				DepotStagingTestUtil.enableLocalStaging(depotEntry));
+		}
+		finally {
+			DepotStagingTestUtil.disableStaging(depotEntry);
+		}
+	}
+
+	public static void withLocalStagingEnabled(
+			Group group, UnsafeConsumer<Group, Exception> unsafeConsumer)
+		throws Exception {
+
+		try {
+			unsafeConsumer.accept(
+				DepotStagingTestUtil.enableLocalStaging(group));
+		}
+		finally {
+			DepotStagingTestUtil.disableStaging(group);
 		}
 	}
 
@@ -123,7 +139,7 @@ public class DepotTestUtil {
 			group.getGroupId(), RoleConstants.SITE_MEMBER, unsafeConsumer);
 	}
 
-	private static boolean _isAsignableRole(String roleName) {
+	private static boolean _isAssignableRole(String roleName) {
 		if (roleName.equals(DepotRolesConstants.ASSET_LIBRARY_MEMBER) ||
 			roleName.equals(RoleConstants.SITE_MEMBER)) {
 
@@ -143,7 +159,7 @@ public class DepotTestUtil {
 
 		User user = UserTestUtil.addUser();
 
-		if (_isAsignableRole(roleName)) {
+		if (_isAssignableRole(roleName)) {
 			UserGroupRoleLocalServiceUtil.addUserGroupRoles(
 				user.getUserId(), groupId, new long[] {role.getRoleId()});
 		}
@@ -151,7 +167,7 @@ public class DepotTestUtil {
 		UserLocalServiceUtil.addGroupUsers(
 			groupId, new long[] {user.getUserId()});
 
-		if (_isAsignableRole(roleName)) {
+		if (_isAssignableRole(roleName)) {
 			UserLocalServiceUtil.addRoleUser(role.getRoleId(), user);
 		}
 

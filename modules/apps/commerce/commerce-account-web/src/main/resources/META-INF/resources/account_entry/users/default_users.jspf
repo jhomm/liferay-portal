@@ -1,0 +1,40 @@
+<%--
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+--%>
+
+<clay:sheet-section
+	id='<%= liferayPortletResponse.getNamespace() + "defaultUsers" %>'
+>
+	<clay:content-row
+		containerElement="h3"
+		cssClass="sheet-subtitle"
+	>
+		<clay:content-col
+			containerElement="span"
+			expand="<%= true %>"
+		>
+			<span class="heading-text"><liferay-ui:message key="channel-account-managers" /></span>
+		</clay:content-col>
+	</clay:content-row>
+
+	<div data-qa-id="defaultUsers" id="<portlet:namespace />defaultUsers">
+		<frontend-data-set:classic-display
+			contextParams='<%=
+				HashMapBuilder.<String, String>put(
+					"accountEntryId", String.valueOf(commerceAccountDisplayContext.getAccountEntryId())
+				).put(
+					"type", String.valueOf(CommerceChannelAccountEntryRelConstants.TYPE_USER)
+				).build()
+			%>'
+			creationMenu="<%= commerceAccountDisplayContext.getCreationMenu() %>"
+			dataProviderKey="<%= CommerceAccountFDSNames.ACCOUNT_ENTRY_DEFAULT_USERS %>"
+			id="<%= CommerceAccountFDSNames.ACCOUNT_ENTRY_DEFAULT_USERS %>"
+			itemsPerPage="<%= 10 %>"
+			showSearch="<%= false %>"
+			style="fluid"
+		/>
+	</div>
+</clay:sheet-section>

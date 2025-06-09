@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.model;
@@ -42,6 +33,10 @@ public class LayoutPageTemplateCollectionTable
 			"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<LayoutPageTemplateCollectionTable, String> uuid =
 		createColumn("uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<LayoutPageTemplateCollectionTable, String>
+		externalReferenceCode = createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<LayoutPageTemplateCollectionTable, Long>
 		layoutPageTemplateCollectionId = createColumn(
 			"layoutPageTemplateCollectionId", Long.class, Types.BIGINT,
@@ -62,6 +57,10 @@ public class LayoutPageTemplateCollectionTable
 	public final Column<LayoutPageTemplateCollectionTable, Date> modifiedDate =
 		createColumn(
 			"modifiedDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
+	public final Column<LayoutPageTemplateCollectionTable, Long>
+		parentLayoutPageTemplateCollectionId = createColumn(
+			"parentLPTCollectionId", Long.class, Types.BIGINT,
+			Column.FLAG_DEFAULT);
 	public final Column<LayoutPageTemplateCollectionTable, String>
 		layoutPageTemplateCollectionKey = createColumn(
 			"lptCollectionKey", String.class, Types.VARCHAR,
@@ -71,6 +70,9 @@ public class LayoutPageTemplateCollectionTable
 	public final Column<LayoutPageTemplateCollectionTable, String> description =
 		createColumn(
 			"description", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<LayoutPageTemplateCollectionTable, Integer> type =
+		createColumn(
+			"type_", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 	public final Column<LayoutPageTemplateCollectionTable, Date>
 		lastPublishDate = createColumn(
 			"lastPublishDate", Date.class, Types.TIMESTAMP,

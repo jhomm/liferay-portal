@@ -1,35 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.template.web.internal.portlet.template;
 
 import com.liferay.info.item.provider.InfoItemFormProvider;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.template.BaseTemplateHandler;
 import com.liferay.portal.kernel.template.TemplateHandler;
 import com.liferay.portal.kernel.template.TemplateVariableGroup;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.template.constants.TemplatePortletKeys;
 import com.liferay.template.web.internal.constants.TemplateConstants;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,8 +28,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Lourdes Fernández Besada
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + TemplatePortletKeys.TEMPLATE,
+	property = "jakarta.portlet.name=" + TemplatePortletKeys.TEMPLATE,
 	service = TemplateHandler.class
 )
 public class InformationTemplatesTemplateHandler extends BaseTemplateHandler {
@@ -52,10 +41,9 @@ public class InformationTemplatesTemplateHandler extends BaseTemplateHandler {
 	@Override
 	public String getName(Locale locale) {
 		String portletTitle = _portal.getPortletTitle(
-			TemplatePortletKeys.TEMPLATE,
-			ResourceBundleUtil.getBundle(locale, getClass()));
+			TemplatePortletKeys.TEMPLATE, locale);
 
-		return LanguageUtil.format(locale, "x-template", portletTitle, false);
+		return _language.format(locale, "x-template", portletTitle, false);
 	}
 
 	@Override
@@ -109,6 +97,9 @@ public class InformationTemplatesTemplateHandler extends BaseTemplateHandler {
 	public boolean isDisplayTemplateHandler() {
 		return false;
 	}
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

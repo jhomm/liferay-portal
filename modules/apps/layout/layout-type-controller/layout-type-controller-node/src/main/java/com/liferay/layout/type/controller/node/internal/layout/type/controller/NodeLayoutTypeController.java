@@ -1,29 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.type.controller.node.internal.layout.type.controller;
 
 import com.liferay.layout.type.controller.BaseLayoutTypeControllerImpl;
-import com.liferay.layout.type.controller.node.internal.constants.NodeLayoutTypeControllerConstants;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutTypeController;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -32,8 +23,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Juergen Kappler
  */
 @Component(
-	immediate = true,
-	property = "layout.type=" + NodeLayoutTypeControllerConstants.LAYOUT_TYPE_NODE,
+	property = "layout.type=" + LayoutConstants.TYPE_NODE,
 	service = LayoutTypeController.class
 )
 public class NodeLayoutTypeController extends BaseLayoutTypeControllerImpl {
@@ -65,28 +55,12 @@ public class NodeLayoutTypeController extends BaseLayoutTypeControllerImpl {
 
 	@Override
 	public boolean isURLFriendliable() {
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean isWorkflowEnabled() {
 		return false;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #createServletResponse(HttpServletResponse,
-	 *             UnsyncStringWriter)}
-	 */
-	@Deprecated
-	@Override
-	protected ServletResponse createServletResponse(
-		HttpServletResponse httpServletResponse,
-		com.liferay.portal.kernel.io.unsync.UnsyncStringWriter
-			unsyncStringWriter) {
-
-		return new PipingServletResponse(
-			httpServletResponse, unsyncStringWriter);
 	}
 
 	@Override
@@ -104,16 +78,13 @@ public class NodeLayoutTypeController extends BaseLayoutTypeControllerImpl {
 	}
 
 	@Override
-	protected String getViewPage() {
-		return _VIEW_PAGE;
+	protected ServletContext getServletContext() {
+		return _servletContext;
 	}
 
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.node)",
-		unbind = "-"
-	)
-	protected void setServletContext(ServletContext servletContext) {
-		this.servletContext = servletContext;
+	@Override
+	protected String getViewPage() {
+		return _VIEW_PAGE;
 	}
 
 	private static final String _EDIT_PAGE = "/layout/edit/node.jsp";
@@ -124,5 +95,10 @@ public class NodeLayoutTypeController extends BaseLayoutTypeControllerImpl {
 		"layoutId=${liferay:layoutId}");
 
 	private static final String _VIEW_PAGE = "/layout/view/node.jsp";
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.node)"
+	)
+	private ServletContext _servletContext;
 
 }

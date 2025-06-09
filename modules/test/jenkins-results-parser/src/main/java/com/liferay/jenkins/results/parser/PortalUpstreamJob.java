@@ -1,96 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2024 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
 
-import com.liferay.jenkins.results.parser.test.clazz.group.AxisTestClassGroup;
-import com.liferay.jenkins.results.parser.test.clazz.group.BatchTestClassGroup;
-import com.liferay.jenkins.results.parser.test.clazz.group.SegmentTestClassGroup;
-
-import java.io.File;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import org.json.JSONObject;
 
 /**
- * @author Leslie Wong
+ * @author Michael Hashimoto
  */
-public class PortalUpstreamJob
-	extends PortalGitRepositoryJob implements BatchDependentJob {
+public class PortalUpstreamJob extends PortalAcceptancePullRequestJob {
 
-	public PortalUpstreamJob(String jobName, BuildProfile buildProfile) {
-		super(jobName, buildProfile);
+	protected PortalUpstreamJob(
+		BuildProfile buildProfile, String jobName,
+		PortalGitWorkingDirectory portalGitWorkingDirectory,
+		String testSuiteName, String upstreamBranchName) {
 
-		GitWorkingDirectory jenkinsGitWorkingDirectory =
-			GitWorkingDirectoryFactory.newJenkinsGitWorkingDirectory();
-
-		jobPropertiesFiles.add(
-			new File(
-				jenkinsGitWorkingDirectory.getWorkingDirectory(),
-				"commands/dependencies/test-upstream-batch.properties"));
-
-		readJobProperties();
+		super(
+			buildProfile, jobName, portalGitWorkingDirectory, testSuiteName,
+			upstreamBranchName);
 	}
 
-	@Override
-	public List<AxisTestClassGroup> getDependentAxisTestClassGroups() {
-		List<AxisTestClassGroup> axisTestClassGroups = new ArrayList<>();
-
-		for (BatchTestClassGroup batchTestClassGroup :
-				getDependentBatchTestClassGroups()) {
-
-			axisTestClassGroups.addAll(
-				batchTestClassGroup.getAxisTestClassGroups());
-		}
-
-		return axisTestClassGroups;
-	}
-
-	@Override
-	public Set<String> getDependentBatchNames() {
-		return getFilteredBatchNames(getRawDependentBatchNames());
-	}
-
-	@Override
-	public List<BatchTestClassGroup> getDependentBatchTestClassGroups() {
-		return getBatchTestClassGroups(getRawDependentBatchNames());
-	}
-
-	@Override
-	public Set<String> getDependentSegmentNames() {
-		return getFilteredSegmentNames(getRawDependentBatchNames());
-	}
-
-	@Override
-	public List<SegmentTestClassGroup> getDependentSegmentTestClassGroups() {
-		return getSegmentTestClassGroups(getRawDependentBatchNames());
-	}
-
-	@Override
-	protected Set<String> getRawBatchNames() {
-		return getSetFromString(
-			JenkinsResultsParserUtil.getProperty(
-				getJobProperties(),
-				"test.batch.names[portal-upstream(" + getBranchName() + ")]"));
-	}
-
-	protected Set<String> getRawDependentBatchNames() {
-		return getSetFromString(
-			JenkinsResultsParserUtil.getProperty(
-				getJobProperties(),
-				"test.batch.names.smoke[" + getBranchName() + "]"));
+	protected PortalUpstreamJob(JSONObject jsonObject) {
+		super(jsonObject);
 	}
 
 }

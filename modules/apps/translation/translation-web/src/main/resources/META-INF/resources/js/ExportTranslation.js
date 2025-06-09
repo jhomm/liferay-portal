@@ -1,25 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
-import ClayForm, {ClayCheckbox, ClayInput, ClaySelect} from '@clayui/form';
+import ClayForm, {
+	ClayCheckbox,
+	ClayInput,
+	ClayRadio,
+	ClayRadioGroup,
+	ClaySelect,
+} from '@clayui/form';
 import ClayLayout from '@clayui/layout';
 import ClayLink from '@clayui/link';
 import ClayList from '@clayui/list';
-import {addParams, createPortletURL} from 'frontend-js-web';
+import {addParams} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useState} from 'react';
+
+const EXPORT_DEFAULT = 0;
+
+const EXPORT_ALL = -1;
 
 const Experiences = ({
 	experiences,
@@ -35,7 +36,7 @@ const Experiences = ({
 				<ClayList className="translation-experiences-wrapper">
 					{experiences.map(({label, segment, value}) => {
 						const checked =
-							selectedExperiencesIds.indexOf(value) != -1;
+							selectedExperiencesIds.indexOf(value) !== -1;
 						const inputId = `experience_${value}`;
 
 						return (
@@ -50,6 +51,7 @@ const Experiences = ({
 										value={value}
 									/>
 								</ClayList.ItemField>
+
 								<ClayList.ItemField expand>
 									<ClayLayout.ContentRow
 										className="list-group-label"
@@ -64,6 +66,7 @@ const Experiences = ({
 												{label}
 											</div>
 										</ClayLayout.ContentCol>
+
 										<ClayLayout.ContentCol
 											className="text-right"
 											expand
@@ -91,7 +94,7 @@ const ExportFileFormats = ({
 	portletNamespace,
 	setExportMimeType,
 }) => {
-	if (availableExportFileFormats.length == 1) {
+	if (availableExportFileFormats.length === 1) {
 		return (
 			<ClayInput
 				readOnly
@@ -121,13 +124,60 @@ const ExportFileFormats = ({
 	}
 };
 
+const MultiplePagesExperiences = ({
+	multipleExperiences,
+	onChangeExperience,
+	portletNamespace,
+	selectedExperienceValue,
+}) => {
+	if (multipleExperiences) {
+		return (
+			<div className="mb-5">
+				<label className="mb-2">
+					{Liferay.Language.get('export-experiences')}
+				</label>
+
+				<ClayRadioGroup
+					name={`${portletNamespace}exportExperience`}
+					onChange={onChangeExperience}
+					value={selectedExperienceValue}
+				>
+					<ClayRadio
+						label={Liferay.Language.get('default-experience')}
+						value={EXPORT_DEFAULT}
+					>
+						<div className="form-text">
+							{Liferay.Language.get(
+								'export-default-experience-help-message'
+							)}
+						</div>
+					</ClayRadio>
+
+					<ClayRadio
+						label={Liferay.Language.get('all-experiences')}
+						value={EXPORT_ALL}
+					>
+						<div className="form-text">
+							{Liferay.Language.get(
+								'export-all-experiences-help-message'
+							)}
+						</div>
+					</ClayRadio>
+				</ClayRadioGroup>
+			</div>
+		);
+	}
+
+	return null;
+};
+
 const SourceLocales = ({
 	availableSourceLocales,
 	portletNamespace,
 	setSourceLanguageId,
 	sourceLanguageId,
 }) => {
-	if (availableSourceLocales.length == 1) {
+	if (availableSourceLocales.length === 1) {
 		return (
 			<ClayInput readOnly value={availableSourceLocales[0].displayName} />
 		);
@@ -161,7 +211,7 @@ const TargetLocale = ({
 	sourceLanguageId,
 }) => {
 	const languageId = locale.languageId;
-	const checked = selectedTargetLanguageIds.indexOf(languageId) != -1;
+	const checked = selectedTargetLanguageIds.indexOf(languageId) !== -1;
 
 	return (
 		<ClayLayout.Col className="py-2" md={4}>
@@ -184,6 +234,8 @@ const ExportTranslation = ({
 	defaultSourceLanguageId,
 	experiences,
 	exportTranslationURL: initialExportTranslationURL,
+	multipleExperiences,
+	multiplePagesSelected,
 	portletNamespace,
 	redirectURL,
 }) => {
@@ -203,6 +255,9 @@ const ExportTranslation = ({
 		experiences?.length ? experiences.map(({value}) => value) : []
 	);
 
+	const [selectedExperienceValue, setSelectedExperienceValue] =
+		useState(EXPORT_DEFAULT);
+
 	const exportTranslationURL = addParams(
 		'download=true',
 		initialExportTranslationURL
@@ -213,8 +268,8 @@ const ExportTranslation = ({
 			checked
 				? languageIds.concat(selectedLanguageId)
 				: languageIds.filter(
-						(languageId) => languageId != selectedLanguageId
-				  )
+						(languageId) => languageId !== selectedLanguageId
+					)
 		);
 	};
 
@@ -223,9 +278,13 @@ const ExportTranslation = ({
 			checked
 				? experiencesIds.concat(selectedExperienceId)
 				: experiencesIds.filter(
-						(experienceId) => experienceId != selectedExperienceId
-				  )
+						(experienceId) => experienceId !== selectedExperienceId
+					)
 		);
+	};
+
+	const onChangeExperienceValue = (value) => {
+		setSelectedExperienceValue(value);
 	};
 
 	return (
@@ -239,13 +298,15 @@ const ExportTranslation = ({
 					targetLanguageIds: selectedTargetLanguageIds.join(','),
 				};
 
-				if (selectedExperiencesIds.length) {
-					params.segmentsExperienceIds = selectedExperiencesIds.join(
-						','
-					);
+				if (multiplePagesSelected) {
+					params.segmentsExperienceIds = selectedExperienceValue;
+				}
+				else if (selectedExperiencesIds.length) {
+					params.segmentsExperienceIds =
+						selectedExperiencesIds.join(',');
 				}
 
-				location.href = createPortletURL(exportTranslationURL, params);
+				location.href = addParams(params, exportTranslationURL);
 			}}
 		>
 			<ClayForm.Group className="w-50">
@@ -258,6 +319,7 @@ const ExportTranslation = ({
 				>
 					{Liferay.Language.get('export-file-format')}
 				</label>
+
 				<ExportFileFormats
 					availableExportFileFormats={availableExportFileFormats}
 					exportMimeType={exportMimeType}
@@ -270,6 +332,7 @@ const ExportTranslation = ({
 				<label htmlFor={`${portletNamespace}sourceLanguageId`}>
 					{Liferay.Language.get('original-language')}
 				</label>
+
 				<SourceLocales
 					availableSourceLocales={availableSourceLocales}
 					portletNamespace={portletNamespace}
@@ -282,6 +345,7 @@ const ExportTranslation = ({
 				<label className="mb-2">
 					{Liferay.Language.get('languages-to-translate-to')}
 				</label>
+
 				<ClayLayout.Row>
 					{availableTargetLocales.map((locale) => (
 						<TargetLocale
@@ -298,18 +362,27 @@ const ExportTranslation = ({
 				</ClayLayout.Row>
 			</ClayForm.Group>
 
-			<Experiences
-				experiences={experiences}
-				onChangeExperience={onChangeExperience}
-				selectedExperiencesIds={selectedExperiencesIds}
-			/>
+			{multiplePagesSelected ? (
+				<MultiplePagesExperiences
+					multipleExperiences={multipleExperiences}
+					onChangeExperience={onChangeExperienceValue}
+					portletNamespace={portletNamespace}
+					selectedExperienceValue={selectedExperienceValue}
+				/>
+			) : (
+				<Experiences
+					experiences={experiences}
+					onChangeExperience={onChangeExperience}
+					selectedExperiencesIds={selectedExperiencesIds}
+				/>
+			)}
 
 			<ClayButton.Group spaced>
 				<ClayButton
 					disabled={
-						selectedTargetLanguageIds.length === 0 ||
+						!selectedTargetLanguageIds.length ||
 						(experiences?.length > 1 &&
-							selectedExperiencesIds.length === 0)
+							!selectedExperiencesIds.length)
 					}
 					displayType="primary"
 					type="submit"
@@ -352,7 +425,8 @@ ExportTranslation.propTypes = {
 			value: PropTypes.string.isRequired,
 		})
 	),
-	keys: PropTypes.array,
+	multipleExperiences: PropTypes.bool,
+	multiplePagesSelected: PropTypes.bool,
 };
 
 export default ExportTranslation;

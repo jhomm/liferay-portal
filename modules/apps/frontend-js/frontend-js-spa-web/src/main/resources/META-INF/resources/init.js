@@ -1,16 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
+
+import {getPortletNamespace} from 'frontend-js-web';
 
 import App from './app/LiferayApp';
 import ActionURLScreen from './screen/ActionURLScreen';
@@ -25,6 +18,38 @@ import {getUrlPath} from './util/utils';
  */
 const initSPA = function (config) {
 	const app = new App(config);
+
+	// redirectParams is not sorted: check most common redirect parameter first
+
+	const redirectParams = ['redirect', 'backURL', 'p_l_back_url'];
+
+	const checkExcludedTargetPortlets = (uri) => {
+		const id = uri.searchParams.get('p_p_id');
+
+		if (!id || !config.excludedTargetPortlets) {
+			return true;
+		}
+
+		if (config.excludedTargetPortlets.includes(id)) {
+			return false;
+		}
+
+		const portletNamespace = getPortletNamespace(id);
+
+		return redirectParams.every((redirectParam) => {
+			const redirectParamValue = uri.searchParams.get(
+				portletNamespace + redirectParam
+			);
+
+			if (!redirectParamValue) {
+				return true;
+			}
+
+			return checkExcludedTargetPortlets(
+				new URL(redirectParamValue, window.location.origin)
+			);
+		});
+	};
 
 	app.addRoutes([
 		{
@@ -42,7 +67,9 @@ const initSPA = function (config) {
 				const host = loginRedirectURL.host || window.location.host;
 
 				if (app.isLinkSameOrigin_(host)) {
-					match = uri.searchParams.get('p_p_lifecycle') === '1';
+					match =
+						uri.searchParams.get('p_p_lifecycle') === '1' &&
+						checkExcludedTargetPortlets(uri);
 				}
 
 				return match;
@@ -103,9 +130,8 @@ const initSPA = function (config) {
 						document.activeElement;
 				}
 				else {
-					Liferay.SPA.__capturedFormButtonElement__ = formElement.querySelector(
-						buttonSelector
-					);
+					Liferay.SPA.__capturedFormButtonElement__ =
+						formElement.querySelector(buttonSelector);
 				}
 
 				app.navigate(getUrlPath(url));
@@ -125,8 +151,8 @@ const initSPA = function (config) {
 	return app;
 };
 
-export default function init(config) {
-	if (document.readyState == 'loading') {
+export function init(config) {
+	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', () => {
 			initSPA(config);
 		});

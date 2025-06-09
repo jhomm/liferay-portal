@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.nested.portlets.web.internal.portlet.action;
 
 import com.liferay.nested.portlets.web.internal.constants.NestedPortletsPortletKeys;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutTemplate;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
@@ -31,6 +21,12 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -38,13 +34,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,8 +43,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Peter Fellwock
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + NestedPortletsPortletKeys.NESTED_PORTLETS,
+	property = "jakarta.portlet.name=" + NestedPortletsPortletKeys.NESTED_PORTLETS,
 	service = ConfigurationAction.class
 )
 public class NestedPortletsConfigurationAction
@@ -81,7 +69,7 @@ public class NestedPortletsConfigurationAction
 			String portletResource = ParamUtil.getString(
 				actionRequest, "portletResource");
 
-			reorganizeNestedColumns(
+			_reorganizeNestedColumns(
 				actionRequest, portletResource, layoutTemplateId,
 				oldLayoutTemplateId);
 		}
@@ -89,16 +77,7 @@ public class NestedPortletsConfigurationAction
 		super.processAction(portletConfig, actionRequest, actionResponse);
 	}
 
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.nested.portlets.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
-	}
-
-	protected List<String> getColumnNames(String content, String portletId) {
+	private List<String> _getColumnNames(String content, String portletId) {
 		Matcher matcher = _pattern.matcher(content);
 
 		Set<String> columnIds = new HashSet<>();
@@ -122,10 +101,10 @@ public class NestedPortletsConfigurationAction
 		return new ArrayList<>(columnNames);
 	}
 
-	protected void reorganizeNestedColumns(
+	private void _reorganizeNestedColumns(
 			ActionRequest actionRequest, String portletResource,
 			String newLayoutTemplateId, String oldLayoutTemplateId)
-		throws PortalException {
+		throws Exception {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -145,10 +124,10 @@ public class NestedPortletsConfigurationAction
 				_layoutTemplateLocalService.getLayoutTemplate(
 					newLayoutTemplateId, false, theme.getThemeId());
 
-			List<String> newColumns = getColumnNames(
+			List<String> newColumns = _getColumnNames(
 				newLayoutTemplate.getContent(), portletResource);
 
-			List<String> oldColumns = getColumnNames(
+			List<String> oldColumns = _getColumnNames(
 				oldLayoutTemplate.getContent(), portletResource);
 
 			layoutTypePortlet.reorganizePortlets(newColumns, oldColumns);
@@ -161,24 +140,13 @@ public class NestedPortletsConfigurationAction
 			layout.getTypeSettings());
 	}
 
-	@Reference(unbind = "-")
-	protected void setLayoutLocalService(
-		LayoutLocalService layoutLocalService) {
-
-		_layoutLocalService = layoutLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setLayoutTemplateLocalService(
-		LayoutTemplateLocalService layoutTemplateLocalService) {
-
-		_layoutTemplateLocalService = layoutTemplateLocalService;
-	}
-
 	private static final Pattern _pattern = Pattern.compile(
 		"processColumn[(]\"(.*?)\"(?:, *\"(?:.*?)\")?[)]", Pattern.DOTALL);
 
+	@Reference
 	private LayoutLocalService _layoutLocalService;
+
+	@Reference
 	private LayoutTemplateLocalService _layoutTemplateLocalService;
 
 	@Reference

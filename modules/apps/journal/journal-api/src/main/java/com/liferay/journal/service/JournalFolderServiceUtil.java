@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.service;
 
 import com.liferay.journal.model.JournalFolder;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -40,12 +32,14 @@ public class JournalFolderServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.journal.service.impl.JournalFolderServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static JournalFolder addFolder(
-			long groupId, long parentFolderId, String name, String description,
+			String externalReferenceCode, long groupId, long parentFolderId,
+			String name, String description,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addFolder(
-			groupId, parentFolderId, name, description, serviceContext);
+			externalReferenceCode, groupId, parentFolderId, name, description,
+			serviceContext);
 	}
 
 	public static void deleteFolder(long folderId) throws PortalException {
@@ -90,6 +84,14 @@ public class JournalFolderServiceUtil {
 		throws PortalException {
 
 		return getService().getFolder(folderId);
+	}
+
+	public static JournalFolder getFolderByExternalReferenceCode(
+			long groupId, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().getFolderByExternalReferenceCode(
+			groupId, externalReferenceCode);
 	}
 
 	public static List<Long> getFolderIds(long groupId, long folderId)
@@ -161,6 +163,26 @@ public class JournalFolderServiceUtil {
 			orderByComparator);
 	}
 
+	public static List<Object> getFoldersAndArticles(
+		long groupId, long userId, long folderId, long ddmStructureId,
+		int status, java.util.Locale locale, int start, int end,
+		OrderByComparator<?> orderByComparator) {
+
+		return getService().getFoldersAndArticles(
+			groupId, userId, folderId, ddmStructureId, status, locale, start,
+			end, orderByComparator);
+	}
+
+	public static List<Object> getFoldersAndArticles(
+		long groupId, long userId, long folderId, long ddmStructureId,
+		int status, java.util.Locale locale, int[] excludedStatuses, int start,
+		int end, OrderByComparator<?> orderByComparator) {
+
+		return getService().getFoldersAndArticles(
+			groupId, userId, folderId, ddmStructureId, status, locale,
+			excludedStatuses, start, end, orderByComparator);
+	}
+
 	public static int getFoldersAndArticlesCount(
 		long groupId, List<Long> folderIds, int status) {
 
@@ -184,6 +206,23 @@ public class JournalFolderServiceUtil {
 
 		return getService().getFoldersAndArticlesCount(
 			groupId, userId, folderId, status);
+	}
+
+	public static int getFoldersAndArticlesCount(
+		long groupId, long userId, long folderId, long ddmStructureId,
+		int status) {
+
+		return getService().getFoldersAndArticlesCount(
+			groupId, userId, folderId, ddmStructureId, status);
+	}
+
+	public static int getFoldersAndArticlesCount(
+		long groupId, long userId, long folderId, long ddmStructureId,
+		int[] excludedStatuses, int status) {
+
+		return getService().getFoldersAndArticlesCount(
+			groupId, userId, folderId, ddmStructureId, excludedStatuses,
+			status);
 	}
 
 	public static int getFoldersCount(long groupId, long parentFolderId) {
@@ -261,6 +300,15 @@ public class JournalFolderServiceUtil {
 			end, orderByComparator);
 	}
 
+	public static int searchDDMStructuresCount(
+			long companyId, long[] groupIds, long folderId, int restrictionType,
+			String keywords)
+		throws PortalException {
+
+		return getService().searchDDMStructuresCount(
+			companyId, groupIds, folderId, restrictionType, keywords);
+	}
+
 	public static void subscribe(long groupId, long folderId)
 		throws PortalException {
 
@@ -298,9 +346,11 @@ public class JournalFolderServiceUtil {
 	}
 
 	public static JournalFolderService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile JournalFolderService _service;
+	private static final Snapshot<JournalFolderService> _serviceSnapshot =
+		new Snapshot<>(
+			JournalFolderServiceUtil.class, JournalFolderService.class);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.designer.web.internal.verify;
@@ -37,19 +28,15 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Inácio Nery
  */
-@Component(
-	immediate = true,
-	property = "verify.process.name=com.liferay.portal.workflow.kaleo.designer.web",
-	service = VerifyProcess.class
-)
+@Component(service = VerifyProcess.class)
 public class KaleoDesignerWebVerifyProcess extends VerifyProcess {
 
 	@Override
 	protected void doVerify() throws Exception {
-		verifyKaleoDefinitionVersions();
+		_verifyKaleoDefinitionVersions();
 	}
 
-	protected ServiceContext getServiceContext() {
+	private ServiceContext _getServiceContext() {
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
@@ -63,7 +50,7 @@ public class KaleoDesignerWebVerifyProcess extends VerifyProcess {
 		return serviceContext;
 	}
 
-	protected void verifyKaleoDefinitionVersions() throws PortalException {
+	private void _verifyKaleoDefinitionVersions() throws PortalException {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			ActionableDynamicQuery actionableDynamicQuery =
 				_kaleoDefinitionVersionLocalService.getActionableDynamicQuery();
@@ -73,14 +60,14 @@ public class KaleoDesignerWebVerifyProcess extends VerifyProcess {
 					KaleoDefinitionVersion kaleoDefinitionVersion =
 						(KaleoDefinitionVersion)object;
 
-					verifyKaleoDefinitionVersions(kaleoDefinitionVersion);
+					_verifyKaleoDefinitionVersions(kaleoDefinitionVersion);
 				});
 
 			actionableDynamicQuery.performActions();
 		}
 	}
 
-	protected void verifyKaleoDefinitionVersions(
+	private void _verifyKaleoDefinitionVersions(
 			KaleoDefinitionVersion kaleoDefinitionVersion)
 		throws PortalException {
 
@@ -98,7 +85,7 @@ public class KaleoDesignerWebVerifyProcess extends VerifyProcess {
 
 		if (resourcePermission == null) {
 			_resourceLocalService.addModelResources(
-				kaleoDefinitionVersion, getServiceContext());
+				kaleoDefinitionVersion, _getServiceContext());
 		}
 	}
 

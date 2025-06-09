@@ -1,38 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.admin.web.internal.display.context;
 
+import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminPortletKeys;
 import com.liferay.layout.page.template.admin.web.internal.util.LayoutPageTemplatePortletUtil;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryServiceUtil;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -49,9 +40,9 @@ public class LayoutPrototypeDisplayContext {
 	}
 
 	public Boolean getActive() {
-		String navigation = getNavigation();
-
 		Boolean active = null;
+
+		String navigation = _getNavigation();
 
 		if (navigation.equals("active")) {
 			active = true;
@@ -68,8 +59,10 @@ public class LayoutPrototypeDisplayContext {
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(
-			_httpServletRequest, "orderByCol", "create-date");
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_httpServletRequest,
+			LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
+			"layout-prototype-order-by-col", "create-date");
 
 		return _orderByCol;
 	}
@@ -79,8 +72,10 @@ public class LayoutPrototypeDisplayContext {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(
-			_httpServletRequest, "orderByType", "asc");
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_httpServletRequest,
+			LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
+			"layout-prototype-order-by-type", "asc");
 
 		return _orderByType;
 	}
@@ -88,7 +83,7 @@ public class LayoutPrototypeDisplayContext {
 	public PortletURL getPortletURL() {
 		PortletURL portletURL = _renderResponse.createRenderURL();
 
-		String navigation = getNavigation();
+		String navigation = _getNavigation();
 
 		if (Validator.isNotNull(navigation)) {
 			portletURL.setParameter("navigation", navigation);
@@ -110,52 +105,51 @@ public class LayoutPrototypeDisplayContext {
 	}
 
 	public SearchContainer<LayoutPageTemplateEntry> getSearchContainer() {
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)_httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
 		SearchContainer<LayoutPageTemplateEntry> searchContainer =
 			new SearchContainer(
 				_renderRequest, _renderResponse.createRenderURL(), null,
 				"there-are-no-page-templates");
 
 		searchContainer.setId("layoutPrototype");
-		searchContainer.setRowChecker(
-			new EmptyOnClickRowChecker(_renderResponse));
-
 		searchContainer.setOrderByCol(getOrderByCol());
-
-		OrderByComparator<LayoutPageTemplateEntry> orderByComparator =
+		searchContainer.setOrderByComparator(
 			LayoutPageTemplatePortletUtil.
 				getLayoutPageTemplateEntryOrderByComparator(
-					getOrderByCol(), getOrderByType());
-
-		searchContainer.setOrderByComparator(orderByComparator);
-
+					getOrderByCol(), getOrderByType()));
 		searchContainer.setOrderByType(getOrderByType());
-
-		int count =
+		searchContainer.setResultsAndTotal(
+			() ->
+				LayoutPageTemplateEntryServiceUtil.
+					getLayoutPageTemplateEntriesByType(
+						_getGroupId(), 0,
+						LayoutPageTemplateEntryTypeConstants.WIDGET_PAGE,
+						searchContainer.getStart(), searchContainer.getEnd(),
+						searchContainer.getOrderByComparator()),
 			LayoutPageTemplateEntryServiceUtil.
 				getLayoutPageTemplateEntriesCountByType(
-					themeDisplay.getScopeGroupId(), 0,
-					LayoutPageTemplateEntryTypeConstants.TYPE_WIDGET_PAGE);
-
-		searchContainer.setTotal(count);
-
-		List<LayoutPageTemplateEntry> results =
-			LayoutPageTemplateEntryServiceUtil.
-				getLayoutPageTemplateEntriesByType(
-					themeDisplay.getScopeGroupId(), 0,
-					LayoutPageTemplateEntryTypeConstants.TYPE_WIDGET_PAGE,
-					searchContainer.getStart(), searchContainer.getEnd(),
-					orderByComparator);
-
-		searchContainer.setResults(results);
+					_getGroupId(), 0,
+					LayoutPageTemplateEntryTypeConstants.WIDGET_PAGE));
+		searchContainer.setRowChecker(
+			new EmptyOnClickRowChecker(_renderResponse));
 
 		return searchContainer;
 	}
 
-	protected String getNavigation() {
+	private long _getGroupId() {
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)_httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		Group group = themeDisplay.getScopeGroup();
+
+		if (group.isStagingGroup()) {
+			return group.getLiveGroupId();
+		}
+
+		return themeDisplay.getScopeGroupId();
+	}
+
+	private String _getNavigation() {
 		if (Validator.isNotNull(_navigation)) {
 			return _navigation;
 		}

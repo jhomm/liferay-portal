@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.form.navigator;
@@ -23,13 +14,13 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * @author Julio Camarero
@@ -43,7 +34,11 @@ public abstract class BaseJSPFormNavigatorEntry<T>
 			HttpServletResponse httpServletResponse)
 		throws IOException {
 
-		ServletContext servletContext = getServletContext(httpServletRequest);
+		ServletContext servletContext = getServletContext();
+
+		if (servletContext == null) {
+			servletContext = getServletContext(httpServletRequest);
+		}
 
 		RequestDispatcher requestDispatcher =
 			servletContext.getRequestDispatcher(getJspPath());
@@ -60,18 +55,10 @@ public abstract class BaseJSPFormNavigatorEntry<T>
 		}
 	}
 
-	public void setServletContext(ServletContext servletContext) {
-		_servletContext = servletContext;
-	}
-
 	protected abstract String getJspPath();
 
 	protected ServletContext getServletContext(
 		HttpServletRequest httpServletRequest) {
-
-		if (_servletContext != null) {
-			return _servletContext;
-		}
 
 		String portletId = PortalUtil.getPortletId(httpServletRequest);
 
@@ -88,7 +75,5 @@ public abstract class BaseJSPFormNavigatorEntry<T>
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseJSPFormNavigatorEntry.class);
-
-	private ServletContext _servletContext;
 
 }

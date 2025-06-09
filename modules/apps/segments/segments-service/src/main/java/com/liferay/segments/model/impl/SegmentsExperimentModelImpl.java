@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.model.impl;
@@ -32,25 +23,20 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.segments.model.SegmentsExperiment;
 import com.liferay.segments.model.SegmentsExperimentModel;
-import com.liferay.segments.model.SegmentsExperimentSoap;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -87,10 +73,9 @@ public class SegmentsExperimentModelImpl
 		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
 		{"segmentsEntryId", Types.BIGINT},
 		{"segmentsExperienceId", Types.BIGINT},
-		{"segmentsExperimentKey", Types.VARCHAR}, {"classNameId", Types.BIGINT},
-		{"classPK", Types.BIGINT}, {"name", Types.VARCHAR},
-		{"description", Types.VARCHAR}, {"typeSettings", Types.CLOB},
-		{"status", Types.INTEGER}
+		{"segmentsExperimentKey", Types.VARCHAR}, {"plid", Types.BIGINT},
+		{"name", Types.VARCHAR}, {"description", Types.VARCHAR},
+		{"typeSettings", Types.CLOB}, {"status", Types.INTEGER}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -110,8 +95,7 @@ public class SegmentsExperimentModelImpl
 		TABLE_COLUMNS_MAP.put("segmentsEntryId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("segmentsExperienceId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("segmentsExperimentKey", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("classNameId", Types.BIGINT);
-		TABLE_COLUMNS_MAP.put("classPK", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("plid", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("description", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("typeSettings", Types.CLOB);
@@ -119,7 +103,7 @@ public class SegmentsExperimentModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table SegmentsExperiment (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,segmentsExperimentId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,segmentsEntryId LONG,segmentsExperienceId LONG,segmentsExperimentKey VARCHAR(75) null,classNameId LONG,classPK LONG,name VARCHAR(75) null,description STRING null,typeSettings TEXT null,status INTEGER,primary key (segmentsExperimentId, ctCollectionId))";
+		"create table SegmentsExperiment (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,segmentsExperimentId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,segmentsEntryId LONG,segmentsExperienceId LONG,segmentsExperimentKey VARCHAR(75) null,plid LONG,name VARCHAR(75) null,description STRING null,typeSettings TEXT null,status INTEGER,primary key (segmentsExperimentId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table SegmentsExperiment";
 
@@ -128,6 +112,9 @@ public class SegmentsExperimentModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY SegmentsExperiment.createDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY segmentsExperiment.createDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -139,56 +126,44 @@ public class SegmentsExperimentModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CLASSNAMEID_COLUMN_BITMASK = 1L;
+	public static final long COMPANYID_COLUMN_BITMASK = 1L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CLASSPK_COLUMN_BITMASK = 2L;
+	public static final long GROUPID_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long COMPANYID_COLUMN_BITMASK = 4L;
+	public static final long PLID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 8L;
+	public static final long SEGMENTSEXPERIENCEID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SEGMENTSEXPERIENCEID_COLUMN_BITMASK = 16L;
+	public static final long SEGMENTSEXPERIMENTKEY_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SEGMENTSEXPERIMENTKEY_COLUMN_BITMASK = 32L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long STATUS_COLUMN_BITMASK = 64L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 128L;
+	public static final long UUID_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CREATEDATE_COLUMN_BITMASK = 256L;
+	public static final long CREATEDATE_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -202,69 +177,6 @@ public class SegmentsExperimentModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static SegmentsExperiment toModel(SegmentsExperimentSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		SegmentsExperiment model = new SegmentsExperimentImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setSegmentsExperimentId(soapModel.getSegmentsExperimentId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setSegmentsEntryId(soapModel.getSegmentsEntryId());
-		model.setSegmentsExperienceId(soapModel.getSegmentsExperienceId());
-		model.setSegmentsExperimentKey(soapModel.getSegmentsExperimentKey());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setTypeSettings(soapModel.getTypeSettings());
-		model.setStatus(soapModel.getStatus());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<SegmentsExperiment> toModels(
-		SegmentsExperimentSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<SegmentsExperiment> models = new ArrayList<SegmentsExperiment>(
-			soapModels.length);
-
-		for (SegmentsExperimentSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public SegmentsExperimentModelImpl() {
@@ -343,173 +255,157 @@ public class SegmentsExperimentModelImpl
 	public Map<String, Function<SegmentsExperiment, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<SegmentsExperiment, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, SegmentsExperiment>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			SegmentsExperiment.class.getClassLoader(), SegmentsExperiment.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<SegmentsExperiment, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<SegmentsExperiment> constructor =
-				(Constructor<SegmentsExperiment>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<SegmentsExperiment, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<SegmentsExperiment, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", SegmentsExperiment::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", SegmentsExperiment::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", SegmentsExperiment::getUuid);
+			attributeGetterFunctions.put(
+				"segmentsExperimentId",
+				SegmentsExperiment::getSegmentsExperimentId);
+			attributeGetterFunctions.put(
+				"groupId", SegmentsExperiment::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", SegmentsExperiment::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", SegmentsExperiment::getUserId);
+			attributeGetterFunctions.put(
+				"userName", SegmentsExperiment::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", SegmentsExperiment::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", SegmentsExperiment::getModifiedDate);
+			attributeGetterFunctions.put(
+				"segmentsEntryId", SegmentsExperiment::getSegmentsEntryId);
+			attributeGetterFunctions.put(
+				"segmentsExperienceId",
+				SegmentsExperiment::getSegmentsExperienceId);
+			attributeGetterFunctions.put(
+				"segmentsExperimentKey",
+				SegmentsExperiment::getSegmentsExperimentKey);
+			attributeGetterFunctions.put("plid", SegmentsExperiment::getPlid);
+			attributeGetterFunctions.put("name", SegmentsExperiment::getName);
+			attributeGetterFunctions.put(
+				"description", SegmentsExperiment::getDescription);
+			attributeGetterFunctions.put(
+				"typeSettings", SegmentsExperiment::getTypeSettings);
+			attributeGetterFunctions.put(
+				"status", SegmentsExperiment::getStatus);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<SegmentsExperiment, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<SegmentsExperiment, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<SegmentsExperiment, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<SegmentsExperiment, Object>>();
-		Map<String, BiConsumer<SegmentsExperiment, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<SegmentsExperiment, ?>>();
+		private static final Map<String, BiConsumer<SegmentsExperiment, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", SegmentsExperiment::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<SegmentsExperiment, Long>)
-				SegmentsExperiment::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", SegmentsExperiment::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<SegmentsExperiment, Long>)
-				SegmentsExperiment::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", SegmentsExperiment::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<SegmentsExperiment, String>)
-				SegmentsExperiment::setUuid);
-		attributeGetterFunctions.put(
-			"segmentsExperimentId",
-			SegmentsExperiment::getSegmentsExperimentId);
-		attributeSetterBiConsumers.put(
-			"segmentsExperimentId",
-			(BiConsumer<SegmentsExperiment, Long>)
-				SegmentsExperiment::setSegmentsExperimentId);
-		attributeGetterFunctions.put("groupId", SegmentsExperiment::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<SegmentsExperiment, Long>)
-				SegmentsExperiment::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", SegmentsExperiment::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<SegmentsExperiment, Long>)
-				SegmentsExperiment::setCompanyId);
-		attributeGetterFunctions.put("userId", SegmentsExperiment::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<SegmentsExperiment, Long>)
-				SegmentsExperiment::setUserId);
-		attributeGetterFunctions.put(
-			"userName", SegmentsExperiment::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<SegmentsExperiment, String>)
-				SegmentsExperiment::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", SegmentsExperiment::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<SegmentsExperiment, Date>)
-				SegmentsExperiment::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", SegmentsExperiment::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<SegmentsExperiment, Date>)
-				SegmentsExperiment::setModifiedDate);
-		attributeGetterFunctions.put(
-			"segmentsEntryId", SegmentsExperiment::getSegmentsEntryId);
-		attributeSetterBiConsumers.put(
-			"segmentsEntryId",
-			(BiConsumer<SegmentsExperiment, Long>)
-				SegmentsExperiment::setSegmentsEntryId);
-		attributeGetterFunctions.put(
-			"segmentsExperienceId",
-			SegmentsExperiment::getSegmentsExperienceId);
-		attributeSetterBiConsumers.put(
-			"segmentsExperienceId",
-			(BiConsumer<SegmentsExperiment, Long>)
-				SegmentsExperiment::setSegmentsExperienceId);
-		attributeGetterFunctions.put(
-			"segmentsExperimentKey",
-			SegmentsExperiment::getSegmentsExperimentKey);
-		attributeSetterBiConsumers.put(
-			"segmentsExperimentKey",
-			(BiConsumer<SegmentsExperiment, String>)
-				SegmentsExperiment::setSegmentsExperimentKey);
-		attributeGetterFunctions.put(
-			"classNameId", SegmentsExperiment::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<SegmentsExperiment, Long>)
-				SegmentsExperiment::setClassNameId);
-		attributeGetterFunctions.put("classPK", SegmentsExperiment::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK",
-			(BiConsumer<SegmentsExperiment, Long>)
-				SegmentsExperiment::setClassPK);
-		attributeGetterFunctions.put("name", SegmentsExperiment::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<SegmentsExperiment, String>)
-				SegmentsExperiment::setName);
-		attributeGetterFunctions.put(
-			"description", SegmentsExperiment::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<SegmentsExperiment, String>)
-				SegmentsExperiment::setDescription);
-		attributeGetterFunctions.put(
-			"typeSettings", SegmentsExperiment::getTypeSettings);
-		attributeSetterBiConsumers.put(
-			"typeSettings",
-			(BiConsumer<SegmentsExperiment, String>)
-				SegmentsExperiment::setTypeSettings);
-		attributeGetterFunctions.put("status", SegmentsExperiment::getStatus);
-		attributeSetterBiConsumers.put(
-			"status",
-			(BiConsumer<SegmentsExperiment, Integer>)
-				SegmentsExperiment::setStatus);
+		static {
+			Map<String, BiConsumer<SegmentsExperiment, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<SegmentsExperiment, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<SegmentsExperiment, Long>)
+					SegmentsExperiment::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<SegmentsExperiment, Long>)
+					SegmentsExperiment::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<SegmentsExperiment, String>)
+					SegmentsExperiment::setUuid);
+			attributeSetterBiConsumers.put(
+				"segmentsExperimentId",
+				(BiConsumer<SegmentsExperiment, Long>)
+					SegmentsExperiment::setSegmentsExperimentId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<SegmentsExperiment, Long>)
+					SegmentsExperiment::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<SegmentsExperiment, Long>)
+					SegmentsExperiment::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<SegmentsExperiment, Long>)
+					SegmentsExperiment::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<SegmentsExperiment, String>)
+					SegmentsExperiment::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<SegmentsExperiment, Date>)
+					SegmentsExperiment::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<SegmentsExperiment, Date>)
+					SegmentsExperiment::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"segmentsEntryId",
+				(BiConsumer<SegmentsExperiment, Long>)
+					SegmentsExperiment::setSegmentsEntryId);
+			attributeSetterBiConsumers.put(
+				"segmentsExperienceId",
+				(BiConsumer<SegmentsExperiment, Long>)
+					SegmentsExperiment::setSegmentsExperienceId);
+			attributeSetterBiConsumers.put(
+				"segmentsExperimentKey",
+				(BiConsumer<SegmentsExperiment, String>)
+					SegmentsExperiment::setSegmentsExperimentKey);
+			attributeSetterBiConsumers.put(
+				"plid",
+				(BiConsumer<SegmentsExperiment, Long>)
+					SegmentsExperiment::setPlid);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<SegmentsExperiment, String>)
+					SegmentsExperiment::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<SegmentsExperiment, String>)
+					SegmentsExperiment::setDescription);
+			attributeSetterBiConsumers.put(
+				"typeSettings",
+				(BiConsumer<SegmentsExperiment, String>)
+					SegmentsExperiment::setTypeSettings);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<SegmentsExperiment, Integer>)
+					SegmentsExperiment::setStatus);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -791,39 +687,19 @@ public class SegmentsExperimentModelImpl
 		return getColumnOriginalValue("segmentsExperimentKey");
 	}
 
-	@Override
-	public String getClassName() {
-		if (getClassNameId() <= 0) {
-			return "";
-		}
-
-		return PortalUtil.getClassName(getClassNameId());
-	}
-
-	@Override
-	public void setClassName(String className) {
-		long classNameId = 0;
-
-		if (Validator.isNotNull(className)) {
-			classNameId = PortalUtil.getClassNameId(className);
-		}
-
-		setClassNameId(classNameId);
-	}
-
 	@JSON
 	@Override
-	public long getClassNameId() {
-		return _classNameId;
+	public long getPlid() {
+		return _plid;
 	}
 
 	@Override
-	public void setClassNameId(long classNameId) {
+	public void setPlid(long plid) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_classNameId = classNameId;
+		_plid = plid;
 	}
 
 	/**
@@ -831,33 +707,8 @@ public class SegmentsExperimentModelImpl
 	 *             #getColumnOriginalValue(String)}
 	 */
 	@Deprecated
-	public long getOriginalClassNameId() {
-		return GetterUtil.getLong(
-			this.<Long>getColumnOriginalValue("classNameId"));
-	}
-
-	@JSON
-	@Override
-	public long getClassPK() {
-		return _classPK;
-	}
-
-	@Override
-	public void setClassPK(long classPK) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_classPK = classPK;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalClassPK() {
-		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("classPK"));
+	public long getOriginalPlid() {
+		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("plid"));
 	}
 
 	@JSON
@@ -935,21 +786,10 @@ public class SegmentsExperimentModelImpl
 		_status = status;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public int getOriginalStatus() {
-		return GetterUtil.getInteger(
-			this.<Integer>getColumnOriginalValue("status"));
-	}
-
 	@Override
 	public StagedModelType getStagedModelType() {
 		return new StagedModelType(
-			PortalUtil.getClassNameId(SegmentsExperiment.class.getName()),
-			getClassNameId());
+			PortalUtil.getClassNameId(SegmentsExperiment.class.getName()));
 	}
 
 	public long getColumnBitmask() {
@@ -1026,8 +866,7 @@ public class SegmentsExperimentModelImpl
 			getSegmentsExperienceId());
 		segmentsExperimentImpl.setSegmentsExperimentKey(
 			getSegmentsExperimentKey());
-		segmentsExperimentImpl.setClassNameId(getClassNameId());
-		segmentsExperimentImpl.setClassPK(getClassPK());
+		segmentsExperimentImpl.setPlid(getPlid());
 		segmentsExperimentImpl.setName(getName());
 		segmentsExperimentImpl.setDescription(getDescription());
 		segmentsExperimentImpl.setTypeSettings(getTypeSettings());
@@ -1069,10 +908,8 @@ public class SegmentsExperimentModelImpl
 			this.<Long>getColumnOriginalValue("segmentsExperienceId"));
 		segmentsExperimentImpl.setSegmentsExperimentKey(
 			this.<String>getColumnOriginalValue("segmentsExperimentKey"));
-		segmentsExperimentImpl.setClassNameId(
-			this.<Long>getColumnOriginalValue("classNameId"));
-		segmentsExperimentImpl.setClassPK(
-			this.<Long>getColumnOriginalValue("classPK"));
+		segmentsExperimentImpl.setPlid(
+			this.<Long>getColumnOriginalValue("plid"));
 		segmentsExperimentImpl.setName(
 			this.<String>getColumnOriginalValue("name"));
 		segmentsExperimentImpl.setDescription(
@@ -1224,9 +1061,7 @@ public class SegmentsExperimentModelImpl
 			segmentsExperimentCacheModel.segmentsExperimentKey = null;
 		}
 
-		segmentsExperimentCacheModel.classNameId = getClassNameId();
-
-		segmentsExperimentCacheModel.classPK = getClassPK();
+		segmentsExperimentCacheModel.plid = getPlid();
 
 		segmentsExperimentCacheModel.name = getName();
 
@@ -1307,41 +1142,12 @@ public class SegmentsExperimentModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<SegmentsExperiment, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<SegmentsExperiment, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<SegmentsExperiment, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((SegmentsExperiment)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, SegmentsExperiment>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					SegmentsExperiment.class, ModelWrapper.class);
 
 	}
 
@@ -1359,8 +1165,7 @@ public class SegmentsExperimentModelImpl
 	private long _segmentsEntryId;
 	private long _segmentsExperienceId;
 	private String _segmentsExperimentKey;
-	private long _classNameId;
-	private long _classPK;
+	private long _plid;
 	private String _name;
 	private String _description;
 	private String _typeSettings;
@@ -1370,7 +1175,8 @@ public class SegmentsExperimentModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<SegmentsExperiment, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1411,8 +1217,7 @@ public class SegmentsExperimentModelImpl
 			"segmentsExperienceId", _segmentsExperienceId);
 		_columnOriginalValues.put(
 			"segmentsExperimentKey", _segmentsExperimentKey);
-		_columnOriginalValues.put("classNameId", _classNameId);
-		_columnOriginalValues.put("classPK", _classPK);
+		_columnOriginalValues.put("plid", _plid);
 		_columnOriginalValues.put("name", _name);
 		_columnOriginalValues.put("description", _description);
 		_columnOriginalValues.put("typeSettings", _typeSettings);
@@ -1466,17 +1271,15 @@ public class SegmentsExperimentModelImpl
 
 		columnBitmasks.put("segmentsExperimentKey", 4096L);
 
-		columnBitmasks.put("classNameId", 8192L);
+		columnBitmasks.put("plid", 8192L);
 
-		columnBitmasks.put("classPK", 16384L);
+		columnBitmasks.put("name", 16384L);
 
-		columnBitmasks.put("name", 32768L);
+		columnBitmasks.put("description", 32768L);
 
-		columnBitmasks.put("description", 65536L);
+		columnBitmasks.put("typeSettings", 65536L);
 
-		columnBitmasks.put("typeSettings", 131072L);
-
-		columnBitmasks.put("status", 262144L);
+		columnBitmasks.put("status", 131072L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

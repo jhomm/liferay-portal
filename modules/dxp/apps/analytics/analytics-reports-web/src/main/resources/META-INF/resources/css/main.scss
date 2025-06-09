@@ -3,11 +3,6 @@
 html#{$cadmin-selector} {
 	.cadmin {
 		&.lfr-analytics-reports-panel {
-			&.open-admin-panel.sidenav-menu-slider {
-				visibility: visible;
-				width: 320px;
-			}
-
 			.sidebar {
 				border-left: 1px solid $cadmin-gray-300;
 				box-shadow: none;
@@ -16,17 +11,6 @@ html#{$cadmin-selector} {
 			.sidebar-header {
 				height: 64px;
 				line-height: 32px;
-
-				.lexicon-icon {
-					font-size: 14px;
-				}
-			}
-
-			@include media-breakpoint-up(sm, $cadmin-grid-breakpoints) {
-				.sidebar-header {
-					padding-bottom: 12px;
-					padding-top: 12px;
-				}
 			}
 
 			.sidebar-body {

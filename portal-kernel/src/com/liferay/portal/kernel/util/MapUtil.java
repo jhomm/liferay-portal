@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -21,15 +12,17 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 
 import java.lang.reflect.Constructor;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 /**
  * @author Brian Wing Shun Chan
@@ -43,84 +36,6 @@ public class MapUtil {
 		copy.clear();
 
 		merge(master, copy);
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), with no direct replacement
-	 */
-	@Deprecated
-	public static <K1, V1, K2 extends K1, V2 extends V1> void filter(
-		Map<? extends K2, ? extends V2> inputMap,
-		Map<? super K2, ? super V2> outputMap,
-		Predicate<? super Map.Entry<K1, V1>> predicate) {
-
-		for (Map.Entry<? extends K2, ? extends V2> entry :
-				inputMap.entrySet()) {
-
-			if (predicate.test((Map.Entry<K1, V1>)entry)) {
-				outputMap.put(entry.getKey(), entry.getValue());
-			}
-		}
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), with no direct replacement
-	 */
-	@Deprecated
-	public static <K1, V1, K2 extends K1, V2 extends V1> Map<K2, V2> filter(
-		Map<K2, V2> inputMap, Predicate<? super Map.Entry<K1, V1>> predicate) {
-
-		Map<K2, V2> outputMap = new HashMap<>();
-
-		filter(inputMap, outputMap, predicate);
-
-		return outputMap;
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), with no direct replacement
-	 */
-	@Deprecated
-	public static <K, V> void filterByKeys(
-		Map<? extends K, ? extends V> inputMap,
-		Map<? super K, ? super V> outputMap,
-		Predicate<? super K> keyPredicate) {
-
-		filter(inputMap, outputMap, entry -> keyPredicate.test(entry.getKey()));
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), with no direct replacement
-	 */
-	@Deprecated
-	public static <K, V> Map<K, V> filterByKeys(
-		Map<K, V> inputMap, Predicate<? super K> keyPredicate) {
-
-		return filter(inputMap, entry -> keyPredicate.test(entry.getKey()));
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), with no direct replacement
-	 */
-	@Deprecated
-	public static <K, V> void filterByValues(
-		Map<? extends K, ? extends V> inputMap,
-		Map<? super K, ? super V> outputMap,
-		Predicate<? super V> valuePredicate) {
-
-		filter(
-			inputMap, outputMap,
-			entry -> valuePredicate.test(entry.getValue()));
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), with no direct replacement
-	 */
-	@Deprecated
-	public static <K, V> Map<K, V> filterByValues(
-		Map<K, V> inputMap, Predicate<? super V> valuePredicate) {
-
-		return filter(inputMap, entry -> valuePredicate.test(entry.getValue()));
 	}
 
 	public static <T> Map<T, T> fromArray(T... array) {
@@ -307,14 +222,14 @@ public class MapUtil {
 		return GetterUtil.getShort(String.valueOf(value), defaultValue);
 	}
 
-	public static String getString(Map<String, ?> map, String key) {
+	public static <K, V> String getString(Map<K, V> map, K key) {
 		return getString(map, key, GetterUtil.DEFAULT_STRING);
 	}
 
-	public static String getString(
-		Map<String, ?> map, String key, String defaultValue) {
+	public static <K, V> String getString(
+		Map<K, V> map, K key, String defaultValue) {
 
-		Object value = map.get(key);
+		V value = map.get(key);
 
 		if (value == null) {
 			return defaultValue;
@@ -346,11 +261,13 @@ public class MapUtil {
 
 		V value = map.get(key);
 
-		if (value != null) {
-			return value;
+		if ((value == null) ||
+			((value instanceof String) && Validator.isBlank((String)value))) {
+
+			return map.get(fallbackKey);
 		}
 
-		return map.get(fallbackKey);
+		return value;
 	}
 
 	public static boolean isEmpty(Map<?, ?> map) {
@@ -446,13 +363,32 @@ public class MapUtil {
 						map.put(kvp[0], constructor.newInstance(kvp[1]));
 					}
 					catch (Exception exception) {
-						_log.error(exception.getMessage(), exception);
+						_log.error(exception);
 					}
 				}
 			}
 		}
 
 		return (LinkedHashMap<String, T>)map;
+	}
+
+	public static <K, V> Map<K, List<V>> toPartitionMap(
+		List<V> list, Function<V, K> keyExtractor) {
+
+		if (list.isEmpty()) {
+			return Collections.emptyMap();
+		}
+
+		Map<K, List<V>> map = new HashMap<>();
+
+		for (V v : list) {
+			List<V> partitionList = map.computeIfAbsent(
+				keyExtractor.apply(v), key -> new ArrayList<>());
+
+			partitionList.add(v);
+		}
+
+		return map;
 	}
 
 	public static String toString(Map<?, ?> map) {

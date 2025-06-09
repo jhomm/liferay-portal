@@ -1,21 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.inventory.model;
 
+import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
+
+import java.math.BigDecimal;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -46,6 +40,8 @@ public class CommerceInventoryReplenishmentItemWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put(
 			"commerceInventoryReplenishmentItemId",
 			getCommerceInventoryReplenishmentItemId());
@@ -56,9 +52,10 @@ public class CommerceInventoryReplenishmentItemWrapper
 		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put(
 			"commerceInventoryWarehouseId", getCommerceInventoryWarehouseId());
-		attributes.put("sku", getSku());
 		attributes.put("availabilityDate", getAvailabilityDate());
 		attributes.put("quantity", getQuantity());
+		attributes.put("sku", getSku());
+		attributes.put("unitOfMeasureKey", getUnitOfMeasureKey());
 
 		return attributes;
 	}
@@ -69,6 +66,19 @@ public class CommerceInventoryReplenishmentItemWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		String uuid = (String)attributes.get("uuid");
+
+		if (uuid != null) {
+			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long commerceInventoryReplenishmentItemId = (Long)attributes.get(
@@ -116,22 +126,28 @@ public class CommerceInventoryReplenishmentItemWrapper
 			setCommerceInventoryWarehouseId(commerceInventoryWarehouseId);
 		}
 
-		String sku = (String)attributes.get("sku");
-
-		if (sku != null) {
-			setSku(sku);
-		}
-
 		Date availabilityDate = (Date)attributes.get("availabilityDate");
 
 		if (availabilityDate != null) {
 			setAvailabilityDate(availabilityDate);
 		}
 
-		Integer quantity = (Integer)attributes.get("quantity");
+		BigDecimal quantity = (BigDecimal)attributes.get("quantity");
 
 		if (quantity != null) {
 			setQuantity(quantity);
+		}
+
+		String sku = (String)attributes.get("sku");
+
+		if (sku != null) {
+			setSku(sku);
+		}
+
+		String unitOfMeasureKey = (String)attributes.get("unitOfMeasureKey");
+
+		if (unitOfMeasureKey != null) {
+			setUnitOfMeasureKey(unitOfMeasureKey);
 		}
 	}
 
@@ -198,6 +214,16 @@ public class CommerceInventoryReplenishmentItemWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this commerce inventory replenishment item.
+	 *
+	 * @return the external reference code of this commerce inventory replenishment item
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the modified date of this commerce inventory replenishment item.
 	 *
 	 * @return the modified date of this commerce inventory replenishment item
@@ -233,7 +259,7 @@ public class CommerceInventoryReplenishmentItemWrapper
 	 * @return the quantity of this commerce inventory replenishment item
 	 */
 	@Override
-	public int getQuantity() {
+	public BigDecimal getQuantity() {
 		return model.getQuantity();
 	}
 
@@ -245,6 +271,16 @@ public class CommerceInventoryReplenishmentItemWrapper
 	@Override
 	public String getSku() {
 		return model.getSku();
+	}
+
+	/**
+	 * Returns the unit of measure key of this commerce inventory replenishment item.
+	 *
+	 * @return the unit of measure key of this commerce inventory replenishment item
+	 */
+	@Override
+	public String getUnitOfMeasureKey() {
+		return model.getUnitOfMeasureKey();
 	}
 
 	/**
@@ -275,6 +311,16 @@ public class CommerceInventoryReplenishmentItemWrapper
 	@Override
 	public String getUserUuid() {
 		return model.getUserUuid();
+	}
+
+	/**
+	 * Returns the uuid of this commerce inventory replenishment item.
+	 *
+	 * @return the uuid of this commerce inventory replenishment item
+	 */
+	@Override
+	public String getUuid() {
+		return model.getUuid();
 	}
 
 	@Override
@@ -338,6 +384,16 @@ public class CommerceInventoryReplenishmentItemWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this commerce inventory replenishment item.
+	 *
+	 * @param externalReferenceCode the external reference code of this commerce inventory replenishment item
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the modified date of this commerce inventory replenishment item.
 	 *
 	 * @param modifiedDate the modified date of this commerce inventory replenishment item
@@ -373,7 +429,7 @@ public class CommerceInventoryReplenishmentItemWrapper
 	 * @param quantity the quantity of this commerce inventory replenishment item
 	 */
 	@Override
-	public void setQuantity(int quantity) {
+	public void setQuantity(BigDecimal quantity) {
 		model.setQuantity(quantity);
 	}
 
@@ -385,6 +441,16 @@ public class CommerceInventoryReplenishmentItemWrapper
 	@Override
 	public void setSku(String sku) {
 		model.setSku(sku);
+	}
+
+	/**
+	 * Sets the unit of measure key of this commerce inventory replenishment item.
+	 *
+	 * @param unitOfMeasureKey the unit of measure key of this commerce inventory replenishment item
+	 */
+	@Override
+	public void setUnitOfMeasureKey(String unitOfMeasureKey) {
+		model.setUnitOfMeasureKey(unitOfMeasureKey);
 	}
 
 	/**
@@ -415,6 +481,26 @@ public class CommerceInventoryReplenishmentItemWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	/**
+	 * Sets the uuid of this commerce inventory replenishment item.
+	 *
+	 * @param uuid the uuid of this commerce inventory replenishment item
+	 */
+	@Override
+	public void setUuid(String uuid) {
+		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public StagedModelType getStagedModelType() {
+		return model.getStagedModelType();
 	}
 
 	@Override

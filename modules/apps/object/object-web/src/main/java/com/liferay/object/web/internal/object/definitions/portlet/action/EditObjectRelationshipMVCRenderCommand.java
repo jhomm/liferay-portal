@@ -1,25 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.web.internal.object.definitions.portlet.action;
 
 import com.liferay.object.constants.ObjectPortletKeys;
+import com.liferay.object.constants.ObjectWebKeys;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectRelationship;
 import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectDefinitionService;
+import com.liferay.object.service.ObjectFieldService;
+import com.liferay.object.service.ObjectFolderLocalService;
 import com.liferay.object.service.ObjectRelationshipLocalService;
-import com.liferay.object.web.internal.constants.ObjectWebKeys;
+import com.liferay.object.system.SystemObjectDefinitionManagerRegistry;
 import com.liferay.object.web.internal.object.definitions.display.context.ObjectDefinitionsRelationshipsDisplayContext;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
@@ -29,9 +24,9 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,7 +36,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ObjectPortletKeys.OBJECT_DEFINITIONS,
+		"jakarta.portlet.name=" + ObjectPortletKeys.OBJECT_DEFINITIONS,
 		"mvc.command.name=/object_definitions/edit_object_relationship"
 	},
 	service = MVCRenderCommand.class
@@ -62,7 +57,7 @@ public class EditObjectRelationshipMVCRenderCommand
 			renderRequest.setAttribute(
 				ObjectWebKeys.OBJECT_DEFINITION,
 				_objectDefinitionLocalService.getObjectDefinition(
-					objectRelationship.getObjectDefinitionId2()));
+					objectRelationship.getObjectDefinitionId1()));
 			renderRequest.setAttribute(
 				ObjectWebKeys.OBJECT_RELATIONSHIP, objectRelationship);
 
@@ -70,7 +65,10 @@ public class EditObjectRelationshipMVCRenderCommand
 				WebKeys.PORTLET_DISPLAY_CONTEXT,
 				new ObjectDefinitionsRelationshipsDisplayContext(
 					_portal.getHttpServletRequest(renderRequest),
-					_objectDefinitionModelResourcePermission));
+					_objectDefinitionModelResourcePermission,
+					_objectDefinitionService, _objectFieldService,
+					_objectFolderLocalService,
+					_systemObjectDefinitionManagerRegistry));
 		}
 		catch (PortalException portalException) {
 			SessionErrors.add(renderRequest, portalException.getClass());
@@ -89,9 +87,22 @@ public class EditObjectRelationshipMVCRenderCommand
 		_objectDefinitionModelResourcePermission;
 
 	@Reference
+	private ObjectDefinitionService _objectDefinitionService;
+
+	@Reference
+	private ObjectFieldService _objectFieldService;
+
+	@Reference
+	private ObjectFolderLocalService _objectFolderLocalService;
+
+	@Reference
 	private ObjectRelationshipLocalService _objectRelationshipLocalService;
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private SystemObjectDefinitionManagerRegistry
+		_systemObjectDefinitionManagerRegistry;
 
 }

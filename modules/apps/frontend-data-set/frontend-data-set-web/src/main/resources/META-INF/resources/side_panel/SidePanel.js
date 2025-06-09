@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -47,21 +38,22 @@ export default class SidePanel extends React.Component {
 			active: null,
 			closeButtonStyle: null,
 			currentURL: props.url || null,
+			disableHeader: props.disableHeader || true,
 			iframeHandlerModalId: subscribeModal(),
 			loading: true,
 			menuCoverTopDistance: 0,
 			moving: false,
 			onAfterSubmit: props.onAfterSubmit || null,
 			size: props.size || this.defaultSize,
+			title: props.title || undefined,
 			topDistance: 0,
 			visible: !!props.visible,
 			wrapper:
 				document.querySelector(this.props.wrapperSelector) ||
 				document.querySelector('body'),
 		};
-		this.handleIframeClickOnSubmit = this.handleIframeClickOnSubmit.bind(
-			this
-		);
+		this.handleIframeClickOnSubmit =
+			this.handleIframeClickOnSubmit.bind(this);
 		this.handleIframeSubmit = this.handleIframeSubmit.bind(this);
 		this.handleContentLoaded = this.handleContentLoaded.bind(this);
 		this.close = this.close.bind(this);
@@ -102,7 +94,9 @@ export default class SidePanel extends React.Component {
 
 		exposeSidePanel(this.props.id, () => ({
 			activeMenuItem: this.state.active,
+			disableHeader: this.state.disableHeader,
 			size: this.state.size,
+			title: this.state.title,
 			url: this.state.currentURL,
 			visible: this.state.visible,
 		}));
@@ -116,8 +110,13 @@ export default class SidePanel extends React.Component {
 		this.open(event.url, event.slug);
 
 		this.setState({
+			disableHeader:
+				event.disableHeader !== undefined
+					? event.disableHeader
+					: this.state.disableHeader,
 			onAfterSubmit: event.onSubmit || null,
 			size: event.size || this.defaultSize,
+			title: event.title,
 		});
 	}
 
@@ -136,9 +135,10 @@ export default class SidePanel extends React.Component {
 		}
 
 		if (this.iframeRef.current?.contentWindow) {
-			const nestedIframe = this.iframeRef.current.contentDocument.querySelector(
-				'.side-panel iframe'
-			);
+			const nestedIframe =
+				this.iframeRef.current.contentDocument.querySelector(
+					'.side-panel iframe'
+				);
 
 			if (
 				!nestedIframe ||
@@ -206,7 +206,8 @@ export default class SidePanel extends React.Component {
 			},
 			() => {
 				if (this.iframeRef.current?.contentWindow) {
-					this.iframeRef.current.contentWindow.location = this.state.currentURL;
+					this.iframeRef.current.contentWindow.location =
+						this.state.currentURL;
 				}
 			}
 		);
@@ -319,9 +320,8 @@ export default class SidePanel extends React.Component {
 				});
 			}
 
-			const submitButton = iframeDocument.querySelector(
-				'[type="submit"]'
-			);
+			const submitButton =
+				iframeDocument.querySelector('[type="submit"]');
 
 			if (submitButton) {
 				submitButton.addEventListener(
@@ -338,18 +338,19 @@ export default class SidePanel extends React.Component {
 	}
 
 	render() {
-		const visibility = this.state.visible ? 'is-visible' : 'is-hidden';
 		const loading =
 			this.state.loading || (this.state.moving && this.state.visible)
 				? 'is-loading'
 				: '';
+		const moving = this.state.moving ? 'is-moving' : '';
+		const visibility = this.state.visible ? 'is-visible' : 'is-hidden';
 
 		const content = (
 			<>
 				<Modal id={this.state.iframeHandlerModalId} />
 				<div
 					className={classNames(
-						'side-panel-nav-cover navigation-bar border-bottom',
+						'fds-side-panel-nav-cover navigation-bar border-bottom',
 						visibility
 					)}
 					style={{top: this.state.menuCoverTopDistance}}
@@ -360,8 +361,10 @@ export default class SidePanel extends React.Component {
 						<ul className="navbar-nav">
 							<li className="nav-item">
 								<button
+									aria-label={Liferay.Language.get('back')}
 									className="btn btn-unstyled nav-link"
 									onClick={() => this.close()}
+									title={Liferay.Language.get('back')}
 								>
 									<ClayIcon symbol="angle-left" />
 								</button>
@@ -371,8 +374,9 @@ export default class SidePanel extends React.Component {
 				</div>
 				<div
 					className={classNames(
-						'side-panel',
-						`side-panel-${this.state.size}`,
+						'fds-side-panel',
+						`fds-side-panel-${this.state.size}`,
+						moving,
 						visibility,
 						loading
 					)}
@@ -387,24 +391,35 @@ export default class SidePanel extends React.Component {
 						/>
 					)}
 
-					<ClayButton
-						className={classNames(
-							'side-panel-close',
-							this.state.closeButtonStyle === 'simple' &&
-								'side-panel-close-simple',
-							this.state.closeButtonStyle === 'menu' &&
-								'side-panel-close-menu'
-						)}
-						displayType="monospaced"
-						onClick={() => this.close()}
-					>
-						<ClayIcon symbol="times" />
-					</ClayButton>
+					{!this.state.disableHeader && (
+						<div className="fds-side-panel-header">
+							<div className="fds-side-panel-title">
+								<h3 className="mb-0">{this.state.title}</h3>
+							</div>
+
+							<ClayButton
+								aria-label={Liferay.Language.get('close')}
+								className={classNames(
+									'fds-side-panel-close',
+									this.state.closeButtonStyle === 'simple' &&
+										'fds-side-panel-close-simple',
+									this.state.closeButtonStyle === 'menu' &&
+										'fds-side-panel-close-menu'
+								)}
+								displayType="monospaced"
+								onClick={() => this.close()}
+								title={Liferay.Language.get('close')}
+							>
+								<ClayIcon symbol="times" />
+							</ClayButton>
+						</div>
+					)}
 
 					<div className="tab-content">
 						<div className="loader">
 							<ClayLoadingIndicator />
 						</div>
+
 						<div
 							className="active fade show tab-pane"
 							role="tabpanel"

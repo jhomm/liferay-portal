@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
 
-import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
@@ -30,7 +20,6 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.CompanyTable;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.persistence.CompanyPersistence;
@@ -42,16 +31,13 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SetUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.model.impl.CompanyImpl;
 import com.liferay.portal.model.impl.CompanyModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -90,7 +76,6 @@ public class CompanyPersistenceImpl
 	private FinderPath _finderPathWithoutPaginationFindAll;
 	private FinderPath _finderPathCountAll;
 	private FinderPath _finderPathFetchByWebId;
-	private FinderPath _finderPathCountByWebId;
 
 	/**
 	 * Returns the company where webId = &#63; or throws a <code>NoSuchCompanyException</code> if it could not be found.
@@ -155,7 +140,7 @@ public class CompanyPersistenceImpl
 
 		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByWebId, finderArgs);
+				_finderPathFetchByWebId, finderArgs, this);
 		}
 
 		if (result instanceof Company) {
@@ -250,58 +235,13 @@ public class CompanyPersistenceImpl
 	 */
 	@Override
 	public int countByWebId(String webId) {
-		webId = Objects.toString(webId, "");
+		Company company = fetchByWebId(webId);
 
-		FinderPath finderPath = _finderPathCountByWebId;
-
-		Object[] finderArgs = new Object[] {webId};
-
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
-
-			sb.append(_SQL_COUNT_COMPANY_WHERE);
-
-			boolean bindWebId = false;
-
-			if (webId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_WEBID_WEBID_3);
-			}
-			else {
-				bindWebId = true;
-
-				sb.append(_FINDER_COLUMN_WEBID_WEBID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindWebId) {
-					queryPos.add(webId);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (company == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_WEBID_WEBID_2 =
@@ -310,509 +250,67 @@ public class CompanyPersistenceImpl
 	private static final String _FINDER_COLUMN_WEBID_WEBID_3 =
 		"(company.webId IS NULL OR company.webId = '')";
 
-	private FinderPath _finderPathFetchByMx;
-	private FinderPath _finderPathCountByMx;
-
-	/**
-	 * Returns the company where mx = &#63; or throws a <code>NoSuchCompanyException</code> if it could not be found.
-	 *
-	 * @param mx the mx
-	 * @return the matching company
-	 * @throws NoSuchCompanyException if a matching company could not be found
-	 */
-	@Override
-	public Company findByMx(String mx) throws NoSuchCompanyException {
-		Company company = fetchByMx(mx);
-
-		if (company == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-			sb.append("mx=");
-			sb.append(mx);
-
-			sb.append("}");
-
-			if (_log.isDebugEnabled()) {
-				_log.debug(sb.toString());
-			}
-
-			throw new NoSuchCompanyException(sb.toString());
-		}
-
-		return company;
-	}
-
-	/**
-	 * Returns the company where mx = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param mx the mx
-	 * @return the matching company, or <code>null</code> if a matching company could not be found
-	 */
-	@Override
-	public Company fetchByMx(String mx) {
-		return fetchByMx(mx, true);
-	}
-
-	/**
-	 * Returns the company where mx = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
-	 *
-	 * @param mx the mx
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the matching company, or <code>null</code> if a matching company could not be found
-	 */
-	@Override
-	public Company fetchByMx(String mx, boolean useFinderCache) {
-		mx = Objects.toString(mx, "");
-
-		Object[] finderArgs = null;
-
-		if (useFinderCache) {
-			finderArgs = new Object[] {mx};
-		}
-
-		Object result = null;
-
-		if (useFinderCache) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByMx, finderArgs);
-		}
-
-		if (result instanceof Company) {
-			Company company = (Company)result;
-
-			if (!Objects.equals(mx, company.getMx())) {
-				result = null;
-			}
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_SELECT_COMPANY_WHERE);
-
-			boolean bindMx = false;
-
-			if (mx.isEmpty()) {
-				sb.append(_FINDER_COLUMN_MX_MX_3);
-			}
-			else {
-				bindMx = true;
-
-				sb.append(_FINDER_COLUMN_MX_MX_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindMx) {
-					queryPos.add(mx);
-				}
-
-				List<Company> list = query.list();
-
-				if (list.isEmpty()) {
-					if (useFinderCache) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByMx, finderArgs, list);
-					}
-				}
-				else {
-					if (list.size() > 1) {
-						Collections.sort(list, Collections.reverseOrder());
-
-						if (_log.isWarnEnabled()) {
-							if (!useFinderCache) {
-								finderArgs = new Object[] {mx};
-							}
-
-							_log.warn(
-								"CompanyPersistenceImpl.fetchByMx(String, boolean) with parameters (" +
-									StringUtil.merge(finderArgs) +
-										") yields a result set with more than 1 result. This violates the logical unique restriction. There is no order guarantee on which result is returned by this finder.");
-						}
-					}
-
-					Company company = list.get(0);
-
-					result = company;
-
-					cacheResult(company);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (Company)result;
-		}
-	}
-
-	/**
-	 * Removes the company where mx = &#63; from the database.
-	 *
-	 * @param mx the mx
-	 * @return the company that was removed
-	 */
-	@Override
-	public Company removeByMx(String mx) throws NoSuchCompanyException {
-		Company company = findByMx(mx);
-
-		return remove(company);
-	}
-
-	/**
-	 * Returns the number of companies where mx = &#63;.
-	 *
-	 * @param mx the mx
-	 * @return the number of matching companies
-	 */
-	@Override
-	public int countByMx(String mx) {
-		mx = Objects.toString(mx, "");
-
-		FinderPath finderPath = _finderPathCountByMx;
-
-		Object[] finderArgs = new Object[] {mx};
-
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
-
-			sb.append(_SQL_COUNT_COMPANY_WHERE);
-
-			boolean bindMx = false;
-
-			if (mx.isEmpty()) {
-				sb.append(_FINDER_COLUMN_MX_MX_3);
-			}
-			else {
-				bindMx = true;
-
-				sb.append(_FINDER_COLUMN_MX_MX_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindMx) {
-					queryPos.add(mx);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
-	}
-
-	private static final String _FINDER_COLUMN_MX_MX_2 = "company.mx = ?";
-
-	private static final String _FINDER_COLUMN_MX_MX_3 =
-		"(company.mx IS NULL OR company.mx = '')";
-
-	private FinderPath _finderPathFetchByLogoId;
+	private FinderPath _finderPathWithPaginationFindByLogoId;
+	private FinderPath _finderPathWithoutPaginationFindByLogoId;
 	private FinderPath _finderPathCountByLogoId;
 
 	/**
-	 * Returns the company where logoId = &#63; or throws a <code>NoSuchCompanyException</code> if it could not be found.
+	 * Returns all the companies where logoId = &#63;.
 	 *
 	 * @param logoId the logo ID
-	 * @return the matching company
-	 * @throws NoSuchCompanyException if a matching company could not be found
-	 */
-	@Override
-	public Company findByLogoId(long logoId) throws NoSuchCompanyException {
-		Company company = fetchByLogoId(logoId);
-
-		if (company == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-			sb.append("logoId=");
-			sb.append(logoId);
-
-			sb.append("}");
-
-			if (_log.isDebugEnabled()) {
-				_log.debug(sb.toString());
-			}
-
-			throw new NoSuchCompanyException(sb.toString());
-		}
-
-		return company;
-	}
-
-	/**
-	 * Returns the company where logoId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param logoId the logo ID
-	 * @return the matching company, or <code>null</code> if a matching company could not be found
-	 */
-	@Override
-	public Company fetchByLogoId(long logoId) {
-		return fetchByLogoId(logoId, true);
-	}
-
-	/**
-	 * Returns the company where logoId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
-	 *
-	 * @param logoId the logo ID
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the matching company, or <code>null</code> if a matching company could not be found
-	 */
-	@Override
-	public Company fetchByLogoId(long logoId, boolean useFinderCache) {
-		Object[] finderArgs = null;
-
-		if (useFinderCache) {
-			finderArgs = new Object[] {logoId};
-		}
-
-		Object result = null;
-
-		if (useFinderCache) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByLogoId, finderArgs);
-		}
-
-		if (result instanceof Company) {
-			Company company = (Company)result;
-
-			if (logoId != company.getLogoId()) {
-				result = null;
-			}
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_SELECT_COMPANY_WHERE);
-
-			sb.append(_FINDER_COLUMN_LOGOID_LOGOID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(logoId);
-
-				List<Company> list = query.list();
-
-				if (list.isEmpty()) {
-					if (useFinderCache) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByLogoId, finderArgs, list);
-					}
-				}
-				else {
-					if (list.size() > 1) {
-						Collections.sort(list, Collections.reverseOrder());
-
-						if (_log.isWarnEnabled()) {
-							if (!useFinderCache) {
-								finderArgs = new Object[] {logoId};
-							}
-
-							_log.warn(
-								"CompanyPersistenceImpl.fetchByLogoId(long, boolean) with parameters (" +
-									StringUtil.merge(finderArgs) +
-										") yields a result set with more than 1 result. This violates the logical unique restriction. There is no order guarantee on which result is returned by this finder.");
-						}
-					}
-
-					Company company = list.get(0);
-
-					result = company;
-
-					cacheResult(company);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (Company)result;
-		}
-	}
-
-	/**
-	 * Removes the company where logoId = &#63; from the database.
-	 *
-	 * @param logoId the logo ID
-	 * @return the company that was removed
-	 */
-	@Override
-	public Company removeByLogoId(long logoId) throws NoSuchCompanyException {
-		Company company = findByLogoId(logoId);
-
-		return remove(company);
-	}
-
-	/**
-	 * Returns the number of companies where logoId = &#63;.
-	 *
-	 * @param logoId the logo ID
-	 * @return the number of matching companies
-	 */
-	@Override
-	public int countByLogoId(long logoId) {
-		FinderPath finderPath = _finderPathCountByLogoId;
-
-		Object[] finderArgs = new Object[] {logoId};
-
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
-
-			sb.append(_SQL_COUNT_COMPANY_WHERE);
-
-			sb.append(_FINDER_COLUMN_LOGOID_LOGOID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(logoId);
-
-				count = (Long)query.uniqueResult();
-
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
-	}
-
-	private static final String _FINDER_COLUMN_LOGOID_LOGOID_2 =
-		"company.logoId = ?";
-
-	private FinderPath _finderPathWithPaginationFindBySystem;
-	private FinderPath _finderPathWithoutPaginationFindBySystem;
-	private FinderPath _finderPathCountBySystem;
-
-	/**
-	 * Returns all the companies where system = &#63;.
-	 *
-	 * @param system the system
 	 * @return the matching companies
 	 */
 	@Override
-	public List<Company> findBySystem(boolean system) {
-		return findBySystem(system, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	public List<Company> findByLogoId(long logoId) {
+		return findByLogoId(logoId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 	}
 
 	/**
-	 * Returns a range of all the companies where system = &#63;.
+	 * Returns a range of all the companies where logoId = &#63;.
 	 *
 	 * <p>
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CompanyModelImpl</code>.
 	 * </p>
 	 *
-	 * @param system the system
+	 * @param logoId the logo ID
 	 * @param start the lower bound of the range of companies
 	 * @param end the upper bound of the range of companies (not inclusive)
 	 * @return the range of matching companies
 	 */
 	@Override
-	public List<Company> findBySystem(boolean system, int start, int end) {
-		return findBySystem(system, start, end, null);
+	public List<Company> findByLogoId(long logoId, int start, int end) {
+		return findByLogoId(logoId, start, end, null);
 	}
 
 	/**
-	 * Returns an ordered range of all the companies where system = &#63;.
+	 * Returns an ordered range of all the companies where logoId = &#63;.
 	 *
 	 * <p>
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CompanyModelImpl</code>.
 	 * </p>
 	 *
-	 * @param system the system
+	 * @param logoId the logo ID
 	 * @param start the lower bound of the range of companies
 	 * @param end the upper bound of the range of companies (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	 * @return the ordered range of matching companies
 	 */
 	@Override
-	public List<Company> findBySystem(
-		boolean system, int start, int end,
+	public List<Company> findByLogoId(
+		long logoId, int start, int end,
 		OrderByComparator<Company> orderByComparator) {
 
-		return findBySystem(system, start, end, orderByComparator, true);
+		return findByLogoId(logoId, start, end, orderByComparator, true);
 	}
 
 	/**
-	 * Returns an ordered range of all the companies where system = &#63;.
+	 * Returns an ordered range of all the companies where logoId = &#63;.
 	 *
 	 * <p>
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CompanyModelImpl</code>.
 	 * </p>
 	 *
-	 * @param system the system
+	 * @param logoId the logo ID
 	 * @param start the lower bound of the range of companies
 	 * @param end the upper bound of the range of companies (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -820,8 +318,8 @@ public class CompanyPersistenceImpl
 	 * @return the ordered range of matching companies
 	 */
 	@Override
-	public List<Company> findBySystem(
-		boolean system, int start, int end,
+	public List<Company> findByLogoId(
+		long logoId, int start, int end,
 		OrderByComparator<Company> orderByComparator, boolean useFinderCache) {
 
 		FinderPath finderPath = null;
@@ -831,24 +329,24 @@ public class CompanyPersistenceImpl
 			(orderByComparator == null)) {
 
 			if (useFinderCache) {
-				finderPath = _finderPathWithoutPaginationFindBySystem;
-				finderArgs = new Object[] {system};
+				finderPath = _finderPathWithoutPaginationFindByLogoId;
+				finderArgs = new Object[] {logoId};
 			}
 		}
 		else if (useFinderCache) {
-			finderPath = _finderPathWithPaginationFindBySystem;
-			finderArgs = new Object[] {system, start, end, orderByComparator};
+			finderPath = _finderPathWithPaginationFindByLogoId;
+			finderArgs = new Object[] {logoId, start, end, orderByComparator};
 		}
 
 		List<Company> list = null;
 
 		if (useFinderCache) {
 			list = (List<Company>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Company company : list) {
-					if (system != company.isSystem()) {
+					if (logoId != company.getLogoId()) {
 						list = null;
 
 						break;
@@ -870,7 +368,7 @@ public class CompanyPersistenceImpl
 
 			sb.append(_SQL_SELECT_COMPANY_WHERE);
 
-			sb.append(_FINDER_COLUMN_SYSTEM_SYSTEM_2);
+			sb.append(_FINDER_COLUMN_LOGOID_LOGOID_2);
 
 			if (orderByComparator != null) {
 				appendOrderByComparator(
@@ -891,7 +389,7 @@ public class CompanyPersistenceImpl
 
 				QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(system);
+				queryPos.add(logoId);
 
 				list = (List<Company>)QueryUtil.list(
 					query, getDialect(), start, end);
@@ -914,19 +412,19 @@ public class CompanyPersistenceImpl
 	}
 
 	/**
-	 * Returns the first company in the ordered set where system = &#63;.
+	 * Returns the first company in the ordered set where logoId = &#63;.
 	 *
-	 * @param system the system
+	 * @param logoId the logo ID
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the first matching company
 	 * @throws NoSuchCompanyException if a matching company could not be found
 	 */
 	@Override
-	public Company findBySystem_First(
-			boolean system, OrderByComparator<Company> orderByComparator)
+	public Company findByLogoId_First(
+			long logoId, OrderByComparator<Company> orderByComparator)
 		throws NoSuchCompanyException {
 
-		Company company = fetchBySystem_First(system, orderByComparator);
+		Company company = fetchByLogoId_First(logoId, orderByComparator);
 
 		if (company != null) {
 			return company;
@@ -936,8 +434,8 @@ public class CompanyPersistenceImpl
 
 		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
 
-		sb.append("system=");
-		sb.append(system);
+		sb.append("logoId=");
+		sb.append(logoId);
 
 		sb.append("}");
 
@@ -945,17 +443,17 @@ public class CompanyPersistenceImpl
 	}
 
 	/**
-	 * Returns the first company in the ordered set where system = &#63;.
+	 * Returns the first company in the ordered set where logoId = &#63;.
 	 *
-	 * @param system the system
+	 * @param logoId the logo ID
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the first matching company, or <code>null</code> if a matching company could not be found
 	 */
 	@Override
-	public Company fetchBySystem_First(
-		boolean system, OrderByComparator<Company> orderByComparator) {
+	public Company fetchByLogoId_First(
+		long logoId, OrderByComparator<Company> orderByComparator) {
 
-		List<Company> list = findBySystem(system, 0, 1, orderByComparator);
+		List<Company> list = findByLogoId(logoId, 0, 1, orderByComparator);
 
 		if (!list.isEmpty()) {
 			return list.get(0);
@@ -965,19 +463,19 @@ public class CompanyPersistenceImpl
 	}
 
 	/**
-	 * Returns the last company in the ordered set where system = &#63;.
+	 * Returns the last company in the ordered set where logoId = &#63;.
 	 *
-	 * @param system the system
+	 * @param logoId the logo ID
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the last matching company
 	 * @throws NoSuchCompanyException if a matching company could not be found
 	 */
 	@Override
-	public Company findBySystem_Last(
-			boolean system, OrderByComparator<Company> orderByComparator)
+	public Company findByLogoId_Last(
+			long logoId, OrderByComparator<Company> orderByComparator)
 		throws NoSuchCompanyException {
 
-		Company company = fetchBySystem_Last(system, orderByComparator);
+		Company company = fetchByLogoId_Last(logoId, orderByComparator);
 
 		if (company != null) {
 			return company;
@@ -987,8 +485,8 @@ public class CompanyPersistenceImpl
 
 		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
 
-		sb.append("system=");
-		sb.append(system);
+		sb.append("logoId=");
+		sb.append(logoId);
 
 		sb.append("}");
 
@@ -996,24 +494,24 @@ public class CompanyPersistenceImpl
 	}
 
 	/**
-	 * Returns the last company in the ordered set where system = &#63;.
+	 * Returns the last company in the ordered set where logoId = &#63;.
 	 *
-	 * @param system the system
+	 * @param logoId the logo ID
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the last matching company, or <code>null</code> if a matching company could not be found
 	 */
 	@Override
-	public Company fetchBySystem_Last(
-		boolean system, OrderByComparator<Company> orderByComparator) {
+	public Company fetchByLogoId_Last(
+		long logoId, OrderByComparator<Company> orderByComparator) {
 
-		int count = countBySystem(system);
+		int count = countByLogoId(logoId);
 
 		if (count == 0) {
 			return null;
 		}
 
-		List<Company> list = findBySystem(
-			system, count - 1, count, orderByComparator);
+		List<Company> list = findByLogoId(
+			logoId, count - 1, count, orderByComparator);
 
 		if (!list.isEmpty()) {
 			return list.get(0);
@@ -1023,17 +521,17 @@ public class CompanyPersistenceImpl
 	}
 
 	/**
-	 * Returns the companies before and after the current company in the ordered set where system = &#63;.
+	 * Returns the companies before and after the current company in the ordered set where logoId = &#63;.
 	 *
 	 * @param companyId the primary key of the current company
-	 * @param system the system
+	 * @param logoId the logo ID
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the previous, current, and next company
 	 * @throws NoSuchCompanyException if a company with the primary key could not be found
 	 */
 	@Override
-	public Company[] findBySystem_PrevAndNext(
-			long companyId, boolean system,
+	public Company[] findByLogoId_PrevAndNext(
+			long companyId, long logoId,
 			OrderByComparator<Company> orderByComparator)
 		throws NoSuchCompanyException {
 
@@ -1046,13 +544,13 @@ public class CompanyPersistenceImpl
 
 			Company[] array = new CompanyImpl[3];
 
-			array[0] = getBySystem_PrevAndNext(
-				session, company, system, orderByComparator, true);
+			array[0] = getByLogoId_PrevAndNext(
+				session, company, logoId, orderByComparator, true);
 
 			array[1] = company;
 
-			array[2] = getBySystem_PrevAndNext(
-				session, company, system, orderByComparator, false);
+			array[2] = getByLogoId_PrevAndNext(
+				session, company, logoId, orderByComparator, false);
 
 			return array;
 		}
@@ -1064,8 +562,8 @@ public class CompanyPersistenceImpl
 		}
 	}
 
-	protected Company getBySystem_PrevAndNext(
-		Session session, Company company, boolean system,
+	protected Company getByLogoId_PrevAndNext(
+		Session session, Company company, long logoId,
 		OrderByComparator<Company> orderByComparator, boolean previous) {
 
 		StringBundler sb = null;
@@ -1081,7 +579,7 @@ public class CompanyPersistenceImpl
 
 		sb.append(_SQL_SELECT_COMPANY_WHERE);
 
-		sb.append(_FINDER_COLUMN_SYSTEM_SYSTEM_2);
+		sb.append(_FINDER_COLUMN_LOGOID_LOGOID_2);
 
 		if (orderByComparator != null) {
 			String[] orderByConditionFields =
@@ -1152,7 +650,7 @@ public class CompanyPersistenceImpl
 
 		QueryPos queryPos = QueryPos.getInstance(query);
 
-		queryPos.add(system);
+		queryPos.add(logoId);
 
 		if (orderByComparator != null) {
 			for (Object orderByConditionValue :
@@ -1173,40 +671,41 @@ public class CompanyPersistenceImpl
 	}
 
 	/**
-	 * Removes all the companies where system = &#63; from the database.
+	 * Removes all the companies where logoId = &#63; from the database.
 	 *
-	 * @param system the system
+	 * @param logoId the logo ID
 	 */
 	@Override
-	public void removeBySystem(boolean system) {
+	public void removeByLogoId(long logoId) {
 		for (Company company :
-				findBySystem(
-					system, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+				findByLogoId(
+					logoId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
 
 			remove(company);
 		}
 	}
 
 	/**
-	 * Returns the number of companies where system = &#63;.
+	 * Returns the number of companies where logoId = &#63;.
 	 *
-	 * @param system the system
+	 * @param logoId the logo ID
 	 * @return the number of matching companies
 	 */
 	@Override
-	public int countBySystem(boolean system) {
-		FinderPath finderPath = _finderPathCountBySystem;
+	public int countByLogoId(long logoId) {
+		FinderPath finderPath = _finderPathCountByLogoId;
 
-		Object[] finderArgs = new Object[] {system};
+		Object[] finderArgs = new Object[] {logoId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
 
 			sb.append(_SQL_COUNT_COMPANY_WHERE);
 
-			sb.append(_FINDER_COLUMN_SYSTEM_SYSTEM_2);
+			sb.append(_FINDER_COLUMN_LOGOID_LOGOID_2);
 
 			String sql = sb.toString();
 
@@ -1219,7 +718,7 @@ public class CompanyPersistenceImpl
 
 				QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(system);
+				queryPos.add(logoId);
 
 				count = (Long)query.uniqueResult();
 
@@ -1236,13 +735,12 @@ public class CompanyPersistenceImpl
 		return count.intValue();
 	}
 
-	private static final String _FINDER_COLUMN_SYSTEM_SYSTEM_2 =
-		"company.system = ?";
+	private static final String _FINDER_COLUMN_LOGOID_LOGOID_2 =
+		"company.logoId = ?";
 
 	public CompanyPersistenceImpl() {
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
 
-		dbColumnNames.put("system", "system_");
 		dbColumnNames.put("active", "active_");
 		dbColumnNames.put("type", "type_");
 		dbColumnNames.put("size", "size_");
@@ -1270,13 +768,6 @@ public class CompanyPersistenceImpl
 		FinderCacheUtil.putResult(
 			_finderPathFetchByWebId, new Object[] {company.getWebId()},
 			company);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByMx, new Object[] {company.getMx()}, company);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByLogoId, new Object[] {company.getLogoId()},
-			company);
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -1296,28 +787,22 @@ public class CompanyPersistenceImpl
 		}
 
 		for (Company company : companies) {
-			try (SafeCloseable safeCloseable =
-					CompanyThreadLocal.setWithSafeCloseable(
-						company.getPrimaryKey())) {
+			Company cachedCompany = (Company)EntityCacheUtil.getResult(
+				CompanyImpl.class, company.getPrimaryKey());
 
-				Company cachedCompany = (Company)EntityCacheUtil.getResult(
-					CompanyImpl.class, company.getPrimaryKey());
+			if (cachedCompany == null) {
+				cacheResult(company);
+			}
+			else {
+				CompanyModelImpl companyModelImpl = (CompanyModelImpl)company;
+				CompanyModelImpl cachedCompanyModelImpl =
+					(CompanyModelImpl)cachedCompany;
 
-				if (cachedCompany == null) {
-					cacheResult(company);
-				}
-				else {
-					CompanyModelImpl companyModelImpl =
-						(CompanyModelImpl)company;
-					CompanyModelImpl cachedCompanyModelImpl =
-						(CompanyModelImpl)cachedCompany;
+				companyModelImpl.setGroupId(
+					cachedCompanyModelImpl.getGroupId());
 
-					companyModelImpl.setCompanySecurityBag(
-						cachedCompanyModelImpl.getCompanySecurityBag());
-
-					companyModelImpl.setVirtualHostname(
-						cachedCompanyModelImpl.getVirtualHostname());
-				}
+				companyModelImpl.setVirtualHostname(
+					cachedCompanyModelImpl.getVirtualHostname());
 			}
 		}
 	}
@@ -1368,21 +853,7 @@ public class CompanyPersistenceImpl
 		Object[] args = new Object[] {companyModelImpl.getWebId()};
 
 		FinderCacheUtil.putResult(
-			_finderPathCountByWebId, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(
 			_finderPathFetchByWebId, args, companyModelImpl);
-
-		args = new Object[] {companyModelImpl.getMx()};
-
-		FinderCacheUtil.putResult(_finderPathCountByMx, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(_finderPathFetchByMx, args, companyModelImpl);
-
-		args = new Object[] {companyModelImpl.getLogoId()};
-
-		FinderCacheUtil.putResult(
-			_finderPathCountByLogoId, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(
-			_finderPathFetchByLogoId, args, companyModelImpl);
 	}
 
 	/**
@@ -1695,7 +1166,7 @@ public class CompanyPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<Company>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1765,7 +1236,7 @@ public class CompanyPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)FinderCacheUtil.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1840,21 +1311,16 @@ public class CompanyPersistenceImpl
 			new String[] {String.class.getName()}, new String[] {"webId"},
 			true);
 
-		_finderPathCountByWebId = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByWebId",
-			new String[] {String.class.getName()}, new String[] {"webId"},
-			false);
+		_finderPathWithPaginationFindByLogoId = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByLogoId",
+			new String[] {
+				Long.class.getName(), Integer.class.getName(),
+				Integer.class.getName(), OrderByComparator.class.getName()
+			},
+			new String[] {"logoId"}, true);
 
-		_finderPathFetchByMx = new FinderPath(
-			FINDER_CLASS_NAME_ENTITY, "fetchByMx",
-			new String[] {String.class.getName()}, new String[] {"mx"}, true);
-
-		_finderPathCountByMx = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByMx",
-			new String[] {String.class.getName()}, new String[] {"mx"}, false);
-
-		_finderPathFetchByLogoId = new FinderPath(
-			FINDER_CLASS_NAME_ENTITY, "fetchByLogoId",
+		_finderPathWithoutPaginationFindByLogoId = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByLogoId",
 			new String[] {Long.class.getName()}, new String[] {"logoId"}, true);
 
 		_finderPathCountByLogoId = new FinderPath(
@@ -1862,46 +1328,13 @@ public class CompanyPersistenceImpl
 			new String[] {Long.class.getName()}, new String[] {"logoId"},
 			false);
 
-		_finderPathWithPaginationFindBySystem = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findBySystem",
-			new String[] {
-				Boolean.class.getName(), Integer.class.getName(),
-				Integer.class.getName(), OrderByComparator.class.getName()
-			},
-			new String[] {"system_"}, true);
-
-		_finderPathWithoutPaginationFindBySystem = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findBySystem",
-			new String[] {Boolean.class.getName()}, new String[] {"system_"},
-			true);
-
-		_finderPathCountBySystem = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countBySystem",
-			new String[] {Boolean.class.getName()}, new String[] {"system_"},
-			false);
-
-		_setCompanyUtilPersistence(this);
+		CompanyUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setCompanyUtilPersistence(null);
+		CompanyUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(CompanyImpl.class.getName());
-	}
-
-	private void _setCompanyUtilPersistence(
-		CompanyPersistence companyPersistence) {
-
-		try {
-			Field field = CompanyUtil.class.getDeclaredField("_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, companyPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_COMPANY =
@@ -1928,7 +1361,7 @@ public class CompanyPersistenceImpl
 		CompanyPersistenceImpl.class);
 
 	private static final Set<String> _badColumnNames = SetUtil.fromArray(
-		new String[] {"system", "active", "type", "size"});
+		new String[] {"active", "type", "size"});
 
 	@Override
 	protected FinderCache getFinderCache() {

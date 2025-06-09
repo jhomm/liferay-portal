@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.search.internal.test;
@@ -23,6 +14,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.search.Hits;
@@ -33,12 +25,14 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.test.context.ContextUserReplace;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserGroupTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
@@ -89,8 +83,9 @@ public class SharingEntrySearchDLTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), "text/plain", _title,
-			StringUtil.randomString(), StringPool.BLANK, "Searching".getBytes(),
-			null, null, serviceContext);
+			StringUtil.randomString(), StringUtil.randomString(),
+			StringPool.BLANK, "Searching".getBytes(), null, null, null,
+			serviceContext);
 
 		_classNameId = _classNameLocalService.getClassNameId(
 			DLFileEntry.class.getName());
@@ -123,14 +118,12 @@ public class SharingEntrySearchDLTest {
 
 	@Test
 	public void testUserCanSearchSharedPrivateDocument() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		_sharingEntryLocalService.addSharingEntry(
-			TestPropsValues.getUserId(), _groupUser.getUserId(), _classNameId,
-			_fileEntry.getFileEntryId(), _group.getGroupId(), true,
-			Arrays.asList(SharingEntryAction.VIEW), null, serviceContext);
+			null, TestPropsValues.getUserId(), 0, _groupUser.getUserId(),
+			_classNameId, _fileEntry.getFileEntryId(), _group.getGroupId(),
+			true, Arrays.asList(SharingEntryAction.VIEW), null,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 
 		Indexer<DLFileEntry> indexer = IndexerRegistryUtil.getIndexer(
 			DLFileEntryConstants.getClassName());
@@ -155,6 +148,54 @@ public class SharingEntrySearchDLTest {
 		}
 	}
 
+	@Test
+	public void testUserCanSearchSharedPrivateDocumentSharedToUserGroup()
+		throws Exception {
+
+		UserGroup userGroup = UserGroupTestUtil.addUserGroup();
+
+		try {
+			_userGroupLocalService.addUserUserGroup(
+				_groupUser.getUserId(), userGroup);
+
+			_sharingEntryLocalService.addSharingEntry(
+				null, TestPropsValues.getUserId(), userGroup.getUserGroupId(),
+				0, _classNameId, _fileEntry.getFileEntryId(),
+				_group.getGroupId(), true,
+				Arrays.asList(SharingEntryAction.VIEW), null,
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
+
+			Indexer<DLFileEntry> indexer = IndexerRegistryUtil.getIndexer(
+				DLFileEntryConstants.getClassName());
+
+			PermissionChecker permissionChecker =
+				PermissionCheckerFactoryUtil.create(_groupUser);
+
+			try (ContextUserReplace contextUserReplace = new ContextUserReplace(
+					_groupUser, permissionChecker)) {
+
+				SearchContext searchContext = new SearchContext();
+
+				searchContext.setCompanyId(_fileEntry.getCompanyId());
+				searchContext.setGroupIds(
+					new long[] {_fileEntry.getRepositoryId()});
+				searchContext.setKeywords(_title);
+				searchContext.setUserId(_groupUser.getUserId());
+
+				Hits hits = indexer.search(searchContext);
+
+				Assert.assertEquals(hits.toString(), 1, hits.getLength());
+			}
+		}
+		finally {
+			_userGroupLocalService.deleteUserUserGroup(
+				_groupUser.getUserId(), userGroup);
+
+			_userGroupLocalService.deleteUserGroup(userGroup);
+		}
+	}
+
 	private long _classNameId;
 
 	@Inject
@@ -175,5 +216,8 @@ public class SharingEntrySearchDLTest {
 	private SharingEntryLocalService _sharingEntryLocalService;
 
 	private String _title;
+
+	@Inject
+	private UserGroupLocalService _userGroupLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.initializer.util;
@@ -28,17 +19,18 @@ import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.settings.SystemSettingsLocator;
-import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 
 import java.math.BigDecimal;
 
@@ -52,7 +44,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alec Sloan
  * @author Alessio Antonio Rendina
  */
-@Component(enabled = false, service = CommercePriceEntriesImporter.class)
+@Component(service = CommercePriceEntriesImporter.class)
 public class CommercePriceEntriesImporter {
 
 	public void importBaseCommercePriceListEntries(
@@ -144,9 +136,10 @@ public class CommercePriceEntriesImporter {
 			}
 
 			_commercePriceEntryLocalService.addCommercePriceEntry(
-				cpDefinition.getCProductId(), cpInstance.getCPInstanceUuid(),
-				commercePriceList.getCommercePriceListId(), price,
-				BigDecimal.ZERO, serviceContext);
+				null, cpDefinition.getCProductId(),
+				cpInstance.getCPInstanceUuid(),
+				commercePriceList.getCommercePriceListId(), price, false,
+				BigDecimal.ZERO, null, serviceContext);
 		}
 	}
 
@@ -157,34 +150,36 @@ public class CommercePriceEntriesImporter {
 		String name = jsonObject.getString("priceList");
 
 		String priceListExternalReferenceCode =
-			FriendlyURLNormalizerUtil.normalize(name);
+			_friendlyURLNormalizer.normalize(name);
 
 		CommercePriceList commercePriceList =
-			_commercePriceListLocalService.fetchByExternalReferenceCode(
-				priceListExternalReferenceCode, serviceContext.getCompanyId());
+			_commercePriceListLocalService.
+				fetchCommercePriceListByExternalReferenceCode(
+					priceListExternalReferenceCode,
+					serviceContext.getCompanyId());
 
 		if (commercePriceList == null) {
 			throw new NoSuchPriceListException(
 				"No price list found with name " + name);
 		}
 
-		String sku = jsonObject.getString("sku");
-
-		String externalReferenceCode = FriendlyURLNormalizerUtil.normalize(sku);
+		String externalReferenceCode = jsonObject.getString(
+			"externalReferenceCode");
 
 		CPInstance cpInstance =
-			_cpInstanceLocalService.fetchByExternalReferenceCode(
+			_cpInstanceLocalService.fetchCPInstanceByExternalReferenceCode(
 				externalReferenceCode, serviceContext.getCompanyId());
 
 		if (cpInstance == null) {
 			throw new NoSuchCPInstanceException(
-				"No cpInstance found with sku " + sku);
+				"No CP instance found with external reference code " +
+					externalReferenceCode);
 		}
 
 		CommercePriceEntry commercePriceEntry =
 			_commercePriceEntryLocalService.fetchCommercePriceEntry(
 				commercePriceList.getCommercePriceListId(),
-				cpInstance.getCPInstanceUuid());
+				cpInstance.getCPInstanceUuid(), StringPool.BLANK);
 
 		if (commercePriceEntry != null) {
 			return;
@@ -197,10 +192,10 @@ public class CommercePriceEntriesImporter {
 		double promoPrice = jsonObject.getDouble("promoPrice", 0);
 
 		_commercePriceEntryLocalService.addCommercePriceEntry(
-			cpDefinition.getCProductId(), cpInstance.getCPInstanceUuid(),
+			null, cpDefinition.getCProductId(), cpInstance.getCPInstanceUuid(),
 			commercePriceList.getCommercePriceListId(),
-			BigDecimal.valueOf(price), BigDecimal.valueOf(promoPrice),
-			serviceContext);
+			BigDecimal.valueOf(price), false, BigDecimal.valueOf(promoPrice),
+			null, serviceContext);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -220,6 +215,9 @@ public class CommercePriceEntriesImporter {
 
 	@Reference
 	private CPInstanceLocalService _cpInstanceLocalService;
+
+	@Reference
+	private FriendlyURLNormalizer _friendlyURLNormalizer;
 
 	@Reference
 	private UserLocalService _userLocalService;

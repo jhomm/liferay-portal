@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.internal.provider;
@@ -19,18 +10,23 @@ import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFacto
 import com.liferay.osgi.service.tracker.collections.map.PropertyServiceReferenceComparator;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.segments.context.Context;
+import com.liferay.segments.internal.cache.SegmentsEntryCacheUtil;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.provider.SegmentsEntryProvider;
 import com.liferay.segments.provider.SegmentsEntryProviderRegistry;
 import com.liferay.segments.service.SegmentsEntryLocalService;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 
 import org.osgi.framework.BundleContext;
@@ -42,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Eduardo García
  */
-@Component(immediate = true, service = SegmentsEntryProviderRegistry.class)
+@Component(service = SegmentsEntryProviderRegistry.class)
 public class SegmentsEntryProviderRegistryImpl
 	implements SegmentsEntryProviderRegistry {
 
@@ -117,21 +113,36 @@ public class SegmentsEntryProviderRegistryImpl
 
 	@Override
 	public long[] getSegmentsEntryIds(
-			long groupId, String className, long classPK, Context context)
+			long groupId, String className, long classPK, Context context,
+			long[] segmentEntryIds)
 		throws PortalException {
 
-		long[] segmentsEntryIds = new long[0];
+		String cacheKey = _generateCacheKey(classPK, context);
+
+		long[] cachedSegmentsEntryIds =
+			SegmentsEntryCacheUtil.getSegmentsEntryIds(cacheKey);
+
+		if (cachedSegmentsEntryIds != null) {
+			return cachedSegmentsEntryIds;
+		}
+
+		long[] finalSegmentsEntryIds = new long[0];
 
 		for (SegmentsEntryProvider segmentsEntryProvider :
 				_serviceTrackerList) {
 
-			segmentsEntryIds = ArrayUtil.append(
-				segmentsEntryIds,
+			finalSegmentsEntryIds = ArrayUtil.append(
+				finalSegmentsEntryIds,
 				segmentsEntryProvider.getSegmentsEntryIds(
-					groupId, className, classPK, context, segmentsEntryIds));
+					groupId, className, classPK, context, segmentEntryIds,
+					finalSegmentsEntryIds));
 		}
 
-		Set<Long> segmentsEntryIdsSet = SetUtil.fromArray(segmentsEntryIds);
+		SegmentsEntryCacheUtil.putSegmentsEntryIds(
+			cacheKey, finalSegmentsEntryIds);
+
+		Set<Long> segmentsEntryIdsSet = SetUtil.fromArray(
+			finalSegmentsEntryIds);
 
 		return ArrayUtil.toLongArray(segmentsEntryIdsSet);
 	}
@@ -157,6 +168,51 @@ public class SegmentsEntryProviderRegistryImpl
 	protected void deactivate() {
 		_serviceTrackerList.close();
 		_serviceTrackerMap.close();
+	}
+
+	private String _generateCacheKey(long classPK, Context context) {
+		if (context == null) {
+			return String.valueOf(classPK);
+		}
+
+		String jSessionId = null;
+
+		String[] cookies = (String[])context.get(Context.COOKIES);
+
+		if (cookies != null) {
+			for (String cookie : cookies) {
+				if (StringUtil.startsWith(cookie, "JSESSIONID")) {
+					jSessionId = cookie;
+
+					break;
+				}
+			}
+		}
+
+		String requestParametersString = null;
+
+		String[] requestParameters = (String[])context.get(
+			Context.REQUEST_PARAMETERS);
+
+		if (requestParameters != null) {
+			requestParametersString = String.join(
+				StringPool.COMMA, requestParameters);
+		}
+
+		return String.valueOf(
+			Objects.hash(
+				classPK,
+				GetterUtil.get(context.get(Context.BROWSER), StringPool.BLANK),
+				GetterUtil.get(context.get(Context.HOSTNAME), StringPool.BLANK),
+				GetterUtil.get(
+					context.get(Context.LANGUAGE_ID), StringPool.BLANK),
+				GetterUtil.get(
+					context.get(Context.REFERRER_URL), StringPool.BLANK),
+				GetterUtil.get(context.get(Context.URL), StringPool.BLANK),
+				GetterUtil.get(
+					context.get(Context.USER_AGENT), StringPool.BLANK),
+				GetterUtil.get(jSessionId, StringPool.BLANK),
+				GetterUtil.get(requestParametersString, StringPool.BLANK)));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

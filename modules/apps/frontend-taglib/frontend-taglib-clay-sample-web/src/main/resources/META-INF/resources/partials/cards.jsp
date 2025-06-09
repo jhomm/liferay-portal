@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -58,7 +49,7 @@ ClaySampleImageCard claySampleImageCard = new ClaySampleImageCard();
 	</clay:col>
 </clay:row>
 
-<h4>Image Card with Sticker</h4>
+<div class="h4">Image Card with Sticker</div>
 
 <clay:row>
 	<clay:col
@@ -102,7 +93,7 @@ ClaySampleImageCard claySampleImageCard = new ClaySampleImageCard();
 	</clay:col>
 </clay:row>
 
-<h4>Image Card with Sticker Shape</h4>
+<div class="h4">Image Card with Sticker Shape</div>
 
 <clay:row>
 	<clay:col
@@ -151,7 +142,7 @@ ClaySampleImageCard claySampleImageCard = new ClaySampleImageCard();
 	</clay:col>
 </clay:row>
 
-<h4>Image Card with Labels</h4>
+<div class="h4">Image Card with Labels</div>
 
 <clay:row>
 	<clay:col
@@ -198,7 +189,7 @@ ClaySampleImageCard claySampleImageCard = new ClaySampleImageCard();
 	</clay:col>
 </clay:row>
 
-<h4>Selectable Image Card</h4>
+<div class="h4">Selectable Image Card</div>
 
 <clay:row>
 	<clay:col
@@ -220,7 +211,7 @@ ClaySampleImageCard claySampleImageCard = new ClaySampleImageCard();
 	</clay:col>
 
 	<clay:col
-		id="image-card-icon-block"
+		data-qa-id="image-card-icon-block"
 		md="4"
 	>
 		<clay:image-card
@@ -253,7 +244,7 @@ ClaySampleImageCard claySampleImageCard = new ClaySampleImageCard();
 	</clay:col>
 </clay:row>
 
-<h4>Image Card Using Model</h4>
+<div class="h4">Image Card Using Model</div>
 
 <clay:row>
 	<clay:col
@@ -289,7 +280,7 @@ ClaySampleImageCard claySampleImageCard = new ClaySampleImageCard();
 	</clay:col>
 </clay:row>
 
-<h4>File Cards</h4>
+<div class="h4">File Cards</div>
 
 <%
 ClaySampleFileCard claySampleFileCard = new ClaySampleFileCard();
@@ -342,7 +333,7 @@ ClaySampleFileCard claySampleFileCard = new ClaySampleFileCard();
 	</clay:col>
 </clay:row>
 
-<h4>File Cards Using Model</h4>
+<div class="h4">File Cards Using Model</div>
 
 <clay:row>
 	<clay:col
@@ -367,24 +358,23 @@ ClaySampleFileCard claySampleFileCard = new ClaySampleFileCard();
 	>
 
 		<%
-		ClaySampleFileCard sampleFileCard = new ClaySampleFileCard();
-
-		sampleFileCard.setIcon("list");
-		sampleFileCard.setSelectable(true);
-		sampleFileCard.setSelected(true);
-		sampleFileCard.setStickerLabel("MP3");
-		sampleFileCard.setStickerStyle("warning");
-		sampleFileCard.setSubtitle("More music");
-		sampleFileCard.setTitle(_MP3_FILE_TITLE);
+		claySampleFileCard.setDisabled(false);
+		claySampleFileCard.setIcon("list");
+		claySampleFileCard.setSelectable(true);
+		claySampleFileCard.setSelected(true);
+		claySampleFileCard.setStickerLabel("MP3");
+		claySampleFileCard.setStickerStyle("warning");
+		claySampleFileCard.setSubtitle("More music");
+		claySampleFileCard.setTitle(_MP3_FILE_TITLE);
 		%>
 
 		<clay:file-card
-			fileCard="<%= sampleFileCard %>"
+			fileCard="<%= claySampleFileCard %>"
 		/>
 	</clay:col>
 </clay:row>
 
-<h4>User Cards</h4>
+<div class="h4">User Cards</div>
 
 <%
 ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
@@ -392,7 +382,7 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 
 <clay:row>
 	<clay:col
-		id="image-card-block"
+		data-qa-id="image-card-block"
 		md="4"
 	>
 		<clay:user-card
@@ -404,7 +394,7 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 
 	<clay:col
-		id="image-card-block"
+		data-qa-id="image-card-block"
 		md="4"
 	>
 		<clay:user-card
@@ -418,7 +408,7 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 
 	<clay:col
-		id="image-card-icon-block"
+		data-qa-id="image-card-icon-block"
 		md="4"
 	>
 		<clay:user-card
@@ -433,11 +423,11 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 </clay:row>
 
-<h4>Selectable User Cards</h4>
+<div class="h4">Selectable User Cards</div>
 
 <clay:row>
 	<clay:col
-		id="image-card-block"
+		data-qa-id="image-card-block"
 		md="4"
 	>
 		<clay:user-card
@@ -449,7 +439,7 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 
 	<clay:col
-		id="image-card-block"
+		data-qa-id="image-card-block"
 		md="4"
 	>
 		<clay:user-card
@@ -463,7 +453,7 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 
 	<clay:col
-		id="image-card-icon-block"
+		data-qa-id="image-card-icon-block"
 		md="4"
 	>
 		<clay:user-card
@@ -476,11 +466,11 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 </clay:row>
 
-<h4>User Cards Using Model</h4>
+<div class="h4">User Cards Using Model</div>
 
 <clay:row>
 	<clay:col
-		id="image-card-block"
+		data-qa-id="image-card-block"
 		md="4"
 	>
 
@@ -495,7 +485,7 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 
 	<clay:col
-		id="image-card-block"
+		data-qa-id="image-card-block"
 		md="4"
 	>
 
@@ -511,7 +501,7 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 
 	<clay:col
-		id="image-card-icon-block"
+		data-qa-id="image-card-icon-block"
 		md="4"
 	>
 
@@ -525,11 +515,11 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 </clay:row>
 
-<h4>Selectable User Cards Using Display Context</h4>
+<div class="h4">Selectable User Cards Using Display Context</div>
 
 <clay:row>
 	<clay:col
-		id="image-card-block"
+		data-qa-id="image-card-block"
 		md="4"
 	>
 
@@ -547,7 +537,7 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 
 	<clay:col
-		id="image-card-block"
+		data-qa-id="image-card-block"
 		md="4"
 	>
 
@@ -563,7 +553,7 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 
 	<clay:col
-		id="image-card-icon-block"
+		data-qa-id="image-card-icon-block"
 		md="4"
 	>
 
@@ -577,12 +567,12 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 </clay:row>
 
-<h4>Horizontal Cards</h4>
+<div class="h4">Horizontal Cards</div>
 
 <clay:row>
 	<clay:col
-		id="simpleHorizontalCard"
-		md="4"
+		data-qa-id="simpleHorizontalCard"
+		md="3"
 	>
 		<clay:horizontal-card
 			title="ReallySuperInsanelyJustIncrediblyLongAndTotallyNotPossibleWordButWeAreReallyTryingToCoverAllOurBasesHereJustInCaseSomeoneIsNutsAsPerUsual"
@@ -590,8 +580,8 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 
 	<clay:col
-		id="selectableHorizontalCard"
-		md="4"
+		data-qa-id="selectableHorizontalCard"
+		md="3"
 	>
 		<clay:horizontal-card
 			actionDropdownItems="<%= cardsDisplayContext.getActionDropdownItems() %>"
@@ -602,16 +592,36 @@ ClaySampleUserCard claySampleUserCard = new ClaySampleUserCard();
 	</clay:col>
 
 	<clay:col
-		id="modelHorizontalCard"
-		md="4"
+		data-qa-id="modelHorizontalCard"
+		md="2"
 	>
 		<clay:horizontal-card
 			horizontalCard="<%= new ClaySampleHorizontalCard() %>"
 		/>
 	</clay:col>
+
+	<clay:col
+		data-qa-id="modelHorizontalCard"
+		md="2"
+	>
+		<clay:horizontal-card
+			title="a"
+			translated="<%= true %>"
+		/>
+	</clay:col>
+
+	<clay:col
+		data-qa-id="modelHorizontalCard"
+		md="2"
+	>
+		<clay:horizontal-card
+			title="a"
+			translated="<%= false %>"
+		/>
+	</clay:col>
 </clay:row>
 
-<h4>Vertical Cards</h4>
+<div class="h4">Vertical Cards</div>
 
 <%
 ClaySampleVerticalCard claySampleVerticalCard = new ClaySampleVerticalCard();
@@ -651,7 +661,7 @@ ClaySampleVerticalCard claySampleVerticalCard = new ClaySampleVerticalCard();
 	</clay:col>
 </clay:row>
 
-<h4>Vertical Cards Using Model</h4>
+<div class="h4">Vertical Cards Using Model</div>
 
 <clay:row>
 	<clay:col
@@ -677,21 +687,23 @@ ClaySampleVerticalCard claySampleVerticalCard = new ClaySampleVerticalCard();
 	>
 
 		<%
-		ClaySampleVerticalCard sampleVerticalCard = new ClaySampleVerticalCard();
-
-		sampleVerticalCard.setDisabled(true);
-		sampleVerticalCard.setSelected(true);
-		sampleVerticalCard.setStickerStyle("warning");
-		sampleVerticalCard.setSubtitle("This card is disabled");
+		claySampleVerticalCard.setDisabled(true);
+		claySampleVerticalCard.setImageSrc(null);
+		claySampleVerticalCard.setSelectable(false);
+		claySampleVerticalCard.setSelected(true);
+		claySampleVerticalCard.setStickerLabel(null);
+		claySampleVerticalCard.setStickerStyle("warning");
+		claySampleVerticalCard.setSubtitle("This card is disabled");
+		claySampleVerticalCard.setTitle(null);
 		%>
 
 		<clay:vertical-card
-			verticalCard="<%= sampleVerticalCard %>"
+			verticalCard="<%= claySampleVerticalCard %>"
 		/>
 	</clay:col>
 </clay:row>
 
-<h4>Navigation Cards</h4>
+<div class="h4">Navigation Cards</div>
 
 <clay:row>
 	<clay:col
@@ -699,7 +711,7 @@ ClaySampleVerticalCard claySampleVerticalCard = new ClaySampleVerticalCard();
 	>
 		<clay:navigation-card
 			icon="page"
-			propsTransformer="js/ClaySampleNavigationCardPropsTransformer"
+			propsTransformer="{ClaySampleNavigationCardPropsTransformer} from frontend-taglib-clay-sample-web"
 			small="<%= true %>"
 			title="add-page"
 		/>

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link BatchEngineExportTaskLocalService}.
@@ -26,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class BatchEngineExportTaskLocalServiceWrapper
 	implements BatchEngineExportTaskLocalService,
 			   ServiceWrapper<BatchEngineExportTaskLocalService> {
+
+	public BatchEngineExportTaskLocalServiceWrapper() {
+		this(null);
+	}
 
 	public BatchEngineExportTaskLocalServiceWrapper(
 		BatchEngineExportTaskLocalService batchEngineExportTaskLocalService) {
@@ -56,15 +52,16 @@ public class BatchEngineExportTaskLocalServiceWrapper
 	@Override
 	public com.liferay.batch.engine.model.BatchEngineExportTask
 		addBatchEngineExportTask(
-			long companyId, long userId, String callbackURL, String className,
-			String contentType, String executeStatus,
-			java.util.List<String> fieldNamesList,
+			String externalReferenceCode, long companyId, long userId,
+			String callbackURL, String className, String contentType,
+			String executeStatus, java.util.List<String> fieldNames,
 			java.util.Map<String, java.io.Serializable> parameters,
 			String taskItemDelegateName) {
 
 		return _batchEngineExportTaskLocalService.addBatchEngineExportTask(
-			companyId, userId, callbackURL, className, contentType,
-			executeStatus, fieldNamesList, parameters, taskItemDelegateName);
+			externalReferenceCode, companyId, userId, callbackURL, className,
+			contentType, executeStatus, fieldNames, parameters,
+			taskItemDelegateName);
 	}
 
 	/**
@@ -257,6 +254,16 @@ public class BatchEngineExportTaskLocalServiceWrapper
 			batchEngineExportTaskId);
 	}
 
+	@Override
+	public com.liferay.batch.engine.model.BatchEngineExportTask
+		fetchBatchEngineExportTaskByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return _batchEngineExportTaskLocalService.
+			fetchBatchEngineExportTaskByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the batch engine export task with the matching UUID and company.
 	 *
@@ -294,6 +301,17 @@ public class BatchEngineExportTaskLocalServiceWrapper
 
 		return _batchEngineExportTaskLocalService.getBatchEngineExportTask(
 			batchEngineExportTaskId);
+	}
+
+	@Override
+	public com.liferay.batch.engine.model.BatchEngineExportTask
+			getBatchEngineExportTaskByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _batchEngineExportTaskLocalService.
+			getBatchEngineExportTaskByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	/**
@@ -452,6 +470,11 @@ public class BatchEngineExportTaskLocalServiceWrapper
 
 		return _batchEngineExportTaskLocalService.updateBatchEngineExportTask(
 			batchEngineExportTask);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _batchEngineExportTaskLocalService.getBasePersistence();
 	}
 
 	@Override

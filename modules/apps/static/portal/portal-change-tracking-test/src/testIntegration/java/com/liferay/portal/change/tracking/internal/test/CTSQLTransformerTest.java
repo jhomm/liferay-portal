@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.change.tracking.internal.test;
@@ -23,6 +14,7 @@ import com.liferay.change.tracking.service.CTEntryLocalService;
 import com.liferay.change.tracking.service.CTPreferencesLocalService;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.io.StreamUtil;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.change.tracking.registry.CTModelRegistration;
 import com.liferay.portal.change.tracking.registry.CTModelRegistry;
@@ -40,7 +32,6 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.log.LogCapture;
-import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -93,27 +84,27 @@ public class CTSQLTransformerTest {
 				"name VARCHAR(20), primary key (mainTableId, ",
 				"ctCollectionId));"));
 
-		_db.runSQL("insert into MainTable values (1, 0, 2, 3, 'mt1 v1');");
-		_db.runSQL("insert into MainTable values (2, 0, 2, 3, 'mt2 v1');");
-		_db.runSQL("insert into MainTable values (3, 0, 2, 3, 'mt3 v1');");
-		_db.runSQL("insert into MainTable values (4, 0, 2, 3, 'mt4 v1');");
-		_db.runSQL("insert into MainTable values (5, 0, 2, 4, 'mt5 v1');");
+		_db.runSQL("insert into MainTable values (1, 0, 2, 3, 'mt1 v1')");
+		_db.runSQL("insert into MainTable values (2, 0, 2, 3, 'mt2 v1')");
+		_db.runSQL("insert into MainTable values (3, 0, 2, 3, 'mt3 v1')");
+		_db.runSQL("insert into MainTable values (4, 0, 2, 3, 'mt4 v1')");
+		_db.runSQL("insert into MainTable values (5, 0, 2, 4, 'mt5 v1')");
 
 		_db.runSQL(
 			"insert into MainTable values (6, " + _getCTCollectionId(1) +
-				" , 2, 3, 'mt6 add');");
+				" , 2, 3, 'mt6 add')");
 
 		_db.runSQL(
 			"insert into MainTable values (1, " + _getCTCollectionId(2) +
-				" , 2, 3, 'mt1 modify');");
+				" , 2, 3, 'mt1 modify')");
 
 		_db.runSQL(
 			"insert into MainTable values (1, " + _getCTCollectionId(3) +
-				" , 2, 4, 'mt1 moved');");
+				" , 2, 4, 'mt1 moved')");
 
 		_db.runSQL(
 			"insert into MainTable values (7, " + _getCTCollectionId(5) +
-				" , 2, 3, 'mt7 add');");
+				" , 2, 3, 'mt7 add')");
 
 		CTModelRegistry.registerCTModel(
 			new CTModelRegistration(
@@ -131,29 +122,29 @@ public class CTSQLTransformerTest {
 				"create table ReferenceTable (referenceTableId LONG not null, ",
 				"ctCollectionId LONG not null, mainTableId LONG, name ",
 				"VARCHAR(20), primary key (referenceTableId, ",
-				"ctCollectionId));"));
+				"ctCollectionId))"));
 
-		_db.runSQL("insert into ReferenceTable values (1, 0, 1, 'rt1 v1');");
-		_db.runSQL("insert into ReferenceTable values (2, 0, 1, 'rt2 v1');");
-		_db.runSQL("insert into ReferenceTable values (3, 0, 2, 'rt3 v1');");
-		_db.runSQL("insert into ReferenceTable values (4, 0, 2, 'rt4 v1');");
-		_db.runSQL("insert into ReferenceTable values (5, 0, 2, 'rt5 v1');");
+		_db.runSQL("insert into ReferenceTable values (1, 0, 1, 'rt1 v1')");
+		_db.runSQL("insert into ReferenceTable values (2, 0, 1, 'rt2 v1')");
+		_db.runSQL("insert into ReferenceTable values (3, 0, 2, 'rt3 v1')");
+		_db.runSQL("insert into ReferenceTable values (4, 0, 2, 'rt4 v1')");
+		_db.runSQL("insert into ReferenceTable values (5, 0, 2, 'rt5 v1')");
 
 		_db.runSQL(
 			"insert into ReferenceTable values (6, " + _getCTCollectionId(1) +
-				" , 1, 'rt6 add');");
+				" , 1, 'rt6 add')");
 
 		_db.runSQL(
 			"insert into ReferenceTable values (1, " + _getCTCollectionId(2) +
-				" , 1, 'rt1 modify');");
+				" , 1, 'rt1 modify')");
 
 		_db.runSQL(
 			"insert into ReferenceTable values (1, " + _getCTCollectionId(3) +
-				" , 2, 'rt1 moved');");
+				" , 2, 'rt1 moved')");
 
 		_db.runSQL(
 			"insert into ReferenceTable values (1, " + _getCTCollectionId(5) +
-				" , 2, 'rt1 modify2');");
+				" , 2, 'rt1 modify2')");
 	}
 
 	@AfterClass
@@ -164,11 +155,11 @@ public class CTSQLTransformerTest {
 
 		_ctPreferencesLocalService.deleteCTPreferences(ctPreferences);
 
-		_db.runSQL("drop table MainTable;");
+		_db.runSQL("drop table MainTable");
 
 		CTModelRegistry.unregisterCTModel("MainTable");
 
-		_db.runSQL("drop table ReferenceTable;");
+		_db.runSQL("drop table ReferenceTable");
 
 		CTModelRegistry.unregisterCTModel("ReferenceTable");
 
@@ -955,7 +946,7 @@ public class CTSQLTransformerTest {
 
 		_db.runSQL(
 			"insert into MainTable values (1, " + ctCollectionId7 +
-				" , 2, 3, 'temp');");
+				" , 2, 3, 'temp')");
 
 		_assertQuery(
 			"select * from MainTable where mainTableId = 1 and " +
@@ -972,7 +963,6 @@ public class CTSQLTransformerTest {
 			"update_in.sql", "update_out.sql", ctCollectionId7,
 			ps -> {
 				ps.setLong(1, ctCollectionId8);
-
 				ps.setLong(2, 1);
 			});
 
@@ -1015,7 +1005,8 @@ public class CTSQLTransformerTest {
 
 		if (ctCollection == null) {
 			ctCollection = _ctCollectionLocalService.addCTCollection(
-				TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+				null, TestPropsValues.getCompanyId(),
+				TestPropsValues.getUserId(), 0,
 				CTSQLTransformerTest.class.getName(), null);
 
 			_ctCollections.add(ctCollection);
@@ -1023,7 +1014,7 @@ public class CTSQLTransformerTest {
 
 		if (addedPK != null) {
 			_ctEntryLocalService.addCTEntry(
-				ctCollection.getCtCollectionId(),
+				null, ctCollection.getCtCollectionId(),
 				_classNameLocalService.getClassNameId(modelClass),
 				_getCTModelProxy(addedPK), TestPropsValues.getUserId(),
 				CTConstants.CT_CHANGE_TYPE_ADDITION);
@@ -1031,7 +1022,7 @@ public class CTSQLTransformerTest {
 
 		if (modifiedPK != null) {
 			_ctEntryLocalService.addCTEntry(
-				ctCollection.getCtCollectionId(),
+				null, ctCollection.getCtCollectionId(),
 				_classNameLocalService.getClassNameId(modelClass),
 				_getCTModelProxy(modifiedPK), TestPropsValues.getUserId(),
 				CTConstants.CT_CHANGE_TYPE_MODIFICATION);
@@ -1039,7 +1030,7 @@ public class CTSQLTransformerTest {
 
 		if (removedPK != null) {
 			_ctEntryLocalService.addCTEntry(
-				ctCollection.getCtCollectionId(),
+				null, ctCollection.getCtCollectionId(),
 				_classNameLocalService.getClassNameId(modelClass),
 				_getCTModelProxy(removedPK), TestPropsValues.getUserId(),
 				CTConstants.CT_CHANGE_TYPE_DELETION);
@@ -1096,17 +1087,16 @@ public class CTSQLTransformerTest {
 
 		_ctPreferencesLocalService.updateCTPreferences(ctPreferences);
 
-		long originalCompanyId = CompanyThreadLocal.getCompanyId();
-
 		long originalUserId = PrincipalThreadLocal.getUserId();
 
-		CompanyThreadLocal.setCompanyId(companyId);
-
-		PrincipalThreadLocal.setName(userId);
-
-		try (Connection connection = DataAccess.getConnection();
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					companyId, ctCollectionId);
+			Connection connection = DataAccess.getConnection();
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				_getSQL(inputSQLFile, expectedOutputSQLFile, ctCollectionId))) {
+
+			PrincipalThreadLocal.setName(userId);
 
 			preparedStatementUnsafeConsumer.accept(preparedStatement);
 
@@ -1123,8 +1113,6 @@ public class CTSQLTransformerTest {
 			}
 		}
 		finally {
-			CompanyThreadLocal.setCompanyId(originalCompanyId);
-
 			PrincipalThreadLocal.setName(originalUserId);
 		}
 	}
@@ -1159,25 +1147,22 @@ public class CTSQLTransformerTest {
 
 		_ctPreferencesLocalService.updateCTPreferences(ctPreferences);
 
-		long originalCompanyId = CompanyThreadLocal.getCompanyId();
-
 		long originalUserId = PrincipalThreadLocal.getUserId();
 
-		CompanyThreadLocal.setCompanyId(companyId);
-
-		PrincipalThreadLocal.setName(userId);
-
-		try (Connection connection = DataAccess.getConnection();
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					companyId, ctCollectionId);
+			Connection connection = DataAccess.getConnection();
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				_getSQL(inputSQLFile, expectedOutputSQLFile, ctCollectionId))) {
+
+			PrincipalThreadLocal.setName(userId);
 
 			preparedStatementUnsafeConsumer.accept(preparedStatement);
 
 			Assert.assertEquals(1, preparedStatement.executeUpdate());
 		}
 		finally {
-			CompanyThreadLocal.setCompanyId(originalCompanyId);
-
 			PrincipalThreadLocal.setName(originalUserId);
 		}
 	}
@@ -1218,15 +1203,6 @@ public class CTSQLTransformerTest {
 			String newSQL = _ctSQLTransformer.transform(inputSQL);
 
 			Assert.assertEquals(expectedOutputSQL, newSQL);
-
-			List<LogEntry> logEntries = logCapture.getLogEntries();
-
-			if (expectedOutputSQLFile.endsWith("_ct.sql")) {
-				Assert.assertFalse(newSQL, logEntries.isEmpty());
-			}
-			else {
-				Assert.assertTrue(newSQL, logEntries.isEmpty());
-			}
 
 			return newSQL;
 		}

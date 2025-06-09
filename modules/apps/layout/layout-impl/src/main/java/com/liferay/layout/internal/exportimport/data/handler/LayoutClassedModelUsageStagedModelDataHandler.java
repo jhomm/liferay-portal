@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.internal.exportimport.data.handler;
@@ -48,13 +39,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Pavel Savinov
  */
-@Component(
-	immediate = true,
-	service = {
-		LayoutClassedModelUsageStagedModelDataHandler.class,
-		StagedModelDataHandler.class
-	}
-)
+@Component(service = StagedModelDataHandler.class)
 public class LayoutClassedModelUsageStagedModelDataHandler
 	extends BaseStagedModelDataHandler<LayoutClassedModelUsage> {
 
@@ -94,11 +79,8 @@ public class LayoutClassedModelUsageStagedModelDataHandler
 			layoutClassedModelUsage);
 
 		element.addAttribute(
-			"layout-classed-model-class-name",
-			_portal.getClassName(layoutClassedModelUsage.getClassNameId()));
-		element.addAttribute(
 			"layout-classed-model-container-class-name",
-			_portal.getClassName(layoutClassedModelUsage.getContainerType()));
+			_portal.fetchClassName(layoutClassedModelUsage.getContainerType()));
 
 		AssetRendererFactory<?> assetRendererFactory =
 			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(
@@ -121,7 +103,7 @@ public class LayoutClassedModelUsageStagedModelDataHandler
 			}
 			catch (PortalException portalException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(portalException, portalException);
+					_log.debug(portalException);
 				}
 			}
 
@@ -129,11 +111,19 @@ public class LayoutClassedModelUsageStagedModelDataHandler
 				(assetRenderer.getStatus() ==
 					WorkflowConstants.STATUS_APPROVED)) {
 
-				StagedModelDataHandlerUtil.exportReferenceStagedModel(
-					portletDataContext, layoutClassedModelUsage,
-					(StagedModel)assetRenderer.getAssetObject(),
-					PortletDataContext.REFERENCE_TYPE_DEPENDENCY,
-					assetRendererFactory.getPortletId());
+				if (ExportImportThreadLocal.isStagingInProcess()) {
+					portletDataContext.addReferenceElement(
+						layoutClassedModelUsage, element,
+						(StagedModel)assetRenderer.getAssetObject(),
+						PortletDataContext.REFERENCE_TYPE_WEAK, true);
+				}
+				else {
+					StagedModelDataHandlerUtil.exportReferenceStagedModel(
+						portletDataContext, layoutClassedModelUsage,
+						(StagedModel)assetRenderer.getAssetObject(),
+						PortletDataContext.REFERENCE_TYPE_DEPENDENCY,
+						assetRendererFactory.getPortletId());
+				}
 			}
 		}
 
@@ -188,9 +178,6 @@ public class LayoutClassedModelUsageStagedModelDataHandler
 
 		importedLayoutClassedModelUsage.setPlid(plid);
 
-		importedLayoutClassedModelUsage.setClassNameId(
-			_portal.getClassNameId(layoutClassedModelUsage.getClassName()));
-
 		Map<Long, Long> classPKs =
 			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
 				layoutClassedModelUsage.getClassName());
@@ -208,6 +195,9 @@ public class LayoutClassedModelUsageStagedModelDataHandler
 			element.attributeValue(
 				"layout-classed-model-container-class-name"));
 
+		importedLayoutClassedModelUsage.setContainerType(
+			containerTypeClassNameId);
+
 		if (containerTypeClassNameId == _portal.getClassNameId(
 				FragmentEntryLink.class)) {
 
@@ -224,17 +214,16 @@ public class LayoutClassedModelUsageStagedModelDataHandler
 
 				importedLayoutClassedModelUsage.setContainerKey(
 					String.valueOf(containerKey));
-
-				importedLayoutClassedModelUsage.setContainerType(
-					_portal.getClassNameId(FragmentEntryLink.class));
 			}
 		}
 
 		LayoutClassedModelUsage existingLayoutClassedModelUsage =
 			_layoutClassedModelUsageLocalService.fetchLayoutClassedModelUsage(
-				_portal.getClassNameId(
-					element.attributeValue("layout-classed-model-class-name")),
-				classPK, importedLayoutClassedModelUsage.getContainerKey(),
+				portletDataContext.getScopeGroupId(),
+				importedLayoutClassedModelUsage.getClassNameId(), classPK,
+				importedLayoutClassedModelUsage.
+					getClassedModelExternalReferenceCode(),
+				importedLayoutClassedModelUsage.getContainerKey(),
 				containerTypeClassNameId, plid);
 
 		if (existingLayoutClassedModelUsage == null) {

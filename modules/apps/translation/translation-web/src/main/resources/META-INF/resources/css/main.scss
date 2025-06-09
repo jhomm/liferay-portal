@@ -5,21 +5,42 @@ $toolbarHeight: 6.875rem;
 $toolbarZIndex: 971;
 
 $productMenuTransitionDuration: 0.5s;
-$productMenuWidth: 320px;
 
 .translation {
 	$component: &;
 
 	&-edit {
-		.languages-selector .autofit-col:not(:last-child) {
-			margin-right: 1em;
+		.experience-selector select {
+			max-width: 6.5rem;
+		}
+
+		.languages-selector {
+			color: $black;
+			font-size: 0.875rem;
+
+			.autofit-col:not(:last-child) {
+				margin-right: 1em;
+			}
+		}
+
+		.autotranslate-feedback {
+			flex-shrink: 1;
+			font-size: 0.875rem;
+
+			@include media-breakpoint-up(xl) {
+				max-width: 18rem;
+			}
 		}
 	}
 
 	&-import {
-		.list-group-icon .lexicon-icon {
-			font-size: 1rem;
-			margin-top: 0;
+		.list-group-no-bordered .list-group-item {
+			border-width: 0 0 1px;
+			margin-bottom: 0;
+
+			&:last-child {
+				border-width: 0;
+			}
 		}
 	}
 
@@ -28,21 +49,11 @@ $productMenuWidth: 320px;
 		nav {
 			height: auto;
 			left: 0;
-			position: fixed;
-			transition: left ease $productMenuTransitionDuration,
+			transition:
+				left ease $productMenuTransitionDuration,
 				width ease $productMenuTransitionDuration;
 			width: 100%;
 			z-index: $toolbarZIndex;
-
-			body.open & {
-				left: $productMenuWidth;
-				width: calc(100% - #{$productMenuWidth});
-
-				@media (max-width: 768px) {
-					left: 0;
-					width: 100%;
-				}
-			}
 
 			> .container-fluid {
 				padding: 0;
@@ -59,15 +70,6 @@ $productMenuWidth: 320px;
 						order: 1;
 						width: 100%;
 					}
-
-					> .tbar-item:last-child {
-						flex-grow: 1;
-
-						> .tbar-section {
-							display: flex;
-							justify-content: flex-end;
-						}
-					}
 				}
 			}
 
@@ -78,20 +80,7 @@ $productMenuWidth: 320px;
 						order: 0;
 						width: auto;
 					}
-
-					> .tbar-item:last-child {
-						flex-grow: 0;
-					}
 				}
-			}
-		}
-
-		#{$component}-edit-body-form,
-		#{$component}-import-body-form {
-			margin-top: $toolbarHeight;
-
-			@include media-breakpoint-up(lg) {
-				margin-top: $toolbarDesktopHeight;
 			}
 		}
 	}
@@ -155,7 +144,7 @@ $productMenuWidth: 320px;
 			}
 		}
 
-		.separator {
+		hr {
 			border-color: $secondary;
 			margin-bottom: 2rem;
 			margin-top: 0.25rem;
@@ -163,6 +152,18 @@ $productMenuWidth: 320px;
 	}
 
 	&-export {
+		.custom-radio {
+			.custom-control {
+				margin-bottom: 0;
+			}
+
+			.form-text {
+				font-weight: normal;
+				margin-bottom: 1rem;
+				padding-left: 1.5rem;
+			}
+		}
+
 		.translation-experiences-wrapper {
 			margin-bottom: 1.5rem;
 			max-height: 40rem;
@@ -187,4 +188,9 @@ $productMenuWidth: 320px;
 			}
 		}
 	}
+}
+
+.translation-languages-dropdown {
+	position: fixed;
+	z-index: $zindex-dropdown;
 }

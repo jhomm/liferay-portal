@@ -1,15 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {cleanup, render} from '@testing-library/react';
+import {render} from '@testing-library/react';
 import React from 'react';
 
 import Navigation from '../../../src/main/resources/META-INF/resources/js/components/Navigation';
@@ -20,11 +14,11 @@ import {StoreContextProvider} from '../../../src/main/resources/META-INF/resourc
 import '@testing-library/jest-dom/extend-expect';
 
 const mockEndpoints = {
-	analyticsReportsHistoricalReadsURL: 'analyticsReportsHistoricalReadsURL',
-	analyticsReportsHistoricalViewsURL: 'analyticsReportsHistoricalViewsURL',
-	analyticsReportsTotalReadsURL: 'analyticsReportsTotalReadsURL',
-	analyticsReportsTotalViewsURL: 'analyticsReportsTotalViewsURL',
-	analyticsReportsTrafficSourcesURL: 'analyticsReportsTrafficSourcesURL',
+	analyticsReportsHistoricalReadsURL: '/o/analyticsReportsHistoricalReadsURL',
+	analyticsReportsHistoricalViewsURL: '/o/analyticsReportsHistoricalViewsURL',
+	analyticsReportsTotalReadsURL: '/o/analyticsReportsTotalReadsURL',
+	analyticsReportsTotalViewsURL: '/o/analyticsReportsTotalViewsURL',
+	analyticsReportsTrafficSourcesURL: '/o/analyticsReportsTrafficSourcesURL',
 };
 
 const mockLanguageTag = 'en-US';
@@ -65,12 +59,11 @@ const noop = () => {};
 
 describe('Navigation', () => {
 	beforeEach(() => {
-		fetch.mockResponse(JSON.stringify({}));
+		fetch.mockResponse(Promise.resolve(JSON.stringify({})));
 	});
 
 	afterEach(() => {
 		jest.clearAllMocks();
-		cleanup();
 	});
 
 	it('displays an alert error message if there is no valid connection', () => {

@@ -1,30 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.designer.web.internal.portlet.configuration.icon;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.portlet.configuration.icon.BasePortletConfigurationIcon;
+import com.liferay.portal.kernel.portlet.configuration.icon.BaseJSPPortletConfigurationIcon;
 import com.liferay.portal.kernel.portlet.configuration.icon.PortletConfigurationIcon;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.workflow.kaleo.designer.web.constants.KaleoDesignerPortletKeys;
 import com.liferay.portal.workflow.kaleo.designer.web.internal.constants.KaleoDesignerWebKeys;
@@ -32,8 +21,11 @@ import com.liferay.portal.workflow.kaleo.designer.web.internal.permission.KaleoD
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinition;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.ServletContext;
+
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,59 +36,32 @@ import org.osgi.service.component.annotations.Reference;
  * @author Adam Brandizzi
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + KaleoDesignerPortletKeys.KALEO_DESIGNER,
+		"jakarta.portlet.name=" + KaleoDesignerPortletKeys.KALEO_DESIGNER,
 		"path=/designer/edit_kaleo_definition_version.jsp"
 	},
 	service = PortletConfigurationIcon.class
 )
 public class DeleteDefinitionPortletConfigurationIcon
-	extends BasePortletConfigurationIcon {
+	extends BaseJSPPortletConfigurationIcon {
+
+	@Override
+	public Map<String, Object> getContext(PortletRequest portletRequest) {
+		return HashMapBuilder.<String, Object>put(
+			"action", getNamespace(portletRequest) + "deleteDefinition"
+		).put(
+			"globalAction", true
+		).build();
+	}
+
+	@Override
+	public String getJspPath() {
+		return "/designer/configuration/icon/delete_definition.jsp";
+	}
 
 	@Override
 	public String getMessage(PortletRequest portletRequest) {
-		return LanguageUtil.get(getLocale(portletRequest), "delete");
-	}
-
-	@Override
-	public String getOnClick(
-		PortletRequest portletRequest, PortletResponse portletResponse) {
-
-		String portletNamespace = _portal.getPortletNamespace(
-			_portal.getPortletId(portletRequest));
-
-		String deleteURL = getURL(portletRequest, portletResponse);
-
-		return StringBundler.concat(
-			portletNamespace, "confirmDeleteDefinition('", deleteURL,
-			"'); return false;");
-	}
-
-	/**
-	 * Returns a portlet URL, passing the workflow definition name and version
-	 * as parameters.
-	 *
-	 * @param  portletRequest the portlet request used to construct the URL
-	 * @param  portletResponse the portlet response required by the overridden
-	 *         method
-	 * @return the URL for the delete action
-	 */
-	@Override
-	public String getURL(
-		PortletRequest portletRequest, PortletResponse portletResponse) {
-
-		return PortletURLBuilder.create(
-			_portal.getControlPanelPortletURL(
-				portletRequest, KaleoDesignerPortletKeys.CONTROL_PANEL_WORKFLOW,
-				PortletRequest.ACTION_PHASE)
-		).setActionName(
-			"/portal_workflow/delete_workflow_definition"
-		).setParameter(
-			"name", portletRequest.getParameter("name")
-		).setParameter(
-			"version", portletRequest.getParameter("draftVersion")
-		).buildString();
+		return _language.get(getLocale(portletRequest), "delete");
 	}
 
 	@Override
@@ -132,17 +97,27 @@ public class DeleteDefinitionPortletConfigurationIcon
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
 		return false;
 	}
 
+	@Override
+	protected ServletContext getServletContext() {
+		return _servletContext;
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		DeleteDefinitionPortletConfigurationIcon.class);
 
 	@Reference
-	private Portal _portal;
+	private Language _language;
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.portal.workflow.kaleo.designer.web)"
+	)
+	private ServletContext _servletContext;
 
 }

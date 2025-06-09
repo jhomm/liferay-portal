@@ -1,44 +1,36 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+/* eslint-disable @liferay/no-get-data-attribute */
+
+import {addParams} from 'frontend-js-web';
+
 CKEDITOR.dialog.add('audio', (editor) => {
-	var TPL_SCRIPT =
+	const TPL_SCRIPT =
 		'boundingBox: "#" + mediaId,' + 'oggUrl: "{oggUrl}",' + 'url: "{url}"';
 
 	function commitValue(audioNode) {
-		var instance = this;
+		const instance = this;
 
-		var id = instance.id;
-		var value = instance.getValue();
+		const id = instance.id;
+		const value = instance.getValue();
 
-		var scriptTPL = null;
-		var textScript = null;
+		let scriptTPL = null;
+		let textScript = null;
 
-		var audioOggUrl = audioNode.getAttribute('data-audio-ogg-url');
-		var audioUrl = audioNode.getAttribute('data-audio-url');
+		let audioOggUrl = audioNode.getAttribute('data-audio-ogg-url');
+		let audioUrl = audioNode.getAttribute('data-audio-url');
 
 		if (id === 'url') {
 			audioNode.setAttribute('data-document-url', value);
 
-			audioUrl = Liferay.Util.addParams('audioPreview=1&type=mp3', value);
+			audioUrl = addParams('audioPreview=1&type=mp3', value);
 
 			audioNode.setAttribute('data-audio-url', audioUrl);
 
-			audioOggUrl = Liferay.Util.addParams(
-				'audioPreview=1&type=ogg',
-				value
-			);
+			audioOggUrl = addParams('audioPreview=1&type=ogg', value);
 
 			audioNode.setAttribute('data-audio-ogg-url', audioOggUrl);
 
@@ -58,12 +50,12 @@ CKEDITOR.dialog.add('audio', (editor) => {
 	}
 
 	function loadValue(audioNode) {
-		var instance = this;
+		const instance = this;
 
-		var id = instance.id;
+		const id = instance.id;
 
 		if (audioNode) {
-			var value = null;
+			let value = null;
 
 			if (id === 'url') {
 				value = audioNode.getAttribute('data-document-url');
@@ -92,8 +84,8 @@ CKEDITOR.dialog.add('audio', (editor) => {
 								filebrowser: {
 									action: 'Browse',
 									target: 'info:url',
-									url:
-										editor.config.filebrowserAudioBrowseUrl,
+									url: editor.config
+										.filebrowserAudioBrowseUrl,
 								},
 								hidden: 'true',
 								id: 'browse',
@@ -114,13 +106,13 @@ CKEDITOR.dialog.add('audio', (editor) => {
 		minWidth: 400,
 
 		onOk() {
-			var instance = this;
+			const instance = this;
 
 			editor.plugins.media.onOkCallback(instance, editor, 'audio');
 		},
 
 		onShow() {
-			var instance = this;
+			const instance = this;
 
 			editor.plugins.media.onShowCallback(instance, editor, 'audio');
 		},

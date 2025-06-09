@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.display.context;
@@ -20,11 +11,11 @@ import com.liferay.document.library.kernel.service.DLFileEntryTypeServiceUtil;
 import com.liferay.document.library.web.internal.security.permission.resource.DLPermission;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.DisplayTerms;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -32,11 +23,11 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Carlos Lancha
@@ -61,24 +52,24 @@ public class DLViewFileEntryTypesDisplayContext {
 			(ThemeDisplay)_httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		if (DLPermission.contains(
+		if (!DLPermission.contains(
 				themeDisplay.getPermissionChecker(),
 				themeDisplay.getScopeGroupId(), ActionKeys.ADD_DOCUMENT_TYPE)) {
 
-			return CreationMenuBuilder.addPrimaryDropdownItem(
-				dropdownItem -> {
-					dropdownItem.setHref(
-						renderResponse.createRenderURL(),
-						"mvcRenderCommandName",
-						"/document_library/edit_file_entry_type", "redirect",
-						PortalUtil.getCurrentURL(_httpServletRequest));
-					dropdownItem.setLabel(
-						LanguageUtil.get(_httpServletRequest, "new"));
-				}
-			).build();
+			return null;
 		}
 
-		return null;
+		return CreationMenuBuilder.addPrimaryDropdownItem(
+			dropdownItem -> {
+				dropdownItem.setHref(
+					renderResponse.createRenderURL(), "mvcRenderCommandName",
+					"/document_library/edit_file_entry_type", "redirect",
+					PortalUtil.getCurrentURL(_httpServletRequest));
+				dropdownItem.setLabel(
+					LanguageUtil.format(
+						_httpServletRequest, "new-x", "document-type"));
+			}
+		).build();
 	}
 
 	public String getSearchActionURL() {
@@ -108,24 +99,21 @@ public class DLViewFileEntryTypesDisplayContext {
 		boolean includeBasicFileEntryType = ParamUtil.getBoolean(
 			_renderRequest, "includeBasicFileEntryType");
 
-		int total = DLFileEntryTypeServiceUtil.searchCount(
-			themeDisplay.getCompanyId(),
-			PortalUtil.getCurrentAndAncestorSiteGroupIds(
-				themeDisplay.getScopeGroupId()),
-			displayTerms.getKeywords(), includeBasicFileEntryType,
-			DLFileEntryTypeConstants.FILE_ENTRY_TYPE_SCOPE_DEFAULT);
-
-		searchContainer.setTotal(total);
-
-		searchContainer.setResults(
-			DLFileEntryTypeServiceUtil.search(
+		searchContainer.setResultsAndTotal(
+			() -> DLFileEntryTypeServiceUtil.search(
 				themeDisplay.getCompanyId(),
 				PortalUtil.getCurrentAndAncestorSiteGroupIds(
 					themeDisplay.getScopeGroupId()),
 				displayTerms.getKeywords(), includeBasicFileEntryType,
 				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_SCOPE_DEFAULT,
 				searchContainer.getStart(), searchContainer.getEnd(),
-				searchContainer.getOrderByComparator()));
+				searchContainer.getOrderByComparator()),
+			DLFileEntryTypeServiceUtil.searchCount(
+				themeDisplay.getCompanyId(),
+				PortalUtil.getCurrentAndAncestorSiteGroupIds(
+					themeDisplay.getScopeGroupId()),
+				displayTerms.getKeywords(), includeBasicFileEntryType,
+				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_SCOPE_DEFAULT));
 
 		_searchContainer = searchContainer;
 

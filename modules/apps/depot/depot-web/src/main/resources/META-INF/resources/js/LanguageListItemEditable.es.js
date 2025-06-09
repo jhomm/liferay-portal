@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -173,6 +164,7 @@ const LanguageListItem = ({
 						expand
 					>
 						{displayName}
+
 						{isDefault && (
 							<ClayLabel className="ml-3" displayType="info">
 								{Liferay.Language.get('default')}
@@ -181,6 +173,7 @@ const LanguageListItem = ({
 					</ClayLayout.ContentCol>
 				</ClayLayout.ContentRow>
 			</ClayTable.Cell>
+
 			<ClayTable.Cell align="right">
 				<ClayDropDown
 					active={active}
@@ -204,11 +197,13 @@ const LanguageListItem = ({
 						>
 							{Liferay.Language.get('make-default')}
 						</ClayDropDown.Item>
+
 						{!isFirst && (
 							<ClayDropDown.Item onClick={moveUp}>
 								{Liferay.Language.get('move-up')}
 							</ClayDropDown.Item>
 						)}
+
 						{!isLast && (
 							<ClayDropDown.Item onClick={moveDown}>
 								{Liferay.Language.get('move-down')}

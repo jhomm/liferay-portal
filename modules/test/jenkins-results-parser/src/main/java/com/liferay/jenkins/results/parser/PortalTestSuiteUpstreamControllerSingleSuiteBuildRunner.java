@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -85,11 +76,15 @@ public class PortalTestSuiteUpstreamControllerSingleSuiteBuildRunner
 
 	@Override
 	protected void invokeTestSuiteBuilds() {
-		String jobURL = getJobURL();
+		S buildData = getBuildData();
+
+		String testSuiteName = buildData.getTestSuiteName();
+
+		String invocationJobURL = getInvocationJobURL(testSuiteName);
 
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(jobURL);
+		sb.append(invocationJobURL);
 
 		sb.append("/buildWithParameters?");
 
@@ -109,14 +104,11 @@ public class PortalTestSuiteUpstreamControllerSingleSuiteBuildRunner
 		sb.append("token=");
 		sb.append(jenkinsAuthenticationToken);
 
-		S buildData = getBuildData();
-
 		Map<String, String> invocationParameters = new HashMap<>();
 
-		String testSuiteName = buildData.getTestSuiteName();
+		invocationParameters.putAll(buildData.getBuildParameters());
 
 		invocationParameters.put("CI_TEST_SUITE", testSuiteName);
-
 		invocationParameters.put(
 			"CONTROLLER_BUILD_URL", buildData.getBuildURL());
 		invocationParameters.put(
@@ -137,14 +129,13 @@ public class PortalTestSuiteUpstreamControllerSingleSuiteBuildRunner
 
 		invocationParameters.put(
 			"PORTAL_GITHUB_URL", buildData.getPortalGitHubURL());
-
-		String testPortalBuildProfile = getTestPortalBuildProfile(
-			testSuiteName);
-
-		if (testPortalBuildProfile != null) {
-			invocationParameters.put(
-				"TEST_PORTAL_BUILD_PROFILE", testPortalBuildProfile);
-		}
+		invocationParameters.put(
+			"PORTAL_UPSTREAM_BRANCH_NAME",
+			buildData.getPortalUpstreamBranchName());
+		invocationParameters.put("SLAVE_LABEL", getSlaveLabel(testSuiteName));
+		invocationParameters.put(
+			"TEST_PORTAL_BUILD_PROFILE",
+			getTestPortalBuildProfile(testSuiteName));
 
 		String testrayProjectName = buildData.getTestrayProjectName();
 
@@ -157,23 +148,35 @@ public class PortalTestSuiteUpstreamControllerSingleSuiteBuildRunner
 				"TESTRAY_ROUTINE_NAME", buildData.getTestrayRoutineName());
 		}
 
-		invocationParameters.putAll(buildData.getBuildParameters());
+		invocationParameters.put(
+			"TESTRAY_SLACK_CHANNELS", getTestraySlackChannels(testSuiteName));
+		invocationParameters.put(
+			"TESTRAY_SLACK_ICON_EMOJI",
+			getTestraySlackIconEmoji(testSuiteName));
+		invocationParameters.put(
+			"TESTRAY_SLACK_USERNAME", getTestraySlackUsername(testSuiteName));
 
 		for (Map.Entry<String, String> invocationParameter :
 				invocationParameters.entrySet()) {
 
-			if (invocationParameter.getValue() == null) {
+			String invocationParameterValue = invocationParameter.getValue();
+
+			if (JenkinsResultsParserUtil.isNullOrEmpty(
+					invocationParameterValue)) {
+
 				continue;
 			}
 
 			sb.append("&");
 			sb.append(invocationParameter.getKey());
 			sb.append("=");
-			sb.append(invocationParameter.getValue());
+			sb.append(invocationParameterValue);
 		}
 
 		try {
 			JenkinsResultsParserUtil.toString(sb.toString());
+
+			keepJenkinsBuild(true);
 		}
 		catch (IOException ioException) {
 			throw new RuntimeException(ioException);
@@ -182,7 +185,7 @@ public class PortalTestSuiteUpstreamControllerSingleSuiteBuildRunner
 		sb = new StringBuilder();
 
 		sb.append("<a href=\"");
-		sb.append(JenkinsResultsParserUtil.getRemoteURL(jobURL));
+		sb.append(JenkinsResultsParserUtil.getRemoteURL(invocationJobURL));
 		sb.append("\"><strong>IN QUEUE</strong></a>");
 		sb.append("<ul><li><strong>Git ID:</strong> ");
 		sb.append("<a href=\"https://github.com/");
@@ -219,11 +222,7 @@ public class PortalTestSuiteUpstreamControllerSingleSuiteBuildRunner
 		allowConcurrentBuildsString = allowConcurrentBuildsString.toLowerCase();
 		allowConcurrentBuildsString = allowConcurrentBuildsString.trim();
 
-		if (!allowConcurrentBuildsString.equals("true")) {
-			return false;
-		}
-
-		return true;
+		return allowConcurrentBuildsString.equals("true");
 	}
 
 	private boolean _expirePreviousBuild() {
@@ -233,41 +232,69 @@ public class PortalTestSuiteUpstreamControllerSingleSuiteBuildRunner
 			String description = previousBuildJSONObject.optString(
 				"description", "");
 
-			if (!description.contains("IN PROGRESS")) {
+			if (!description.contains("IN PROGRESS") &&
+				!description.contains("IN QUEUE")) {
+
 				continue;
 			}
 
-			long timestamp = previousBuildJSONObject.optLong("timestamp", 0);
+			String controllerBuildURL = previousBuildJSONObject.getString(
+				"url");
 
-			if (timestamp == 0) {
+			Matcher buildURLMatcher = _buildURLPattern.matcher(
+				controllerBuildURL);
+
+			if (!buildURLMatcher.find()) {
 				continue;
 			}
 
-			long inProgressBuildDuration =
-				JenkinsResultsParserUtil.getCurrentTimeMillis() - timestamp;
+			Matcher jobURLMatcher = _jobURLPattern.matcher(description);
 
-			System.out.println(
-				JenkinsResultsParserUtil.combine(
-					"In progress build started ",
-					JenkinsResultsParserUtil.toDurationString(
-						inProgressBuildDuration),
-					" ago"));
-
-			if (inProgressBuildDuration < _getControllerBuildTimeout()) {
-				return false;
+			if (!jobURLMatcher.find()) {
+				continue;
 			}
 
-			Matcher matcher = _buildURLPattern.matcher(
-				previousBuildJSONObject.getString("url"));
+			Map<String, String> parameters = new HashMap<>();
 
-			if (!matcher.find()) {
-				return false;
+			parameters.put("CONTROLLER_BUILD_URL", controllerBuildURL);
+
+			JenkinsMaster jenkinsMaster = JenkinsMaster.getInstance(
+				jobURLMatcher.group("masterHostname"));
+
+			String jobName = jobURLMatcher.group("jobName");
+
+			if (jenkinsMaster.isBuildQueued(jobName, parameters) ||
+				jenkinsMaster.isBuildInProgress(jobName, parameters)) {
+
+				long timestamp = previousBuildJSONObject.optLong(
+					"timestamp", 0);
+
+				if (timestamp == 0) {
+					continue;
+				}
+
+				long inProgressBuildDuration =
+					JenkinsResultsParserUtil.getCurrentTimeMillis() - timestamp;
+
+				System.out.println(
+					JenkinsResultsParserUtil.combine(
+						"In progress build started ",
+						JenkinsResultsParserUtil.toDurationString(
+							inProgressBuildDuration),
+						" ago"));
+
+				if (inProgressBuildDuration < _getControllerBuildTimeout()) {
+					return false;
+				}
 			}
+
+			description = description.replace("IN PROGRESS", "EXPIRE");
+			description = description.replace("IN QUEUE", "EXPIRE");
 
 			JenkinsResultsParserUtil.updateBuildDescription(
-				description.replace("IN PROGRESS", "EXPIRE"),
-				previousBuildJSONObject.getInt("number"),
-				matcher.group("jobName"), matcher.group("masterHostname"));
+				description, previousBuildJSONObject.getInt("number"),
+				buildURLMatcher.group("jobName"),
+				buildURLMatcher.group("masterHostname"));
 
 			return true;
 		}
@@ -350,6 +377,12 @@ public class PortalTestSuiteUpstreamControllerSingleSuiteBuildRunner
 			String description = previousBuildJSONObject.optString(
 				"description", "");
 
+			if (description.contains("EXPIRE") ||
+				description.contains("SKIPPED")) {
+
+				continue;
+			}
+
 			if (description.contains(portalBranchSHA)) {
 				return true;
 			}
@@ -384,14 +417,13 @@ public class PortalTestSuiteUpstreamControllerSingleSuiteBuildRunner
 				continue;
 			}
 
-			Matcher buildURLMatcher = _buildDescriptionPattern.matcher(
-				description);
+			Matcher buildURLMatcher = _buildURLPattern.matcher(description);
 
 			if (!buildURLMatcher.find()) {
 				continue;
 			}
 
-			String buildURL = buildURLMatcher.group("buildURL");
+			String buildURL = buildURLMatcher.group();
 
 			try {
 				JSONObject jsonObject = JenkinsResultsParserUtil.toJSONObject(
@@ -460,11 +492,12 @@ public class PortalTestSuiteUpstreamControllerSingleSuiteBuildRunner
 	private static final Integer _CONTROLLER_BUILD_TIMEOUT_DEFAULT =
 		1000 * 60 * 60 * 24;
 
-	private static final Pattern _buildDescriptionPattern = Pattern.compile(
-		"<a href=\"(?<buildURL>[^\"]+)\">Build URL</a>");
 	private static final Pattern _buildURLPattern = Pattern.compile(
-		"https://(?<masterHostname>test-\\d+-\\d+)\\.?.*/job/" +
+		"https://(?<masterHostname>test-\\d+-\\d+)\\.liferay\\.com/job/" +
 			"(?<jobName>[^/]+)/(?<buildNumber>\\d+)/?");
+	private static final Pattern _jobURLPattern = Pattern.compile(
+		"https://(?<masterHostname>test-\\d+-\\d+)\\.liferay\\.com/job/" +
+			"(?<jobName>[^/\"]+)/?");
 	private static final Pattern _portalBranchSHAPattern = Pattern.compile(
 		"<strong>Git ID:</strong> <a href=\"https://github.com/[^/]+/[^/]+/" +
 			"commit/(?<branchSHA>[0-9a-f]{40})\">[0-9a-f]{7}</a>");

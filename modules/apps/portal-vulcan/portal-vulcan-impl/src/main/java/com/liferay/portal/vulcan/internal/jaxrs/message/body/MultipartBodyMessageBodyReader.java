@@ -1,26 +1,37 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.internal.jaxrs.message.body;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.liferay.document.library.kernel.util.DLValidatorUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.upload.FileItem;
+import com.liferay.portal.kernel.upload.UploadException;
+import com.liferay.portal.kernel.upload.UploadServletRequest;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.vulcan.internal.multipart.MultipartUtil;
 import com.liferay.portal.vulcan.multipart.BinaryFile;
 import com.liferay.portal.vulcan.multipart.MultipartBody;
+
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletRequestWrapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part;
+
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.ContextResolver;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.Providers;
 
 import java.io.InputStream;
 
@@ -32,24 +43,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.Part;
-
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.Provider;
-import javax.ws.rs.ext.Providers;
-
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.FileUploadBase;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.fileupload.util.Streams;
+import org.apache.cxf.jaxrs.utils.JAXRSUtils;
+import org.apache.cxf.message.Message;
 
 /**
  * @author Alejandro Hernández
@@ -59,10 +55,6 @@ import org.apache.commons.fileupload.util.Streams;
 @Provider
 public class MultipartBodyMessageBodyReader
 	implements MessageBodyReader<MultipartBody> {
-
-	public MultipartBodyMessageBodyReader(long fileMaxSize) {
-		_fileMaxSize = fileMaxSize;
-	}
 
 	@Override
 	public boolean isReadable(
@@ -78,11 +70,35 @@ public class MultipartBodyMessageBodyReader
 		MediaType mediaType, MultivaluedMap<String, String> multivaluedMap,
 		InputStream inputStream) {
 
+		Message message = JAXRSUtils.getCurrentMessage();
+
+		UploadServletRequest uploadServletRequest = _getUploadServletRequest(
+			(HttpServletRequest)message.getContextualProperty("HTTP.REQUEST"));
+
+		if (uploadServletRequest == null) {
+			if (_log.isWarnEnabled()) {
+				_log.warn("Upload servlet request is null");
+			}
+
+			return null;
+		}
+
+		UploadException uploadException =
+			(UploadException)uploadServletRequest.getAttribute(
+				WebKeys.UPLOAD_EXCEPTION);
+
+		if (uploadException != null) {
+			throw new BadRequestException(
+				"Please enter a file with a valid file size no larger than " +
+					DLValidatorUtil.getMaxAllowableSize(0, null),
+				uploadException);
+		}
+
 		Map<String, BinaryFile> binaryFiles = new HashMap<>();
 		Map<String, String> values = new HashMap<>();
 
 		try {
-			Collection<Part> parts = _httpServletRequest.getParts();
+			Collection<Part> parts = uploadServletRequest.getParts();
 
 			if ((parts != null) && !parts.isEmpty()) {
 				for (Part part : parts) {
@@ -105,44 +121,37 @@ public class MultipartBodyMessageBodyReader
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
 		if (binaryFiles.isEmpty() && values.isEmpty()) {
 			try {
-				ServletFileUpload servletFileUpload = new ServletFileUpload(
-					new DiskFileItemFactory());
+				Map<String, FileItem[]> multipartParameterMap =
+					uploadServletRequest.getMultipartParameterMap();
 
-				servletFileUpload.setFileSizeMax(_fileMaxSize);
-				servletFileUpload.setSizeMax(_fileMaxSize);
+				for (Map.Entry<String, FileItem[]> entry :
+						multipartParameterMap.entrySet()) {
 
-				List<FileItem> fileItems = servletFileUpload.parseRequest(
-					_httpServletRequest);
+					FileItem fileItem = entry.getValue()[0];
 
-				for (FileItem fileItem : fileItems) {
-					String name = fileItem.getFieldName();
-
-					if (fileItem.isFormField()) {
-						values.put(
-							name, Streams.asString(fileItem.getInputStream()));
-					}
-					else {
-						binaryFiles.put(
-							name,
-							new BinaryFile(
-								fileItem.getContentType(), fileItem.getName(),
-								fileItem.getInputStream(), fileItem.getSize()));
-					}
+					binaryFiles.put(
+						entry.getKey(),
+						new BinaryFile(
+							fileItem.getContentType(), fileItem.getFileName(),
+							fileItem.getInputStream(), fileItem.getSize()));
 				}
-			}
-			catch (FileUploadBase.SizeLimitExceededException
-						sizeLimitExceededException) {
 
-				throw new BadRequestException(
-					"Please enter a file with a valid file size no larger " +
-						"than " + _fileMaxSize,
-					sizeLimitExceededException);
+				Map<String, List<String>> regularParameterMap =
+					uploadServletRequest.getRegularParameterMap();
+
+				for (Map.Entry<String, List<String>> entry :
+						regularParameterMap.entrySet()) {
+
+					List<String> parameterValues = entry.getValue();
+
+					values.put(entry.getKey(), parameterValues.get(0));
+				}
 			}
 			catch (Exception exception) {
 				throw new BadRequestException(
@@ -158,13 +167,29 @@ public class MultipartBodyMessageBodyReader
 			binaryFiles, contextResolver::getContext, values);
 	}
 
+	private UploadServletRequest _getUploadServletRequest(
+		ServletRequest servletRequest) {
+
+		while (servletRequest instanceof ServletRequestWrapper) {
+			if (servletRequest instanceof UploadServletRequest) {
+				return (UploadServletRequest)servletRequest;
+			}
+
+			ServletRequestWrapper servletRequestWrapper =
+				(ServletRequestWrapper)servletRequest;
+
+			servletRequest = servletRequestWrapper.getRequest();
+		}
+
+		if (servletRequest instanceof UploadServletRequest) {
+			return (UploadServletRequest)servletRequest;
+		}
+
+		return null;
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		MultipartBodyMessageBodyReader.class);
-
-	private final long _fileMaxSize;
-
-	@Context
-	private HttpServletRequest _httpServletRequest;
 
 	@Context
 	private ObjectMapper _objectMapper;

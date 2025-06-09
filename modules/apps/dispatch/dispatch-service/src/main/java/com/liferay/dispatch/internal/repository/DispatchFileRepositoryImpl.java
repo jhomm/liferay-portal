@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.internal.repository;
@@ -39,7 +30,6 @@ import java.io.InputStream;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
@@ -47,10 +37,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  * @author Igor Beslic
  */
-@Component(
-	configurationPolicy = ConfigurationPolicy.OPTIONAL,
-	service = DispatchFileRepository.class
-)
+@Component(service = DispatchFileRepository.class)
 public class DispatchFileRepositoryImpl implements DispatchFileRepository {
 
 	@Override
@@ -115,15 +102,14 @@ public class DispatchFileRepositoryImpl implements DispatchFileRepository {
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_dispatchFileValidatorServiceTrackerMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				bundleContext, DispatchFileValidator.class,
-				"dispatch.file.validator.type");
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, DispatchFileValidator.class,
+			"dispatch.file.validator.type");
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_dispatchFileValidatorServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	private FileEntry _addFileEntry(
@@ -142,22 +128,20 @@ public class DispatchFileRepositoryImpl implements DispatchFileRepository {
 		}
 
 		return _portletFileRepository.addPortletFileEntry(
-			groupId, userId, DispatchTrigger.class.getName(), dispatchTriggerId,
-			DispatchPortletKeys.DISPATCH, folder.getFolderId(), inputStream,
+			null, groupId, userId, DispatchTrigger.class.getName(),
+			dispatchTriggerId, DispatchPortletKeys.DISPATCH,
+			folder.getFolderId(), inputStream,
 			String.valueOf(dispatchTriggerId), contentType, false);
 	}
 
 	private DispatchFileValidator _getDispatchFileValidator(
 		String dispatchTaskExecutorType) {
 
-		if (_dispatchFileValidatorServiceTrackerMap.containsKey(
-				dispatchTaskExecutorType)) {
-
-			return _dispatchFileValidatorServiceTrackerMap.getService(
-				dispatchTaskExecutorType);
+		if (_serviceTrackerMap.containsKey(dispatchTaskExecutorType)) {
+			return _serviceTrackerMap.getService(dispatchTaskExecutorType);
 		}
 
-		return _dispatchFileValidatorServiceTrackerMap.getService("default");
+		return _serviceTrackerMap.getService("default");
 	}
 
 	private Folder _getFolder(long groupId, long userId)
@@ -183,9 +167,6 @@ public class DispatchFileRepositoryImpl implements DispatchFileRepository {
 	@Reference
 	private CompanyLocalService _companyLocalService;
 
-	private ServiceTrackerMap<String, DispatchFileValidator>
-		_dispatchFileValidatorServiceTrackerMap;
-
 	@Reference
 	private DispatchTriggerLocalService _dispatchTriggerLocalService;
 
@@ -194,5 +175,7 @@ public class DispatchFileRepositoryImpl implements DispatchFileRepository {
 
 	@Reference
 	private PortletFileRepository _portletFileRepository;
+
+	private ServiceTrackerMap<String, DispatchFileValidator> _serviceTrackerMap;
 
 }

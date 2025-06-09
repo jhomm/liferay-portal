@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.designer.web.internal.portlet.action;
@@ -33,20 +24,19 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.kernel.workflow.WorkflowDefinitionManager;
 import com.liferay.portal.kernel.workflow.WorkflowException;
-import com.liferay.portal.workflow.kaleo.designer.web.internal.util.KaleoDesignerUtil;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionVersionLocalService;
+import com.liferay.portal.workflow.manager.WorkflowDefinitionManager;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
 
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Reference;
 
@@ -66,14 +56,14 @@ public abstract class BaseKaleoDesignerMVCActionCommand
 
 			addSuccessMessage(actionRequest, actionResponse);
 
-			setCloseRedirect(actionRequest);
+			_setCloseRedirect(actionRequest);
 
 			sendRedirect(actionRequest, actionResponse);
 
 			return SessionErrors.isEmpty(actionRequest);
 		}
 		catch (WorkflowException workflowException) {
-			Throwable rootThrowable = getRootThrowable(workflowException);
+			Throwable rootThrowable = _getRootThrowable(workflowException);
 
 			if (_log.isWarnEnabled()) {
 				_log.warn(rootThrowable, rootThrowable);
@@ -87,12 +77,12 @@ public abstract class BaseKaleoDesignerMVCActionCommand
 			return false;
 		}
 		catch (PortletException portletException) {
-			_log.error(portletException, portletException);
+			_log.error(portletException);
 
 			throw portletException;
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			throw new PortletException(exception);
 		}
@@ -113,22 +103,6 @@ public abstract class BaseKaleoDesignerMVCActionCommand
 
 		return ResourceBundleUtil.getModuleAndPortalResourceBundle(
 			themeDisplay.getLocale(), getClass());
-	}
-
-	protected Throwable getRootThrowable(Throwable throwable) {
-		if ((throwable.getCause() == null) ||
-			(!(throwable.getCause() instanceof IllegalArgumentException) &&
-			 !(throwable.getCause() instanceof NoSuchRoleException) &&
-			 !(throwable.getCause() instanceof
-				 PrincipalException.MustBeCompanyAdmin) &&
-			 !(throwable.getCause() instanceof
-				 PrincipalException.MustBeOmniadmin) &&
-			 !(throwable.getCause() instanceof WorkflowException))) {
-
-			return throwable;
-		}
-
-		return getRootThrowable(throwable.getCause());
 	}
 
 	protected String getSuccessMessage(ActionRequest actionRequest) {
@@ -163,21 +137,6 @@ public abstract class BaseKaleoDesignerMVCActionCommand
 		return value;
 	}
 
-	protected void setCloseRedirect(ActionRequest actionRequest) {
-		String closeRedirect = ParamUtil.getString(
-			actionRequest, "closeRedirect");
-
-		if (Validator.isNull(closeRedirect)) {
-			return;
-		}
-
-		SessionMessages.add(
-			actionRequest,
-			portal.getPortletId(actionRequest) +
-				SessionMessages.KEY_SUFFIX_CLOSE_REDIRECT,
-			closeRedirect);
-	}
-
 	protected void setRedirectAttribute(
 			ActionRequest actionRequest,
 			KaleoDefinitionVersion kaleoDefinitionVersion)
@@ -189,7 +148,8 @@ public abstract class BaseKaleoDesignerMVCActionCommand
 		LiferayPortletURL portletURL = PortletURLFactoryUtil.create(
 			actionRequest, themeDisplay.getPpid(), PortletRequest.RENDER_PHASE);
 
-		portletURL.setParameter("mvcPath", KaleoDesignerUtil.getEditJspPath());
+		portletURL.setParameter(
+			"mvcPath", "/designer/edit_workflow_definition.jsp");
 
 		String redirect = ParamUtil.getString(actionRequest, "redirect");
 
@@ -219,6 +179,37 @@ public abstract class BaseKaleoDesignerMVCActionCommand
 
 	@Reference
 	protected WorkflowDefinitionManager workflowDefinitionManager;
+
+	private Throwable _getRootThrowable(Throwable throwable) {
+		if ((throwable.getCause() == null) ||
+			(!(throwable.getCause() instanceof IllegalArgumentException) &&
+			 !(throwable.getCause() instanceof NoSuchRoleException) &&
+			 !(throwable.getCause() instanceof
+				 PrincipalException.MustBeCompanyAdmin) &&
+			 !(throwable.getCause() instanceof
+				 PrincipalException.MustBeOmniadmin) &&
+			 !(throwable.getCause() instanceof WorkflowException))) {
+
+			return throwable;
+		}
+
+		return _getRootThrowable(throwable.getCause());
+	}
+
+	private void _setCloseRedirect(ActionRequest actionRequest) {
+		String closeRedirect = ParamUtil.getString(
+			actionRequest, "closeRedirect");
+
+		if (Validator.isNull(closeRedirect)) {
+			return;
+		}
+
+		SessionMessages.add(
+			actionRequest,
+			portal.getPortletId(actionRequest) +
+				SessionMessages.KEY_SUFFIX_CLOSE_REDIRECT,
+			closeRedirect);
+	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseKaleoDesignerMVCActionCommand.class);

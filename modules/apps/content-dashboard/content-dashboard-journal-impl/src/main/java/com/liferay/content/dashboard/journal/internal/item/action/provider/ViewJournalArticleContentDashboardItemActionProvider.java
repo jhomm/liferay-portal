@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.content.dashboard.journal.internal.item.action.provider;
@@ -19,11 +10,14 @@ import com.liferay.content.dashboard.item.action.ContentDashboardItemAction;
 import com.liferay.content.dashboard.item.action.provider.ContentDashboardItemActionProvider;
 import com.liferay.content.dashboard.journal.internal.item.action.ViewJournalArticleContentDashboardItemAction;
 import com.liferay.journal.model.JournalArticle;
+import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
+import com.liferay.layout.seo.kernel.LayoutSEOLinkManager;
 import com.liferay.portal.kernel.language.Language;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -68,19 +62,16 @@ public class ViewJournalArticleContentDashboardItemActionProvider
 		ContentDashboardItemAction contentDashboardItemAction =
 			_getContentDashboardItemAction(httpServletRequest, journalArticle);
 
-		if (Validator.isNull(contentDashboardItemAction.getURL())) {
-			return false;
-		}
-
-		return true;
+		return Validator.isNotNull(contentDashboardItemAction.getURL());
 	}
 
 	private ContentDashboardItemAction _getContentDashboardItemAction(
 		HttpServletRequest httpServletRequest, JournalArticle journalArticle) {
 
 		return new ViewJournalArticleContentDashboardItemAction(
-			_assetDisplayPageFriendlyURLProvider, _http, httpServletRequest,
-			journalArticle, _language);
+			_assetDisplayPageFriendlyURLProvider, httpServletRequest,
+			journalArticle, _language, _layoutDisplayPageProviderRegistry,
+			_layoutLocalService, _layoutSEOLinkManager, _portal);
 	}
 
 	@Reference
@@ -88,9 +79,19 @@ public class ViewJournalArticleContentDashboardItemActionProvider
 		_assetDisplayPageFriendlyURLProvider;
 
 	@Reference
-	private Http _http;
+	private Language _language;
 
 	@Reference
-	private Language _language;
+	private LayoutDisplayPageProviderRegistry
+		_layoutDisplayPageProviderRegistry;
+
+	@Reference
+	private LayoutLocalService _layoutLocalService;
+
+	@Reference
+	private LayoutSEOLinkManager _layoutSEOLinkManager;
+
+	@Reference
+	private Portal _portal;
 
 }

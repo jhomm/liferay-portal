@@ -1,24 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.layoutconfiguration.util;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.PortletContainerException;
 import com.liferay.portal.kernel.portlet.PortletContainerUtil;
+import com.liferay.portal.kernel.portlet.render.PortletRenderParts;
+import com.liferay.portal.kernel.portlet.render.PortletRenderUtil;
 import com.liferay.portal.kernel.servlet.BufferCacheServletResponse;
+import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
@@ -26,9 +24,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Shuyang Zhou
@@ -101,7 +96,7 @@ public class PortletRenderer {
 			String attributeName = enumeration.nextElement();
 
 			if (attributeName.contains(
-					"javax.portlet.faces.renderResponseOutput")) {
+					"jakarta.portlet.faces.renderResponseOutput")) {
 
 				headerRequestAttributes.put(
 					attributeName,
@@ -146,13 +141,34 @@ public class PortletRenderer {
 			new BufferCacheServletResponse(httpServletResponse);
 
 		try {
+			PortletRenderParts portletRenderParts = null;
+
+			if (_columnId == null) {
+				httpServletRequest.setAttribute(
+					WebKeys.RENDER_PORTLET_RESOURCE, Boolean.TRUE);
+
+				portletRenderParts = PortletRenderUtil.getPortletRenderParts(
+					httpServletRequest, StringPool.BLANK, _portlet);
+
+				PortletRenderUtil.writeHeaderPaths(
+					bufferCacheServletResponse, portletRenderParts);
+			}
+
 			PortletContainerUtil.render(
 				httpServletRequest, bufferCacheServletResponse, _portlet);
+
+			if (portletRenderParts != null) {
+				PortletRenderUtil.writeFooterPaths(
+					bufferCacheServletResponse, portletRenderParts);
+			}
 
 			return bufferCacheServletResponse.getStringBundler();
 		}
 		catch (IOException ioException) {
 			throw new PortletContainerException(ioException);
+		}
+		finally {
+			httpServletRequest.removeAttribute(WebKeys.RENDER_PORTLET_RESOURCE);
 		}
 	}
 

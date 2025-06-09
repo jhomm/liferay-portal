@@ -1,99 +1,67 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.internal.executor;
 
+import com.liferay.osgi.service.tracker.collections.EagerServiceTrackerCustomizer;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.db.index.IndexUpdaterUtil;
 import com.liferay.portal.kernel.cache.CacheRegistryUtil;
-import com.liferay.portal.kernel.dao.db.DBContext;
-import com.liferay.portal.kernel.dao.db.DBProcessContext;
+import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.model.ReleaseConstants;
+import com.liferay.portal.kernel.module.util.BundleUtil;
 import com.liferay.portal.kernel.service.ReleaseLocalService;
+import com.liferay.portal.kernel.upgrade.UpgradeException;
 import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.version.Version;
+import com.liferay.portal.tools.DBUpgrader;
+import com.liferay.portal.upgrade.PortalUpgradeProcess;
 import com.liferay.portal.upgrade.internal.graph.ReleaseGraphManager;
-import com.liferay.portal.upgrade.internal.index.updater.IndexUpdaterUtil;
 import com.liferay.portal.upgrade.internal.registry.UpgradeInfo;
+import com.liferay.portal.upgrade.internal.registry.UpgradeStepRegistry;
 import com.liferay.portal.upgrade.internal.release.ReleasePublisher;
+import com.liferay.portal.upgrade.log.UpgradeLogContext;
+import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 
-import java.io.OutputStream;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 import java.util.Dictionary;
 import java.util.List;
-import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.Set;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Preston Crary
  */
-@Component(immediate = true, service = UpgradeExecutor.class)
+@Component(service = UpgradeExecutor.class)
 public class UpgradeExecutor {
 
-	public void execute(
-		String bundleSymbolicName, List<UpgradeInfo> upgradeInfos,
-		String outputStreamContainerFactoryName) {
-
-		Bundle bundle = null;
-
-		for (UpgradeInfo upgradeInfo : upgradeInfos) {
-			UpgradeStep upgradeStep = upgradeInfo.getUpgradeStep();
-
-			Bundle currentBundle = FrameworkUtil.getBundle(
-				upgradeStep.getClass());
-
-			if (currentBundle == null) {
-				continue;
-			}
-
-			if (Objects.equals(
-					currentBundle.getSymbolicName(), bundleSymbolicName)) {
-
-				bundle = currentBundle;
-
-				break;
-			}
-		}
-
-		Version requiredVersion = null;
-
-		if (bundle != null) {
-			Dictionary<String, String> headers = bundle.getHeaders(
-				StringPool.BLANK);
-
-			requiredVersion = Version.parseVersion(
-				headers.get("Liferay-Require-SchemaVersion"));
-		}
-
+	public void execute(Bundle bundle, List<UpgradeInfo> upgradeInfos) {
 		ReleaseGraphManager releaseGraphManager = new ReleaseGraphManager(
 			upgradeInfos);
 
 		String schemaVersionString = "0.0.0";
 
-		Release release = _releaseLocalService.fetchRelease(bundleSymbolicName);
+		Release release = _releaseLocalService.fetchRelease(
+			bundle.getSymbolicName());
 
 		if ((release != null) &&
 			Validator.isNotNull(release.getSchemaVersion())) {
@@ -114,15 +82,23 @@ public class UpgradeExecutor {
 		}
 
 		if (size != 0) {
-			release = executeUpgradeInfos(
-				bundleSymbolicName, upgradeInfosList.get(0),
-				outputStreamContainerFactoryName);
+			release = executeUpgradeInfos(bundle, upgradeInfosList.get(0));
 		}
 
 		if (release != null) {
 			String schemaVersion = release.getSchemaVersion();
 
-			if (Validator.isNull(schemaVersion) || (requiredVersion == null)) {
+			if (Validator.isNull(schemaVersion)) {
+				return;
+			}
+
+			Dictionary<String, String> headers = bundle.getHeaders(
+				StringPool.BLANK);
+
+			Version requiredVersion = Version.parseVersion(
+				headers.get("Liferay-Require-SchemaVersion"));
+
+			if (requiredVersion == null) {
 				return;
 			}
 
@@ -131,48 +107,175 @@ public class UpgradeExecutor {
 
 				throw new IllegalStateException(
 					StringBundler.concat(
-						"Unable to upgrade ", bundleSymbolicName, " to ",
+						"Unable to upgrade ", bundle.getSymbolicName(), " to ",
 						requiredVersion, " from ", schemaVersion));
 			}
 		}
 	}
 
 	public Release executeUpgradeInfos(
-		String bundleSymbolicName, List<UpgradeInfo> upgradeInfos,
-		String outputStreamContainerFactoryName) {
+		Bundle bundle, List<UpgradeInfo> upgradeInfos) {
 
-		Release release = _releaseLocalService.fetchRelease(bundleSymbolicName);
+		String bundleSymbolicName = bundle.getSymbolicName();
 
-		if (release != null) {
-			_releasePublisher.publishInProgress(release);
+		try {
+			UpgradeLogContext.setContext(bundleSymbolicName);
+
+			_executeUpgradeInfos(bundle, upgradeInfos);
+
+			Release release = _releaseLocalService.fetchRelease(
+				bundleSymbolicName);
+
+			if (release != null) {
+				_releasePublisher.publish(
+					release, _isInitialRelease(upgradeInfos));
+			}
+
+			return release;
 		}
+		catch (Exception exception) {
+			Release release = _releaseLocalService.fetchRelease(
+				bundleSymbolicName);
 
-		UpgradeInfosRunnable upgradeInfosRunnable = new UpgradeInfosRunnable(
-			bundleSymbolicName, upgradeInfos,
-			_swappedLogExecutor::getOutputStream);
+			if (release != null) {
+				_releasePublisher.unpublish(release);
+			}
 
-		_swappedLogExecutor.execute(
-			bundleSymbolicName, upgradeInfosRunnable,
-			outputStreamContainerFactoryName);
-
-		release = _releaseLocalService.fetchRelease(bundleSymbolicName);
-
-		if (release != null) {
-			_releasePublisher.publish(release);
+			return ReflectionUtil.throwException(exception);
 		}
+		finally {
+			UpgradeLogContext.clearContext();
+		}
+	}
 
-		return release;
+	public Set<String> getBundleSymbolicNames() {
+		return _serviceTrackerMap.keySet();
+	}
+
+	public List<UpgradeInfo> getUpgradeInfos(String bundleSymbolicName) {
+		UpgradeStepRegistry upgradeStepRegistry = _serviceTrackerMap.getService(
+			bundleSymbolicName);
+
+		return upgradeStepRegistry.getUpgradeInfos();
 	}
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
 		_bundleContext = bundleContext;
+
+		try (Connection connection = DataAccess.getConnection()) {
+			_portalUpgraded = PortalUpgradeProcess.isInLatestSchemaVersion(
+				connection);
+		}
+		catch (SQLException sqlException) {
+			throw new RuntimeException(sqlException);
+		}
+
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, UpgradeStepRegistrator.class, null,
+			(serviceReference, emitter) -> {
+				Bundle bundle = serviceReference.getBundle();
+
+				emitter.emit(bundle.getSymbolicName());
+			},
+			new UpgradeStepRegistratorServiceTrackerCustomizer());
 	}
+
+	@Deactivate
+	protected void deactivate() {
+		_serviceTrackerMap.close();
+	}
+
+	private void _executeUpgradeInfos(
+		Bundle bundle, List<UpgradeInfo> upgradeInfos) {
+
+		int state = ReleaseConstants.STATE_GOOD;
+
+		String bundleSymbolicName = bundle.getSymbolicName();
+
+		try {
+			_updateReleaseState(bundleSymbolicName, _STATE_IN_PROGRESS);
+
+			for (UpgradeInfo upgradeInfo : upgradeInfos) {
+				UpgradeStep upgradeStep = upgradeInfo.getUpgradeStep();
+
+				upgradeStep.upgrade();
+
+				_releaseLocalService.updateRelease(
+					bundleSymbolicName, upgradeInfo.getToSchemaVersionString(),
+					upgradeInfo.getFromSchemaVersionString());
+			}
+		}
+		catch (Exception exception) {
+			state = ReleaseConstants.STATE_UPGRADE_FAILURE;
+
+			ReflectionUtil.throwException(exception);
+		}
+		finally {
+			Release release = _releaseLocalService.fetchRelease(
+				bundleSymbolicName);
+
+			if (release != null) {
+				release.setVerified(false);
+				release.setState(state);
+
+				_releaseLocalService.updateRelease(release);
+			}
+		}
+
+		if (_requiresUpdateIndexes(bundle, upgradeInfos)) {
+			try {
+				IndexUpdaterUtil.updateIndexes(bundle);
+			}
+			catch (Exception exception) {
+				_log.error(exception);
+			}
+		}
+
+		CacheRegistryUtil.clear();
+	}
+
+	private boolean _isInitialRelease(List<UpgradeInfo> upgradeInfos) {
+		UpgradeInfo upgradeInfo = upgradeInfos.get(0);
+
+		String fromSchemaVersion = upgradeInfo.getFromSchemaVersionString();
+
+		return fromSchemaVersion.equals("0.0.0");
+	}
+
+	private boolean _requiresUpdateIndexes(
+		Bundle bundle, List<UpgradeInfo> upgradeInfos) {
+
+		if (!BundleUtil.isLiferayRequireSchemaVersionBundle(bundle) &&
+			!BundleUtil.isLiferayServiceBundle(bundle)) {
+
+			return false;
+		}
+
+		if (upgradeInfos.size() != 1) {
+			return true;
+		}
+
+		return !_isInitialRelease(upgradeInfos);
+	}
+
+	private void _updateReleaseState(String bundleSymbolicName, int state) {
+		Release release = _releaseLocalService.fetchRelease(bundleSymbolicName);
+
+		if (release != null) {
+			release.setState(state);
+
+			_releaseLocalService.updateRelease(release);
+		}
+	}
+
+	private static final int _STATE_IN_PROGRESS = -1;
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		UpgradeExecutor.class);
 
 	private BundleContext _bundleContext;
+	private boolean _portalUpgraded;
 
 	@Reference
 	private ReleaseLocalService _releaseLocalService;
@@ -180,130 +283,74 @@ public class UpgradeExecutor {
 	@Reference
 	private ReleasePublisher _releasePublisher;
 
-	@Reference
-	private SwappedLogExecutor _swappedLogExecutor;
+	private ServiceTrackerMap<String, UpgradeStepRegistry> _serviceTrackerMap;
 
-	private class UpgradeInfosRunnable implements Runnable {
+	private class UpgradeStepRegistratorServiceTrackerCustomizer
+		implements EagerServiceTrackerCustomizer
+			<UpgradeStepRegistrator, UpgradeStepRegistry> {
 
 		@Override
-		public void run() {
-			int buildNumber = 0;
-			int state = ReleaseConstants.STATE_GOOD;
+		public UpgradeStepRegistry addingService(
+			ServiceReference<UpgradeStepRegistrator> serviceReference) {
 
-			try {
-				_updateReleaseState(_STATE_IN_PROGRESS);
+			UpgradeStepRegistry upgradeStepRegistry = new UpgradeStepRegistry(
+				_bundleContext, _portalUpgraded, serviceReference);
 
-				for (UpgradeInfo upgradeInfo : _upgradeInfos) {
-					UpgradeStep upgradeStep = upgradeInfo.getUpgradeStep();
+			Bundle bundle = serviceReference.getBundle();
 
-					upgradeStep.upgrade(
-						new DBProcessContext() {
+			String bundleSymbolicName = bundle.getSymbolicName();
 
-							@Override
-							public DBContext getDBContext() {
-								return new DBContext();
-							}
-
-							@Override
-							public OutputStream getOutputStream() {
-								return _outputStreamSupplier.get();
-							}
-
-						});
-
-					_releaseLocalService.updateRelease(
-						_bundleSymbolicName,
-						upgradeInfo.getToSchemaVersionString(),
-						upgradeInfo.getFromSchemaVersionString());
-
-					buildNumber = upgradeInfo.getBuildNumber();
-				}
-			}
-			catch (Exception exception) {
-				state = ReleaseConstants.STATE_UPGRADE_FAILURE;
-
-				ReflectionUtil.throwException(exception);
-			}
-			finally {
-				Release release = _releaseLocalService.fetchRelease(
-					_bundleSymbolicName);
-
-				if (release != null) {
-					if (buildNumber > 0) {
-						release.setBuildNumber(buildNumber);
-					}
-
-					release.setState(state);
-
-					_releaseLocalService.updateRelease(release);
-				}
-			}
-
-			Bundle bundle = IndexUpdaterUtil.getBundle(
-				_bundleContext, _bundleSymbolicName);
-
-			if (_requiresUpdateIndexes(bundle)) {
-				try {
-					IndexUpdaterUtil.updateIndexes(bundle);
-				}
-				catch (Exception exception) {
-					_log.error(exception, exception);
-				}
-			}
-
-			CacheRegistryUtil.clear();
-		}
-
-		private UpgradeInfosRunnable(
-			String bundleSymbolicName, List<UpgradeInfo> upgradeInfos,
-			Supplier<OutputStream> outputStreamSupplier) {
-
-			_bundleSymbolicName = bundleSymbolicName;
-			_upgradeInfos = upgradeInfos;
-			_outputStreamSupplier = outputStreamSupplier;
-		}
-
-		private boolean _requiresUpdateIndexes(Bundle bundle) {
-			if (!IndexUpdaterUtil.isLiferayServiceBundle(bundle)) {
-				return false;
-			}
-
-			if (_upgradeInfos.size() != 1) {
-				return true;
-			}
-
-			UpgradeInfo upgradeInfo = _upgradeInfos.get(0);
-
-			String fromSchemaVersion = upgradeInfo.getFromSchemaVersionString();
-
-			String upgradeStepName = String.valueOf(
-				upgradeInfo.getUpgradeStep());
-
-			if (fromSchemaVersion.equals("0.0.0") &&
-				upgradeStepName.equals("Initial Database Creation")) {
-
-				return false;
-			}
-
-			return true;
-		}
-
-		private void _updateReleaseState(int state) {
 			Release release = _releaseLocalService.fetchRelease(
-				_bundleSymbolicName);
+				bundleSymbolicName);
 
-			if (release != null) {
-				release.setState(state);
+			if (release == null) {
+				for (UpgradeStep releaseUpgradeStep :
+						upgradeStepRegistry.getReleaseCreationUpgradeSteps()) {
 
-				_releaseLocalService.updateRelease(release);
+					try {
+						UpgradeLogContext.setContext(bundleSymbolicName);
+
+						releaseUpgradeStep.upgrade();
+					}
+					catch (UpgradeException upgradeException) {
+						_log.error(upgradeException);
+					}
+					finally {
+						UpgradeLogContext.clearContext();
+					}
+				}
 			}
+
+			if (DBUpgrader.isUpgradeDatabaseAutoRunEnabled() ||
+				(release == null)) {
+
+				try {
+					execute(bundle, upgradeStepRegistry.getUpgradeInfos());
+				}
+				catch (Throwable throwable) {
+					_log.error(
+						"Failed upgrade process for module ".concat(
+							bundleSymbolicName),
+						throwable);
+				}
+			}
+
+			return upgradeStepRegistry;
 		}
 
-		private static final int _STATE_IN_PROGRESS = -1;
+		@Override
+		public void modifiedService(
+			ServiceReference<UpgradeStepRegistrator> serviceReference,
+			UpgradeStepRegistry upgradeStepRegistry) {
+		}
 
-		private final String _bundleSymbolicName;
-		private final Supplier<OutputStream> _outputStreamSupplier;
-		private final List<UpgradeInfo> _upgradeInfos;
+		@Override
+		public void removedService(
+			ServiceReference<UpgradeStepRegistrator> serviceReference,
+			UpgradeStepRegistry upgradeStepRegistry) {
+
+			upgradeStepRegistry.destroy();
+		}
 
 	}
 

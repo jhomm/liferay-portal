@@ -1,33 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.util;
 
-import com.liferay.asset.kernel.service.AssetTagLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.journal.configuration.JournalServiceConfiguration;
 import com.liferay.journal.constants.JournalPortletKeys;
-import com.liferay.journal.constants.JournalStructureConstants;
-import com.liferay.journal.internal.transformer.JournalTransformer;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalServiceUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.petra.string.CharPool;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.petra.xml.XMLUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -35,42 +20,33 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
-import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.PortletRequestModel;
 import com.liferay.portal.kernel.portlet.ThemeDisplayModel;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
-import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.template.TemplateConstants;
-import com.liferay.portal.kernel.template.TemplateHandler;
-import com.liferay.portal.kernel.template.TemplateHandlerRegistryUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.webserver.WebServerServletTokenUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.kernel.xml.Document;
-import com.liferay.portal.kernel.xml.Element;
 
-import java.util.Date;
+import jakarta.portlet.PortletRequest;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
-
-import javax.portlet.PortletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -84,115 +60,6 @@ public class JournalUtil {
 	public static final String[] SELECTED_FIELD_NAMES = {
 		Field.ARTICLE_ID, Field.COMPANY_ID, Field.GROUP_ID, Field.UID
 	};
-
-	public static void addAllReservedEls(
-		Element rootElement, Map<String, String> tokens, JournalArticle article,
-		String languageId, ThemeDisplay themeDisplay) {
-
-		_addReservedEl(
-			rootElement, tokens, JournalStructureConstants.RESERVED_ARTICLE_ID,
-			article.getArticleId());
-
-		_addReservedEl(
-			rootElement, tokens,
-			JournalStructureConstants.RESERVED_ARTICLE_VERSION,
-			String.valueOf(article.getVersion()));
-
-		_addReservedEl(
-			rootElement, tokens,
-			JournalStructureConstants.RESERVED_ARTICLE_TITLE,
-			article.getTitle(languageId));
-
-		_addReservedEl(
-			rootElement, tokens,
-			JournalStructureConstants.RESERVED_ARTICLE_URL_TITLE,
-			article.getUrlTitle());
-
-		_addReservedEl(
-			rootElement, tokens,
-			JournalStructureConstants.RESERVED_ARTICLE_DESCRIPTION,
-			article.getDescription(languageId));
-
-		_addReservedEl(
-			rootElement, tokens,
-			JournalStructureConstants.RESERVED_ARTICLE_CREATE_DATE,
-			article.getCreateDate());
-
-		_addReservedEl(
-			rootElement, tokens,
-			JournalStructureConstants.RESERVED_ARTICLE_MODIFIED_DATE,
-			article.getModifiedDate());
-
-		if (article.getDisplayDate() != null) {
-			_addReservedEl(
-				rootElement, tokens,
-				JournalStructureConstants.RESERVED_ARTICLE_DISPLAY_DATE,
-				article.getDisplayDate());
-		}
-
-		String smallImageURL = StringPool.BLANK;
-
-		if (Validator.isNotNull(article.getSmallImageURL())) {
-			smallImageURL = article.getSmallImageURL();
-		}
-		else if ((themeDisplay != null) && article.isSmallImage()) {
-			smallImageURL = StringBundler.concat(
-				themeDisplay.getPathImage(), "/journal/article?img_id=",
-				article.getSmallImageId(), "&t=",
-				WebServerServletTokenUtil.getToken(article.getSmallImageId()));
-		}
-
-		_addReservedEl(
-			rootElement, tokens,
-			JournalStructureConstants.RESERVED_ARTICLE_SMALL_IMAGE_URL,
-			smallImageURL);
-
-		String[] assetTagNames = AssetTagLocalServiceUtil.getTagNames(
-			JournalArticle.class.getName(), article.getResourcePrimKey());
-
-		_addReservedEl(
-			rootElement, tokens,
-			JournalStructureConstants.RESERVED_ARTICLE_ASSET_TAG_NAMES,
-			StringUtil.merge(assetTagNames));
-
-		_addReservedEl(
-			rootElement, tokens,
-			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_ID,
-			String.valueOf(article.getUserId()));
-
-		String userName = StringPool.BLANK;
-		String userEmailAddress = StringPool.BLANK;
-		String userComments = StringPool.BLANK;
-		String userJobTitle = StringPool.BLANK;
-
-		User user = UserLocalServiceUtil.fetchUserById(article.getUserId());
-
-		if (user != null) {
-			userName = user.getFullName();
-			userEmailAddress = user.getEmailAddress();
-			userComments = user.getComments();
-			userJobTitle = user.getJobTitle();
-		}
-
-		_addReservedEl(
-			rootElement, tokens,
-			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_NAME, userName);
-
-		_addReservedEl(
-			rootElement, tokens,
-			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_EMAIL_ADDRESS,
-			userEmailAddress);
-
-		_addReservedEl(
-			rootElement, tokens,
-			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_COMMENTS,
-			userComments);
-
-		_addReservedEl(
-			rootElement, tokens,
-			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_JOB_TITLE,
-			userJobTitle);
-	}
 
 	public static String getJournalControlPanelLink(
 		long folderId, long groupId,
@@ -209,23 +76,24 @@ public class JournalUtil {
 		}
 
 		try {
-			String portletId = PortletProviderUtil.getPortletId(
-				JournalArticle.class.getName(), PortletProvider.Action.EDIT);
-
 			String articleURL = PortalUtil.getControlPanelFullURL(
-				groupId, portletId, null);
+				groupId,
+				PortletProviderUtil.getPortletId(
+					JournalArticle.class.getName(),
+					PortletProvider.Action.EDIT),
+				null);
 
 			String namespace = PortalUtil.getPortletNamespace(
 				JournalPortletKeys.JOURNAL);
 
-			articleURL = HttpUtil.addParameter(
+			articleURL = HttpComponentsUtil.addParameter(
 				articleURL, namespace + "groupId", groupId);
 
-			return HttpUtil.addParameter(
+			return HttpComponentsUtil.addParameter(
 				articleURL, namespace + "folderId", folderId);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
 
 		return StringPool.BLANK;
@@ -294,7 +162,7 @@ public class JournalUtil {
 				}
 				catch (Exception exception) {
 					if (_log.isWarnEnabled()) {
-						_log.warn(exception, exception);
+						_log.warn(exception);
 					}
 				}
 			}
@@ -327,8 +195,7 @@ public class JournalUtil {
 			title = String.valueOf(id);
 		}
 		else {
-			title = FriendlyURLNormalizerUtil.normalizeWithPeriodsAndSlashes(
-				title);
+			title = FriendlyURLNormalizerUtil.normalizeWithEncoding(title);
 		}
 
 		return ModelHintsUtil.trimString(
@@ -390,91 +257,6 @@ public class JournalUtil {
 		return false;
 	}
 
-	public static String removeArticleLocale(
-		JournalArticle article, String languageId) {
-
-		Document document = article.getDocument();
-
-		if (document == null) {
-			return null;
-		}
-
-		Element rootElement = document.getRootElement();
-
-		String availableLocales = rootElement.attributeValue(
-			"available-locales");
-
-		if (availableLocales == null) {
-			return article.getContent();
-		}
-
-		availableLocales = StringUtil.removeFromList(
-			availableLocales, languageId);
-
-		if (availableLocales.endsWith(",")) {
-			availableLocales = availableLocales.substring(
-				0, availableLocales.length() - 1);
-		}
-
-		rootElement.addAttribute("available-locales", availableLocales);
-
-		_removeArticleLocale(rootElement, languageId);
-
-		return XMLUtil.formatXML(document);
-	}
-
-	public static String transform(
-			ThemeDisplay themeDisplay, Map<String, String> tokens,
-			String viewMode, String languageId, Document document,
-			PortletRequestModel portletRequestModel, String script,
-			boolean propagateException, Map<String, Object> contextObjects)
-		throws Exception {
-
-		TemplateHandler templateHandler =
-			TemplateHandlerRegistryUtil.getTemplateHandler(
-				JournalArticle.class.getName());
-
-		contextObjects.putAll(templateHandler.getCustomContextObjects());
-
-		return _journalTransformer.transform(
-			themeDisplay, contextObjects, tokens, viewMode, languageId,
-			document, portletRequestModel, script, propagateException);
-	}
-
-	private static void _addReservedEl(
-		Element rootElement, Map<String, String> tokens, String name,
-		Date value) {
-
-		_addReservedEl(rootElement, tokens, name, Time.getRFC822(value));
-	}
-
-	private static void _addReservedEl(
-		Element rootElement, Map<String, String> tokens, String name,
-		String value) {
-
-		// XML
-
-		if (rootElement != null) {
-			Element dynamicElementElement = rootElement.addElement(
-				"dynamic-element");
-
-			dynamicElementElement.addAttribute("name", name);
-
-			dynamicElementElement.addAttribute("type", "text");
-
-			Element dynamicContentElement = dynamicElementElement.addElement(
-				"dynamic-content");
-
-			//dynamicContentElement.setText("<![CDATA[" + value + "]]>");
-			dynamicContentElement.setText(value);
-		}
-
-		// Tokens
-
-		tokens.put(
-			StringUtil.replace(name, CharPool.DASH, CharPool.UNDERLINE), value);
-	}
-
 	private static String _getCustomTokenValue(
 		String tokenName,
 		JournalServiceConfiguration journalServiceConfiguration) {
@@ -507,14 +289,19 @@ public class JournalUtil {
 					JournalServiceConfiguration.class, companyId);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		if (journalServiceConfiguration == null) {
 			return;
 		}
 
-		if (MapUtil.isEmpty(_customTokens)) {
+		if ((_customTokens == null) &&
+			ArrayUtil.isNotEmpty(
+				journalServiceConfiguration.customTokenNames()) &&
+			ArrayUtil.isNotEmpty(
+				journalServiceConfiguration.customTokenValues())) {
+
 			synchronized (JournalUtil.class) {
 				_customTokens = new HashMap<>();
 
@@ -533,7 +320,7 @@ public class JournalUtil {
 			}
 		}
 
-		if (!_customTokens.isEmpty()) {
+		if (MapUtil.isNotEmpty(_customTokens)) {
 			tokens.putAll(_customTokens);
 		}
 	}
@@ -590,9 +377,11 @@ public class JournalUtil {
 		tokens.put("main_path", themeDisplay.getPathMain());
 		tokens.put("portal_ctx", themeDisplay.getPathContext());
 		tokens.put(
-			"portal_url", HttpUtil.removeProtocol(themeDisplay.getURLPortal()));
+			"portal_url",
+			HttpComponentsUtil.removeProtocol(themeDisplay.getURLPortal()));
 		tokens.put(
-			"protocol", HttpUtil.getProtocol(themeDisplay.getURLPortal()));
+			"protocol",
+			HttpComponentsUtil.getProtocol(themeDisplay.getURLPortal()));
 		tokens.put("root_path", themeDisplay.getPathContext());
 		tokens.put(
 			"scope_group_id", String.valueOf(themeDisplay.getScopeGroupId()));
@@ -661,9 +450,11 @@ public class JournalUtil {
 		tokens.put("portal_ctx", themeDisplayModel.getPathContext());
 		tokens.put(
 			"portal_url",
-			HttpUtil.removeProtocol(themeDisplayModel.getURLPortal()));
+			HttpComponentsUtil.removeProtocol(
+				themeDisplayModel.getURLPortal()));
 		tokens.put(
-			"protocol", HttpUtil.getProtocol(themeDisplayModel.getURLPortal()));
+			"protocol",
+			HttpComponentsUtil.getProtocol(themeDisplayModel.getURLPortal()));
 		tokens.put("root_path", themeDisplayModel.getPathContext());
 		tokens.put(
 			"scope_group_id",
@@ -673,31 +464,8 @@ public class JournalUtil {
 		_populateCustomTokens(tokens, themeDisplayModel.getCompanyId());
 	}
 
-	private static void _removeArticleLocale(
-		Element element, String languageId) {
-
-		for (Element dynamicElementElement :
-				element.elements("dynamic-element")) {
-
-			for (Element dynamicContentElement :
-					dynamicElementElement.elements("dynamic-content")) {
-
-				String curLanguageId = GetterUtil.getString(
-					dynamicContentElement.attributeValue("language-id"));
-
-				if (curLanguageId.equals(languageId)) {
-					dynamicContentElement.detach();
-				}
-			}
-
-			_removeArticleLocale(dynamicElementElement, languageId);
-		}
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(JournalUtil.class);
 
 	private static Map<String, String> _customTokens;
-	private static final JournalTransformer _journalTransformer =
-		new JournalTransformer();
 
 }

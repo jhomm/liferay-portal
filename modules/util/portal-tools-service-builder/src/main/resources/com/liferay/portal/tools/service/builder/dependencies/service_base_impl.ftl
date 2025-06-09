@@ -20,8 +20,7 @@ import ${beanLocatorUtil};
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.db.DBType;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Conjunction;
 import com.liferay.portal.kernel.dao.orm.Criterion;
@@ -40,6 +39,8 @@ import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -68,6 +69,7 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 
 import java.sql.Blob;
+import java.sql.Connection;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -165,6 +167,8 @@ import org.osgi.service.component.annotations.Reference;
 	public abstract class ${entity.name}LocalServiceBaseImpl extends BaseLocalServiceImpl implements ${entity.name}LocalService,
 	<#if dependencyInjectorDS>
 		AopService,
+	<#elseif osgiModule && entity.isChangeTrackingEnabled()>
+		CTService<${entity.name}>,
 	</#if>
 
 	IdentifiableOSGiService
@@ -504,42 +508,35 @@ import org.osgi.service.component.annotations.Reference;
 		</#if>
 
 		<#if entity.hasExternalReferenceCode() && !entity.versionEntity??>
-			/**
-			 * Returns the ${entity.humanName} with the matching external reference code and ${entity.externalReferenceCode}.
-			 *
-			 * @param ${entity.externalReferenceCode}Id the primary key of the ${entity.externalReferenceCode}
-			 * @param externalReferenceCode the ${entity.humanName}'s external reference code
-			 * @return the matching ${entity.humanName}, or <code>null</code> if a matching ${entity.humanName} could not be found
-			<#list serviceBaseExceptions as exception>
-			 * @throws ${exception}
-			</#list>
-			 */
-			@Override
-			public ${entity.name} fetch${entity.name}ByExternalReferenceCode(long ${entity.externalReferenceCode}Id, String externalReferenceCode) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
-				return ${entity.variableName}Persistence.fetchBy${entity.externalReferenceCode?cap_first[0..0]}_ERC(${entity.externalReferenceCode}Id, externalReferenceCode);
-			}
+			<#if serviceBuilder.isVersionGTE_7_4_0()>
+				@Override
+				public ${entity.name} fetch${entity.name}ByExternalReferenceCode(String externalReferenceCode, long ${entity.externalReferenceCode}Id) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
+					return ${entity.variableName}Persistence.fetchByERC_${entity.externalReferenceCode?cap_first[0..0]}(externalReferenceCode, ${entity.externalReferenceCode}Id);
+				}
 
-			/**
-			 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetch${entity.name}ByExternalReferenceCode(long, String)}
-			 */
-			@Deprecated
-			@Override
-			public ${entity.name} fetch${entity.name}ByReferenceCode(long ${entity.externalReferenceCode}Id, String externalReferenceCode) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
-				return fetch${entity.name}ByExternalReferenceCode(${entity.externalReferenceCode}Id, externalReferenceCode);
-			}
+				@Override
+				public ${entity.name} get${entity.name}ByExternalReferenceCode(String externalReferenceCode, long ${entity.externalReferenceCode}Id) throws PortalException {
+					return ${entity.variableName}Persistence.findByERC_${entity.externalReferenceCode?cap_first[0..0]}(externalReferenceCode, ${entity.externalReferenceCode}Id);
+				}
+			<#else>
+				@Deprecated
+				@Override
+				public ${entity.name} fetch${entity.name}ByExternalReferenceCode(long ${entity.externalReferenceCode}Id, String externalReferenceCode) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
+					return ${entity.variableName}Persistence.fetchBy${entity.externalReferenceCode?cap_first[0..0]}_ERC(${entity.externalReferenceCode}Id, externalReferenceCode);
+				}
 
-			/**
-			 * Returns the ${entity.humanName} with the matching external reference code and ${entity.externalReferenceCode}.
-			 *
-			 * @param ${entity.externalReferenceCode}Id the primary key of the ${entity.externalReferenceCode}
-			 * @param externalReferenceCode the ${entity.humanName}'s external reference code
-			 * @return the matching ${entity.humanName}
-			 * @throws PortalException if a matching ${entity.humanName} could not be found
-			 */
-			@Override
-			public ${entity.name} get${entity.name}ByExternalReferenceCode(long ${entity.externalReferenceCode}Id, String externalReferenceCode) throws PortalException {
-				return ${entity.variableName}Persistence.findBy${entity.externalReferenceCode?cap_first[0..0]}_ERC(${entity.externalReferenceCode}Id, externalReferenceCode);
-			}
+				@Deprecated
+				@Override
+				public ${entity.name} fetch${entity.name}ByReferenceCode(long ${entity.externalReferenceCode}Id, String externalReferenceCode) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
+					return fetch${entity.name}ByExternalReferenceCode(${entity.externalReferenceCode}Id, externalReferenceCode);
+				}
+
+				@Deprecated
+				@Override
+				public ${entity.name} get${entity.name}ByExternalReferenceCode(long ${entity.externalReferenceCode}Id, String externalReferenceCode) throws PortalException {
+					return ${entity.variableName}Persistence.findBy${entity.externalReferenceCode?cap_first[0..0]}_ERC(${entity.externalReferenceCode}Id, externalReferenceCode);
+				}
+			</#if>
 		</#if>
 
 		<#assign serviceBaseExceptions = serviceBuilder.getServiceBaseExceptions(methods, "get" + entity.name, [entity.PKClassName], ["PortalException"]) />
@@ -803,6 +800,12 @@ import org.osgi.service.component.annotations.Reference;
 		 */
 		@Override
 		public PersistedModel deletePersistedModel(PersistedModel persistedModel) throws PortalException {
+			<#if serviceBuilder.isVersionGTE_7_4_0()>
+				if (_log.isWarnEnabled()) {
+					_log.warn("Implement ${entity.name}LocalServiceImpl#delete${entity.name}(${entity.name}) to avoid orphaned data");
+				}
+			</#if>
+
 			return ${entity.variableName}LocalService.delete${entity.name}((${entity.name})persistedModel);
 		}
 
@@ -956,7 +959,11 @@ import org.osgi.service.component.annotations.Reference;
 		 * <strong>Important:</strong> Inspect ${entity.name}LocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
 		 * </p>
 		 *
-		 * @param ${entity.variableName} the ${entity.humanName}
+		<#if entity.versionEntity??>
+		 	* @param draft${entity.name} the ${entity.humanName}
+		<#else>
+			* @param ${entity.variableName} the ${entity.humanName}
+		</#if>
 		 * @return the ${entity.humanName} that was updated
 		<#list serviceBaseExceptions as exception>
 		 * @throws ${exception}
@@ -988,9 +995,15 @@ import org.osgi.service.component.annotations.Reference;
 				</#list>
 				 */
 				@Override
-				public void add${referenceEntity.name}${entity.name}(${referenceEntity.PKClassName} ${referenceEntity.PKVariableName}, ${entity.PKClassName} ${entity.PKVariableName}) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
-					${referenceEntity.variableName}Persistence.add${entity.name}(${referenceEntity.PKVariableName}, ${entity.PKVariableName});
-				}
+				<#if serviceBuilder.isVersionGTE_7_4_0()>
+					public boolean add${referenceEntity.name}${entity.name}(${referenceEntity.PKClassName} ${referenceEntity.PKVariableName}, ${entity.PKClassName} ${entity.PKVariableName}) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
+						return ${referenceEntity.variableName}Persistence.add${entity.name}(${referenceEntity.PKVariableName}, ${entity.PKVariableName});
+					}
+				<#else>
+					public void add${referenceEntity.name}${entity.name}(${referenceEntity.PKClassName} ${referenceEntity.PKVariableName}, ${entity.PKClassName} ${entity.PKVariableName}) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
+						${referenceEntity.variableName}Persistence.add${entity.name}(${referenceEntity.PKVariableName}, ${entity.PKVariableName});
+					}
+				</#if>
 
 				<#assign serviceBaseExceptions = serviceBuilder.getServiceBaseExceptions(methods, "add" + referenceEntity.name + entity.name, [referenceEntity.PKClassName, apiPackagePath + ".model." + entity.name], []) />
 
@@ -1000,9 +1013,15 @@ import org.osgi.service.component.annotations.Reference;
 				</#list>
 				 */
 				@Override
-				public void add${referenceEntity.name}${entity.name}(${referenceEntity.PKClassName} ${referenceEntity.PKVariableName}, ${entity.name} ${entity.variableName}) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
-					${referenceEntity.variableName}Persistence.add${entity.name}(${referenceEntity.PKVariableName}, ${entity.variableName});
-				}
+				<#if serviceBuilder.isVersionGTE_7_4_0()>
+					public boolean add${referenceEntity.name}${entity.name}(${referenceEntity.PKClassName} ${referenceEntity.PKVariableName}, ${entity.name} ${entity.variableName}) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
+						return ${referenceEntity.variableName}Persistence.add${entity.name}(${referenceEntity.PKVariableName}, ${entity.variableName});
+					}
+				<#else>
+					public void add${referenceEntity.name}${entity.name}(${referenceEntity.PKClassName} ${referenceEntity.PKVariableName}, ${entity.name} ${entity.variableName}) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
+						${referenceEntity.variableName}Persistence.add${entity.name}(${referenceEntity.PKVariableName}, ${entity.variableName});
+					}
+				</#if>
 
 				<#assign serviceBaseExceptions = serviceBuilder.getServiceBaseExceptions(methods, "add" + referenceEntity.name + entity.pluralName, [referenceEntity.PKClassName, entity.PKClassName + "[]"], []) />
 
@@ -1012,9 +1031,15 @@ import org.osgi.service.component.annotations.Reference;
 				</#list>
 				 */
 				@Override
-				public void add${referenceEntity.name}${entity.pluralName}(${referenceEntity.PKClassName} ${referenceEntity.PKVariableName}, ${entity.PKClassName}[] ${entity.pluralPKVariableName}) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
-					${referenceEntity.variableName}Persistence.add${entity.pluralName}(${referenceEntity.PKVariableName}, ${entity.pluralPKVariableName});
-				}
+				<#if serviceBuilder.isVersionGTE_7_4_0()>
+					public boolean add${referenceEntity.name}${entity.pluralName}(${referenceEntity.PKClassName} ${referenceEntity.PKVariableName}, ${entity.PKClassName}[] ${entity.pluralPKVariableName}) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
+						return ${referenceEntity.variableName}Persistence.add${entity.pluralName}(${referenceEntity.PKVariableName}, ${entity.pluralPKVariableName});
+					}
+				<#else>
+					public void add${referenceEntity.name}${entity.pluralName}(${referenceEntity.PKClassName} ${referenceEntity.PKVariableName}, ${entity.PKClassName}[] ${entity.pluralPKVariableName}) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
+						${referenceEntity.variableName}Persistence.add${entity.pluralName}(${referenceEntity.PKVariableName}, ${entity.pluralPKVariableName});
+					}
+				</#if>
 
 				<#assign serviceBaseExceptions = serviceBuilder.getServiceBaseExceptions(methods, "add" + referenceEntity.name + entity.pluralName, [referenceEntity.PKClassName, "java.util.List<" + entity.name + ">"], []) />
 
@@ -1024,9 +1049,15 @@ import org.osgi.service.component.annotations.Reference;
 				</#list>
 				 */
 				@Override
-				public void add${referenceEntity.name}${entity.pluralName}(${referenceEntity.PKClassName} ${referenceEntity.PKVariableName}, List<${entity.name}> ${entity.pluralVariableName}) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
-					${referenceEntity.variableName}Persistence.add${entity.pluralName}(${referenceEntity.PKVariableName}, ${entity.pluralVariableName});
-				}
+				<#if serviceBuilder.isVersionGTE_7_4_0()>
+					public boolean add${referenceEntity.name}${entity.pluralName}(${referenceEntity.PKClassName} ${referenceEntity.PKVariableName}, List<${entity.name}> ${entity.pluralVariableName}) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
+						return ${referenceEntity.variableName}Persistence.add${entity.pluralName}(${referenceEntity.PKVariableName}, ${entity.pluralVariableName});
+					}
+				<#else>
+					public void add${referenceEntity.name}${entity.pluralName}(${referenceEntity.PKClassName} ${referenceEntity.PKVariableName}, List<${entity.name}> ${entity.pluralVariableName}) <#if (serviceBaseExceptions?size gt 0)>throws ${stringUtil.merge(serviceBaseExceptions)} </#if>{
+						${referenceEntity.variableName}Persistence.add${entity.pluralName}(${referenceEntity.PKVariableName}, ${entity.pluralVariableName});
+					}
+				</#if>
 
 				<#assign serviceBaseExceptions = serviceBuilder.getServiceBaseExceptions(methods, "clear" + referenceEntity.name + entity.pluralName, [referenceEntity.PKClassName], []) />
 
@@ -1571,11 +1602,13 @@ import org.osgi.service.component.annotations.Reference;
 
 	<#if !dependencyInjectorDS>
 		public void afterPropertiesSet() {
-			<#if stringUtil.equals(sessionTypeName, "Local") && entity.hasEntityColumns() && entity.hasPersistence()>
-				<#if validator.isNotNull(pluginName)>
-					PersistedModelLocalServiceRegistryUtil.register("${apiPackagePath}.model.${entity.name}", ${entity.variableName}LocalService);
-				<#else>
-					persistedModelLocalServiceRegistry.register("${apiPackagePath}.model.${entity.name}", ${entity.variableName}LocalService);
+			<#if serviceBuilder.isVersionLTE_7_3_0()>
+				<#if stringUtil.equals(sessionTypeName, "Local") && entity.hasEntityColumns() && entity.hasPersistence()>
+					<#if validator.isNotNull(pluginName)>
+						PersistedModelLocalServiceRegistryUtil.register("${apiPackagePath}.model.${entity.name}", ${entity.variableName}LocalService);
+					<#else>
+						persistedModelLocalServiceRegistry.register("${apiPackagePath}.model.${entity.name}", ${entity.variableName}LocalService);
+					</#if>
 				</#if>
 			</#if>
 
@@ -1590,14 +1623,19 @@ import org.osgi.service.component.annotations.Reference;
 
 				if ((db.getDBType() != DBType.DB2) &&
 					(db.getDBType() != DBType.MYSQL) &&
-					(db.getDBType() != DBType.MARIADB) &&
-					(db.getDBType() != DBType.SYBASE)) {
+					(db.getDBType() != DBType.MARIADB)
+
+					<#if serviceBuilder.isVersionLTE_7_3_0()>
+						&& (db.getDBType() != DBType.SYBASE)
+					</#if>
+
+					) {
 
 					_useTempFile = true;
 				}
 			</#if>
 
-			_set${sessionTypeName}ServiceUtilService(${entity.variableName}${sessionTypeName}Service);
+			${entity.name}${sessionTypeName}ServiceUtil.setService(${entity.variableName}${sessionTypeName}Service);
 		}
 	</#if>
 
@@ -1616,8 +1654,13 @@ import org.osgi.service.component.annotations.Reference;
 
 					if ((db.getDBType() != DBType.DB2) &&
 						(db.getDBType() != DBType.MYSQL) &&
-						(db.getDBType() != DBType.MARIADB) &&
-						(db.getDBType() != DBType.SYBASE)) {
+						(db.getDBType() != DBType.MARIADB)
+
+						<#if serviceBuilder.isVersionLTE_7_3_0()>
+							&& (db.getDBType() != DBType.SYBASE)
+						</#if>
+
+						) {
 
 						_useTempFile = true;
 					}
@@ -1627,7 +1670,9 @@ import org.osgi.service.component.annotations.Reference;
 
 		@Deactivate
 		protected void deactivate() {
-			_set${sessionTypeName}ServiceUtilService(null);
+			<#if serviceBuilder.isVersionLTE_7_3_0()>
+				${entity.name}${sessionTypeName}ServiceUtil.setService(null);
+			</#if>
 		}
 
 		@Override
@@ -1649,19 +1694,23 @@ import org.osgi.service.component.annotations.Reference;
 		public void setAopProxy(Object aopProxy) {
 			${entity.variableName}${sessionTypeName}Service = (${entity.name}${sessionTypeName}Service)aopProxy;
 
-			_set${sessionTypeName}ServiceUtilService(${entity.variableName}${sessionTypeName}Service);
+			<#if serviceBuilder.isVersionLTE_7_3_0()>
+				${entity.name}${sessionTypeName}ServiceUtil.setService(${entity.variableName}${sessionTypeName}Service);
+			</#if>
 		}
 	<#else>
 		public void destroy() {
-			<#if stringUtil.equals(sessionTypeName, "Local") && entity.hasEntityColumns() && entity.hasPersistence()>
-				<#if validator.isNotNull(pluginName)>
-					PersistedModelLocalServiceRegistryUtil.unregister("${apiPackagePath}.model.${entity.name}");
-				<#else>
-					persistedModelLocalServiceRegistry.unregister("${apiPackagePath}.model.${entity.name}");
+			<#if serviceBuilder.isVersionLTE_7_3_0()>
+				<#if stringUtil.equals(sessionTypeName, "Local") && entity.hasEntityColumns() && entity.hasPersistence()>
+					<#if validator.isNotNull(pluginName)>
+						PersistedModelLocalServiceRegistryUtil.unregister("${apiPackagePath}.model.${entity.name}");
+					<#else>
+						persistedModelLocalServiceRegistry.unregister("${apiPackagePath}.model.${entity.name}");
+					</#if>
 				</#if>
 			</#if>
 
-			_set${sessionTypeName}ServiceUtilService(null);
+			${entity.name}${sessionTypeName}ServiceUtil.setService(null);
 		}
 	</#if>
 
@@ -2014,40 +2063,32 @@ import org.osgi.service.component.annotations.Reference;
 		 * @param sql the sql query
 		 */
 		protected void runSQL(String sql) {
+			<#if entity.hasEntityColumns()>
+				DataSource dataSource = ${entity.variableName}Persistence.getDataSource();
+			<#else>
+				DataSource dataSource = InfrastructureUtil.getDataSource();
+			</#if>
+
+			DB db = DBManagerUtil.getDB();
+
+			Connection currentConnection = CurrentConnectionUtil.getConnection(dataSource);
+
 			try {
-				<#if entity.hasEntityColumns()>
-					DataSource dataSource = ${entity.variableName}Persistence.getDataSource();
-				<#else>
-					DataSource dataSource = InfrastructureUtil.getDataSource();
-				</#if>
+				if (currentConnection != null) {
+					db.runSQL(currentConnection, new String[] {sql});
 
-				DB db = DBManagerUtil.getDB();
+					return;
+				}
 
-				sql = db.buildSQL(sql);
-				sql = PortalUtil.transformSQL(sql);
-
-				SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(dataSource, sql);
-
-				sqlUpdate.update();
+				try (Connection connection = dataSource.getConnection()) {
+					db.runSQL(connection, new String[] {sql});
+				}
 			}
 			catch (Exception exception) {
 				throw new SystemException(exception);
 			}
 		}
 	</#if>
-
-	private void _set${sessionTypeName}ServiceUtilService(${entity.name}${sessionTypeName}Service ${entity.variableName}${sessionTypeName}Service) {
-		try {
-			Field field = ${entity.name}${sessionTypeName}ServiceUtil.class.getDeclaredField("_service");
-
-			field.setAccessible(true);
-
-			field.set(null, ${entity.variableName}${sessionTypeName}Service);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
 
 	<#list referenceEntities as referenceEntity>
 		<#if referenceEntity.hasLocalService()>
@@ -2138,6 +2179,8 @@ import org.osgi.service.component.annotations.Reference;
 		</#if>
 	</#list>
 
+	private static final Log _log = LogFactoryUtil.getLog(${entity.name}${sessionTypeName}ServiceBaseImpl.class);
+
 	<#if lazyBlobExists>
 		<#if dependencyInjectorDS>
 			@Reference
@@ -2151,15 +2194,17 @@ import org.osgi.service.component.annotations.Reference;
 		private boolean _useTempFile;
 	</#if>
 
-	<#if stringUtil.equals(sessionTypeName, "Local") && entity.hasEntityColumns() && entity.hasPersistence() && !dependencyInjectorDS>
-		<#if validator.isNull(pluginName)>
-			<#if osgiModule>
-				@ServiceReference(type = PersistedModelLocalServiceRegistry.class)
-			<#else>
-				@BeanReference(type = PersistedModelLocalServiceRegistry.class)
-			</#if>
+	<#if serviceBuilder.isVersionLTE_7_3_0()>
+		<#if stringUtil.equals(sessionTypeName, "Local") && entity.hasEntityColumns() && entity.hasPersistence() && !dependencyInjectorDS>
+			<#if validator.isNull(pluginName)>
+				<#if osgiModule>
+					@ServiceReference(type = PersistedModelLocalServiceRegistry.class)
+				<#else>
+					@BeanReference(type = PersistedModelLocalServiceRegistry.class)
+				</#if>
 
-			protected PersistedModelLocalServiceRegistry persistedModelLocalServiceRegistry;
+				protected PersistedModelLocalServiceRegistry persistedModelLocalServiceRegistry;
+			</#if>
 		</#if>
 	</#if>
 

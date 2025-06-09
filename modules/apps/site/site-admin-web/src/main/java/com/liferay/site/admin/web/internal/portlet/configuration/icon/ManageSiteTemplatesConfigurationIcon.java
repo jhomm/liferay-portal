@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.admin.web.internal.portlet.configuration.icon;
 
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.LayoutSetPrototype;
@@ -30,18 +21,18 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.admin.web.internal.constants.SiteAdminPortletKeys;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + SiteAdminPortletKeys.SITE_ADMIN,
+	property = "jakarta.portlet.name=" + SiteAdminPortletKeys.SITE_ADMIN,
 	service = PortletConfigurationIcon.class
 )
 public class ManageSiteTemplatesConfigurationIcon
@@ -49,9 +40,7 @@ public class ManageSiteTemplatesConfigurationIcon
 
 	@Override
 	public String getMessage(PortletRequest portletRequest) {
-		return LanguageUtil.get(
-			getResourceBundle(getLocale(portletRequest)),
-			"manage-site-template");
+		return _language.get(getLocale(portletRequest), "manage-site-template");
 	}
 
 	@Override
@@ -83,7 +72,7 @@ public class ManageSiteTemplatesConfigurationIcon
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
@@ -100,17 +89,15 @@ public class ManageSiteTemplatesConfigurationIcon
 		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		if (PortalPermissionUtil.contains(
-				themeDisplay.getPermissionChecker(),
-				ActionKeys.ADD_LAYOUT_SET_PROTOTYPE)) {
-
-			return true;
-		}
-
-		return false;
+		return PortalPermissionUtil.contains(
+			themeDisplay.getPermissionChecker(),
+			ActionKeys.ADD_LAYOUT_SET_PROTOTYPE);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ManageSiteTemplatesConfigurationIcon.class);
+
+	@Reference
+	private Language _language;
 
 }

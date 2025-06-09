@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.search;
@@ -17,17 +8,17 @@ package com.liferay.taglib.search;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchEntry;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Brian Wing Shun Chan
@@ -56,20 +47,22 @@ public class ResultRow
 
 		this(
 			rowId, object, primaryKey, pos, bold, StringPool.BLANK,
-			StringPool.BLANK);
+			StringPool.BLANK, StringPool.BLANK, StringPool.BLANK);
 	}
 
 	public ResultRow(
 		String rowId, Object object, String primaryKey, int pos, boolean bold,
-		String cssClass, String state) {
+		String ariaLabel, String cssClass, String state, String tabIndex) {
 
 		_rowId = rowId;
 		_object = object;
 		_primaryKey = primaryKey;
 		_pos = pos;
 		_bold = bold;
+		_ariaLabel = ariaLabel;
 		_cssClass = cssClass;
 		_state = state;
+		_tabIndex = tabIndex;
 
 		_searchEntries = new ArrayList<>();
 	}
@@ -265,8 +258,8 @@ public class ResultRow
 		statusSearchEntry.setColspan(SearchEntry.DEFAULT_COLSPAN);
 		statusSearchEntry.setHref(href);
 		statusSearchEntry.setStatus(status);
-		statusSearchEntry.setStatusDate(statusDate);
 		statusSearchEntry.setStatusByUserId(statusByUserId);
+		statusSearchEntry.setStatusDate(statusDate);
 		statusSearchEntry.setValign(SearchEntry.DEFAULT_VALIGN);
 
 		_searchEntries.add(index, statusSearchEntry);
@@ -493,6 +486,11 @@ public class ResultRow
 	}
 
 	@Override
+	public String getAriaLabel() {
+		return _ariaLabel;
+	}
+
+	@Override
 	public String getClassHoverName() {
 		return _classHoverName;
 	}
@@ -552,6 +550,11 @@ public class ResultRow
 	}
 
 	@Override
+	public String getTabIndex() {
+		return _tabIndex;
+	}
+
+	@Override
 	public boolean isBold() {
 		return _bold;
 	}
@@ -569,6 +572,11 @@ public class ResultRow
 	@Override
 	public void removeSearchEntry(int pos) {
 		_searchEntries.remove(pos);
+	}
+
+	@Override
+	public void setAriaLabel(String ariaLabel) {
+		_ariaLabel = ariaLabel;
 	}
 
 	@Override
@@ -635,6 +643,12 @@ public class ResultRow
 		_state = state;
 	}
 
+	@Override
+	public void setTabIndex(String tabIndex) {
+		_tabIndex = tabIndex;
+	}
+
+	private String _ariaLabel;
 	private boolean _bold;
 	private String _classHoverName;
 	private String _className;
@@ -649,5 +663,6 @@ public class ResultRow
 	private final List<SearchEntry> _searchEntries;
 	private boolean _skip;
 	private String _state;
+	private String _tabIndex;
 
 }

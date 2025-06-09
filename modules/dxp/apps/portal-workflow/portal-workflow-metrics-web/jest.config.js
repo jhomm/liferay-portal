@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 window.AUI = () => ({
@@ -28,7 +22,23 @@ const languageMap = {
 };
 
 window.Liferay = {
+	...Liferay,
 	Language: {
+		available: {
+			ar_SA: 'Arabic (Saudi Arabia)',
+			ca_ES: 'Catalan (Spain)',
+			de_DE: 'German (Germany)',
+			en_US: 'English (United States)',
+			es_ES: 'Spanish (Spain)',
+			fi_FI: 'Finnish (Finland)',
+			fr_FR: 'French (France)',
+			hu_HU: 'Hungarian (Hungary)',
+			ja_JP: 'Japanese (Japan)',
+			nl_NL: 'Dutch (Netherlands)',
+			pt_BR: 'Portuguese (Brazil)',
+			sv_SE: 'Swedish (Sweden)',
+			zh_CN: 'Chinese (China)',
+		},
 		get: (key) => {
 			if (languageMap[key]) {
 				return languageMap[key];
@@ -37,16 +47,10 @@ window.Liferay = {
 			return key;
 		},
 	},
-	Session: {
-		extend: () => {},
-	},
 	ThemeDisplay: {
-		getBCP47LanguageId: () => 'en-US',
-		getLanguageId: () => 'en_US',
-		getPathThemeImages: () => 'http://localhost:8080/o/admin-theme/images',
+		...window.Liferay.ThemeDisplay,
+		getPathContext: () => undefined,
 		getPortalURL: () => window.location.origin,
-		getUserId: () => '123',
-		getUserName: () => 'Test Test',
 	},
 	authToken: 'auth',
 };

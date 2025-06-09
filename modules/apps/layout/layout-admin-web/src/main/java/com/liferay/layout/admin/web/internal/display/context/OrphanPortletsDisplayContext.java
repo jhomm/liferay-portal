@@ -1,21 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.display.context;
 
+import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.fragment.processor.PortletRegistry;
+import com.liferay.fragment.service.FragmentEntryLinkLocalServiceUtil;
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
+import com.liferay.layout.page.template.model.LayoutPageTemplateStructureRelModel;
+import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalServiceUtil;
+import com.liferay.layout.page.template.service.LayoutPageTemplateStructureRelLocalServiceUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -27,6 +25,8 @@ import com.liferay.portal.kernel.model.PortletPreferences;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalServiceUtil;
@@ -39,14 +39,14 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.util.comparator.PortletTitleComparator;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -56,11 +56,13 @@ public class OrphanPortletsDisplayContext {
 	public OrphanPortletsDisplayContext(
 		HttpServletRequest httpServletRequest,
 		LiferayPortletRequest liferayPortletRequest,
-		LiferayPortletResponse liferayPortletResponse) {
+		LiferayPortletResponse liferayPortletResponse,
+		PortletRegistry portletRegistry) {
 
 		_httpServletRequest = httpServletRequest;
 		_liferayPortletRequest = liferayPortletRequest;
 		_liferayPortletResponse = liferayPortletResponse;
+		_portletRegistry = portletRegistry;
 	}
 
 	public String getBackURL() {
@@ -79,8 +81,8 @@ public class OrphanPortletsDisplayContext {
 		}
 
 		_displayStyle = SearchDisplayStyleUtil.getDisplayStyle(
-			PortalUtil.getHttpServletRequest(_liferayPortletRequest),
-			LayoutAdminPortletKeys.GROUP_PAGES, "orphan-display-style", "list");
+			_liferayPortletRequest, LayoutAdminPortletKeys.GROUP_PAGES,
+			"orphan-display-style", "list");
 
 		return _displayStyle;
 	}
@@ -90,8 +92,9 @@ public class OrphanPortletsDisplayContext {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(
-			_liferayPortletRequest, "orderByType", "asc");
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_httpServletRequest, LayoutAdminPortletKeys.GROUP_PAGES,
+			"orphan-order-by-type", "asc");
 
 		return _orderByType;
 	}
@@ -109,28 +112,34 @@ public class OrphanPortletsDisplayContext {
 			(ThemeDisplay)_liferayPortletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		LayoutTypePortlet selLayoutTypePortlet =
-			(LayoutTypePortlet)layout.getLayoutType();
-
-		List<Portlet> explicitlyAddedPortlets =
-			selLayoutTypePortlet.getExplicitlyAddedPortlets();
-
 		List<String> explicitlyAddedPortletIds = new ArrayList<>();
 
-		for (Portlet explicitlyAddedPortlet : explicitlyAddedPortlets) {
-			explicitlyAddedPortletIds.add(
-				explicitlyAddedPortlet.getPortletId());
+		if (layout.isTypeContent()) {
+			explicitlyAddedPortletIds =
+				_getTypeContentExplicitlyAddedPortletIds(layout);
+		}
+		else {
+			LayoutTypePortlet selLayoutTypePortlet =
+				(LayoutTypePortlet)layout.getLayoutType();
+
+			List<Portlet> explicitlyAddedPortlets =
+				selLayoutTypePortlet.getExplicitlyAddedPortlets();
+
+			for (Portlet explicitlyAddedPortlet : explicitlyAddedPortlets) {
+				explicitlyAddedPortletIds.add(
+					explicitlyAddedPortlet.getPortletId());
+			}
 		}
 
 		List<Portlet> orphanPortlets = new ArrayList<>();
 
-		List<PortletPreferences> portletPreferences =
+		List<PortletPreferences> portletPreferencesList =
 			PortletPreferencesLocalServiceUtil.getPortletPreferences(
 				PortletKeys.PREFS_OWNER_ID_DEFAULT,
 				PortletKeys.PREFS_OWNER_TYPE_LAYOUT, layout.getPlid());
 
-		for (PortletPreferences portletPreference : portletPreferences) {
-			String portletId = portletPreference.getPortletId();
+		for (PortletPreferences portletPreferences : portletPreferencesList) {
+			String portletId = portletPreferences.getPortletId();
 
 			Portlet portlet = PortletLocalServiceUtil.getPortletById(
 				themeDisplay.getCompanyId(), portletId);
@@ -153,12 +162,11 @@ public class OrphanPortletsDisplayContext {
 			orderByAsc = true;
 		}
 
-		PortletTitleComparator portletTitleComparator =
+		return ListUtil.sort(
+			orphanPortlets,
 			new PortletTitleComparator(
 				httpServletRequest.getServletContext(),
-				themeDisplay.getLocale(), orderByAsc);
-
-		return ListUtil.sort(orphanPortlets, portletTitleComparator);
+				themeDisplay.getLocale(), orderByAsc));
 	}
 
 	public SearchContainer<Portlet> getOrphanPortletsSearchContainer() {
@@ -167,13 +175,15 @@ public class OrphanPortletsDisplayContext {
 		}
 
 		SearchContainer<Portlet> orphanPortletsSearchContainer =
-			new SearchContainer(
-				_liferayPortletRequest, getPortletURL(), null, null);
+			new SearchContainer<>(
+				_liferayPortletRequest, getPortletURL(), null,
+				"there-are-no-items-to-display");
 
 		orphanPortletsSearchContainer.setDeltaConfigurable(false);
 		orphanPortletsSearchContainer.setId("portlets");
 		orphanPortletsSearchContainer.setOrderByCol("name");
 		orphanPortletsSearchContainer.setOrderByType(getOrderByType());
+		orphanPortletsSearchContainer.setResultsAndTotal(getOrphanPortlets());
 
 		Layout selLayout = getSelLayout();
 
@@ -181,14 +191,6 @@ public class OrphanPortletsDisplayContext {
 			orphanPortletsSearchContainer.setRowChecker(
 				new EmptyOnClickRowChecker(_liferayPortletResponse));
 		}
-
-		List<Portlet> portlets = getOrphanPortlets();
-
-		orphanPortletsSearchContainer.setResults(
-			ListUtil.subList(
-				portlets, orphanPortletsSearchContainer.getStart(),
-				orphanPortletsSearchContainer.getEnd()));
-		orphanPortletsSearchContainer.setTotal(portlets.size());
 
 		_orphanPortletsSearchContainer = orphanPortletsSearchContainer;
 
@@ -198,8 +200,8 @@ public class OrphanPortletsDisplayContext {
 	public PortletURL getPortletURL() {
 		return PortletURLBuilder.createRenderURL(
 			_liferayPortletResponse
-		).setMVCPath(
-			"/orphan_portlets.jsp"
+		).setMVCRenderCommandName(
+			"/layout_admin/view_orphan_portlets"
 		).setBackURL(
 			getBackURL()
 		).setParameter(
@@ -248,6 +250,41 @@ public class OrphanPortletsDisplayContext {
 		return LanguageUtil.get(httpServletRequest, "active");
 	}
 
+	private List<String> _getTypeContentExplicitlyAddedPortletIds(
+		Layout layout) {
+
+		LayoutPageTemplateStructure layoutPageTemplateStructure =
+			LayoutPageTemplateStructureLocalServiceUtil.
+				fetchLayoutPageTemplateStructure(
+					layout.getGroupId(), layout.getPlid());
+
+		if (layoutPageTemplateStructure == null) {
+			return Collections.emptyList();
+		}
+
+		List<String> layoutPortletIds = new ArrayList<>();
+
+		long[] segmentsExperiencesIds = TransformUtil.transformToLongArray(
+			LayoutPageTemplateStructureRelLocalServiceUtil.
+				getLayoutPageTemplateStructureRels(
+					layoutPageTemplateStructure.
+						getLayoutPageTemplateStructureId()),
+			LayoutPageTemplateStructureRelModel::getSegmentsExperienceId);
+
+		for (FragmentEntryLink fragmentEntryLink :
+				FragmentEntryLinkLocalServiceUtil.
+					getFragmentEntryLinksBySegmentsExperienceId(
+						layout.getGroupId(), segmentsExperiencesIds,
+						layout.getPlid(), false)) {
+
+			layoutPortletIds.addAll(
+				_portletRegistry.getFragmentEntryLinkPortletIds(
+					fragmentEntryLink));
+		}
+
+		return layoutPortletIds;
+	}
+
 	private String _backURL;
 	private String _displayStyle;
 	private final HttpServletRequest _httpServletRequest;
@@ -255,6 +292,7 @@ public class OrphanPortletsDisplayContext {
 	private final LiferayPortletResponse _liferayPortletResponse;
 	private String _orderByType;
 	private SearchContainer<Portlet> _orphanPortletsSearchContainer;
+	private final PortletRegistry _portletRegistry;
 	private Layout _selLayout;
 	private Long _selPlid;
 

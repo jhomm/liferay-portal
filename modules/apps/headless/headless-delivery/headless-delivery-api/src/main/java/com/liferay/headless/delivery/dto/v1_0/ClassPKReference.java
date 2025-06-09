@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.dto.v1_0;
@@ -20,11 +11,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -32,13 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -46,8 +37,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("ClassPKReference")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"className", "classPK"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"className", "classPK"})
 @XmlRootElement(name = "ClassPKReference")
 public class ClassPKReference implements Serializable {
 
@@ -59,28 +52,38 @@ public class ClassPKReference implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ClassPKReference.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getClassName() {
+		if (_classNameSupplier != null) {
+			className = _classNameSupplier.get();
+
+			_classNameSupplier = null;
+		}
+
 		return className;
 	}
 
 	public void setClassName(String className) {
 		this.className = className;
+
+		_classNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setClassName(
 		UnsafeSupplier<String, Exception> classNameUnsafeSupplier) {
 
-		try {
-			className = classNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_classNameSupplier = () -> {
+			try {
+				return classNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -88,34 +91,50 @@ public class ClassPKReference implements Serializable {
 	@NotEmpty
 	protected String className;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _classNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getClassPK() {
+		if (_classPKSupplier != null) {
+			classPK = _classPKSupplier.get();
+
+			_classPKSupplier = null;
+		}
+
 		return classPK;
 	}
 
 	public void setClassPK(Long classPK) {
 		this.classPK = classPK;
+
+		_classPKSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setClassPK(
 		UnsafeSupplier<Long, Exception> classPKUnsafeSupplier) {
 
-		try {
-			classPK = classPKUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_classPKSupplier = () -> {
+			try {
+				return classPKUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Long classPK;
+
+	@JsonIgnore
+	private Supplier<Long> _classPKSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -144,6 +163,8 @@ public class ClassPKReference implements Serializable {
 
 		sb.append("{");
 
+		String className = getClassName();
+
 		if (className != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -157,6 +178,8 @@ public class ClassPKReference implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long classPK = getClassPK();
 
 		if (classPK != null) {
 			if (sb.length() > 1) {
@@ -173,17 +196,17 @@ public class ClassPKReference implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.ClassPKReference",
 		name = "x-class-name"
 	)
 	public String xClassName;
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -209,7 +232,7 @@ public class ClassPKReference implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -220,7 +243,10 @@ public class ClassPKReference implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -241,7 +267,7 @@ public class ClassPKReference implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -257,5 +283,12 @@ public class ClassPKReference implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

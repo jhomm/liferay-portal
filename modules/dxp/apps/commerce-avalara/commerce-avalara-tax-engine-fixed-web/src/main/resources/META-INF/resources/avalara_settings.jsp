@@ -1,50 +1,35 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
-
-<%
-CommerceAvalaraConnectorConfiguration commerceAvalaraConnectorConfiguration = (CommerceAvalaraConnectorConfiguration)request.getAttribute(CommerceAvalaraConnectorConfiguration.class.getName());
-%>
 
 <portlet:actionURL name="/commerce_tax_methods/edit_commerce_tax_avalara" var="editCommerceAvalaraConnectorActionURL" />
 
 <aui:form action="<%= editCommerceAvalaraConnectorActionURL %>" method="post" name="fm">
 	<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.UPDATE %>" />
 	<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
-
-	<liferay-ui:error exception="<%= CommerceAvalaraConnectionException.class %>" message="the-connection-could-not-be-verified-because-the-provided-credentials-are-incorrect" />
+	<aui:input name="commerceTaxMethodId" type="hidden" value='<%= ParamUtil.getLong(request, "commerceTaxMethodId") %>' />
 
 	<commerce-ui:panel>
-		<%@ include file="/edit_avalara_settings.jspf" %>
-
-		<aui:button cssClass="btn-lg btn-secondary" onClick='<%= liferayPortletResponse.getNamespace() + "verifyConnection();" %>' type="submit" value="verify-connection" />
+		<c:choose>
+			<c:when test="<%= GetterUtil.getBoolean(request.getAttribute(CommerceAvalaraWebKeys.CONNECTION_ESTABLISHED)) %>">
+				<%@ include file="/sections/avalara_channel_configuration.jspf" %>
+				<%@ include file="/sections/dispatch_trigger_setup.jspf" %>
+			</c:when>
+			<c:otherwise>
+				<clay:alert
+					displayType="warning"
+					message="configure-credentials-before-continuing"
+				/>
+			</c:otherwise>
+		</c:choose>
 	</commerce-ui:panel>
 
 	<aui:button-row>
 		<aui:button cssClass="btn-lg" type="submit" />
 	</aui:button-row>
 </aui:form>
-
-<aui:script>
-	Liferay.provide(window, '<portlet:namespace />verifyConnection', (evt) => {
-		const inputCmd = document.querySelector(
-			'#<portlet:namespace /><%= Constants.CMD %>'
-		);
-
-		inputCmd.value = 'verifyConnection';
-	});
-</aui:script>

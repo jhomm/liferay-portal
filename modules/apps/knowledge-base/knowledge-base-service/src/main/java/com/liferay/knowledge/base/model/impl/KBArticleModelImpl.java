@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.model.impl;
@@ -19,7 +10,6 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.knowledge.base.model.KBArticle;
 import com.liferay.knowledge.base.model.KBArticleModel;
-import com.liferay.knowledge.base.model.KBArticleSoap;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -39,18 +29,15 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -79,11 +66,12 @@ public class KBArticleModelImpl
 	public static final String TABLE_NAME = "KBArticle";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"mvccVersion", Types.BIGINT}, {"uuid_", Types.VARCHAR},
-		{"kbArticleId", Types.BIGINT}, {"resourcePrimKey", Types.BIGINT},
-		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
+		{"uuid_", Types.VARCHAR}, {"kbArticleId", Types.BIGINT},
+		{"resourcePrimKey", Types.BIGINT}, {"groupId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP},
 		{"externalReferenceCode", Types.VARCHAR},
 		{"rootResourcePrimKey", Types.BIGINT},
 		{"parentResourceClassNameId", Types.BIGINT},
@@ -93,9 +81,10 @@ public class KBArticleModelImpl
 		{"description", Types.VARCHAR}, {"priority", Types.DOUBLE},
 		{"sections", Types.VARCHAR}, {"latest", Types.BOOLEAN},
 		{"main", Types.BOOLEAN}, {"sourceURL", Types.VARCHAR},
-		{"lastPublishDate", Types.TIMESTAMP}, {"status", Types.INTEGER},
-		{"statusByUserId", Types.BIGINT}, {"statusByUserName", Types.VARCHAR},
-		{"statusDate", Types.TIMESTAMP}
+		{"displayDate", Types.TIMESTAMP}, {"expirationDate", Types.TIMESTAMP},
+		{"reviewDate", Types.TIMESTAMP}, {"lastPublishDate", Types.TIMESTAMP},
+		{"status", Types.INTEGER}, {"statusByUserId", Types.BIGINT},
+		{"statusByUserName", Types.VARCHAR}, {"statusDate", Types.TIMESTAMP}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -103,6 +92,7 @@ public class KBArticleModelImpl
 
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("kbArticleId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("resourcePrimKey", Types.BIGINT);
@@ -127,6 +117,9 @@ public class KBArticleModelImpl
 		TABLE_COLUMNS_MAP.put("latest", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("main", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("sourceURL", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("displayDate", Types.TIMESTAMP);
+		TABLE_COLUMNS_MAP.put("expirationDate", Types.TIMESTAMP);
+		TABLE_COLUMNS_MAP.put("reviewDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("lastPublishDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("status", Types.INTEGER);
 		TABLE_COLUMNS_MAP.put("statusByUserId", Types.BIGINT);
@@ -135,7 +128,7 @@ public class KBArticleModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table KBArticle (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,kbArticleId LONG not null primary key,resourcePrimKey LONG,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,externalReferenceCode VARCHAR(75) null,rootResourcePrimKey LONG,parentResourceClassNameId LONG,parentResourcePrimKey LONG,kbFolderId LONG,version INTEGER,title STRING null,urlTitle VARCHAR(75) null,content TEXT null,description STRING null,priority DOUBLE,sections STRING null,latest BOOLEAN,main BOOLEAN,sourceURL STRING null,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null)";
+		"create table KBArticle (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,kbArticleId LONG not null,resourcePrimKey LONG,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,externalReferenceCode VARCHAR(75) null,rootResourcePrimKey LONG,parentResourceClassNameId LONG,parentResourcePrimKey LONG,kbFolderId LONG,version INTEGER,title STRING null,urlTitle VARCHAR(75) null,content TEXT null,description STRING null,priority DOUBLE,sections STRING null,latest BOOLEAN,main BOOLEAN,sourceURL STRING null,displayDate DATE null,expirationDate DATE null,reviewDate DATE null,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (kbArticleId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table KBArticle";
 
@@ -144,6 +137,9 @@ public class KBArticleModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY KBArticle.modifiedDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY kbArticle.modifiedDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -161,80 +157,86 @@ public class KBArticleModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 2L;
+	public static final long DISPLAYDATE_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 4L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long KBFOLDERID_COLUMN_BITMASK = 8L;
+	public static final long GROUPID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long LATEST_COLUMN_BITMASK = 16L;
+	public static final long KBFOLDERID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long MAIN_COLUMN_BITMASK = 32L;
+	public static final long LATEST_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PARENTRESOURCEPRIMKEY_COLUMN_BITMASK = 64L;
+	public static final long MAIN_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long RESOURCEPRIMKEY_COLUMN_BITMASK = 128L;
+	public static final long PARENTRESOURCEPRIMKEY_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SECTIONS_COLUMN_BITMASK = 256L;
+	public static final long RESOURCEPRIMKEY_COLUMN_BITMASK = 256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long STATUS_COLUMN_BITMASK = 512L;
+	public static final long SECTIONS_COLUMN_BITMASK = 512L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long URLTITLE_COLUMN_BITMASK = 1024L;
+	public static final long STATUS_COLUMN_BITMASK = 1024L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 2048L;
+	public static final long URLTITLE_COLUMN_BITMASK = 2048L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long VERSION_COLUMN_BITMASK = 4096L;
+	public static final long UUID_COLUMN_BITMASK = 4096L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long VERSION_COLUMN_BITMASK = 8192L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long MODIFIEDDATE_COLUMN_BITMASK = 8192L;
+	public static final long MODIFIEDDATE_COLUMN_BITMASK = 16384L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -248,78 +250,6 @@ public class KBArticleModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static KBArticle toModel(KBArticleSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		KBArticle model = new KBArticleImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setUuid(soapModel.getUuid());
-		model.setKbArticleId(soapModel.getKbArticleId());
-		model.setResourcePrimKey(soapModel.getResourcePrimKey());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setExternalReferenceCode(soapModel.getExternalReferenceCode());
-		model.setRootResourcePrimKey(soapModel.getRootResourcePrimKey());
-		model.setParentResourceClassNameId(
-			soapModel.getParentResourceClassNameId());
-		model.setParentResourcePrimKey(soapModel.getParentResourcePrimKey());
-		model.setKbFolderId(soapModel.getKbFolderId());
-		model.setVersion(soapModel.getVersion());
-		model.setTitle(soapModel.getTitle());
-		model.setUrlTitle(soapModel.getUrlTitle());
-		model.setContent(soapModel.getContent());
-		model.setDescription(soapModel.getDescription());
-		model.setPriority(soapModel.getPriority());
-		model.setSections(soapModel.getSections());
-		model.setLatest(soapModel.isLatest());
-		model.setMain(soapModel.isMain());
-		model.setSourceURL(soapModel.getSourceURL());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-		model.setStatus(soapModel.getStatus());
-		model.setStatusByUserId(soapModel.getStatusByUserId());
-		model.setStatusByUserName(soapModel.getStatusByUserName());
-		model.setStatusDate(soapModel.getStatusDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<KBArticle> toModels(KBArticleSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<KBArticle> models = new ArrayList<KBArticle>(soapModels.length);
-
-		for (KBArticleSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public KBArticleModelImpl() {
@@ -397,176 +327,197 @@ public class KBArticleModelImpl
 	public Map<String, Function<KBArticle, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<KBArticle, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, KBArticle>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			KBArticle.class.getClassLoader(), KBArticle.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<KBArticle, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<KBArticle> constructor =
-				(Constructor<KBArticle>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<KBArticle, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<KBArticle, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", KBArticle::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", KBArticle::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", KBArticle::getUuid);
+			attributeGetterFunctions.put(
+				"kbArticleId", KBArticle::getKbArticleId);
+			attributeGetterFunctions.put(
+				"resourcePrimKey", KBArticle::getResourcePrimKey);
+			attributeGetterFunctions.put("groupId", KBArticle::getGroupId);
+			attributeGetterFunctions.put("companyId", KBArticle::getCompanyId);
+			attributeGetterFunctions.put("userId", KBArticle::getUserId);
+			attributeGetterFunctions.put("userName", KBArticle::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", KBArticle::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", KBArticle::getModifiedDate);
+			attributeGetterFunctions.put(
+				"externalReferenceCode", KBArticle::getExternalReferenceCode);
+			attributeGetterFunctions.put(
+				"rootResourcePrimKey", KBArticle::getRootResourcePrimKey);
+			attributeGetterFunctions.put(
+				"parentResourceClassNameId",
+				KBArticle::getParentResourceClassNameId);
+			attributeGetterFunctions.put(
+				"parentResourcePrimKey", KBArticle::getParentResourcePrimKey);
+			attributeGetterFunctions.put(
+				"kbFolderId", KBArticle::getKbFolderId);
+			attributeGetterFunctions.put("version", KBArticle::getVersion);
+			attributeGetterFunctions.put("title", KBArticle::getTitle);
+			attributeGetterFunctions.put("urlTitle", KBArticle::getUrlTitle);
+			attributeGetterFunctions.put("content", KBArticle::getContent);
+			attributeGetterFunctions.put(
+				"description", KBArticle::getDescription);
+			attributeGetterFunctions.put("priority", KBArticle::getPriority);
+			attributeGetterFunctions.put("sections", KBArticle::getSections);
+			attributeGetterFunctions.put("latest", KBArticle::getLatest);
+			attributeGetterFunctions.put("main", KBArticle::getMain);
+			attributeGetterFunctions.put("sourceURL", KBArticle::getSourceURL);
+			attributeGetterFunctions.put(
+				"displayDate", KBArticle::getDisplayDate);
+			attributeGetterFunctions.put(
+				"expirationDate", KBArticle::getExpirationDate);
+			attributeGetterFunctions.put(
+				"reviewDate", KBArticle::getReviewDate);
+			attributeGetterFunctions.put(
+				"lastPublishDate", KBArticle::getLastPublishDate);
+			attributeGetterFunctions.put("status", KBArticle::getStatus);
+			attributeGetterFunctions.put(
+				"statusByUserId", KBArticle::getStatusByUserId);
+			attributeGetterFunctions.put(
+				"statusByUserName", KBArticle::getStatusByUserName);
+			attributeGetterFunctions.put(
+				"statusDate", KBArticle::getStatusDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<KBArticle, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<KBArticle, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<KBArticle, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<KBArticle, Object>>();
-		Map<String, BiConsumer<KBArticle, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<KBArticle, ?>>();
+		private static final Map<String, BiConsumer<KBArticle, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", KBArticle::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<KBArticle, Long>)KBArticle::setMvccVersion);
-		attributeGetterFunctions.put("uuid", KBArticle::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<KBArticle, String>)KBArticle::setUuid);
-		attributeGetterFunctions.put("kbArticleId", KBArticle::getKbArticleId);
-		attributeSetterBiConsumers.put(
-			"kbArticleId",
-			(BiConsumer<KBArticle, Long>)KBArticle::setKbArticleId);
-		attributeGetterFunctions.put(
-			"resourcePrimKey", KBArticle::getResourcePrimKey);
-		attributeSetterBiConsumers.put(
-			"resourcePrimKey",
-			(BiConsumer<KBArticle, Long>)KBArticle::setResourcePrimKey);
-		attributeGetterFunctions.put("groupId", KBArticle::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<KBArticle, Long>)KBArticle::setGroupId);
-		attributeGetterFunctions.put("companyId", KBArticle::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<KBArticle, Long>)KBArticle::setCompanyId);
-		attributeGetterFunctions.put("userId", KBArticle::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<KBArticle, Long>)KBArticle::setUserId);
-		attributeGetterFunctions.put("userName", KBArticle::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName", (BiConsumer<KBArticle, String>)KBArticle::setUserName);
-		attributeGetterFunctions.put("createDate", KBArticle::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<KBArticle, Date>)KBArticle::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", KBArticle::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<KBArticle, Date>)KBArticle::setModifiedDate);
-		attributeGetterFunctions.put(
-			"externalReferenceCode", KBArticle::getExternalReferenceCode);
-		attributeSetterBiConsumers.put(
-			"externalReferenceCode",
-			(BiConsumer<KBArticle, String>)KBArticle::setExternalReferenceCode);
-		attributeGetterFunctions.put(
-			"rootResourcePrimKey", KBArticle::getRootResourcePrimKey);
-		attributeSetterBiConsumers.put(
-			"rootResourcePrimKey",
-			(BiConsumer<KBArticle, Long>)KBArticle::setRootResourcePrimKey);
-		attributeGetterFunctions.put(
-			"parentResourceClassNameId",
-			KBArticle::getParentResourceClassNameId);
-		attributeSetterBiConsumers.put(
-			"parentResourceClassNameId",
-			(BiConsumer<KBArticle, Long>)
-				KBArticle::setParentResourceClassNameId);
-		attributeGetterFunctions.put(
-			"parentResourcePrimKey", KBArticle::getParentResourcePrimKey);
-		attributeSetterBiConsumers.put(
-			"parentResourcePrimKey",
-			(BiConsumer<KBArticle, Long>)KBArticle::setParentResourcePrimKey);
-		attributeGetterFunctions.put("kbFolderId", KBArticle::getKbFolderId);
-		attributeSetterBiConsumers.put(
-			"kbFolderId",
-			(BiConsumer<KBArticle, Long>)KBArticle::setKbFolderId);
-		attributeGetterFunctions.put("version", KBArticle::getVersion);
-		attributeSetterBiConsumers.put(
-			"version", (BiConsumer<KBArticle, Integer>)KBArticle::setVersion);
-		attributeGetterFunctions.put("title", KBArticle::getTitle);
-		attributeSetterBiConsumers.put(
-			"title", (BiConsumer<KBArticle, String>)KBArticle::setTitle);
-		attributeGetterFunctions.put("urlTitle", KBArticle::getUrlTitle);
-		attributeSetterBiConsumers.put(
-			"urlTitle", (BiConsumer<KBArticle, String>)KBArticle::setUrlTitle);
-		attributeGetterFunctions.put("content", KBArticle::getContent);
-		attributeSetterBiConsumers.put(
-			"content", (BiConsumer<KBArticle, String>)KBArticle::setContent);
-		attributeGetterFunctions.put("description", KBArticle::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<KBArticle, String>)KBArticle::setDescription);
-		attributeGetterFunctions.put("priority", KBArticle::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority", (BiConsumer<KBArticle, Double>)KBArticle::setPriority);
-		attributeGetterFunctions.put("sections", KBArticle::getSections);
-		attributeSetterBiConsumers.put(
-			"sections", (BiConsumer<KBArticle, String>)KBArticle::setSections);
-		attributeGetterFunctions.put("latest", KBArticle::getLatest);
-		attributeSetterBiConsumers.put(
-			"latest", (BiConsumer<KBArticle, Boolean>)KBArticle::setLatest);
-		attributeGetterFunctions.put("main", KBArticle::getMain);
-		attributeSetterBiConsumers.put(
-			"main", (BiConsumer<KBArticle, Boolean>)KBArticle::setMain);
-		attributeGetterFunctions.put("sourceURL", KBArticle::getSourceURL);
-		attributeSetterBiConsumers.put(
-			"sourceURL",
-			(BiConsumer<KBArticle, String>)KBArticle::setSourceURL);
-		attributeGetterFunctions.put(
-			"lastPublishDate", KBArticle::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<KBArticle, Date>)KBArticle::setLastPublishDate);
-		attributeGetterFunctions.put("status", KBArticle::getStatus);
-		attributeSetterBiConsumers.put(
-			"status", (BiConsumer<KBArticle, Integer>)KBArticle::setStatus);
-		attributeGetterFunctions.put(
-			"statusByUserId", KBArticle::getStatusByUserId);
-		attributeSetterBiConsumers.put(
-			"statusByUserId",
-			(BiConsumer<KBArticle, Long>)KBArticle::setStatusByUserId);
-		attributeGetterFunctions.put(
-			"statusByUserName", KBArticle::getStatusByUserName);
-		attributeSetterBiConsumers.put(
-			"statusByUserName",
-			(BiConsumer<KBArticle, String>)KBArticle::setStatusByUserName);
-		attributeGetterFunctions.put("statusDate", KBArticle::getStatusDate);
-		attributeSetterBiConsumers.put(
-			"statusDate",
-			(BiConsumer<KBArticle, Date>)KBArticle::setStatusDate);
+		static {
+			Map<String, BiConsumer<KBArticle, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<KBArticle, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<KBArticle, Long>)KBArticle::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<KBArticle, Long>)KBArticle::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<KBArticle, String>)KBArticle::setUuid);
+			attributeSetterBiConsumers.put(
+				"kbArticleId",
+				(BiConsumer<KBArticle, Long>)KBArticle::setKbArticleId);
+			attributeSetterBiConsumers.put(
+				"resourcePrimKey",
+				(BiConsumer<KBArticle, Long>)KBArticle::setResourcePrimKey);
+			attributeSetterBiConsumers.put(
+				"groupId", (BiConsumer<KBArticle, Long>)KBArticle::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<KBArticle, Long>)KBArticle::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<KBArticle, Long>)KBArticle::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<KBArticle, String>)KBArticle::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<KBArticle, Date>)KBArticle::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<KBArticle, Date>)KBArticle::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<KBArticle, String>)
+					KBArticle::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"rootResourcePrimKey",
+				(BiConsumer<KBArticle, Long>)KBArticle::setRootResourcePrimKey);
+			attributeSetterBiConsumers.put(
+				"parentResourceClassNameId",
+				(BiConsumer<KBArticle, Long>)
+					KBArticle::setParentResourceClassNameId);
+			attributeSetterBiConsumers.put(
+				"parentResourcePrimKey",
+				(BiConsumer<KBArticle, Long>)
+					KBArticle::setParentResourcePrimKey);
+			attributeSetterBiConsumers.put(
+				"kbFolderId",
+				(BiConsumer<KBArticle, Long>)KBArticle::setKbFolderId);
+			attributeSetterBiConsumers.put(
+				"version",
+				(BiConsumer<KBArticle, Integer>)KBArticle::setVersion);
+			attributeSetterBiConsumers.put(
+				"title", (BiConsumer<KBArticle, String>)KBArticle::setTitle);
+			attributeSetterBiConsumers.put(
+				"urlTitle",
+				(BiConsumer<KBArticle, String>)KBArticle::setUrlTitle);
+			attributeSetterBiConsumers.put(
+				"content",
+				(BiConsumer<KBArticle, String>)KBArticle::setContent);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<KBArticle, String>)KBArticle::setDescription);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<KBArticle, Double>)KBArticle::setPriority);
+			attributeSetterBiConsumers.put(
+				"sections",
+				(BiConsumer<KBArticle, String>)KBArticle::setSections);
+			attributeSetterBiConsumers.put(
+				"latest", (BiConsumer<KBArticle, Boolean>)KBArticle::setLatest);
+			attributeSetterBiConsumers.put(
+				"main", (BiConsumer<KBArticle, Boolean>)KBArticle::setMain);
+			attributeSetterBiConsumers.put(
+				"sourceURL",
+				(BiConsumer<KBArticle, String>)KBArticle::setSourceURL);
+			attributeSetterBiConsumers.put(
+				"displayDate",
+				(BiConsumer<KBArticle, Date>)KBArticle::setDisplayDate);
+			attributeSetterBiConsumers.put(
+				"expirationDate",
+				(BiConsumer<KBArticle, Date>)KBArticle::setExpirationDate);
+			attributeSetterBiConsumers.put(
+				"reviewDate",
+				(BiConsumer<KBArticle, Date>)KBArticle::setReviewDate);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<KBArticle, Date>)KBArticle::setLastPublishDate);
+			attributeSetterBiConsumers.put(
+				"status", (BiConsumer<KBArticle, Integer>)KBArticle::setStatus);
+			attributeSetterBiConsumers.put(
+				"statusByUserId",
+				(BiConsumer<KBArticle, Long>)KBArticle::setStatusByUserId);
+			attributeSetterBiConsumers.put(
+				"statusByUserName",
+				(BiConsumer<KBArticle, String>)KBArticle::setStatusByUserName);
+			attributeSetterBiConsumers.put(
+				"statusDate",
+				(BiConsumer<KBArticle, Date>)KBArticle::setStatusDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -582,6 +533,21 @@ public class KBArticleModelImpl
 		}
 
 		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@JSON
@@ -1145,6 +1111,60 @@ public class KBArticleModelImpl
 
 	@JSON
 	@Override
+	public Date getDisplayDate() {
+		return _displayDate;
+	}
+
+	@Override
+	public void setDisplayDate(Date displayDate) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_displayDate = displayDate;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public Date getOriginalDisplayDate() {
+		return getColumnOriginalValue("displayDate");
+	}
+
+	@JSON
+	@Override
+	public Date getExpirationDate() {
+		return _expirationDate;
+	}
+
+	@Override
+	public void setExpirationDate(Date expirationDate) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_expirationDate = expirationDate;
+	}
+
+	@JSON
+	@Override
+	public Date getReviewDate() {
+		return _reviewDate;
+	}
+
+	@Override
+	public void setReviewDate(Date reviewDate) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_reviewDate = reviewDate;
+	}
+
+	@JSON
+	@Override
 	public Date getLastPublishDate() {
 		return _lastPublishDate;
 	}
@@ -1253,6 +1273,21 @@ public class KBArticleModelImpl
 	public StagedModelType getStagedModelType() {
 		return new StagedModelType(
 			PortalUtil.getClassNameId(KBArticle.class.getName()));
+	}
+
+	@Override
+	public long getTrashEntryClassPK() {
+		return getPrimaryKey();
+	}
+
+	@Override
+	public boolean isInTrash() {
+		if (getStatus() == WorkflowConstants.STATUS_IN_TRASH) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 
 	@Override
@@ -1392,6 +1427,7 @@ public class KBArticleModelImpl
 		KBArticleImpl kbArticleImpl = new KBArticleImpl();
 
 		kbArticleImpl.setMvccVersion(getMvccVersion());
+		kbArticleImpl.setCtCollectionId(getCtCollectionId());
 		kbArticleImpl.setUuid(getUuid());
 		kbArticleImpl.setKbArticleId(getKbArticleId());
 		kbArticleImpl.setResourcePrimKey(getResourcePrimKey());
@@ -1417,6 +1453,9 @@ public class KBArticleModelImpl
 		kbArticleImpl.setLatest(isLatest());
 		kbArticleImpl.setMain(isMain());
 		kbArticleImpl.setSourceURL(getSourceURL());
+		kbArticleImpl.setDisplayDate(getDisplayDate());
+		kbArticleImpl.setExpirationDate(getExpirationDate());
+		kbArticleImpl.setReviewDate(getReviewDate());
 		kbArticleImpl.setLastPublishDate(getLastPublishDate());
 		kbArticleImpl.setStatus(getStatus());
 		kbArticleImpl.setStatusByUserId(getStatusByUserId());
@@ -1434,6 +1473,8 @@ public class KBArticleModelImpl
 
 		kbArticleImpl.setMvccVersion(
 			this.<Long>getColumnOriginalValue("mvccVersion"));
+		kbArticleImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		kbArticleImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
 		kbArticleImpl.setKbArticleId(
 			this.<Long>getColumnOriginalValue("kbArticleId"));
@@ -1476,6 +1517,12 @@ public class KBArticleModelImpl
 		kbArticleImpl.setMain(this.<Boolean>getColumnOriginalValue("main"));
 		kbArticleImpl.setSourceURL(
 			this.<String>getColumnOriginalValue("sourceURL"));
+		kbArticleImpl.setDisplayDate(
+			this.<Date>getColumnOriginalValue("displayDate"));
+		kbArticleImpl.setExpirationDate(
+			this.<Date>getColumnOriginalValue("expirationDate"));
+		kbArticleImpl.setReviewDate(
+			this.<Date>getColumnOriginalValue("reviewDate"));
 		kbArticleImpl.setLastPublishDate(
 			this.<Date>getColumnOriginalValue("lastPublishDate"));
 		kbArticleImpl.setStatus(this.<Integer>getColumnOriginalValue("status"));
@@ -1564,6 +1611,8 @@ public class KBArticleModelImpl
 		KBArticleCacheModel kbArticleCacheModel = new KBArticleCacheModel();
 
 		kbArticleCacheModel.mvccVersion = getMvccVersion();
+
+		kbArticleCacheModel.ctCollectionId = getCtCollectionId();
 
 		kbArticleCacheModel.uuid = getUuid();
 
@@ -1685,6 +1734,33 @@ public class KBArticleModelImpl
 			kbArticleCacheModel.sourceURL = null;
 		}
 
+		Date displayDate = getDisplayDate();
+
+		if (displayDate != null) {
+			kbArticleCacheModel.displayDate = displayDate.getTime();
+		}
+		else {
+			kbArticleCacheModel.displayDate = Long.MIN_VALUE;
+		}
+
+		Date expirationDate = getExpirationDate();
+
+		if (expirationDate != null) {
+			kbArticleCacheModel.expirationDate = expirationDate.getTime();
+		}
+		else {
+			kbArticleCacheModel.expirationDate = Long.MIN_VALUE;
+		}
+
+		Date reviewDate = getReviewDate();
+
+		if (reviewDate != null) {
+			kbArticleCacheModel.reviewDate = reviewDate.getTime();
+		}
+		else {
+			kbArticleCacheModel.reviewDate = Long.MIN_VALUE;
+		}
+
 		Date lastPublishDate = getLastPublishDate();
 
 		if (lastPublishDate != null) {
@@ -1767,45 +1843,17 @@ public class KBArticleModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<KBArticle, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<KBArticle, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<KBArticle, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((KBArticle)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, KBArticle>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					KBArticle.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
+	private long _ctCollectionId;
 	private String _uuid;
 	private long _kbArticleId;
 	private long _resourcePrimKey;
@@ -1831,6 +1879,9 @@ public class KBArticleModelImpl
 	private boolean _latest;
 	private boolean _main;
 	private String _sourceURL;
+	private Date _displayDate;
+	private Date _expirationDate;
+	private Date _reviewDate;
 	private Date _lastPublishDate;
 	private int _status;
 	private long _statusByUserId;
@@ -1840,8 +1891,9 @@ public class KBArticleModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<KBArticle, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<KBArticle, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1867,6 +1919,7 @@ public class KBArticleModelImpl
 		_columnOriginalValues = new HashMap<String, Object>();
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put("kbArticleId", _kbArticleId);
 		_columnOriginalValues.put("resourcePrimKey", _resourcePrimKey);
@@ -1894,6 +1947,9 @@ public class KBArticleModelImpl
 		_columnOriginalValues.put("latest", _latest);
 		_columnOriginalValues.put("main", _main);
 		_columnOriginalValues.put("sourceURL", _sourceURL);
+		_columnOriginalValues.put("displayDate", _displayDate);
+		_columnOriginalValues.put("expirationDate", _expirationDate);
+		_columnOriginalValues.put("reviewDate", _reviewDate);
 		_columnOriginalValues.put("lastPublishDate", _lastPublishDate);
 		_columnOriginalValues.put("status", _status);
 		_columnOriginalValues.put("statusByUserId", _statusByUserId);
@@ -1924,63 +1980,71 @@ public class KBArticleModelImpl
 
 		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("uuid_", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("kbArticleId", 4L);
+		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("resourcePrimKey", 8L);
+		columnBitmasks.put("kbArticleId", 8L);
 
-		columnBitmasks.put("groupId", 16L);
+		columnBitmasks.put("resourcePrimKey", 16L);
 
-		columnBitmasks.put("companyId", 32L);
+		columnBitmasks.put("groupId", 32L);
 
-		columnBitmasks.put("userId", 64L);
+		columnBitmasks.put("companyId", 64L);
 
-		columnBitmasks.put("userName", 128L);
+		columnBitmasks.put("userId", 128L);
 
-		columnBitmasks.put("createDate", 256L);
+		columnBitmasks.put("userName", 256L);
 
-		columnBitmasks.put("modifiedDate", 512L);
+		columnBitmasks.put("createDate", 512L);
 
-		columnBitmasks.put("externalReferenceCode", 1024L);
+		columnBitmasks.put("modifiedDate", 1024L);
 
-		columnBitmasks.put("rootResourcePrimKey", 2048L);
+		columnBitmasks.put("externalReferenceCode", 2048L);
 
-		columnBitmasks.put("parentResourceClassNameId", 4096L);
+		columnBitmasks.put("rootResourcePrimKey", 4096L);
 
-		columnBitmasks.put("parentResourcePrimKey", 8192L);
+		columnBitmasks.put("parentResourceClassNameId", 8192L);
 
-		columnBitmasks.put("kbFolderId", 16384L);
+		columnBitmasks.put("parentResourcePrimKey", 16384L);
 
-		columnBitmasks.put("version", 32768L);
+		columnBitmasks.put("kbFolderId", 32768L);
 
-		columnBitmasks.put("title", 65536L);
+		columnBitmasks.put("version", 65536L);
 
-		columnBitmasks.put("urlTitle", 131072L);
+		columnBitmasks.put("title", 131072L);
 
-		columnBitmasks.put("content", 262144L);
+		columnBitmasks.put("urlTitle", 262144L);
 
-		columnBitmasks.put("description", 524288L);
+		columnBitmasks.put("content", 524288L);
 
-		columnBitmasks.put("priority", 1048576L);
+		columnBitmasks.put("description", 1048576L);
 
-		columnBitmasks.put("sections", 2097152L);
+		columnBitmasks.put("priority", 2097152L);
 
-		columnBitmasks.put("latest", 4194304L);
+		columnBitmasks.put("sections", 4194304L);
 
-		columnBitmasks.put("main", 8388608L);
+		columnBitmasks.put("latest", 8388608L);
 
-		columnBitmasks.put("sourceURL", 16777216L);
+		columnBitmasks.put("main", 16777216L);
 
-		columnBitmasks.put("lastPublishDate", 33554432L);
+		columnBitmasks.put("sourceURL", 33554432L);
 
-		columnBitmasks.put("status", 67108864L);
+		columnBitmasks.put("displayDate", 67108864L);
 
-		columnBitmasks.put("statusByUserId", 134217728L);
+		columnBitmasks.put("expirationDate", 134217728L);
 
-		columnBitmasks.put("statusByUserName", 268435456L);
+		columnBitmasks.put("reviewDate", 268435456L);
 
-		columnBitmasks.put("statusDate", 536870912L);
+		columnBitmasks.put("lastPublishDate", 536870912L);
+
+		columnBitmasks.put("status", 1073741824L);
+
+		columnBitmasks.put("statusByUserId", 2147483648L);
+
+		columnBitmasks.put("statusByUserName", 4294967296L);
+
+		columnBitmasks.put("statusDate", 8589934592L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

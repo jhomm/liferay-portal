@@ -1,6 +1,409 @@
 definition {
 
-	macro createShipment {
+	@summary = "Default summary"
+	macro addOrderRule(orderRuleDescription = null, applyTo = null, amount = null, orderRuleCurrency = null, orderRuleType = null, orderRuleName = null, active = null) {
+		LexiconEntry.gotoAdd();
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		Type(
+			locator1 = "TextInput#NAME",
+			value1 = ${orderRuleName});
+
+		Type(
+			locator1 = "CommerceEntry#DESCRIPTION_FIELD",
+			value1 = ${orderRuleDescription});
+
+		Select(
+			locator1 = "Select#TYPE",
+			value1 = ${orderRuleType});
+
+		Button.clickSubmitButton();
+
+		if (${orderRuleType} == "Minimum Order Amount") {
+			if (isSet(amount)) {
+				Type(
+					key_text = ${orderRuleType},
+					locator1 = "TextInput#ANY",
+					value1 = ${amount});
+			}
+
+			if (isSet(orderRuleCurrency)) {
+				Select(
+					key_selectFieldLabel = "Currency",
+					locator1 = "Select#ANY",
+					value1 = ${orderRuleCurrency});
+			}
+
+			if (isSet(applyTo)) {
+				Select(
+					key_selectFieldLabel = "Apply To",
+					locator1 = "Select#ANY",
+					value1 = ${applyTo});
+			}
+		}
+		else if (${orderRuleType} == "Products Limit") {
+			if (isSet(quantity)) {
+				Type(
+					key_fieldLabel = "Quantity",
+					locator1 = "TextInput#GENERIC_TEXT_INPUT",
+					value1 = ${quantity});
+			}
+
+			if (isSet(productNames)) {
+				for (var productName : list ${productNames}) {
+					CommerceRelations.assignSingleRelationToProductsEntry(
+						entryName = ${productName},
+						title = "Add Products");
+				}
+			}
+		}
+
+		if (${active} == "true") {
+			ClickNoError(locator1 = "ToggleSwitch#ACTIVE");
+		}
+
+		if (isSet(priority)) {
+			Type(
+				key_fieldLabel = "Priority",
+				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				value1 = ${priority});
+		}
+
+		Button.clickPublish();
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro addOrderType(orderTypeDescription = null, orderTypeName = null) {
+		LexiconEntry.gotoAdd();
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		Type(
+			locator1 = "TextInput#NAME",
+			value1 = ${orderTypeName});
+
+		Type(
+			locator1 = "CommerceEntry#DESCRIPTION_FIELD",
+			value1 = ${orderTypeDescription});
+
+		Button.clickSubmitButton();
+
+		ClickNoError(locator1 = "ToggleSwitch#ACTIVE");
+
+		Button.clickPublish();
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro assertOrderImportPreview(productNames = null) {
+		Variables.assertDefined(parameterList = ${productNames});
+
+		if (!(isSet(productImportStatuses))) {
+			var productImportStatuses = "";
+		}
+
+		if (!(isSet(productQuantities))) {
+			var productQuantities = "";
+		}
+
+		if (!(isSet(productRequestedDeliveryDates))) {
+			var productRequestedDeliveryDates = "";
+		}
+
+		if (!(isSet(productSkus))) {
+			var productSkus = "";
+		}
+
+		if (!(isSet(productTotalPrices))) {
+			var productTotalPrices = "";
+		}
+
+		if (!(isSet(productUnitPrices))) {
+			var productUnitPrices = "";
+		}
+
+		var productNamesList = ListUtil.newListFromString(${productNames});
+		var productSkusList = ListUtil.newListFromString(${productSkus});
+		var productUnitPricesList = ListUtil.newListFromString(${productUnitPrices});
+		var productQuantitiesList = ListUtil.newListFromString(${productQuantities});
+		var productTotalPricesList = ListUtil.newListFromString(${productTotalPrices});
+		var productImportStatusesList = ListUtil.newListFromString(${productImportStatuses});
+		var productRequestedDeliveryDatesList = ListUtil.newListFromString(${productRequestedDeliveryDates});
+		var size = ListUtil.size(${productNamesList});
+		var count = 0;
+
+		var isLessThanSize = MathUtil.isLessThan(${count}, ${size});
+
+		while ((${isLessThanSize} == "true")) {
+			var productName = ListUtil.get(${productNamesList}, ${count});
+			var productSku = ListUtil.get(${productSkusList}, ${count});
+			var productUnitPrice = ListUtil.get(${productUnitPricesList}, ${count});
+			var productQuantity = ListUtil.get(${productQuantitiesList}, ${count});
+			var productTotalPrice = ListUtil.get(${productTotalPricesList}, ${count});
+			var productImportStatus = ListUtil.get(${productImportStatusesList}, ${count});
+			var productRequestedDeliveryDate = ListUtil.get(${productRequestedDeliveryDatesList}, ${count});
+
+			CommerceOrders.assertOrderImportPreviewEntry(
+				importStatus = ${productImportStatus},
+				productName = ${productName},
+				productQuantity = ${productQuantity},
+				productSku = ${productSku},
+				requestedDeliveryDate = ${productRequestedDeliveryDate},
+				totalPrice = ${productTotalPrice},
+				unitPrice = ${productUnitPrice});
+
+			var count = ${count} + 1;
+
+			var count = StringUtil.valueOf(${count});
+
+			var isLessThanSize = MathUtil.isLessThan(${count}, ${size});
+		}
+	}
+
+	@summary = "Default summary"
+	macro assertOrderImportPreviewEntry(unitPrice = null, importStatus = null, productSku = null, productQuantity = null, totalPrice = null, requestedDeliveryDate = null, productName = null) {
+		if (isSet(productSku)) {
+			AssertTextEquals(
+				key_columnNumber = 1,
+				key_productName = ${productName},
+				key_value = ${productSku},
+				locator1 = "CommerceEntry#TABLE_SEARCH_BY_NAME_AND_COLUMN_CONTENT",
+				value1 = ${productSku});
+		}
+
+		if (isSet(unitPrice)) {
+			AssertTextEquals.assertPartialText(
+				key_columnNumber = 3,
+				key_productName = ${productName},
+				key_value = ${unitPrice},
+				locator1 = "CommerceEntry#TABLE_SEARCH_BY_NAME_AND_COLUMN_CONTENT",
+				value1 = ${unitPrice});
+		}
+
+		if (isSet(productQuantity)) {
+			AssertTextEquals(
+				key_columnNumber = 4,
+				key_productName = ${productName},
+				key_value = ${productQuantity},
+				locator1 = "CommerceEntry#TABLE_SEARCH_BY_NAME_AND_COLUMN_CONTENT",
+				value1 = ${productQuantity});
+		}
+
+		if (isSet(totalPrice)) {
+			AssertTextEquals.assertPartialText(
+				key_columnNumber = 5,
+				key_productName = ${productName},
+				key_value = ${totalPrice},
+				locator1 = "CommerceEntry#TABLE_SEARCH_BY_NAME_AND_COLUMN_CONTENT",
+				value1 = ${totalPrice});
+		}
+
+		if (isSet(importStatus)) {
+			AssertTextEquals.assertPartialText(
+				key_columnNumber = 6,
+				key_productName = ${productName},
+				key_value = ${importStatus},
+				locator1 = "CommerceEntry#TABLE_SEARCH_BY_NAME_AND_COLUMN_CONTENT",
+				value1 = ${importStatus});
+		}
+
+		if (isSet(requestedDeliveryDate)) {
+			AssertTextEquals.assertPartialText(
+				key_columnNumber = 8,
+				key_productName = ${productName},
+				key_value = ${requestedDeliveryDate},
+				locator1 = "CommerceEntry#TABLE_SEARCH_BY_NAME_AND_COLUMN_CONTENT",
+				value1 = ${requestedDeliveryDate});
+		}
+	}
+
+	@summary = "Default summary"
+	macro assertOrderRulesEntry(orderRuleDescription = null, applyTo = null, amount = null, orderRuleCurrency = null, orderRuleType = null, orderRuleName = null, priority = null) {
+		AssertTextEquals(
+			locator1 = "CommerceEntry#NAME_FIELD",
+			value1 = ${orderRuleName});
+
+		AssertTextEquals(
+			locator1 = "CommerceEntry#DESCRIPTION_FIELD",
+			value1 = ${orderRuleDescription});
+
+		AssertSelectedLabel(
+			locator1 = "Select#TYPE",
+			value1 = ${orderRuleType});
+
+		if (isSet(priority)) {
+			AssertTextEquals(
+				locator1 = "CommerceEntry#PRIORITY_FIELD",
+				value1 = ${priority});
+		}
+
+		if (isSet(amount)) {
+			AssertTextEquals(
+				key_text = ${orderRuleType},
+				locator1 = "TextInput#ANY",
+				value1 = ${amount});
+		}
+
+		if (isSet(orderRuleCurrency)) {
+			AssertSelectedLabel(
+				key_selectFieldLabel = "Currency",
+				locator1 = "Select#ANY",
+				value1 = ${orderRuleCurrency});
+		}
+
+		AssertSelectedLabel(
+			key_selectFieldLabel = "Apply To",
+			locator1 = "Select#ANY",
+			value1 = ${applyTo});
+	}
+
+	@summary = "Default summary"
+	macro assertOrderTypesEntry(orderTypeDescription = null, displayOrder = null, orderTypeName = null) {
+		AssertTextEquals(
+			locator1 = "CommerceEntry#NAME_FIELD",
+			value1 = ${orderTypeName});
+
+		AssertTextEquals(
+			locator1 = "CommerceEntry#DESCRIPTION_FIELD",
+			value1 = ${orderTypeDescription});
+
+		if (isSet(displayOrder)) {
+			AssertTextEquals(
+				locator1 = "CommerceEntry#DISPLAY_ORDER_FIELD",
+				value1 = ${displayOrder});
+		}
+	}
+
+	@summary = "Default summary"
+	macro checkoutFullWorkflow(productSkus = null, orderIds = null, outstandingQuantities = null) {
+		if (!(isSet(quantityInShipment))) {
+			var quantityInShipment = 1;
+		}
+
+		Click(
+			key_index = "Create Shipment",
+			locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
+
+		Click(locator1 = "Button#PLUS");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
+
+		if (isSet(outstandingQuantity)) {
+			var productSkusList = ListUtil.newListFromString(${productSkus});
+			var orderIdsList = ListUtil.newListFromString(${orderIds});
+			var outstandingQuantitiesList = ListUtil.newListFromString(${outstandingQuantities});
+			var size = ListUtil.size(${productSkusList});
+			var count = 0;
+
+			var isLessThanSize = MathUtil.isLessThan(${count}, ${size});
+
+			while ((${isLessThanSize} == "true")) {
+				var sku = ListUtil.get(${productSkusList}, ${count});
+				var orderId = ListUtil.get(${orderIdsList}, ${count});
+				var outstandingQuantity = ListUtil.get(${outstandingQuantitiesList}, ${count});
+
+				AssertTextEquals(
+					key_cellName1 = ${sku},
+					key_cellName2 = ${orderId},
+					key_columnNumber = 4,
+					locator1 = "CommerceEntry#TABLE_CELL_BY_COLUMN_ORDER_NO_TITLE",
+					value1 = ${outstandingQuantity});
+
+				var count = ${count} + 1;
+
+				var count = StringUtil.valueOf(${count});
+
+				var isLessThanSize = MathUtil.isLessThan(${count}, ${size});
+			}
+		}
+
+		if (isSet(orderId)) {
+			Check.checkToggleSwitch(
+				key_orderId = ${orderId},
+				key_productSku = ${sku},
+				locator1 = "Checkbox#ADD_SHIPMENT_ITEMS_CHECKBOX_WITH_ORDER_ID");
+		}
+		else {
+			Check.checkToggleSwitch(
+				key_productSku = ${sku},
+				locator1 = "Checkbox#ADD_SHIPMENT_ITEMS_CHECKBOX");
+		}
+
+		Button.clickSubmitButton();
+
+		CommerceNavigator.gotoEntry(entryName = ${sku});
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		for (var warehouse : list ${warehouse}) {
+			Type(
+				key_warehouseName = ${warehouse},
+				locator1 = "CommerceOrders#ORDER_QUANTITY_IN_SHIPMENT_BY_WAREHOUSE",
+				value1 = ${quantityInShipment});
+		}
+
+		Button.clickSave();
+
+		Click(locator1 = "Icon#CLOSE");
+
+		SelectFrameTop();
+
+		Click(
+			key_index = "Finish Processing",
+			locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
+
+		Click(
+			key_index = "Ship",
+			locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
+
+		Click(
+			key_index = "Deliver",
+			locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
+	}
+
+	@summary = "Default summary"
+	macro createQuoteRequest(quoteRequestValue = null) {
+		if (isSet(requestAQuoteInMiniCart)) {
+			Button.click(button = "Request a Quote");
+		}
+
+		if (isSet(requestAQuoteInOpenOrdersPage)) {
+			Click(
+				buttonId = "requestQuote",
+				locator1 = "Button#BUTTON_ID");
+		}
+
+		if (isSet(quoteRequestEmail)) {
+			Type(
+				key_placeHolder = "Enter an email address.",
+				locator1 = "TextInput#ANY_PLACEHOLDER",
+				value1 = ${quoteRequestEmail});
+		}
+
+		if (isSet(quoteRequestValue)) {
+			Type(
+				key_value = "requestQuote",
+				locator1 = "CommerceFrontStore#TEXTAREA_FIELD",
+				value1 = ${quoteRequestValue});
+		}
+
+		Button.click(button = "Submit");
+	}
+
+	@summary = "Default summary"
+	macro createShipment(productSkuList = null, trackingURL = null, shippingMethod = null, complement = null, carrierDetail = null, trackingNumber = null, warehouseName = null) {
+		if (!(isSet(moveItemQuantitiesInShipment))) {
+			var moveItemQuantitiesInShipment = "true";
+		}
+
+		if (!(isSet(moveOrderItemsInShipment))) {
+			var moveOrderItemsInShipment = "true";
+		}
+
 		Click(
 			key_text = "Create Shipment",
 			locator1 = "Button#ANY");
@@ -10,56 +413,21 @@ definition {
 				key_text = "Carrier Details",
 				locator1 = "CommerceOrders#EDIT_SHIPMENT_DETAILS");
 
-			SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-			Type(
-				key_fieldLabel = "Carrier",
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
-				value1 = "${carrierDetail}");
-
-			if (isSet(trackingNumber)) {
-				Type(
-					key_fieldLabel = "Tracking Number",
-					locator1 = "TextInput#GENERIC_TEXT_INPUT",
-					value1 = "${trackingNumber}");
-			}
-			else {
-				Type(
-					key_fieldLabel = "Tracking Number",
-					locator1 = "TextInput#GENERIC_TEXT_INPUT",
-					value1 = "Test Tracking Number");
-			}
-
-			Button.clickSubmitButton();
+			CommerceShipments.editShipmentCarrierDetails(
+				carrierDetail = ${carrierDetail},
+				shippingMethod = ${shippingMethod},
+				trackingNumber = ${trackingNumber},
+				trackingURL = ${trackingURL});
 		}
 
-		Click(locator1 = "Button#PLUS");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		for (var productSKU : list "${productSKUList}") {
-			Check.checkToggleSwitch(
-				key_productSKU = "${productSKU}",
-				locator1 = "Checkbox#ADD_SHIPMENT_ITEMS_CHECKBOX");
+		if (${moveOrderItemsInShipment} == "true") {
+			CommerceShipments.moveOrderItemsInShipment(productSkuList = ${productSkuList});
 		}
 
-		Button.clickSubmitButton();
-
-		for (var productSKU : list "${productSKUList}") {
-			CommerceNavigator.gotoEntry(entryName = "${productSKU}");
-
-			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
-
-			Type(
-				key_warehouseName = "${warehouseName}",
-				locator1 = "CommerceOrders#ORDER_QUANTITY_IN_SHIPMENT_BY_WAREHOUSE",
-				value1 = "1");
-
-			Button.clickSave();
-
-			Click(locator1 = "Icon#CLOSE");
-
-			Refresh();
+		if (${moveItemQuantitiesInShipment} == "true") {
+			CommerceShipments.moveItemQuantitiesInShipment(
+				productSkuList = ${productSkuList},
+				warehouseName = ${warehouseName});
 		}
 
 		Click(
@@ -72,7 +440,7 @@ definition {
 
 		if (isSet(complement)) {
 			Click(
-				key_text = "${complement}",
+				key_text = ${complement},
 				locator1 = "Button#ANY");
 		}
 		else {
@@ -80,37 +448,307 @@ definition {
 		}
 	}
 
-	macro editOrderItemDetails {
-		CommerceNavigator.gotoEntry(entryName = "${orderItemSKU}");
+	@summary = "Default summary"
+	macro deleteOrderItem(orderItemSku = null) {
+		Click(
+			key_value = ${orderItemSku},
+			locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
+
+		MenuItem.clickNoError(menuItem = "Delete");
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro deleteOrderType(orderTypeName = null) {
+		CommerceNavigator.searchEntry(entryName = ${orderTypeName});
+
+		Click(
+			key_value = ${orderTypeName},
+			locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
+
+		MenuItem.clickNoError(menuItem = "Delete");
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro editAndCheckOrderAndShipmentERC(keyReferenceCode = null) {
+		Click(locator1 = "Icon#EDIT_PENCIL");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_IFRAME");
+
+		Type(
+			key_fieldLabel = "External Reference Code",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = ${keyReferenceCode});
+
+		SelectFrame.selectFrameTop();
+
+		Click(
+			key_text = "Submit",
+			locator1 = "Modal#MODAL_FOOTER_BUTTON");
+
+		if (isSet(checkReferenceCode)) {
+			AssertElementPresent(
+				key_erc = ${keyReferenceCode},
+				locator1 = "CommerceEntry#HEADER_ERC_VALUE");
+		}
+
+		if (isSet(uniqueERC)) {
+			Alert.viewErrorMessage(errorMessage = "Please enter a unique external reference code.");
+		}
+	}
+
+	@summary = "Default summary"
+	macro editCartPortletOrderQuantity(orderQuantity = null) {
+		Type(
+			locator1 = "CommerceAccelerators#CART_PORTLET_ORDER_QUANTITY",
+			value1 = ${orderQuantity});
+
+		Click(
+			key_text = "Update",
+			locator1 = "Button#ANY");
+
+		AssertTextEquals(
+			locator1 = "CommerceAccelerators#CART_PORTLET_ORDER_QUANTITY",
+			value1 = ${orderQuantity});
+	}
+
+	@summary = "Default summary"
+	macro editCommerceOrderNote(orderNoteBody = null, orderNoteBodyEdit = null) {
+		if (!(isSet(restricted))) {
+			var restricted = "false";
+		}
+
+		Click(
+			key_orderNoteBody = ${orderNoteBody},
+			locator1 = "CommerceOrders#ORDER_NOTES_ENTRY_ELLIPSIS");
+
+		MenuItem.click(menuItem = "Edit");
+
+		Type(
+			key_value = "",
+			locator1 = "CommerceFrontStore#TEXTAREA_FIELD",
+			value1 = ${orderNoteBodyEdit});
+
+		if (${restricted} == "true") {
+			Check.checkToggleSwitch(
+				checkboxName = "",
+				locator1 = "Checkbox#ANY_CHECKBOX");
+		}
+		else if (${restricted} == "false") {
+			Uncheck.uncheckToggleSwitch(
+				checkboxName = "",
+				locator1 = "Checkbox#ANY_CHECKBOX");
+		}
+
+		Button.clickSave();
+	}
+
+	@summary = "Default summary"
+	macro editOrderAddressCP(editedCountry = null, editedName = null, editedStreet1 = null, editedCity = null, editedZipCode = null, editedRegion = null, selectOuterButton = null) {
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
+
+		if (IsElementPresent(locator1 = "Button#PLUS")) {
+			Click(locator1 = "Button#PLUS");
+		}
+
+		if (isSet(editedName)) {
+			Type(
+				key_fieldLabel = "Name",
+				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				value1 = ${editedName});
+		}
+
+		if (isSet(editedStreet1)) {
+			Type(
+				locator1 = "TextInput#STREET_1",
+				value1 = ${editedStreet1});
+		}
+
+		if (isSet(editedCountry)) {
+			Select(
+				locator1 = "Select#COUNTRY",
+				value1 = ${editedCountry});
+		}
+
+		if (isSet(editedZipCode)) {
+			if (IsElementPresent(key_fieldLabel = "Zip", locator1 = "TextInput#GENERIC_TEXT_INPUT")) {
+				Type(
+					key_fieldLabel = "Zip",
+					locator1 = "TextInput#GENERIC_TEXT_INPUT",
+					value1 = ${editedZipCode});
+			}
+			else {
+				Type(
+					key_fieldLabel = "Postal Code",
+					locator1 = "TextInput#GENERIC_TEXT_INPUT",
+					value1 = ${editedZipCode});
+			}
+		}
+
+		if (isSet(editedCity)) {
+			Type(
+				locator1 = "TextInput#CITY",
+				value1 = ${editedCity});
+		}
+
+		if (isSet(editedRegion)) {
+			Select(
+				locator1 = "Select#NEW_REGION",
+				value1 = ${editedRegion});
+		}
+
+		if (isSet(selectOuterButton) && (${selectOuterButton} == "true")) {
+			SelectFrameTop();
+		}
+
+		Button.click(button = "Submit");
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro editOrderDetails(printedNote = null, purchaseOrderNumber = null, requestedDeliveryDate = null) {
+		if (isSet(printedNote)) {
+			if (IsElementPresent(key_buttonName = "Add", key_titleName = "Printed Note", locator1 = "CommerceOrders#ORDER_GENERAL_DETAILS_ADD_EDIT_BUTTON")) {
+				Click(
+					key_buttonName = "Add",
+					key_titleName = "Printed Note",
+					locator1 = "CommerceOrders#ORDER_GENERAL_DETAILS_ADD_EDIT_BUTTON");
+			}
+			else {
+				Click(
+					key_buttonName = "Edit",
+					key_titleName = "Printed Note",
+					locator1 = "CommerceOrders#ORDER_GENERAL_DETAILS_ADD_EDIT_BUTTON");
+			}
+
+			SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
+
+			Type(
+				key_value = "",
+				locator1 = "CommerceFrontStore#TEXTAREA_FIELD",
+				value1 = ${printedNote});
+
+			AssertClickNoError(
+				locator1 = "Button#SUBMIT",
+				value1 = "Submit");
+
+			SelectFrameTop();
+		}
+
+		if (isSet(purchaseOrderNumber)) {
+			if (IsElementPresent(key_buttonName = "Add", key_titleName = "Purchase Order Number", locator1 = "CommerceOrders#ORDER_GENERAL_DETAILS_ADD_EDIT_BUTTON")) {
+				Click(
+					key_buttonName = "Add",
+					key_titleName = "Purchase Order Number",
+					locator1 = "CommerceOrders#ORDER_GENERAL_DETAILS_ADD_EDIT_BUTTON");
+			}
+			else {
+				Click(
+					key_buttonName = "Edit",
+					key_titleName = "Purchase Order Number",
+					locator1 = "CommerceOrders#ORDER_GENERAL_DETAILS_ADD_EDIT_BUTTON");
+			}
+
+			SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
+
+			Type(
+				key_fieldLabel = "Purchase Order Number",
+				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				value1 = ${purchaseOrderNumber});
+
+			AssertClickNoError(
+				locator1 = "Button#SUBMIT",
+				value1 = "Submit");
+
+			SelectFrameTop();
+		}
+
+		if (isSet(requestedDeliveryDate)) {
+			if (IsElementPresent(key_buttonName = "Add", key_titleName = "Requested Delivery Date", locator1 = "CommerceOrders#ORDER_GENERAL_DETAILS_ADD_EDIT_BUTTON")) {
+				Click(
+					key_buttonName = "Add",
+					key_titleName = "Requested Delivery Date",
+					locator1 = "CommerceOrders#ORDER_GENERAL_DETAILS_ADD_EDIT_BUTTON");
+			}
+			else {
+				Click(
+					key_buttonName = "Edit",
+					key_titleName = "Requested Delivery Date",
+					locator1 = "CommerceOrders#ORDER_GENERAL_DETAILS_ADD_EDIT_BUTTON");
+			}
+
+			SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
+
+			Type(
+				key_fieldLabel = "Requested Delivery Date",
+				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				value1 = ${requestedDeliveryDate});
+
+			AssertClickNoError(
+				locator1 = "Button#SUBMIT",
+				value1 = "Submit");
+
+			SelectFrameTop();
+		}
+	}
+
+	@summary = "Default summary"
+	macro editOrderItemDetails(orderItemDiscount = null, orderItemDeliveryGroup = null, orderItemSku = null, orderItemMeasurementUnit = null, orderItemPrice = null, orderItemRequestedDeliveryDate = null, orderItemQuantity = null, orderItemTotal = null) {
+		CommerceNavigator.gotoEntry(entryName = ${orderItemSku});
 
 		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		if (isSet(orderItemDiscount)) {
+			Type(
+				key_fieldLabel = "Discount",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
+				value1 = ${orderItemDiscount});
+		}
 
 		if (isSet(orderItemQuantity)) {
 			Type(
 				key_fieldLabel = "Quantity",
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
-				value1 = "${orderItemQuantity}");
+				locator1 = "CommerceOrders#ORDER_ITEM_QUANTITY_INPUT",
+				value1 = ${orderItemQuantity});
 		}
 
 		if (isSet(orderItemPrice)) {
 			Type(
 				key_fieldLabel = "Price",
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
-				value1 = "${orderItemPrice}");
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
+				value1 = ${orderItemPrice});
+		}
+
+		if (isSet(orderItemTotal)) {
+			Type(
+				key_fieldLabel = "Total",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
+				value1 = ${orderItemTotal});
 		}
 
 		if (isSet(orderItemRequestedDeliveryDate)) {
 			Type(
 				key_fieldLabel = "Requested Delivery Date",
 				locator1 = "TextInput#GENERIC_TEXT_INPUT",
-				value1 = "${orderItemRequestedDeliveryDate}");
+				value1 = ${orderItemRequestedDeliveryDate});
 		}
 
 		if (isSet(orderItemDeliveryGroup)) {
 			Type(
 				key_fieldLabel = "Delivery Group",
 				locator1 = "TextInput#GENERIC_TEXT_INPUT",
-				value1 = "${orderItemDeliveryGroup}");
+				value1 = ${orderItemDeliveryGroup});
+		}
+
+		if (isSet(orderItemMeasurementUnit)) {
+			Select(
+				key_fieldLabel = "Measurement Units",
+				locator1 = "Select#GENERIC_SELECT_FIELD",
+				value1 = ${orderItemMeasurementUnit});
 		}
 
 		Button.clickSave();
@@ -122,70 +760,721 @@ definition {
 		IFrame.selectTopFrame();
 	}
 
-	macro viewOrdersEntry {
-		if (isSet(addressAddress) && isSet(addressCity) && isSet(addressZipCode)) {
-			AssertTextEquals.assertPartialText(
-				key_addressInfo = "${addressAddress}",
-				locator1 = "CommerceOrders#ORDER_DETAILS_BILLING_ADDRESS",
-				value1 = "${addressAddress}");
+	@summary = "Default summary"
+	macro editOrdersEntryTerms(newTerm = null, type = null, selectOuterButton = null) {
+		if (${type} == "Payment") {
+			Click(
+				key_buttonName = "Edit",
+				key_titleName = "Payment Terms",
+				locator1 = "CommerceOrders#ORDER_GENERAL_DETAILS_ADD_EDIT_BUTTON");
 
-			AssertTextEquals.assertPartialText(
-				key_addressInfo = "${addressCity}",
-				locator1 = "CommerceOrders#ORDER_DETAILS_BILLING_ADDRESS",
-				value1 = "${addressCity}");
+			SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
 
-			AssertTextEquals.assertPartialText(
-				key_addressInfo = "${addressZipCode}",
-				locator1 = "CommerceOrders#ORDER_DETAILS_BILLING_ADDRESS",
-				value1 = "${addressZipCode}");
+			Select(
+				key_fieldLabel = "Title",
+				locator1 = "Select#GENERIC_SELECT_FIELD",
+				value1 = ${newTerm});
 
-			AssertTextEquals.assertPartialText(
-				key_addressInfo = "${addressAddress}",
-				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
-				value1 = "${addressAddress}");
+			if (isSet(selectOuterButton) && (${selectOuterButton} == "true")) {
+				SelectFrameTop();
+			}
+		}
+		else if (${type} == "Delivery") {
+			Click(
+				key_buttonName = "Edit",
+				key_titleName = "Delivery Terms",
+				locator1 = "CommerceOrders#ORDER_GENERAL_DETAILS_ADD_EDIT_BUTTON");
 
-			AssertTextEquals.assertPartialText(
-				key_addressInfo = "${addressCity}",
-				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
-				value1 = "${addressCity}");
+			SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
 
-			AssertTextEquals.assertPartialText(
-				key_addressInfo = "${addressZipCode}",
-				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
-				value1 = "${addressZipCode}");
+			Select(
+				key_fieldLabel = "Title",
+				locator1 = "Select#GENERIC_SELECT_FIELD",
+				value1 = ${newTerm});
+
+			if (isSet(selectOuterButton) && (${selectOuterButton} == "true")) {
+				SelectFrameTop();
+			}
+		}
+
+		Button.click(button = "Submit");
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro editOrderShipmentDetails(shippingAddressCity = null, shippingAddressZipCode = null, carrierName = null, shippingAddressStreet1 = null, estimatedShippingDate = null, shippingAddressName = null, carrierTrackingNumber = null, carrierShippingMethod = null, shippingAddressRegion = null, estimatedDeliveryDate = null, carrierBaseTrackingURL = null, shippingAddressCountry = null) {
+		if (isSet(carrierName)) {
+			Click(
+				key_text = "Carrier Details",
+				locator1 = "CommerceOrders#EDIT_SHIPMENT_DETAILS");
+
+			CommerceShipments.editShipmentCarrierDetails(
+				carrierDetail = ${carrierName},
+				shippingMethod = ${carrierShippingMethod},
+				trackingNumber = ${carrierTrackingNumber},
+				trackingURL = ${carrierBaseTrackingURL});
+		}
+
+		if (isSet(shippingAddressName)) {
+			Click(
+				key_text = "Shipping Address",
+				locator1 = "CommerceOrders#EDIT_SHIPMENT_DETAILS");
+
+			CommerceOrders.editOrderAddressCP(
+				editedCity = ${shippingAddressCity},
+				editedCountry = ${shippingAddressCountry},
+				editedName = ${shippingAddressName},
+				editedRegion = ${shippingAddressRegion},
+				editedStreet1 = ${shippingAddressStreet1},
+				editedZipCode = ${shippingAddressZipCode});
+		}
+
+		if (isSet(estimatedDeliveryDate)) {
+			AssertClickNoError(
+				key_buttonName = "Edit",
+				key_titleName = "Estimated Delivery Date",
+				locator1 = "CommerceOrders#ORDER_GENERAL_DETAILS_ADD_EDIT_BUTTON",
+				value1 = "Edit");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_IFRAME");
+
+			Type(
+				locator1 = "CommerceEntry#INVENTORY_EXPECTED_INCOMING_DELIVERY_DATE",
+				value1 = ${estimatedDeliveryDate});
+
+			AssertClickNoError(
+				locator1 = "Button#SUBMIT",
+				value1 = "Submit");
+
+			WaitForPageLoad();
+		}
+
+		if (isSet(estimatedShippingDate)) {
+			AssertClickNoError(
+				key_buttonName = "Edit",
+				key_titleName = "Estimated Shipping Date",
+				locator1 = "CommerceOrders#ORDER_GENERAL_DETAILS_ADD_EDIT_BUTTON",
+				value1 = "Edit");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_IFRAME");
+
+			Type(
+				locator1 = "CommerceEntry#INVENTORY_EXPECTED_INCOMING_DELIVERY_DATE",
+				value1 = ${estimatedShippingDate});
+
+			AssertClickNoError(
+				locator1 = "Button#SUBMIT",
+				value1 = "Submit");
+
+			WaitForPageLoad();
+		}
+	}
+
+	@summary = "Default summary"
+	macro editOrderSummary(totalNewValue = null, subtotalDiscountNewValue = null, totalDiscountNewValue = null, taxNewValue = null, deliveryNewValue = null, deliveryDiscountNewValue = null, subtotalNewValue = null) {
+		Click(locator1 = "CommerceOrders#ORDER_EDIT_SUMMARY_BUTTON");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
+
+		if (isSet(deliveryDiscountNewValue)) {
+			Type(
+				key_fieldLabel = "Delivery Discount",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
+				value1 = ${deliveryDiscountNewValue});
+		}
+
+		if (isSet(deliveryNewValue)) {
+			Type(
+				key_fieldLabel = "Delivery",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
+				value1 = ${deliveryNewValue});
+		}
+
+		if (isSet(subtotalDiscountNewValue)) {
+			Type(
+				key_fieldLabel = "Subtotal Discount",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
+				value1 = ${subtotalDiscountNewValue});
+		}
+
+		if (isSet(subtotalNewValue)) {
+			Type(
+				key_fieldLabel = "Subtotal",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
+				value1 = ${subtotalNewValue});
+		}
+
+		if (isSet(taxNewValue)) {
+			Type(
+				key_fieldLabel = "Tax",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
+				value1 = ${taxNewValue});
+		}
+
+		if (isSet(totalDiscountNewValue)) {
+			Type(
+				key_fieldLabel = "Total Discount",
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT",
+				value1 = ${totalDiscountNewValue});
+		}
+
+		if (isSet(totalNewValue)) {
+			Type(
+				key_fieldLabel = "Total",
+				key_indexNumber = 2,
+				locator1 = "CommerceOrders#ORDER_ITEM_CURRENCY_INPUT_N",
+				value1 = ${totalNewValue});
+		}
+
+		Button.click(button = "Submit");
+
+		Alert.viewSuccessMessage();
+
+		SelectFrameTop();
+	}
+
+	@summary = "Default summary"
+	macro editOrderType(orderTypeDescription = null, displayOrder = null, orderTypeName = null) {
+		if (isSet(orderTypeName)) {
+			Type(
+				locator1 = "CommerceEntry#NAME_FIELD",
+				value1 = ${orderTypeName});
+		}
+
+		if (isSet(orderTypeDescription)) {
+			Type(
+				locator1 = "CommerceEntry#DESCRIPTION_FIELD",
+				value1 = ${orderTypeDescription});
+		}
+
+		if (isSet(displayOrder)) {
+			Type(
+				locator1 = "CommerceEntry#DISPLAY_ORDER_FIELD",
+				value1 = ${displayOrder});
+		}
+
+		Button.clickPublish();
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro editPaymentMethod(eligiblePaymentMethods = null, notEligiblePaymentMethods = null, paymentMethod = null) {
+		Click(
+			key_titleName = "Payment Method",
+			locator1 = "CommerceOrders#ORDER_DETAILS_EDIT_BUTTON");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
+
+		if (isSet(eligiblePaymentMethods)) {
+			for (var eligiblePaymentMethod : list ${eligiblePaymentMethods}) {
+				AssertElementPresent(
+					key_radioOption = ${eligiblePaymentMethod},
+					locator1 = "CommerceEntry#RADIO_BUTTON_SPECIFIC");
+			}
+		}
+
+		if (isSet(notEligiblePaymentMethods)) {
+			for (var notEligiblePaymentMethod : list ${notEligiblePaymentMethods}) {
+				AssertElementNotPresent(
+					key_radioOption = ${notEligiblePaymentMethod},
+					locator1 = "CommerceEntry#RADIO_BUTTON_SPECIFIC");
+			}
+		}
+
+		Click.clickAtNotVisible(
+			key_radioOption = ${paymentMethod},
+			locator1 = "CommerceEntry#RADIO_BUTTON_SPECIFIC");
+
+		IFrame.selectTopFrame();
+
+		Click(locator1 = "Button#SUBMIT");
+	}
+
+	@summary = "Default summary"
+	macro editPaymentStatus(paymentStatus = null) {
+		Click(
+			key_titleName = "Payment Status",
+			locator1 = "CommerceOrders#ORDER_DETAILS_EDIT_BUTTON");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
+
+		Select(
+			locator1 = "Select#SELECT_ID",
+			selectFieldId = "paymentStatus",
+			value1 = ${paymentStatus});
+
+		Click(locator1 = "Button#SUBMIT");
+
+		IFrame.selectTopFrame();
+	}
+
+	@summary = "Default summary"
+	macro getOrderCreationDateFromTable(columnIndex = null, orderId = null, rowIndex = null) {
+		var key_cellContent = ${orderId};
+		var key_columnIndex = ${columnIndex};
+		var key_rowIndex = ${rowIndex};
+		var orderCreationDate = selenium.getText("CommerceEntry#TABLE_ENTRY_ROW_FIELD_GENERIC");
+
+		return ${orderCreationDate};
+	}
+
+	@summary = "Default summary"
+	macro importFromOrder(productImportStatuses = null, productSkus = null, orderId = null, productTotalPrices = null, productUnitPrices = null, productNames = null, productQuantities = null, productRequestedDeliveryDates = null) {
+		Click(locator1 = "CommerceFrontStore#SF_ORDER_BODY_VERTICAL_ELLIPSIS");
+
+		MenuItem.click(menuItem = "Import from Orders");
+
+		IFrame.selectModalFrame();
+
+		Search.searchCP(searchTerm = ${orderId});
+
+		Button.click(button = "Select");
+
+		if (isSet(productNames)) {
+			CommerceOrders.assertOrderImportPreview(
+				productImportStatuses = ${productImportStatuses},
+				productNames = ${productNames},
+				productQuantities = ${productQuantities},
+				productRequestedDeliveryDates = ${productRequestedDeliveryDates},
+				productSkus = ${productSkus},
+				productTotalPrices = ${productTotalPrices},
+				productUnitPrices = ${productUnitPrices});
+		}
+
+		Button.click(button = "Import");
+
+		IFrame.selectTopFrame();
+	}
+
+	@summary = "Default summary"
+	macro importOrderFromType(orderType = null) {
+		Click(locator1 = "CommerceFrontStore#SF_ORDER_BODY_VERTICAL_ELLIPSIS");
+
+		MenuItem.viewPresent(menuItem = "Import from ${orderType}");
+
+		MenuItem.click(menuItem = "Import from ${orderType}");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_IFRAME");
+	}
+
+	@summary = "Default summary"
+	macro openOrderRulesAdmin(baseURL = null) {
+		Navigator.openWithAppendToBaseURL(
+			baseURL = ${baseURL},
+			urlAppend = "group/control_panel/manage?p_p_id=com_liferay_commerce_order_rule_web_internal_portlet_COREntryPortlet");
+	}
+
+	@summary = "Default summary"
+	macro openOrdersAdmin(baseURL = null) {
+		Navigator.openWithAppendToBaseURL(
+			baseURL = ${baseURL},
+			urlAppend = "group/guest/~/control_panel/manage?p_p_id=com_liferay_commerce_order_web_internal_portlet_CommerceOrderPortlet");
+	}
+
+	@summary = "Default summary"
+	macro openOrderTypesAdmin(baseURL = null) {
+		Navigator.openWithAppendToBaseURL(
+			baseURL = ${baseURL},
+			urlAppend = "group/control_panel/manage?p_p_id=com_liferay_commerce_order_web_internal_portlet_CommerceOrderTypePortlet");
+	}
+
+	@summary = "Default summary"
+	macro openTermsAndConditionsAdmin(baseURL = null) {
+		Navigator.openWithAppendToBaseURL(
+			baseURL = ${baseURL},
+			urlAppend = "group/guest/~/control_panel/manage?p_p_id=com_liferay_commerce_term_web_internal_portlet_CommerceTermEntryPortlet");
+	}
+
+	@summary = "Default summary"
+	macro searchOrderIdFromAccountSelectorDropdown(orderId = null, searchBarValue = null) {
+		Click.clickNoMouseOver(locator1 = "CommerceAccelerators#ACCOUNT_SELECTOR_DROPDOWN");
+
+		Click(
+			key_searchBarValue = ${searchBarValue},
+			locator1 = "CommerceAccelerators#QUICK_ADD_TO_CART_EMPTY_SEARCH_BAR");
+
+		SelectFrameTop();
+
+		Type(
+			key_searchBarValue = ${searchBarValue},
+			locator1 = "CommerceAccelerators#QUICK_ADD_TO_CART_EMPTY_SEARCH_BAR",
+			value1 = ${orderId});
+	}
+
+	@summary = "Default summary"
+	macro selectOrderFromAccountSelector(orderId = null) {
+		Click.clickNoMouseOver(locator1 = "CommerceAccelerators#ACCOUNT_SELECTOR_DROPDOWN");
+
+		Click(
+			key_entryName = ${orderId},
+			locator1 = "CommerceEntry#SEARCH_ORDER_ID_RESULT");
+	}
+
+	@summary = "Default summary"
+	macro viewCommerceOrderNote(commerceOrderNoteAuthor = null, commerceOrderNoteBody = null) {
+		var key_entryComment = ${commerceOrderNoteBody};
+		var key_userFullName = ${commerceOrderNoteAuthor};
+		var orderId = CommerceJSONOrdersAPI._getCommerceOrder();
+
+		AssertTextEquals(
+			locator1 = "Portlet#H3_HEADER",
+			value1 = "Order ${orderId}");
+
+		AssertTextEquals(
+			locator1 = "Comments#COMMENT_BODY_SPECIFIC",
+			value1 = ${commerceOrderNoteBody});
+
+		AssertTextEquals.assertPartialText(
+			locator1 = "Comments#USER_NAME",
+			value1 = ${commerceOrderNoteAuthor});
+	}
+
+	@summary = "Default summary"
+	macro viewCPCommerceOrderNote(commerceOrderNoteAuthor = null, commerceOrderNoteBody = null, userEmailAddress = null) {
+		var key_entryComment = ${commerceOrderNoteBody};
+		var key_userFullName = ${commerceOrderNoteAuthor};
+		var orderId = CommerceJSONOrdersAPI._getCommerceOrderIds(email = ${userEmailAddress});
+
+		if (!(isSet(restricted))) {
+			var restricted = "false";
 		}
 
 		AssertTextEquals(
-			key_productSKU = "${productSKU}",
-			locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_SKU",
-			value1 = "${productSKU}");
+			key_title = ${orderId},
+			locator1 = "Header#H3_TITLE",
+			value1 = ${orderId});
 
 		AssertTextEquals(
-			key_productName = "${productName}",
-			locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_NAME",
-			value1 = "${productName}");
+			locator1 = "Comments#COMMENT_BODY_SPECIFIC",
+			value1 = ${commerceOrderNoteBody});
 
 		AssertTextEquals.assertPartialText(
-			key_productListPrice = "${productListPrice}",
-			locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_LIST_PRICE",
-			value1 = "${productListPrice}");
+			locator1 = "Comments#USER_NAME",
+			value1 = ${commerceOrderNoteAuthor});
+
+		if (${restricted} == "true") {
+			AssertElementPresent(
+				key_orderNoteBody = ${commerceOrderNoteBody},
+				locator1 = "CommerceOrders#ORDER_NOTES_ENTRY_LOCKED_ICON");
+		}
+		else if (${restricted} == "false") {
+			AssertElementNotPresent(
+				key_orderNoteBody = ${commerceOrderNoteBody},
+				locator1 = "CommerceOrders#ORDER_NOTES_ENTRY_LOCKED_ICON");
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewJasperTemplateFromPlacedOrders() {
+		var portalURL = JSONCompany.getPortalURL();
+		var orderID = selenium.getText("CommerceOrders#PLACED_ORDERS_ID");
+
+		Button.click(button = "View");
+
+		Click(locator1 = "Icon#HISTORY_VERTICAL_ELLIPSIS");
+
+		Click(locator1 = "Link#PRINT");
+
+		Navigator.openWithAppendToBaseURL(
+			baseURL = ${portalURL},
+			urlAppend = "web/minium/placed-orders?p_p_id=com_liferay_commerce_order_content_web_internal_portlet_CommerceOrderContentPortlet&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_resource_id=%2Fcommerce_order_content%2Fexport_commerce_order_report&p_p_cacheability=cacheLevelPage&_com_liferay_commerce_order_content_web_internal_portlet_CommerceOrderContentPortlet_commerceOrderId=${orderID}");
+
+		AssertLocation(value1 = "${portalURL}/web/minium/placed-orders?p_p_id=com_liferay_commerce_order_content_web_internal_portlet_CommerceOrderContentPortlet&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_resource_id=%2Fcommerce_order_content%2Fexport_commerce_order_report&p_p_cacheability=cacheLevelPage&_com_liferay_commerce_order_content_web_internal_portlet_CommerceOrderContentPortlet_commerceOrderId=${orderID}");
+	}
+
+	@summary = "Default summary"
+	macro viewOrderAddress(addressZipCode = null, addressType = null, addressStreet1 = null, addressRegion = null, addressCity = null) {
+		WaitForPageLoad();
+
+		if (${addressType} == "Billing") {
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressStreet1},
+				locator1 = "CommerceOrders#ORDER_DETAILS_BILLING_ADDRESS",
+				value1 = ${addressStreet1});
+
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressCity},
+				locator1 = "CommerceOrders#ORDER_DETAILS_BILLING_ADDRESS",
+				value1 = ${addressCity});
+
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressRegion},
+				locator1 = "CommerceOrders#ORDER_DETAILS_BILLING_ADDRESS",
+				value1 = ${addressRegion});
+
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressZipCode},
+				locator1 = "CommerceOrders#ORDER_DETAILS_BILLING_ADDRESS",
+				value1 = ${addressZipCode});
+		}
+		else if (${addressType} == "Shipping") {
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressStreet1},
+				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
+				value1 = ${addressStreet1});
+
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressCity},
+				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
+				value1 = ${addressCity});
+
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressRegion},
+				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
+				value1 = ${addressRegion});
+
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressZipCode},
+				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
+				value1 = ${addressZipCode});
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewOrderPrices(totalPrice = null, taxPrice = null, deliveryPrice = null, subTotalPrice = null) {
+		AssertTextEquals.assertPartialText(
+			key_priceName = "Subtotal",
+			locator1 = "CommerceOrders#ORDER_PRICES_SEPARETED",
+			value1 = ${subTotalPrice});
+
+		AssertTextEquals.assertPartialText(
+			key_priceName = "Delivery",
+			locator1 = "CommerceOrders#ORDER_PRICES_SEPARETED",
+			value1 = ${deliveryPrice});
+
+		AssertTextEquals.assertPartialText(
+			key_priceName = "Tax",
+			locator1 = "CommerceOrders#ORDER_PRICES_SEPARETED",
+			value1 = ${taxPrice});
+
+		AssertTextEquals.assertPartialText(
+			key_priceName = "Total",
+			locator1 = "CommerceOrders#ORDER_PRICES_SEPARETED",
+			value1 = ${totalPrice});
+	}
+
+	@summary = "Default summary"
+	macro viewOrdersDetails(shippingAddressCity = null, productOptions = null, billingAddressCity = null, productTotalPrice = null, shippingAddressName = null, billingAddressName = null, billingAddressZipCode = null, productListPrice = null, productName = null, shippingAddressAddress = null, shippingAddressZipCode = null, productSku = null, productQuantity = null, productDiscount = null, billingAddressAddress = null) {
+		if (isSet(productSku)) {
+			AssertElementPresent(
+				key_productSku = ${productSku},
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_SKU");
+		}
+
+		if (isSet(productName)) {
+			AssertElementPresent(
+				key_productName = ${productName},
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_NAME");
+		}
+
+		if (isSet(productListPrice)) {
+			AssertElementPresent(
+				key_productListPrice = ${productListPrice},
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_LIST_PRICE");
+		}
 
 		if (isSet(productDiscount)) {
-			AssertTextEquals(
-				key_productDiscount = "$ ${productDiscount}",
-				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_DISCOUNT",
-				value1 = "${productDiscount}");
+			AssertElementPresent(
+				key_productDiscount = ${productDiscount},
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_DISCOUNT");
 		}
 
-		AssertTextEquals(
-			key_productQuantity = "${productQuantity}",
-			locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_QUANTITY",
-			value1 = "${productQuantity}");
+		if (isSet(productOptions)) {
+			for (var productOption : list ${productOptions}) {
+				AssertTextEquals.assertPartialText(
+					key_productItemValue = ${productOption},
+					locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_ITEM_VALUE",
+					value1 = ${productOption});
+			}
+		}
 
-		AssertTextEquals.assertPartialText(
-			key_productTotalPrice = "${productTotalPrice}",
-			locator1 = "CommerceOrders#ORDER_DETAILS_TOTAL_PRICE",
-			value1 = "${productTotalPrice}");
+		if (isSet(productQuantity)) {
+			AssertElementPresent(
+				key_productQuantity = ${productQuantity},
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_QUANTITY");
+		}
+
+		if (isSet(productTotalPrice)) {
+			AssertElementPresent(
+				key_productTotalPrice = ${productTotalPrice},
+				locator1 = "CommerceOrders#ORDER_DETAILS_TOTAL_PRICE");
+		}
+
+		if (isSet(shippingAddressName)) {
+			AssertElementPresent(
+				key_addressInfo = ${shippingAddressName},
+				locator1 = "CommerceOrders#PLACED_ORDERS_DETAILS_SHIPPING_ADDRESS");
+		}
+
+		if (isSet(shippingAddressAddress)) {
+			AssertElementPresent(
+				key_addressInfo = ${shippingAddressAddress},
+				locator1 = "CommerceOrders#PLACED_ORDERS_DETAILS_SHIPPING_ADDRESS");
+		}
+
+		if (isSet(shippingAddressCity)) {
+			AssertElementPresent(
+				key_addressInfo = ${shippingAddressCity},
+				locator1 = "CommerceOrders#PLACED_ORDERS_DETAILS_SHIPPING_ADDRESS");
+		}
+
+		if (isSet(shippingAddressZipCode)) {
+			AssertElementPresent(
+				key_addressInfo = ${shippingAddressZipCode},
+				locator1 = "CommerceOrders#PLACED_ORDERS_DETAILS_SHIPPING_ADDRESS");
+		}
+
+		if (isSet(billingAddressName)) {
+			AssertElementPresent(
+				key_addressInfo = ${billingAddressName},
+				locator1 = "CommerceOrders#PLACED_ORDERS_DETAILS_BILLING_ADDRESS");
+		}
+
+		if (isSet(billingAddressAddress)) {
+			AssertElementPresent(
+				key_addressInfo = ${billingAddressAddress},
+				locator1 = "CommerceOrders#PLACED_ORDERS_DETAILS_BILLING_ADDRESS");
+		}
+
+		if (isSet(billingAddressCity)) {
+			AssertElementPresent(
+				key_addressInfo = ${billingAddressCity},
+				locator1 = "CommerceOrders#PLACED_ORDERS_DETAILS_BILLING_ADDRESS");
+		}
+
+		if (isSet(billingAddressZipCode)) {
+			AssertElementPresent(
+				key_addressInfo = ${billingAddressZipCode},
+				locator1 = "CommerceOrders#PLACED_ORDERS_DETAILS_BILLING_ADDRESS");
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewOrdersEntry(addressZipCode = null, orderType = null, addressAddress = null, productOptions = null, deliveryTerm = null, productTotalPrice = null, productDeliveryDate = null, productListPrice = null, productName = null, productDeliveryGroup = null, productSku = null, productQuantity = null, printedNote = null, purchaseOrderNumber = null, requestedDeliveryDate = null, productDiscount = null, paymentMethod = null, paymentTerm = null, addressCity = null) {
+		if (isSet(addressAddress) && isSet(addressCity) && isSet(addressZipCode)) {
+			AssertTextEquals.assertPartialText(
+				locator1 = "CommerceOrders#ORDER_DETAILS_BILLING_ADDRESS",
+				value1 = ${addressAddress});
+
+			AssertTextEquals.assertPartialText(
+				locator1 = "CommerceOrders#ORDER_DETAILS_BILLING_ADDRESS",
+				value1 = ${addressCity});
+
+			AssertTextEquals.assertPartialText(
+				locator1 = "CommerceOrders#ORDER_DETAILS_BILLING_ADDRESS",
+				value1 = ${addressZipCode});
+
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressAddress},
+				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
+				value1 = ${addressAddress});
+
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressCity},
+				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
+				value1 = ${addressCity});
+
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressZipCode},
+				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
+				value1 = ${addressZipCode});
+
+			if (isSet(deliveryTerm)) {
+				AssertTextEquals.assertPartialText(
+					key_deliveryTerm = ${deliveryTerm},
+					locator1 = "CommerceOrders#ORDER_DETAILS_DELIVERY_TERMS",
+					value1 = ${deliveryTerm});
+			}
+
+			if (isSet(orderType)) {
+				AssertTextEquals.assertPartialText(
+					key_orderType = ${orderType},
+					locator1 = "CommerceOrders#ORDER_DETAILS_ORDER_TYPE",
+					value1 = ${orderType});
+			}
+
+			if (isSet(paymentTerm)) {
+				AssertTextEquals.assertPartialText(
+					key_paymentTerm = ${paymentTerm},
+					locator1 = "CommerceOrders#ORDER_DETAILS_PAYMENT_TERMS",
+					value1 = ${paymentTerm});
+			}
+		}
+
+		if (isSet(printedNote)) {
+			AssertTextEquals(
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRINTED_NOTE",
+				value1 = ${printedNote});
+		}
+
+		if (isSet(purchaseOrderNumber)) {
+			AssertTextEquals(
+				locator1 = "CommerceOrders#ORDER_DETAILS_PURCHASE_ORDER_NUMBER",
+				value1 = ${purchaseOrderNumber});
+		}
+
+		if (isSet(requestedDeliveryDate)) {
+			AssertTextEquals.assertPartialText(
+				locator1 = "CommerceOrders#ORDER_DETAILS_REQUESTED_DELIVERY_DATE",
+				value1 = ${requestedDeliveryDate});
+		}
+
+		if (isSet(productName) && isSet(productSku)) {
+			AssertTextEquals(
+				key_productSku = ${productSku},
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_SKU",
+				value1 = ${productSku});
+
+			AssertTextEquals(
+				key_productName = ${productName},
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_NAME",
+				value1 = ${productName});
+
+			AssertTextEquals.assertPartialText(
+				key_productListPrice = ${productListPrice},
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_LIST_PRICE",
+				value1 = ${productListPrice});
+
+			AssertTextEquals(
+				key_productQuantity = ${productQuantity},
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_QUANTITY",
+				value1 = ${productQuantity});
+
+			AssertTextEquals.assertPartialText(
+				key_productTotalPrice = ${productTotalPrice},
+				locator1 = "CommerceOrders#ORDER_DETAILS_TOTAL_PRICE",
+				value1 = ${productTotalPrice});
+		}
+
+		if (isSet(productDeliveryDate)) {
+			AssertTextEquals(
+				key_productItemValue = ${productDeliveryDate},
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_ITEM_VALUE",
+				value1 = ${productDeliveryDate});
+		}
+
+		if (isSet(productDeliveryGroup)) {
+			AssertTextEquals(
+				key_productItemValue = ${productDeliveryGroup},
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_ITEM_VALUE",
+				value1 = ${productDeliveryGroup});
+		}
+
+		if (isSet(productDiscount)) {
+			AssertTextEquals.assertPartialText(
+				key_productDiscount = ${productDiscount},
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_DISCOUNT",
+				value1 = ${productDiscount});
+		}
+
+		if (isSet(productOptions)) {
+			AssertTextEquals(
+				key_productItemValue = ${productOptions},
+				locator1 = "CommerceOrders#ORDER_DETAILS_PRODUCT_ITEM_VALUE",
+				value1 = ${productOptions});
+		}
 
 		if (isSet(paymentMethod)) {
 			Click(
@@ -193,9 +1482,136 @@ definition {
 				locator1 = "CommerceEntry#MENU_TAB");
 
 			AssertTextEquals.assertPartialText(
-				key_paymentMethod = "${paymentMethod}",
 				locator1 = "CommerceOrders#ORDER_DETAILS_PAYMENT_METHOD_NAME",
-				value1 = "${paymentMethod}");
+				value1 = ${paymentMethod});
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewOrderShipmentDetails(addressCountry = null, addressZipCode = null, addressAddress = null, carrierName = null, estimatedShippingDate = null, carrierTrackingNumber = null, addressStreet1 = null, carrierShippingMethod = null, estimatedDeliveryDate = null, addressCity = null, carrierBaseTrackingURL = null) {
+		if (isSet(addressAddress)) {
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressAddress},
+				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
+				value1 = ${addressAddress});
+
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressCity},
+				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
+				value1 = ${addressCity});
+
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressCountry},
+				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
+				value1 = ${addressCountry});
+
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressStreet1},
+				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
+				value1 = ${addressStreet1});
+
+			AssertTextEquals.assertPartialText(
+				key_addressInfo = ${addressZipCode},
+				locator1 = "CommerceOrders#ORDER_DETAILS_SHIPPING_ADDRESS",
+				value1 = ${addressZipCode});
+		}
+
+		if (isSet(carrierBaseTrackingURL)) {
+			AssertTextEquals(
+				key_carrierDetailsItem = "Base Tracking URL",
+				key_indexNumber = 1,
+				locator1 = "CommerceOrders#ORDER_SHIPMENTS_CARRIER_DETAILS_N",
+				value1 = ${carrierBaseTrackingURL});
+		}
+
+		if (isSet(carrierName)) {
+			AssertTextEquals(
+				key_carrierDetailsItem = "Carrier",
+				key_indexNumber = 2,
+				locator1 = "CommerceOrders#ORDER_SHIPMENTS_CARRIER_DETAILS_N",
+				value1 = ${carrierName});
+		}
+
+		if (isSet(carrierShippingMethod)) {
+			AssertTextEquals(
+				key_carrierDetailsItem = "Shipping Method",
+				key_indexNumber = 1,
+				locator1 = "CommerceOrders#ORDER_SHIPMENTS_CARRIER_DETAILS_N",
+				value1 = ${carrierShippingMethod});
+		}
+
+		if (isSet(carrierTrackingNumber)) {
+			AssertTextEquals(
+				key_carrierDetailsItem = "Tracking Number",
+				key_indexNumber = 1,
+				locator1 = "CommerceOrders#ORDER_SHIPMENTS_CARRIER_DETAILS_N",
+				value1 = ${carrierTrackingNumber});
+		}
+
+		if (isSet(estimatedDeliveryDate)) {
+			AssertTextEquals(
+				key_estimatedDate = "Estimated Delivery Date",
+				locator1 = "CommerceOrders#ORDER_SHIPMENTS_ESTIMATED_DATE",
+				value1 = ${estimatedDeliveryDate});
+		}
+
+		if (isSet(estimatedShippingDate)) {
+			AssertTextEquals(
+				key_estimatedDate = "Estimated Shipping Date",
+				locator1 = "CommerceOrders#ORDER_SHIPMENTS_ESTIMATED_DATE",
+				value1 = ${estimatedShippingDate});
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewOrderSummary(totalValue = null, deliveryDiscountValue = null, taxValue = null, deliveryValue = null, totalDiscountValue = null, subtotalValue = null, subtotalDiscountValue = null) {
+		if (isSet(deliveryDiscountValue)) {
+			AssertTextEquals(
+				key_label = "Delivery Discount",
+				locator1 = "CommerceOrders#ORDER_VIEW_SUMMARY_FIELDS",
+				value1 = ${deliveryDiscountValue});
+		}
+
+		if (isSet(deliveryValue)) {
+			AssertTextEquals(
+				key_label = "Delivery",
+				locator1 = "CommerceOrders#ORDER_VIEW_SUMMARY_FIELDS",
+				value1 = ${deliveryValue});
+		}
+
+		if (isSet(subtotalDiscountValue)) {
+			AssertTextEquals(
+				key_label = "Subtotal Discount",
+				locator1 = "CommerceOrders#ORDER_VIEW_SUMMARY_FIELDS",
+				value1 = ${subtotalDiscountValue});
+		}
+
+		if (isSet(subtotalValue)) {
+			AssertTextEquals(
+				key_label = "Subtotal",
+				locator1 = "CommerceOrders#ORDER_VIEW_SUMMARY_FIELDS",
+				value1 = ${subtotalValue});
+		}
+
+		if (isSet(taxValue)) {
+			AssertTextEquals(
+				key_label = "Tax",
+				locator1 = "CommerceOrders#ORDER_VIEW_SUMMARY_FIELDS",
+				value1 = ${taxValue});
+		}
+
+		if (isSet(totalDiscountValue)) {
+			AssertTextEquals(
+				key_label = "Total Discount",
+				locator1 = "CommerceOrders#ORDER_VIEW_SUMMARY_FIELDS",
+				value1 = ${totalDiscountValue});
+		}
+
+		if (isSet(totalValue)) {
+			AssertTextEquals(
+				key_label = "Total",
+				locator1 = "CommerceOrders#ORDER_VIEW_SUMMARY_FIELDS_TOTAL",
+				value1 = ${totalValue});
 		}
 	}
 

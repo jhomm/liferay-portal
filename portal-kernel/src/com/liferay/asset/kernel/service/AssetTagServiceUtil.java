@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.kernel.service;
@@ -40,11 +31,12 @@ public class AssetTagServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portlet.asset.service.impl.AssetTagServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static AssetTag addTag(
-			long groupId, String name,
+			String externalReferenceCode, long groupId, String name,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
-		return getService().addTag(groupId, name, serviceContext);
+		return getService().addTag(
+			externalReferenceCode, groupId, name, serviceContext);
 	}
 
 	public static void deleteTag(long tagId) throws PortalException {
@@ -53,6 +45,21 @@ public class AssetTagServiceUtil {
 
 	public static void deleteTags(long[] tagIds) throws PortalException {
 		getService().deleteTags(tagIds);
+	}
+
+	public static AssetTag fetchAssetTagByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return getService().fetchAssetTagByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
+	public static AssetTag getAssetTagByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getAssetTagByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	public static List<AssetTag> getGroupsTags(long[] groupIds) {
@@ -155,10 +162,6 @@ public class AssetTagServiceUtil {
 			groupId, classNameId, name);
 	}
 
-	public static int getVisibleAssetsTagsCount(long groupId, String name) {
-		return getService().getVisibleAssetsTagsCount(groupId, name);
-	}
-
 	public static void mergeTags(long fromTagId, long toTagId)
 		throws PortalException {
 
@@ -196,15 +199,20 @@ public class AssetTagServiceUtil {
 	}
 
 	public static AssetTag updateTag(
-			long tagId, String name,
+			String externalReferenceCode, long tagId, String name,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
-		return getService().updateTag(tagId, name, serviceContext);
+		return getService().updateTag(
+			externalReferenceCode, tagId, name, serviceContext);
 	}
 
 	public static AssetTagService getService() {
 		return _service;
+	}
+
+	public static void setService(AssetTagService service) {
+		_service = service;
 	}
 
 	private static volatile AssetTagService _service;

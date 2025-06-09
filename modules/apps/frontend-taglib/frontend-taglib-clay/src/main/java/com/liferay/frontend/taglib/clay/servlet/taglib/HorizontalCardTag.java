@@ -1,31 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.clay.servlet.taglib;
 
-import com.liferay.frontend.taglib.clay.servlet.taglib.soy.HorizontalCard;
+import com.liferay.frontend.taglib.clay.internal.servlet.taglib.util.DropdownItemListUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.taglib.util.TagResourceBundleUtil;
+
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
 
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
 
 /**
  * @author Marko Cikos
@@ -81,8 +71,12 @@ public class HorizontalCardTag extends BaseCardTag {
 			title = horizontalCard.getTitle();
 		}
 
-		return LanguageUtil.get(
-			TagResourceBundleUtil.getResourceBundle(pageContext), title);
+		if (_isTranslated()) {
+			title = LanguageUtil.get(
+				TagResourceBundleUtil.getResourceBundle(pageContext), title);
+		}
+
+		return title;
 	}
 
 	public void setHorizontalCard(HorizontalCard horizontalCard) {
@@ -93,16 +87,21 @@ public class HorizontalCardTag extends BaseCardTag {
 		_title = title;
 	}
 
+	public void setTranslated(Boolean translated) {
+		_translated = translated;
+	}
+
 	@Override
 	protected void cleanUp() {
 		super.cleanUp();
 
 		_title = null;
+		_translated = null;
 	}
 
 	@Override
 	protected String getHydratedModuleName() {
-		return "frontend-taglib-clay/cards/HorizontalCard";
+		return "{HorizontalCard} from frontend-taglib-clay";
 	}
 
 	@Override
@@ -175,6 +174,20 @@ public class HorizontalCardTag extends BaseCardTag {
 		return SKIP_BODY;
 	}
 
+	private boolean _isTranslated() {
+		if (_translated != null) {
+			return _translated;
+		}
+
+		HorizontalCard horizontalCard = getHorizontalCard();
+
+		if (horizontalCard == null) {
+			return true;
+		}
+
+		return horizontalCard.isTranslated();
+	}
+
 	private void _writeBody(JspWriter jspWriter) throws Exception {
 		jspWriter.write("<div class=\"card card-horizontal\"><div class=\"");
 		jspWriter.write("card-body\"><div class=\"card-row\"><div class=\"");
@@ -213,6 +226,8 @@ public class HorizontalCardTag extends BaseCardTag {
 				linkTag.setLabel(title);
 			}
 
+			linkTag.setTranslated(_isTranslated());
+
 			linkTag.doTag(pageContext);
 		}
 		else {
@@ -227,7 +242,7 @@ public class HorizontalCardTag extends BaseCardTag {
 
 		jspWriter.write("</span></p></div>");
 
-		if (!ListUtil.isEmpty(getActionDropdownItems())) {
+		if (!DropdownItemListUtil.isEmpty(getActionDropdownItems())) {
 			jspWriter.write("<div class=\"autofit-col\">");
 
 			DropdownActionsTag dropdownActionsTag = new DropdownActionsTag();
@@ -250,5 +265,6 @@ public class HorizontalCardTag extends BaseCardTag {
 	private static final String _ATTRIBUTE_NAMESPACE = "clay:horizontal-card:";
 
 	private String _title;
+	private Boolean _translated;
 
 }

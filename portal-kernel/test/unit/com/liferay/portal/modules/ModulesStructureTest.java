@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.modules;
@@ -26,6 +17,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TreeMapBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.modules.util.GradleDependency;
+import com.liferay.portal.modules.util.Module;
 import com.liferay.portal.modules.util.ModulesStructureTestUtil;
 
 import java.io.File;
@@ -45,14 +37,18 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -208,35 +204,23 @@ public class ModulesStructureTest {
 							gitRepoSettingsGradleTemplate);
 					}
 					else {
-						Path gradlePropertiesPath = dirPath.resolve(
-							"gradle.properties");
+						if (!dirName.endsWith("playwright") &&
+							!dirName.endsWith("poshi-standalone")) {
 
-						boolean liferaySpringBootDefaultsPlugin = false;
+							Path gradlePropertiesPath = dirPath.resolve(
+								"gradle.properties");
 
-						if (Files.exists(buildGradlePath)) {
-							String applyPlugin =
-								"apply plugin: " +
-									"\"com.liferay.spring.boot.defaults\"";
-							String content = ModulesStructureTestUtil.read(
-								buildGradlePath);
-
-							if (content.contains(applyPlugin)) {
-								liferaySpringBootDefaultsPlugin = true;
-							}
-						}
-
-						if (!liferaySpringBootDefaultsPlugin) {
 							Assert.assertFalse(
 								"Forbidden " + gradlePropertiesPath,
 								Files.deleteIfExists(gradlePropertiesPath));
+
+							Path settingsGradlePath = dirPath.resolve(
+								"settings.gradle");
+
+							Assert.assertFalse(
+								"Forbidden " + settingsGradlePath,
+								Files.deleteIfExists(settingsGradlePath));
 						}
-
-						Path settingsGradlePath = dirPath.resolve(
-							"settings.gradle");
-
-						Assert.assertFalse(
-							"Forbidden " + settingsGradlePath,
-							Files.deleteIfExists(settingsGradlePath));
 
 						if (Files.exists(dirPath.resolve("app.bnd"))) {
 							_testEquals(buildGradlePath, _APP_BUILD_GRADLE);
@@ -256,14 +240,12 @@ public class ModulesStructureTest {
 											"plugin\""));
 						}
 
-						if (!liferaySpringBootDefaultsPlugin) {
-							Path buildExtGradlePath = dirPath.resolve(
-								"build-ext.gradle");
+						Path buildExtGradlePath = dirPath.resolve(
+							"build-ext.gradle");
 
-							Assert.assertFalse(
-								"Forbidden " + buildExtGradlePath,
-								Files.deleteIfExists(buildExtGradlePath));
-						}
+						Assert.assertFalse(
+							"Forbidden " + buildExtGradlePath,
+							Files.deleteIfExists(buildExtGradlePath));
 					}
 
 					if (Files.exists(dirPath.resolve("package.json")) &&
@@ -328,6 +310,113 @@ public class ModulesStructureTest {
 				}
 
 			});
+	}
+
+	@Test
+	public void testScanCircularProjectDependencies() throws IOException {
+		Map<String, Module> modules = new TreeMap<>();
+
+		for (String includeDirName : _includedDirNames) {
+			Files.walkFileTree(
+				_modulesDirPath.resolve(includeDirName),
+				new SimpleFileVisitor<Path>() {
+
+					@Override
+					public FileVisitResult preVisitDirectory(
+							Path dirPath,
+							BasicFileAttributes basicFileAttributes)
+						throws IOException {
+
+						Path buildGradlePath = dirPath.resolve("build.gradle");
+
+						if (!Files.exists(buildGradlePath) ||
+							!Files.exists(dirPath.resolve("src"))) {
+
+							return FileVisitResult.CONTINUE;
+						}
+
+						String relativePathString = String.valueOf(
+							_modulesDirPath.relativize(dirPath));
+
+						Module module = new Module(
+							":".concat(
+								StringUtil.replace(
+									relativePathString, '/', ':')),
+							ModulesStructureTestUtil.getProjectDependencyIds(
+								buildGradlePath));
+
+						modules.put(module.getId(), module);
+
+						return FileVisitResult.SKIP_SUBTREE;
+					}
+
+				});
+		}
+
+		Set<String> circularPaths = new TreeSet<>();
+
+		for (Module module : modules.values()) {
+			Deque<String> scanDeque = new LinkedList<>();
+
+			scanDeque.add(module.getId());
+
+			List<String> pathsList = new ArrayList<>();
+
+			String dependencyId = null;
+
+			while ((dependencyId = scanDeque.pollFirst()) != null) {
+				if (Objects.equals(dependencyId, "REMOVE_LAST_HOLDER")) {
+					pathsList.remove(pathsList.size() - 1);
+
+					continue;
+				}
+
+				int index = pathsList.indexOf(dependencyId);
+
+				if (index == -1) {
+					pathsList.add(dependencyId);
+
+					scanDeque.push("REMOVE_LAST_HOLDER");
+
+					Module dependencyModule = modules.get(dependencyId);
+
+					List<String> dependencyIdList = new ArrayList<>(
+						dependencyModule.getDependencyIds());
+
+					ListIterator<String> listIterator =
+						dependencyIdList.listIterator(dependencyIdList.size());
+
+					while (listIterator.hasPrevious()) {
+						scanDeque.push(listIterator.previous());
+					}
+				}
+				else {
+					pathsList = pathsList.subList(index, pathsList.size());
+
+					String minPath = Collections.min(pathsList);
+
+					int minIndex = pathsList.indexOf(minPath);
+
+					StringBundler sb = new StringBundler(
+						((pathsList.size() - index) * 2) + 1);
+
+					for (int i = minIndex; i < (minIndex + pathsList.size());
+						 i++) {
+
+						sb.append(pathsList.get(i % pathsList.size()));
+						sb.append(" -> ");
+					}
+
+					sb.append(minPath);
+
+					circularPaths.add(sb.toString());
+
+					break;
+				}
+			}
+		}
+
+		Assert.assertTrue(circularPaths.toString(), circularPaths.isEmpty());
 	}
 
 	@Test
@@ -497,6 +586,12 @@ public class ModulesStructureTest {
 				public FileVisitResult preVisitDirectory(
 					Path dirPath, BasicFileAttributes basicFileAttributes) {
 
+					String dirName = String.valueOf(dirPath.getFileName());
+
+					if (_excludedDirNames.contains(dirName)) {
+						return FileVisitResult.SKIP_SUBTREE;
+					}
+
 					if (Files.exists(dirPath.resolve("bnd.bnd"))) {
 						for (Map.Entry<String, String> entry :
 								renameMap.entrySet()) {
@@ -534,7 +629,7 @@ public class ModulesStructureTest {
 						return FileVisitResult.SKIP_SUBTREE;
 					}
 
-					Path path = dirPath.resolve("README.markdown");
+					Path path = dirPath.resolve("README.md");
 
 					if (Files.exists(path)) {
 						BasicFileAttributes readmeBasicFileAttributes =
@@ -742,14 +837,13 @@ public class ModulesStructureTest {
 
 		if (!sortedBuildExtGradleFileNames.isEmpty()) {
 			StringBundler sb = new StringBundler(
-				(4 * sortedBuildExtGradleFileNames.size()) + 2);
+				(sortedBuildExtGradleFileNames.size() * 3) + 2);
 
 			sb.append(buildGradleTemplate);
 			sb.append(StringPool.NEW_LINE);
 
 			for (String fileName : sortedBuildExtGradleFileNames) {
-				sb.append(StringPool.NEW_LINE);
-				sb.append("apply from: \"");
+				sb.append("\napply from: \"");
 				sb.append(fileName);
 				sb.append("\"");
 			}
@@ -926,13 +1020,13 @@ public class ModulesStructureTest {
 		String configuration, boolean hasSrcTestDir,
 		boolean hasSrcTestIntegrationDir) {
 
-		if (configuration.equals("testCompile") && !hasSrcTestDir &&
+		if (configuration.equals("testImplementation") && !hasSrcTestDir &&
 			!hasSrcTestIntegrationDir) {
 
 			return true;
 		}
 
-		if (configuration.equals("testRuntime") && !hasSrcTestDir &&
+		if (configuration.equals("testRuntimeOnly") && !hasSrcTestDir &&
 			!hasSrcTestIntegrationDir) {
 
 			return true;
@@ -974,16 +1068,21 @@ public class ModulesStructureTest {
 			return false;
 		}
 
+		String dirName = String.valueOf(dirPath.getFileName());
 		String name = gradleDependency.getModuleName();
 
-		if (name.equals("com.liferay.ant.bnd") ||
+		if (dirName.endsWith("poshi-standalone") ||
+			name.equals("com.liferay.ant.bnd") ||
 			name.equals("com.liferay.arquillian.extension.junit.bridge") ||
+			name.equals("com.liferay.gradle.plugins.app.docker") ||
 			name.equals("com.liferay.gradle.plugins.defaults") ||
 			name.equals("com.liferay.portal.cache.test.util") ||
 			name.equals("com.liferay.poshi.core") ||
 			name.equals("com.liferay.whip") ||
+			name.startsWith("com.liferay.faces.") ||
 			!name.startsWith("com.liferay.") ||
 			_isInModulesRootDir(dirPath, "sdk", "third-party", "util") ||
+			Files.exists(dirPath.resolve("settings.gradle")) ||
 			Files.exists(dirPath.resolve(".lfrbuild-ci")) ||
 			_hasGitCommitMarkerFile(dirPath) || _isInGitRepoReadOnly(dirPath) ||
 			_isInPrivateModulesCheckoutDir(dirPath)) {
@@ -1113,8 +1212,7 @@ public class ModulesStructureTest {
 		if (Files.notExists(dirPath.resolve("settings-ext.gradle"))) {
 			settingsGradleTemplate = StringUtil.removeSubstring(
 				settingsGradleTemplate,
-				StringPool.NEW_LINE + StringPool.NEW_LINE +
-					"apply from: \"settings-ext.gradle\"");
+				"\n\napply from: \"settings-ext.gradle\"");
 		}
 
 		if (!dxpRepo && !privateRepo && !readOnlyRepo) {
@@ -1408,19 +1506,21 @@ public class ModulesStructureTest {
 		}
 
 		Map<String, Boolean> allowedConfigurationsMap = TreeMapBuilder.put(
-			"compile", mainConfigurationsAllowed
+			"api", mainConfigurationsAllowed
 		).put(
 			"compileOnly", mainConfigurationsAllowed
 		).put(
 			"provided", mainConfigurationsAllowed
 		).put(
-			"testCompile", hasSrcTestDir
+			"testImplementation",
+			hasSrcTestDir ||
+			Objects.equals(path.toString(), "modules/build.gradle")
 		).put(
-			"testIntegrationCompile", hasSrcTestIntegrationDir
+			"testIntegrationImplementation", hasSrcTestIntegrationDir
 		).put(
-			"testIntegrationRuntime", hasSrcTestIntegrationDir
+			"testIntegrationRuntimeOnly", hasSrcTestIntegrationDir
 		).put(
-			"testRuntime", hasSrcTestDir
+			"testRuntimeOnly", hasSrcTestDir
 		).build();
 
 		for (GradleDependency gradleDependency : gradleDependencies) {
@@ -1499,13 +1599,11 @@ public class ModulesStructureTest {
 				Assert.assertFalse(sb.toString(), !allowed);
 			}
 
-			GradleDependency activeGradleDependency =
-				_getActiveGradleDependency(
-					gradleDependencies, gradleDependency);
-
 			Assert.assertEquals(
 				"Redundant dependency detected in " + path,
-				activeGradleDependency, gradleDependency);
+				_getActiveGradleDependency(
+					gradleDependencies, gradleDependency),
+				gradleDependency);
 		}
 	}
 
@@ -1643,7 +1741,7 @@ public class ModulesStructureTest {
 	private static final String[] _GIT_IGNORE_LINE_PREFIXES = {"/wedeploy/"};
 
 	private static final String[] _GIT_IGNORE_OPTIONAL_LINES = {
-		"gradle-ext.properties", "node_modules_cache/"
+		".tsc/", "gradle-ext.properties", "node_modules_cache/"
 	};
 
 	private static final String _GIT_REPO_FILE_NAME = ".gitrepo";
@@ -1683,7 +1781,8 @@ public class ModulesStructureTest {
 	private static Set<String> _checkoutPrivateAppsDirs;
 	private static final Set<String> _excludedDirNames = SetUtil.fromList(
 		Arrays.asList(
-			"bin", "build", "classes", "node_modules", "test-classes", "tmp"));
+			"_node-scripts", "bin", "build", "classes", "ext-test-impl",
+			"node_modules", "test-classes", "tmp"));
 	private static final Pattern _gitRepoGradleProjectGroupPattern =
 		Pattern.compile("com\\.liferay(?:\\.[a-z]+)+");
 	private static final Set<String> _gitRepoGradlePropertiesKeys =
@@ -1693,8 +1792,11 @@ public class ModulesStructureTest {
 				"org.gradle.parallel", "pom.scm.connection",
 				"pom.scm.developerConnection", "pom.scm.url"));
 	private static final List<String> _gradleConfigurations = Arrays.asList(
-		"compileOnly", "provided", "compile", "runtime", "testCompile",
-		"testRuntime", "testIntegrationCompile", "testIntegrationRuntime");
+		"api", "compileOnly", "provided", "runtimeOnly", "testImplementation",
+		"testIntegrationImplementation", "testIntegrationRuntimeOnly",
+		"testRuntimeOnly");
+	private static final List<String> _includedDirNames = Arrays.asList(
+		"apps", "core", "dxp", "test");
 	private static final Pattern _jsonVersionPattern = Pattern.compile(
 		"\\n(\\t|  )\"version\": \"(.+)\"");
 	private static boolean _masterBranch;

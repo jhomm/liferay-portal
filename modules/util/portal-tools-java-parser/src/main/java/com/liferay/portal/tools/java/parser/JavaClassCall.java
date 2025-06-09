@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.java.parser;
@@ -76,9 +67,15 @@ public class JavaClassCall extends BaseJavaExpression {
 
 		if (_genericJavaTypes == null) {
 			if (_parameterValueJavaExpressions.isEmpty()) {
-				append(
-					sb, _className, indent, prefix, "()" + suffix,
-					maxLineLength);
+				if (!_useChainStyle) {
+					append(
+						sb, _className, indent, prefix, "()" + suffix,
+						maxLineLength);
+				}
+				else {
+					indent = append(
+						sb, _className, indent, prefix, "(", maxLineLength);
+				}
 			}
 			else {
 				indent = append(
@@ -123,6 +120,16 @@ public class JavaClassCall extends BaseJavaExpression {
 				append(
 					sb, _parameterValueJavaExpressions, indent, "",
 					")" + suffix, maxLineLength);
+			}
+		}
+		else {
+			if ((_genericJavaTypes == null) && !_statementCondition &&
+				_useChainStyle) {
+
+				sb.append("\n");
+				sb.append(originalIndent);
+				sb.append(")");
+				sb.append(suffix);
 			}
 		}
 

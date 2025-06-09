@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.machine.learning.internal.resource.v1_0;
@@ -18,11 +9,11 @@ import com.liferay.commerce.machine.learning.forecast.AssetCategoryCommerceMLFor
 import com.liferay.commerce.machine.learning.forecast.AssetCategoryCommerceMLForecastManager;
 import com.liferay.headless.commerce.machine.learning.dto.v1_0.AccountCategoryForecast;
 import com.liferay.headless.commerce.machine.learning.internal.constants.CommerceMLForecastConstants;
-import com.liferay.headless.commerce.machine.learning.internal.dto.v1_0.converter.AccountCategoryForecastDTOConverter;
 import com.liferay.headless.commerce.machine.learning.internal.dto.v1_0.converter.CommerceMLForecastCompositeResourcePrimaryKey;
-import com.liferay.headless.commerce.machine.learning.internal.util.v1_0.CommerceAccountPermissionHelper;
+import com.liferay.headless.commerce.machine.learning.internal.helper.v1_0.CommerceAccountPermissionHelper;
 import com.liferay.headless.commerce.machine.learning.resource.v1_0.AccountCategoryForecastResource;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
@@ -44,7 +35,6 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Riccardo Ferrari
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v1_0/account-category-forecast.properties",
 	scope = ServiceScope.PROTOTYPE,
 	service = AccountCategoryForecastResource.class
@@ -58,39 +48,42 @@ public class AccountCategoryForecastResourceImpl
 			Map<String, Serializable> parameters)
 		throws Exception {
 
-		for (AccountCategoryForecast accountCategoryForecast :
-				accountCategoryForecasts) {
+		contextBatchUnsafeBiConsumer.accept(
+			accountCategoryForecasts,
+			accountCategoryForecast -> {
+				AssetCategoryCommerceMLForecast
+					assetCategoryCommerceMLForecast =
+						_assetCategoryCommerceMLForecastManager.create();
 
-			AssetCategoryCommerceMLForecast assetCategoryCommerceMLForecast =
-				_assetCategoryCommerceMLForecastManager.create();
+				if (accountCategoryForecast.getActual() != null) {
+					assetCategoryCommerceMLForecast.setActual(
+						accountCategoryForecast.getActual());
+				}
 
-			if (accountCategoryForecast.getActual() != null) {
-				assetCategoryCommerceMLForecast.setActual(
-					accountCategoryForecast.getActual());
-			}
+				assetCategoryCommerceMLForecast.setAssetCategoryId(
+					accountCategoryForecast.getCategory());
+				assetCategoryCommerceMLForecast.setCommerceAccountId(
+					accountCategoryForecast.getAccount());
+				assetCategoryCommerceMLForecast.setCompanyId(
+					contextCompany.getCompanyId());
+				assetCategoryCommerceMLForecast.setForecast(
+					accountCategoryForecast.getForecast());
+				assetCategoryCommerceMLForecast.setForecastLowerBound(
+					accountCategoryForecast.getForecastLowerBound());
+				assetCategoryCommerceMLForecast.setForecastUpperBound(
+					accountCategoryForecast.getForecastUpperBound());
+				assetCategoryCommerceMLForecast.setPeriod("month");
+				assetCategoryCommerceMLForecast.setScope("asset-category");
+				assetCategoryCommerceMLForecast.setTarget("revenue");
+				assetCategoryCommerceMLForecast.setTimestamp(
+					accountCategoryForecast.getTimestamp());
 
-			assetCategoryCommerceMLForecast.setAssetCategoryId(
-				accountCategoryForecast.getCategory());
-			assetCategoryCommerceMLForecast.setCommerceAccountId(
-				accountCategoryForecast.getAccount());
-			assetCategoryCommerceMLForecast.setCompanyId(
-				contextCompany.getCompanyId());
-			assetCategoryCommerceMLForecast.setForecast(
-				accountCategoryForecast.getForecast());
-			assetCategoryCommerceMLForecast.setForecastLowerBound(
-				accountCategoryForecast.getForecastLowerBound());
-			assetCategoryCommerceMLForecast.setForecastUpperBound(
-				accountCategoryForecast.getForecastUpperBound());
-			assetCategoryCommerceMLForecast.setPeriod("month");
-			assetCategoryCommerceMLForecast.setScope("asset-category");
-			assetCategoryCommerceMLForecast.setTarget("revenue");
-			assetCategoryCommerceMLForecast.setTimestamp(
-				accountCategoryForecast.getTimestamp());
+				_assetCategoryCommerceMLForecastManager.
+					addAssetCategoryCommerceMLForecast(
+						assetCategoryCommerceMLForecast);
 
-			_assetCategoryCommerceMLForecastManager.
-				addAssetCategoryCommerceMLForecast(
-					assetCategoryCommerceMLForecast);
-		}
+				return null;
+			});
 	}
 
 	@Override
@@ -151,9 +144,12 @@ public class AccountCategoryForecastResourceImpl
 					historyLength, forecastLength));
 	}
 
-	@Reference
-	private AccountCategoryForecastDTOConverter
-		_accountCategoryForecastDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.machine.learning.internal.dto.v1_0.converter.AccountCategoryForecastDTOConverter)"
+	)
+	private DTOConverter
+		<AssetCategoryCommerceMLForecast, AccountCategoryForecast>
+			_accountCategoryForecastDTOConverter;
 
 	@Reference
 	private AssetCategoryCommerceMLForecastManager

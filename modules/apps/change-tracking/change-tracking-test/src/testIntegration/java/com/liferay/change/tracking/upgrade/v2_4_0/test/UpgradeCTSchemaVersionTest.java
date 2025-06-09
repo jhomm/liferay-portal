@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.upgrade.v2_4_0.test;
@@ -37,6 +28,9 @@ import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
 
 import java.sql.Connection;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -58,8 +52,8 @@ public class UpgradeCTSchemaVersionTest {
 	@Before
 	public void setUp() throws Exception {
 		_ctCollection = _ctCollectionLocalService.addCTCollection(
-			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
-			UpgradeCTSchemaVersionTest.class.getSimpleName(), null);
+			null, TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+			0, UpgradeCTSchemaVersionTest.class.getSimpleName(), null);
 
 		_ctPreferences = _ctPreferencesLocalService.getCTPreferences(
 			TestPropsValues.getCompanyId(), TestPropsValues.getUserId());
@@ -80,13 +74,16 @@ public class UpgradeCTSchemaVersionTest {
 					String toSchemaVersionString, UpgradeStep... upgradeSteps) {
 
 					for (UpgradeStep upgradeStep : upgradeSteps) {
-						Class<?> clazz = upgradeStep.getClass();
-
-						String className = clazz.getName();
-
-						if (className.contains(_CLASS_NAME)) {
-							_upgradeCTSchemaVersion =
+						if (fromSchemaVersionString.equals("2.3.0")) {
+							UpgradeProcess upgradeProcess =
 								(UpgradeProcess)upgradeStep;
+
+							for (UpgradeStep innerUpgradeStep :
+									upgradeProcess.getUpgradeSteps()) {
+
+								_upgradeSteps.add(
+									(UpgradeProcess)innerUpgradeStep);
+							}
 						}
 					}
 				}
@@ -107,12 +104,14 @@ public class UpgradeCTSchemaVersionTest {
 			}
 
 			if (dbInspector.hasColumn("CTCollection", "schemaVersionId")) {
-				db.runSQL(
-					"alter table CTCollection drop column schemaVersionId");
+				db.alterTableDropColumn(
+					connection, "CTCollection", "schemaVersionId");
 			}
 		}
 
-		_upgradeCTSchemaVersion.upgrade();
+		for (UpgradeProcess upgradeProcess : _upgradeSteps) {
+			upgradeProcess.upgrade();
+		}
 
 		CacheRegistryUtil.clear();
 
@@ -133,10 +132,6 @@ public class UpgradeCTSchemaVersionTest {
 			_ctPreferences.getPreviousCtCollectionId());
 	}
 
-	private static final String _CLASS_NAME =
-		"com.liferay.change.tracking.internal.upgrade.v2_4_0." +
-			"CTSchemaVersionUpgradeProcess";
-
 	@Inject
 	private static CTCollectionLocalService _ctCollectionLocalService;
 
@@ -144,7 +139,7 @@ public class UpgradeCTSchemaVersionTest {
 	private static CTPreferencesLocalService _ctPreferencesLocalService;
 
 	@Inject(
-		filter = "(&(component.name=com.liferay.change.tracking.internal.upgrade.ChangeTrackingServiceUpgrade))"
+		filter = "(&(component.name=com.liferay.change.tracking.internal.upgrade.registry.ChangeTrackingServiceUpgradeStepRegistrator))"
 	)
 	private static UpgradeStepRegistrator _upgradeStepRegistrator;
 
@@ -154,6 +149,6 @@ public class UpgradeCTSchemaVersionTest {
 	@DeleteAfterTestRun
 	private CTPreferences _ctPreferences;
 
-	private UpgradeProcess _upgradeCTSchemaVersion;
+	private final List<UpgradeProcess> _upgradeSteps = new ArrayList<>();
 
 }

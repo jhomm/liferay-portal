@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,10 +11,23 @@
 
 <liferay-portlet:renderURL portletConfiguration="<%= true %>" var="configurationRenderURL" />
 
+<clay:stripe
+	displayType="warning"
+	title="warning"
+>
+	<liferay-ui:message key="feature.flag.LPD-13778.description" />
+
+	<liferay-learn:message
+		key="search-pages-and-widgets"
+		resource="portal-search-web"
+	/>
+</clay:stripe>
+
 <liferay-frontend:edit-form
 	action="<%= configurationActionURL %>"
 	method="post"
 	name="fm"
+	onSubmit='<%= "if (" + liferayPortletResponse.getNamespace() + "saveConfiguration) {event.preventDefault(); " + liferayPortletResponse.getNamespace() + "saveConfiguration();}" %>'
 >
 	<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.UPDATE %>" />
 	<aui:input name="tabs2" type="hidden" value='<%= ParamUtil.getString(request, "tabs2") %>' />
@@ -37,28 +41,20 @@
 			refresh="<%= false %>"
 		>
 			<liferay-ui:section>
-				<liferay-frontend:fieldset-group>
-					<%@ include file="/display_settings.jspf" %>
-				</liferay-frontend:fieldset-group>
+				<%@ include file="/display_settings.jspf" %>
 			</liferay-ui:section>
 
 			<liferay-ui:section>
-				<liferay-frontend:fieldset-group>
-					<%@ include file="/spell_check_settings.jspf" %>
-				</liferay-frontend:fieldset-group>
+				<%@ include file="/spell_check_settings.jspf" %>
 			</liferay-ui:section>
 
 			<liferay-ui:section>
-				<liferay-frontend:fieldset-group>
-					<%@ include file="/other_settings.jspf" %>
-				</liferay-frontend:fieldset-group>
+				<%@ include file="/other_settings.jspf" %>
 			</liferay-ui:section>
 		</liferay-ui:tabs>
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" />
-
-		<aui:button type="cancel" />
+		<liferay-frontend:edit-form-buttons />
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>

@@ -1,33 +1,42 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.impl;
 
 import com.liferay.fragment.constants.FragmentActionKeys;
 import com.liferay.fragment.constants.FragmentConstants;
+import com.liferay.fragment.model.FragmentCompositionTable;
 import com.liferay.fragment.model.FragmentEntry;
+import com.liferay.fragment.model.FragmentEntryTable;
+import com.liferay.fragment.service.FragmentCompositionLocalService;
 import com.liferay.fragment.service.base.FragmentEntryServiceBaseImpl;
+import com.liferay.petra.sql.dsl.Column;
+import com.liferay.petra.sql.dsl.DSLFunctionFactoryUtil;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.sql.dsl.Table;
+import com.liferay.petra.sql.dsl.base.BaseTable;
+import com.liferay.petra.sql.dsl.expression.Predicate;
+import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.petra.sql.dsl.query.GroupByStep;
+import com.liferay.petra.sql.dsl.spi.expression.Scalar;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
-import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.dao.orm.WildcardMode;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import java.sql.Types;
+
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -48,58 +57,48 @@ public class FragmentEntryServiceImpl extends FragmentEntryServiceBaseImpl {
 	@Override
 	public FragmentEntry addFragmentEntry(
 			long groupId, long fragmentCollectionId, String fragmentEntryKey,
-			String name, long previewFileEntryId, int type, int status,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), groupId,
-			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
-
-		return fragmentEntryLocalService.addFragmentEntry(
-			getUserId(), groupId, fragmentCollectionId, fragmentEntryKey, name,
-			previewFileEntryId, type, status, serviceContext);
-	}
-
-	@Override
-	public FragmentEntry addFragmentEntry(
-			long groupId, long fragmentCollectionId, String fragmentEntryKey,
-			String name, String css, String html, String js, boolean cacheable,
-			String configuration, long previewFileEntryId, int type, int status,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), groupId,
-			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
-
-		return fragmentEntryLocalService.addFragmentEntry(
-			getUserId(), groupId, fragmentCollectionId, fragmentEntryKey, name,
-			css, html, js, cacheable, configuration, previewFileEntryId, type,
-			status, serviceContext);
-	}
-
-	@Override
-	public FragmentEntry addFragmentEntry(
-			long groupId, long fragmentCollectionId, String fragmentEntryKey,
 			String name, String css, String html, String js,
 			String configuration, long previewFileEntryId, int type, int status,
 			ServiceContext serviceContext)
 		throws PortalException {
 
+		// LPS-190674 Maintain method for backwards compatibility with the
+		// Fragments Toolkit
+
 		_portletResourcePermission.check(
 			getPermissionChecker(), groupId,
 			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
 
 		return fragmentEntryLocalService.addFragmentEntry(
-			getUserId(), groupId, fragmentCollectionId, fragmentEntryKey, name,
-			css, html, js, configuration, previewFileEntryId, type, status,
-			serviceContext);
+			null, getUserId(), groupId, fragmentCollectionId, fragmentEntryKey,
+			name, css, html, js, false, configuration, null, previewFileEntryId,
+			false, false, type, null, status, serviceContext);
+	}
+
+	@Override
+	public FragmentEntry addFragmentEntry(
+			String externalReferenceCode, long groupId,
+			long fragmentCollectionId, String fragmentEntryKey, String name,
+			String css, String html, String js, boolean cacheable,
+			String configuration, String icon, long previewFileEntryId,
+			boolean marketplace, boolean readOnly, int type, String typeOptions,
+			int status, ServiceContext serviceContext)
+		throws PortalException {
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), groupId,
+			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
+
+		return fragmentEntryLocalService.addFragmentEntry(
+			externalReferenceCode, getUserId(), groupId, fragmentCollectionId,
+			fragmentEntryKey, name, css, html, js, cacheable, configuration,
+			icon, previewFileEntryId, marketplace, readOnly, type, typeOptions,
+			status, serviceContext);
 	}
 
 	@Override
 	public FragmentEntry copyFragmentEntry(
-			long groupId, long fragmentEntryId, long fragmentCollectionId,
+			long groupId, long sourceFragmentEntryId, long fragmentCollectionId,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -108,7 +107,7 @@ public class FragmentEntryServiceImpl extends FragmentEntryServiceBaseImpl {
 			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
 
 		return fragmentEntryLocalService.copyFragmentEntry(
-			getUserId(), groupId, fragmentEntryId, fragmentCollectionId,
+			getUserId(), groupId, sourceFragmentEntryId, fragmentCollectionId,
 			serviceContext);
 	}
 
@@ -143,6 +142,19 @@ public class FragmentEntryServiceImpl extends FragmentEntryServiceBaseImpl {
 	}
 
 	@Override
+	public FragmentEntry deleteFragmentEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), groupId,
+			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
+
+		return fragmentEntryLocalService.deleteFragmentEntry(
+			externalReferenceCode, groupId);
+	}
+
+	@Override
 	public FragmentEntry fetchDraft(long primaryKey) {
 		return fragmentEntryLocalService.fetchDraft(primaryKey);
 	}
@@ -164,11 +176,9 @@ public class FragmentEntryServiceImpl extends FragmentEntryServiceBaseImpl {
 		long groupId, long fragmentCollectionId, int status, int start, int end,
 		OrderByComparator<?> orderByComparator) {
 
-		QueryDefinition<?> queryDefinition = new QueryDefinition<>(
-			status, start, end, (OrderByComparator<Object>)orderByComparator);
-
-		return fragmentEntryFinder.findFC_FE_ByG_FCI(
-			groupId, fragmentCollectionId, queryDefinition);
+		return getFragmentCompositionsAndFragmentEntries(
+			groupId, fragmentCollectionId, StringPool.BLANK, status, start, end,
+			orderByComparator);
 	}
 
 	@Override
@@ -176,31 +186,97 @@ public class FragmentEntryServiceImpl extends FragmentEntryServiceBaseImpl {
 		long groupId, long fragmentCollectionId, String name, int status,
 		int start, int end, OrderByComparator<?> orderByComparator) {
 
-		QueryDefinition<?> queryDefinition = new QueryDefinition<>(
-			status, start, end, (OrderByComparator<Object>)orderByComparator);
+		List<Object> fragmentCompositionsAndFragmentEntries = new ArrayList<>();
 
-		return fragmentEntryFinder.findFC_FE_ByG_FCI_N(
-			groupId, fragmentCollectionId, name, queryDefinition);
+		Table<?> fragmentCompositionsAndFragmentEntriesTable =
+			_getFragmentCompositionGroupByStep(
+				groupId, fragmentCollectionId, name, status
+			).unionAll(
+				_getFragmentEntryGroupByStep(
+					groupId, fragmentCollectionId, name, status)
+			).as(
+				"TEMP_TABLE",
+				FragmentCompositionsAndFragmentEntriesTable.INSTANCE
+			);
+
+		DSLQuery dslQuery = DSLQueryFactoryUtil.select(
+			fragmentCompositionsAndFragmentEntriesTable
+		).from(
+			fragmentCompositionsAndFragmentEntriesTable
+		).orderBy(
+			fragmentCompositionsAndFragmentEntriesTable, orderByComparator
+		).limit(
+			start, end
+		);
+
+		for (Object[] array :
+				fragmentEntryPersistence.<List<Object[]>>dslQuery(dslQuery)) {
+
+			long fragmentCompositionId = GetterUtil.getLong(array[0]);
+
+			if (fragmentCompositionId > 0) {
+				fragmentCompositionsAndFragmentEntries.add(
+					_fragmentCompositionLocalService.fetchFragmentComposition(
+						fragmentCompositionId));
+
+				continue;
+			}
+
+			fragmentCompositionsAndFragmentEntries.add(
+				fragmentEntryLocalService.fetchFragmentEntry(
+					GetterUtil.getLong(array[1])));
+		}
+
+		return fragmentCompositionsAndFragmentEntries;
 	}
 
 	@Override
 	public int getFragmentCompositionsAndFragmentEntriesCount(
 		long groupId, long fragmentCollectionId, int status) {
 
-		QueryDefinition<?> queryDefinition = new QueryDefinition<>(status);
-
-		return fragmentEntryFinder.countFC_FE_ByG_FCI(
-			groupId, fragmentCollectionId, queryDefinition);
+		return getFragmentCompositionsAndFragmentEntriesCount(
+			groupId, fragmentCollectionId, null, status);
 	}
 
 	@Override
 	public int getFragmentCompositionsAndFragmentEntriesCount(
 		long groupId, long fragmentCollectionId, String name, int status) {
 
-		QueryDefinition<?> queryDefinition = new QueryDefinition<>(status);
+		Table<?> fragmentCompositionsAndFragmentEntriesTable =
+			DSLQueryFactoryUtil.countDistinct(
+				FragmentCompositionTable.INSTANCE.fragmentCompositionId
+			).from(
+				FragmentCompositionTable.INSTANCE
+			).where(
+				_getFragmentCompositionWherePredicate(
+					groupId, fragmentCollectionId, name, status)
+			).unionAll(
+				DSLQueryFactoryUtil.countDistinct(
+					FragmentEntryTable.INSTANCE.fragmentEntryId
+				).from(
+					FragmentEntryTable.INSTANCE
+				).where(
+					_getFragmentEntryWherePredicate(
+						groupId, fragmentCollectionId, name, status)
+				)
+			).as(
+				"TEMP_TABLE"
+			);
 
-		return fragmentEntryFinder.countFC_FE_ByG_FCI_N(
-			groupId, fragmentCollectionId, name, queryDefinition);
+		DSLQuery dslQuery = DSLQueryFactoryUtil.select(
+		).from(
+			fragmentCompositionsAndFragmentEntriesTable
+		);
+
+		int count = 0;
+
+		for (Object countValue :
+				fragmentEntryPersistence.<List<Object>>dslQuery(dslQuery)) {
+
+			count += GetterUtil.getInteger(countValue);
+		}
+
+		return count;
 	}
 
 	@Override
@@ -385,6 +461,19 @@ public class FragmentEntryServiceImpl extends FragmentEntryServiceBaseImpl {
 	}
 
 	@Override
+	public FragmentEntry getFragmentEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), groupId,
+			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
+
+		return fragmentEntryPersistence.findByERC_G_Head(
+			externalReferenceCode, groupId, true);
+	}
+
+	@Override
 	public String[] getTempFileNames(long groupId, String folderName)
 		throws PortalException {
 
@@ -447,6 +536,22 @@ public class FragmentEntryServiceImpl extends FragmentEntryServiceBaseImpl {
 
 	@Override
 	public FragmentEntry updateFragmentEntry(
+			long fragmentEntryId, boolean cacheable)
+		throws PortalException {
+
+		FragmentEntry fragmentEntry =
+			fragmentEntryLocalService.getFragmentEntry(fragmentEntryId);
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), fragmentEntry.getGroupId(),
+			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
+
+		return fragmentEntryLocalService.updateFragmentEntry(
+			fragmentEntryId, cacheable);
+	}
+
+	@Override
+	public FragmentEntry updateFragmentEntry(
 			long fragmentEntryId, long previewFileEntryId)
 		throws PortalException {
 
@@ -465,7 +570,8 @@ public class FragmentEntryServiceImpl extends FragmentEntryServiceBaseImpl {
 	public FragmentEntry updateFragmentEntry(
 			long fragmentEntryId, long fragmentCollectionId, String name,
 			String css, String html, String js, boolean cacheable,
-			String configuration, long previewFileEntryId, int status)
+			String configuration, String icon, long previewFileEntryId,
+			boolean readOnly, String typeOptions, int status)
 		throws PortalException {
 
 		FragmentEntry fragmentEntry =
@@ -477,7 +583,8 @@ public class FragmentEntryServiceImpl extends FragmentEntryServiceBaseImpl {
 
 		return fragmentEntryLocalService.updateFragmentEntry(
 			getUserId(), fragmentEntryId, fragmentCollectionId, name, css, html,
-			js, cacheable, configuration, previewFileEntryId, status);
+			js, cacheable, configuration, icon, previewFileEntryId, readOnly,
+			typeOptions, status);
 	}
 
 	@Override
@@ -495,86 +602,147 @@ public class FragmentEntryServiceImpl extends FragmentEntryServiceBaseImpl {
 			fragmentEntryId, name);
 	}
 
-	@Override
-	public FragmentEntry updateFragmentEntry(
-			long fragmentEntryId, String name, String css, String html,
-			String js, boolean cacheable, String configuration, int status)
-		throws PortalException {
+	private GroupByStep _getFragmentCompositionGroupByStep(
+		long groupId, long fragmentCollectionId, String name, int status) {
 
-		FragmentEntry fragmentEntry =
-			fragmentEntryLocalService.getFragmentEntry(fragmentEntryId);
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), fragmentEntry.getGroupId(),
-			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
-
-		return fragmentEntryLocalService.updateFragmentEntry(
-			getUserId(), fragmentEntryId, name, css, html, js, cacheable,
-			configuration, fragmentEntry.getPreviewFileEntryId(), status);
+		return DSLQueryFactoryUtil.selectDistinct(
+			FragmentCompositionTable.INSTANCE.fragmentCompositionId,
+			new Scalar<>(
+				0L
+			).as(
+				"fragmentEntryId"
+			),
+			FragmentCompositionTable.INSTANCE.createDate,
+			FragmentCompositionTable.INSTANCE.modifiedDate,
+			FragmentCompositionTable.INSTANCE.name
+		).from(
+			FragmentCompositionTable.INSTANCE
+		).where(
+			_getFragmentCompositionWherePredicate(
+				groupId, fragmentCollectionId, name, status)
+		);
 	}
 
-	@Override
-	public FragmentEntry updateFragmentEntry(
-			long fragmentEntryId, String name, String css, String html,
-			String js, boolean cacheable, String configuration,
-			long previewFileEntryId, int status)
-		throws PortalException {
+	private Predicate _getFragmentCompositionWherePredicate(
+		long groupId, long fragmentCollectionId, String name, int status) {
 
-		FragmentEntry fragmentEntry =
-			fragmentEntryLocalService.getFragmentEntry(fragmentEntryId);
+		return FragmentCompositionTable.INSTANCE.groupId.eq(
+			groupId
+		).and(
+			FragmentCompositionTable.INSTANCE.fragmentCollectionId.eq(
+				fragmentCollectionId)
+		).and(
+			() -> {
+				if (Validator.isNull(name)) {
+					return null;
+				}
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), fragmentEntry.getGroupId(),
-			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
+				return DSLFunctionFactoryUtil.lower(
+					FragmentCompositionTable.INSTANCE.name
+				).like(
+					_customSQL.keywords(name, true, WildcardMode.SURROUND)[0]
+				);
+			}
+		).and(
+			() -> {
+				if (status != WorkflowConstants.STATUS_ANY) {
+					return FragmentCompositionTable.INSTANCE.status.eq(status);
+				}
 
-		return fragmentEntryLocalService.updateFragmentEntry(
-			getUserId(), fragmentEntryId, name, css, html, js, cacheable,
-			configuration, previewFileEntryId, status);
+				return null;
+			}
+		);
 	}
 
-	@Override
-	public FragmentEntry updateFragmentEntry(
-			long fragmentEntryId, String name, String css, String html,
-			String js, String configuration, int status)
-		throws PortalException {
+	private GroupByStep _getFragmentEntryGroupByStep(
+		long groupId, long fragmentCollectionId, String name, int status) {
 
-		FragmentEntry fragmentEntry =
-			fragmentEntryLocalService.getFragmentEntry(fragmentEntryId);
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), fragmentEntry.getGroupId(),
-			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
-
-		return fragmentEntryLocalService.updateFragmentEntry(
-			getUserId(), fragmentEntryId, name, css, html, js, configuration,
-			status);
+		return DSLQueryFactoryUtil.selectDistinct(
+			new Scalar<>(
+				0L
+			).as(
+				"fragmentCompositionId"
+			),
+			FragmentEntryTable.INSTANCE.fragmentEntryId,
+			FragmentEntryTable.INSTANCE.createDate,
+			FragmentEntryTable.INSTANCE.modifiedDate,
+			FragmentEntryTable.INSTANCE.name
+		).from(
+			FragmentEntryTable.INSTANCE
+		).where(
+			_getFragmentEntryWherePredicate(
+				groupId, fragmentCollectionId, name, status)
+		);
 	}
 
-	@Override
-	public FragmentEntry updateFragmentEntry(
-			long fragmentEntryId, String name, String css, String html,
-			String js, String configuration, long previewFileEntryId,
-			int status)
-		throws PortalException {
+	private Predicate _getFragmentEntryWherePredicate(
+		long groupId, long fragmentCollectionId, String name, int status) {
 
-		FragmentEntry fragmentEntry =
-			fragmentEntryLocalService.getFragmentEntry(fragmentEntryId);
+		return FragmentEntryTable.INSTANCE.groupId.eq(
+			groupId
+		).and(
+			FragmentEntryTable.INSTANCE.fragmentCollectionId.eq(
+				fragmentCollectionId)
+		).and(
+			FragmentEntryTable.INSTANCE.head.eq(
+				true
+			).or(
+				FragmentEntryTable.INSTANCE.headId.eq(
+					FragmentEntryTable.INSTANCE.fragmentEntryId)
+			).withParentheses()
+		).and(
+			() -> {
+				if (Validator.isNull(name)) {
+					return null;
+				}
 
-		_portletResourcePermission.check(
-			getPermissionChecker(), fragmentEntry.getGroupId(),
-			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
+				return DSLFunctionFactoryUtil.lower(
+					FragmentEntryTable.INSTANCE.name
+				).like(
+					_customSQL.keywords(name, true, WildcardMode.SURROUND)[0]
+				);
+			}
+		).and(
+			() -> {
+				if (status != WorkflowConstants.STATUS_ANY) {
+					return FragmentEntryTable.INSTANCE.status.eq(status);
+				}
 
-		return fragmentEntryLocalService.updateFragmentEntry(
-			getUserId(), fragmentEntryId, name, css, html, js, configuration,
-			previewFileEntryId, status);
+				return null;
+			}
+		);
 	}
 
 	@Reference
 	private CustomSQL _customSQL;
 
+	@Reference
+	private FragmentCompositionLocalService _fragmentCompositionLocalService;
+
 	@Reference(
 		target = "(resource.name=" + FragmentConstants.RESOURCE_NAME + ")"
 	)
 	private PortletResourcePermission _portletResourcePermission;
+
+	private static class FragmentCompositionsAndFragmentEntriesTable
+		extends BaseTable<FragmentCompositionsAndFragmentEntriesTable> {
+
+		public static final FragmentCompositionsAndFragmentEntriesTable
+			INSTANCE = new FragmentCompositionsAndFragmentEntriesTable();
+
+		public final Column<FragmentCompositionsAndFragmentEntriesTable, Date>
+			modifiedDateColumn = createColumn(
+				"modifiedDate", Date.class, Types.TIMESTAMP,
+				Column.FLAG_DEFAULT);
+		public final Column<FragmentCompositionsAndFragmentEntriesTable, String>
+			nameColumn = createColumn(
+				"name", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+
+		private FragmentCompositionsAndFragmentEntriesTable() {
+			super(
+				"TEMP_TABLE", FragmentCompositionsAndFragmentEntriesTable::new);
+		}
+
+	}
 
 }

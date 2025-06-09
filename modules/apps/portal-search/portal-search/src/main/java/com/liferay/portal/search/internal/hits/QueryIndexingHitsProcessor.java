@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.hits;
@@ -31,9 +22,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  * @author Josef Sustacek
  */
-@Component(
-	immediate = true, property = "sort.order=2", service = HitsProcessor.class
-)
+@Component(property = "sort.order=2", service = HitsProcessor.class)
 public class QueryIndexingHitsProcessor implements HitsProcessor {
 
 	@Override
@@ -47,7 +36,7 @@ public class QueryIndexingHitsProcessor implements HitsProcessor {
 		}
 
 		if (hits.getLength() >= queryConfig.getQueryIndexingThreshold()) {
-			addDocument(
+			_addDocument(
 				searchContext.getCompanyId(), searchContext.getKeywords(),
 				searchContext.getLocale());
 		}
@@ -55,15 +44,15 @@ public class QueryIndexingHitsProcessor implements HitsProcessor {
 		return true;
 	}
 
-	protected void addDocument(long companyId, String keywords, Locale locale)
+	@Reference
+	protected IndexWriterHelper indexWriterHelper;
+
+	private void _addDocument(long companyId, String keywords, Locale locale)
 		throws SearchException {
 
 		indexWriterHelper.indexKeyword(
 			companyId, keywords, 0, SuggestionConstants.TYPE_QUERY_SUGGESTION,
 			locale);
 	}
-
-	@Reference
-	protected IndexWriterHelper indexWriterHelper;
 
 }

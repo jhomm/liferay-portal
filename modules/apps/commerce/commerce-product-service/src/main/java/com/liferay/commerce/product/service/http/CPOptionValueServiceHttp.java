@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.http;
@@ -46,7 +37,6 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Marco Leo
- * @see CPOptionValueServiceSoap
  * @generated
  */
 public class CPOptionValueServiceHttp {
@@ -54,7 +44,7 @@ public class CPOptionValueServiceHttp {
 	public static com.liferay.commerce.product.model.CPOptionValue
 			addCPOptionValue(
 				HttpPrincipal httpPrincipal, long cpOptionId,
-				java.util.Map<java.util.Locale, String> titleMap,
+				java.util.Map<java.util.Locale, String> nameMap,
 				double priority, String key,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -65,7 +55,7 @@ public class CPOptionValueServiceHttp {
 				_addCPOptionValueParameterTypes0);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, cpOptionId, titleMap, priority, key, serviceContext);
+				methodKey, cpOptionId, nameMap, priority, key, serviceContext);
 
 			Object returnObj = null;
 
@@ -178,18 +168,17 @@ public class CPOptionValueServiceHttp {
 	}
 
 	public static com.liferay.commerce.product.model.CPOptionValue
-			fetchByExternalReferenceCode(
-				HttpPrincipal httpPrincipal, String externalReferenceCode,
-				long companyId)
+			fetchCPOptionValue(
+				HttpPrincipal httpPrincipal, long cpOptionValueId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
-				CPOptionValueServiceUtil.class, "fetchByExternalReferenceCode",
-				_fetchByExternalReferenceCodeParameterTypes3);
+				CPOptionValueServiceUtil.class, "fetchCPOptionValue",
+				_fetchCPOptionValueParameterTypes3);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, externalReferenceCode, companyId);
+				methodKey, cpOptionValueId);
 
 			Object returnObj = null;
 
@@ -220,17 +209,19 @@ public class CPOptionValueServiceHttp {
 	}
 
 	public static com.liferay.commerce.product.model.CPOptionValue
-			fetchCPOptionValue(
-				HttpPrincipal httpPrincipal, long cpOptionValueId)
+			fetchCPOptionValueByExternalReferenceCode(
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
-				CPOptionValueServiceUtil.class, "fetchCPOptionValue",
-				_fetchCPOptionValueParameterTypes4);
+				CPOptionValueServiceUtil.class,
+				"fetchCPOptionValueByExternalReferenceCode",
+				_fetchCPOptionValueByExternalReferenceCodeParameterTypes4);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, cpOptionValueId);
+				methodKey, externalReferenceCode, companyId);
 
 			Object returnObj = null;
 
@@ -471,7 +462,7 @@ public class CPOptionValueServiceHttp {
 	public static com.liferay.commerce.product.model.CPOptionValue
 			updateCPOptionValue(
 				HttpPrincipal httpPrincipal, long cpOptionValueId,
-				java.util.Map<java.util.Locale, String> titleMap,
+				java.util.Map<java.util.Locale, String> nameMap,
 				double priority, String key,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -482,7 +473,7 @@ public class CPOptionValueServiceHttp {
 				_updateCPOptionValueParameterTypes10);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, cpOptionValueId, titleMap, priority, key,
+				methodKey, cpOptionValueId, nameMap, priority, key,
 				serviceContext);
 
 			Object returnObj = null;
@@ -528,12 +519,11 @@ public class CPOptionValueServiceHttp {
 		};
 	private static final Class<?>[] _deleteCPOptionValueParameterTypes2 =
 		new Class[] {long.class};
-	private static final Class<?>[]
-		_fetchByExternalReferenceCodeParameterTypes3 = new Class[] {
-			String.class, long.class
-		};
-	private static final Class<?>[] _fetchCPOptionValueParameterTypes4 =
+	private static final Class<?>[] _fetchCPOptionValueParameterTypes3 =
 		new Class[] {long.class};
+	private static final Class<?>[]
+		_fetchCPOptionValueByExternalReferenceCodeParameterTypes4 =
+			new Class[] {String.class, long.class};
 	private static final Class<?>[] _getCPOptionValueParameterTypes5 =
 		new Class[] {long.class};
 	private static final Class<?>[] _getCPOptionValuesParameterTypes6 =

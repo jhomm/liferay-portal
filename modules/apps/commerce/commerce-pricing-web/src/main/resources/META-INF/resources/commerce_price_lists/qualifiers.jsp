@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -114,49 +105,49 @@ boolean hasPermission = commercePriceListQualifiersDisplayContext.hasPermission(
 	</c:if>
 </aui:form>
 
-<aui:script>
+<aui:script sandbox="<%= true %>">
 	Liferay.provide(
 		window,
 		'<portlet:namespace />chooseAccountQualifiers',
 		(value) => {
-			var portletURL = new Liferay.PortletURL.createURL(
-				'<%= currentURLObj %>'
+			const portletURL = Liferay.Util.PortletURL.createPortletURL(
+				'<%= currentURLObj %>',
+				{
+					accountQualifiers: value,
+				}
 			);
 
-			portletURL.setParameter('accountQualifiers', value);
-
 			window.location.replace(portletURL.toString());
-		},
-		['liferay-portlet-url']
+		}
 	);
 
 	Liferay.provide(
 		window,
 		'<portlet:namespace />chooseChannelQualifiers',
 		(value) => {
-			var portletURL = new Liferay.PortletURL.createURL(
-				'<%= currentURLObj %>'
+			const portletURL = Liferay.Util.PortletURL.createPortletURL(
+				'<%= currentURLObj %>',
+				{
+					channelQualifiers: value,
+				}
 			);
 
-			portletURL.setParameter('channelQualifiers', value);
-
 			window.location.replace(portletURL.toString());
-		},
-		['liferay-portlet-url']
+		}
 	);
 
 	Liferay.provide(
 		window,
 		'<portlet:namespace />chooseOrderTypeQualifiers',
 		(value) => {
-			var portletURL = new Liferay.PortletURL.createURL(
-				'<%= currentURLObj %>'
+			const portletURL = Liferay.Util.PortletURL.createPortletURL(
+				'<%= currentURLObj %>',
+				{
+					orderTypeQualifiers: value,
+				}
 			);
 
-			portletURL.setParameter('orderTypeQualifiers', value);
-
 			window.location.replace(portletURL.toString());
-		},
-		['liferay-portlet-url']
+		}
 	);
 </aui:script>

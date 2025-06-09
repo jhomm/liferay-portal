@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.order.dto.v1_0;
@@ -20,11 +11,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -32,14 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alessio Antonio Rendina
@@ -47,8 +38,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("OrderRuleOrderType")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"orderRuleId", "orderTypeId"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"orderRuleId", "orderTypeId"})
 @XmlRootElement(name = "OrderRuleOrderType")
 public class OrderRuleOrderType implements Serializable {
 
@@ -60,14 +53,22 @@ public class OrderRuleOrderType implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(OrderRuleOrderType.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -75,23 +76,35 @@ public class OrderRuleOrderType implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "PAB-34098-789-N")
 	public String getOrderRuleExternalReferenceCode() {
+		if (_orderRuleExternalReferenceCodeSupplier != null) {
+			orderRuleExternalReferenceCode =
+				_orderRuleExternalReferenceCodeSupplier.get();
+
+			_orderRuleExternalReferenceCodeSupplier = null;
+		}
+
 		return orderRuleExternalReferenceCode;
 	}
 
@@ -99,6 +112,8 @@ public class OrderRuleOrderType implements Serializable {
 		String orderRuleExternalReferenceCode) {
 
 		this.orderRuleExternalReferenceCode = orderRuleExternalReferenceCode;
+
+		_orderRuleExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -106,45 +121,59 @@ public class OrderRuleOrderType implements Serializable {
 		UnsafeSupplier<String, Exception>
 			orderRuleExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			orderRuleExternalReferenceCode =
-				orderRuleExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderRuleExternalReferenceCodeSupplier = () -> {
+			try {
+				return orderRuleExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String orderRuleExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _orderRuleExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
 	public Long getOrderRuleId() {
+		if (_orderRuleIdSupplier != null) {
+			orderRuleId = _orderRuleIdSupplier.get();
+
+			_orderRuleIdSupplier = null;
+		}
+
 		return orderRuleId;
 	}
 
 	public void setOrderRuleId(Long orderRuleId) {
 		this.orderRuleId = orderRuleId;
+
+		_orderRuleIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderRuleId(
 		UnsafeSupplier<Long, Exception> orderRuleIdUnsafeSupplier) {
 
-		try {
-			orderRuleId = orderRuleIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderRuleIdSupplier = () -> {
+			try {
+				return orderRuleIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -152,66 +181,102 @@ public class OrderRuleOrderType implements Serializable {
 	@NotNull
 	protected Long orderRuleId;
 
+	@JsonIgnore
+	private Supplier<Long> _orderRuleIdSupplier;
+
 	@DecimalMin("0")
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30643")
 	public Long getOrderRuleOrderTypeId() {
+		if (_orderRuleOrderTypeIdSupplier != null) {
+			orderRuleOrderTypeId = _orderRuleOrderTypeIdSupplier.get();
+
+			_orderRuleOrderTypeIdSupplier = null;
+		}
+
 		return orderRuleOrderTypeId;
 	}
 
 	public void setOrderRuleOrderTypeId(Long orderRuleOrderTypeId) {
 		this.orderRuleOrderTypeId = orderRuleOrderTypeId;
+
+		_orderRuleOrderTypeIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderRuleOrderTypeId(
 		UnsafeSupplier<Long, Exception> orderRuleOrderTypeIdUnsafeSupplier) {
 
-		try {
-			orderRuleOrderTypeId = orderRuleOrderTypeIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderRuleOrderTypeIdSupplier = () -> {
+			try {
+				return orderRuleOrderTypeIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long orderRuleOrderTypeId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _orderRuleOrderTypeIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public OrderType getOrderType() {
+		if (_orderTypeSupplier != null) {
+			orderType = _orderTypeSupplier.get();
+
+			_orderTypeSupplier = null;
+		}
+
 		return orderType;
 	}
 
 	public void setOrderType(OrderType orderType) {
 		this.orderType = orderType;
+
+		_orderTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderType(
 		UnsafeSupplier<OrderType, Exception> orderTypeUnsafeSupplier) {
 
-		try {
-			orderType = orderTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeSupplier = () -> {
+			try {
+				return orderTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected OrderType orderType;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<OrderType> _orderTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "DAB-34098-789-N")
 	public String getOrderTypeExternalReferenceCode() {
+		if (_orderTypeExternalReferenceCodeSupplier != null) {
+			orderTypeExternalReferenceCode =
+				_orderTypeExternalReferenceCodeSupplier.get();
+
+			_orderTypeExternalReferenceCodeSupplier = null;
+		}
+
 		return orderTypeExternalReferenceCode;
 	}
 
@@ -219,6 +284,8 @@ public class OrderRuleOrderType implements Serializable {
 		String orderTypeExternalReferenceCode) {
 
 		this.orderTypeExternalReferenceCode = orderTypeExternalReferenceCode;
+
+		_orderTypeExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -226,51 +293,68 @@ public class OrderRuleOrderType implements Serializable {
 		UnsafeSupplier<String, Exception>
 			orderTypeExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			orderTypeExternalReferenceCode =
-				orderTypeExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeExternalReferenceCodeSupplier = () -> {
+			try {
+				return orderTypeExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String orderTypeExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _orderTypeExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30324")
 	public Long getOrderTypeId() {
+		if (_orderTypeIdSupplier != null) {
+			orderTypeId = _orderTypeIdSupplier.get();
+
+			_orderTypeIdSupplier = null;
+		}
+
 		return orderTypeId;
 	}
 
 	public void setOrderTypeId(Long orderTypeId) {
 		this.orderTypeId = orderTypeId;
+
+		_orderTypeIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderTypeId(
 		UnsafeSupplier<Long, Exception> orderTypeIdUnsafeSupplier) {
 
-		try {
-			orderTypeId = orderTypeIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeIdSupplier = () -> {
+			try {
+				return orderTypeIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Long orderTypeId;
+
+	@JsonIgnore
+	private Supplier<Long> _orderTypeIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -299,6 +383,8 @@ public class OrderRuleOrderType implements Serializable {
 
 		sb.append("{");
 
+		Map<String, Map<String, String>> actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -308,6 +394,9 @@ public class OrderRuleOrderType implements Serializable {
 
 			sb.append(_toJSON(actions));
 		}
+
+		String orderRuleExternalReferenceCode =
+			getOrderRuleExternalReferenceCode();
 
 		if (orderRuleExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -323,6 +412,8 @@ public class OrderRuleOrderType implements Serializable {
 			sb.append("\"");
 		}
 
+		Long orderRuleId = getOrderRuleId();
+
 		if (orderRuleId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -332,6 +423,8 @@ public class OrderRuleOrderType implements Serializable {
 
 			sb.append(orderRuleId);
 		}
+
+		Long orderRuleOrderTypeId = getOrderRuleOrderTypeId();
 
 		if (orderRuleOrderTypeId != null) {
 			if (sb.length() > 1) {
@@ -343,6 +436,8 @@ public class OrderRuleOrderType implements Serializable {
 			sb.append(orderRuleOrderTypeId);
 		}
 
+		OrderType orderType = getOrderType();
+
 		if (orderType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -352,6 +447,9 @@ public class OrderRuleOrderType implements Serializable {
 
 			sb.append(String.valueOf(orderType));
 		}
+
+		String orderTypeExternalReferenceCode =
+			getOrderTypeExternalReferenceCode();
 
 		if (orderTypeExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -366,6 +464,8 @@ public class OrderRuleOrderType implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long orderTypeId = getOrderTypeId();
 
 		if (orderTypeId != null) {
 			if (sb.length() > 1) {
@@ -382,17 +482,17 @@ public class OrderRuleOrderType implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.order.dto.v1_0.OrderRuleOrderType",
 		name = "x-class-name"
 	)
 	public String xClassName;
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -418,7 +518,7 @@ public class OrderRuleOrderType implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -429,7 +529,10 @@ public class OrderRuleOrderType implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -450,7 +553,7 @@ public class OrderRuleOrderType implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -466,5 +569,12 @@ public class OrderRuleOrderType implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

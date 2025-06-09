@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model;
@@ -19,8 +10,10 @@ import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.model.LocalizedModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 import com.liferay.portal.kernel.model.StagedAuditedModel;
+import com.liferay.portal.kernel.model.change.tracking.CTModel;
 
 import java.util.Date;
 import java.util.Locale;
@@ -41,8 +34,9 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface CPDefinitionOptionRelModel
-	extends BaseModel<CPDefinitionOptionRel>, GroupedModel, LocalizedModel,
-			ShardedModel, StagedAuditedModel {
+	extends BaseModel<CPDefinitionOptionRel>, CTModel<CPDefinitionOptionRel>,
+			GroupedModel, LocalizedModel, MVCCModel, ShardedModel,
+			StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -55,6 +49,7 @@ public interface CPDefinitionOptionRelModel
 	 *
 	 * @return the primary key of this cp definition option rel
 	 */
+	@Override
 	public long getPrimaryKey();
 
 	/**
@@ -62,7 +57,40 @@ public interface CPDefinitionOptionRelModel
 	 *
 	 * @param primaryKey the primary key of this cp definition option rel
 	 */
+	@Override
 	public void setPrimaryKey(long primaryKey);
+
+	/**
+	 * Returns the mvcc version of this cp definition option rel.
+	 *
+	 * @return the mvcc version of this cp definition option rel
+	 */
+	@Override
+	public long getMvccVersion();
+
+	/**
+	 * Sets the mvcc version of this cp definition option rel.
+	 *
+	 * @param mvccVersion the mvcc version of this cp definition option rel
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion);
+
+	/**
+	 * Returns the ct collection ID of this cp definition option rel.
+	 *
+	 * @return the ct collection ID of this cp definition option rel
+	 */
+	@Override
+	public long getCtCollectionId();
+
+	/**
+	 * Sets the ct collection ID of this cp definition option rel.
+	 *
+	 * @param ctCollectionId the ct collection ID of this cp definition option rel
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId);
 
 	/**
 	 * Returns the uuid of this cp definition option rel.
@@ -437,19 +465,34 @@ public interface CPDefinitionOptionRelModel
 		Map<Locale, String> descriptionMap, Locale defaultLocale);
 
 	/**
-	 * Returns the ddm form field type name of this cp definition option rel.
+	 * Returns the commerce option type key of this cp definition option rel.
 	 *
-	 * @return the ddm form field type name of this cp definition option rel
+	 * @return the commerce option type key of this cp definition option rel
 	 */
 	@AutoEscape
-	public String getDDMFormFieldTypeName();
+	public String getCommerceOptionTypeKey();
 
 	/**
-	 * Sets the ddm form field type name of this cp definition option rel.
+	 * Sets the commerce option type key of this cp definition option rel.
 	 *
-	 * @param DDMFormFieldTypeName the ddm form field type name of this cp definition option rel
+	 * @param commerceOptionTypeKey the commerce option type key of this cp definition option rel
 	 */
-	public void setDDMFormFieldTypeName(String DDMFormFieldTypeName);
+	public void setCommerceOptionTypeKey(String commerceOptionTypeKey);
+
+	/**
+	 * Returns the info item service key of this cp definition option rel.
+	 *
+	 * @return the info item service key of this cp definition option rel
+	 */
+	@AutoEscape
+	public String getInfoItemServiceKey();
+
+	/**
+	 * Sets the info item service key of this cp definition option rel.
+	 *
+	 * @param infoItemServiceKey the info item service key of this cp definition option rel
+	 */
+	public void setInfoItemServiceKey(String infoItemServiceKey);
 
 	/**
 	 * Returns the priority of this cp definition option rel.
@@ -464,6 +507,27 @@ public interface CPDefinitionOptionRelModel
 	 * @param priority the priority of this cp definition option rel
 	 */
 	public void setPriority(double priority);
+
+	/**
+	 * Returns the defined externally of this cp definition option rel.
+	 *
+	 * @return the defined externally of this cp definition option rel
+	 */
+	public boolean getDefinedExternally();
+
+	/**
+	 * Returns <code>true</code> if this cp definition option rel is defined externally.
+	 *
+	 * @return <code>true</code> if this cp definition option rel is defined externally; <code>false</code> otherwise
+	 */
+	public boolean isDefinedExternally();
+
+	/**
+	 * Sets whether this cp definition option rel is defined externally.
+	 *
+	 * @param definedExternally the defined externally of this cp definition option rel
+	 */
+	public void setDefinedExternally(boolean definedExternally);
 
 	/**
 	 * Returns the facetable of this cp definition option rel.
@@ -558,6 +622,21 @@ public interface CPDefinitionOptionRelModel
 	 */
 	public void setPriceType(String priceType);
 
+	/**
+	 * Returns the type settings of this cp definition option rel.
+	 *
+	 * @return the type settings of this cp definition option rel
+	 */
+	@AutoEscape
+	public String getTypeSettings();
+
+	/**
+	 * Sets the type settings of this cp definition option rel.
+	 *
+	 * @param typeSettings the type settings of this cp definition option rel
+	 */
+	public void setTypeSettings(String typeSettings);
+
 	@Override
 	public String[] getAvailableLanguageIds();
 
@@ -573,5 +652,9 @@ public interface CPDefinitionOptionRelModel
 
 	@Override
 	public CPDefinitionOptionRel cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

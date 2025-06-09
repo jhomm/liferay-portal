@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.file.install.deploy.test;
@@ -30,6 +21,8 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PropsValues;
 
+import java.io.File;
+
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -38,6 +31,7 @@ import java.nio.file.Paths;
 
 import java.util.Dictionary;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.After;
@@ -45,6 +39,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,7 +51,6 @@ import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
-import org.osgi.service.cm.ManagedService;
 import org.osgi.service.cm.ManagedServiceFactory;
 
 /**
@@ -282,7 +276,7 @@ public class FileInstallConfigTest {
 		String line = StringBundler.concat("testKey=\"", special, "\"");
 
 		_configuration = _createConfiguration(
-			configurationPid, line, StandardCharsets.UTF_8);
+			StandardCharsets.UTF_8, configurationPid, line);
 
 		Dictionary<String, Object> dictionary = _configuration.getProperties();
 
@@ -291,7 +285,7 @@ public class FileInstallConfigTest {
 		_deleteConfiguration();
 
 		_configuration = _createConfiguration(
-			configurationPid, line, StandardCharsets.ISO_8859_1);
+			StandardCharsets.ISO_8859_1, configurationPid, line);
 
 		dictionary = _configuration.getProperties();
 
@@ -313,37 +307,60 @@ public class FileInstallConfigTest {
 		_testFactoryConfiguration(CharPool.UNDERLINE);
 	}
 
+	@Ignore
+	@Test
+	public void testReadOnlyConfiguration() throws Exception {
+		String configurationPid = _CONFIGURATION_PID_PREFIX.concat(
+			".testReadOnlyConfiguration");
+
+		_configurationPath = Paths.get(
+			PropsValues.MODULE_FRAMEWORK_CONFIGS_DIR,
+			configurationPid.concat(".config"));
+
+		_configuration = _createConfiguration(
+			Charset.defaultCharset(), configurationPid, "testKey=\"testValue\"",
+			true);
+
+		Set<Configuration.ConfigurationAttribute> configurationAttributes =
+			_configuration.getAttributes();
+
+		Assert.assertTrue(
+			configurationAttributes.contains(
+				Configuration.ConfigurationAttribute.READ_ONLY));
+	}
+
+	private Configuration _createConfiguration(
+			Charset charset, String configurationPid, String content)
+		throws Exception {
+
+		return _createConfiguration(charset, configurationPid, content, false);
+	}
+
+	private Configuration _createConfiguration(
+			Charset charset, String configurationPid, String content,
+			boolean readOnly)
+		throws Exception {
+
+		return ConfigurationTestUtil.updateConfiguration(
+			configurationPid,
+			() -> {
+				Path configurationFilePath = Files.write(
+					_configurationPath, content.getBytes(charset));
+
+				File configurationFile = configurationFilePath.toFile();
+
+				if (readOnly) {
+					configurationFile.setReadOnly();
+				}
+			});
+	}
+
 	private Configuration _createConfiguration(
 			String configurationPid, String content)
 		throws Exception {
 
 		return _createConfiguration(
-			configurationPid, content, Charset.defaultCharset());
-	}
-
-	private Configuration _createConfiguration(
-			String configurationPid, String content, Charset charset)
-		throws Exception {
-
-		CountDownLatch countDownLatch = new CountDownLatch(2);
-
-		ServiceRegistration<ManagedService> serviceRegistration =
-			_bundleContext.registerService(
-				ManagedService.class, props -> countDownLatch.countDown(),
-				MapUtil.singletonDictionary(
-					Constants.SERVICE_PID, configurationPid));
-
-		try {
-			Files.write(_configurationPath, content.getBytes(charset));
-
-			countDownLatch.await();
-		}
-		finally {
-			serviceRegistration.unregister();
-		}
-
-		return _configurationAdmin.getConfiguration(
-			configurationPid, StringPool.QUESTION);
+			Charset.defaultCharset(), configurationPid, content);
 	}
 
 	private void _createFacotryConfiguration(

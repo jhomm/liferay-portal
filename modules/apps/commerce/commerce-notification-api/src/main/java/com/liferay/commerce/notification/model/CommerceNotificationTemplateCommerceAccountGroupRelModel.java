@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.notification.model;
@@ -17,6 +8,7 @@ package com.liferay.commerce.notification.model;
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.GroupedModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 
 import java.util.Date;
@@ -32,12 +24,14 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationTemplateCommerceAccountGroupRel
+ * @deprecated
  * @generated
  */
+@Deprecated
 @ProviderType
 public interface CommerceNotificationTemplateCommerceAccountGroupRelModel
 	extends BaseModel<CommerceNotificationTemplateCommerceAccountGroupRel>,
-			GroupedModel, ShardedModel {
+			GroupedModel, MVCCModel, ShardedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -58,6 +52,22 @@ public interface CommerceNotificationTemplateCommerceAccountGroupRelModel
 	 * @param primaryKey the primary key of this commerce notification template commerce account group rel
 	 */
 	public void setPrimaryKey(long primaryKey);
+
+	/**
+	 * Returns the mvcc version of this commerce notification template commerce account group rel.
+	 *
+	 * @return the mvcc version of this commerce notification template commerce account group rel
+	 */
+	@Override
+	public long getMvccVersion();
+
+	/**
+	 * Sets the mvcc version of this commerce notification template commerce account group rel.
+	 *
+	 * @param mvccVersion the mvcc version of this commerce notification template commerce account group rel
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion);
 
 	/**
 	 * Returns the commerce notification template commerce account group rel ID of this commerce notification template commerce account group rel.
@@ -219,5 +229,9 @@ public interface CommerceNotificationTemplateCommerceAccountGroupRelModel
 	@Override
 	public CommerceNotificationTemplateCommerceAccountGroupRel
 		cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

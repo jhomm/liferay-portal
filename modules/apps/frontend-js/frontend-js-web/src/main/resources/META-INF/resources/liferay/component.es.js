@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 const componentConfigs = {};
@@ -107,7 +98,7 @@ const _onStartNavigate = function (event) {
 	});
 
 	if (cacheableUri) {
-		var componentIds = Object.keys(components);
+		let componentIds = Object.keys(components);
 
 		componentIds = componentIds.filter((componentId) => {
 			const component = components[componentId];
@@ -118,8 +109,8 @@ const _onStartNavigate = function (event) {
 
 			const componentConfig = componentConfigs[componentId];
 
-			const cacheablePortletUri = DEFAULT_CACHE_VALIDATION_PORTLET_PARAMS.every(
-				(param) => {
+			const cacheablePortletUri =
+				DEFAULT_CACHE_VALIDATION_PORTLET_PARAMS.every((param) => {
 					let cacheable = false;
 
 					if (componentConfig) {
@@ -131,8 +122,7 @@ const _onStartNavigate = function (event) {
 					}
 
 					return cacheable;
-				}
-			);
+				});
 
 			const cacheableComponent =
 				typeof component.isCacheable === 'function'
@@ -270,7 +260,7 @@ const componentReady = function () {
 	else {
 		component = [];
 
-		for (var i = 0; i < arguments.length; i++) {
+		for (let i = 0; i < arguments.length; i++) {
 			component[i] = arguments[i];
 		}
 	}
@@ -284,9 +274,8 @@ const componentReady = function () {
 		let componentPromiseWrapper = componentPromiseWrappers[component];
 
 		if (!componentPromiseWrapper) {
-			componentPromiseWrappers[
-				component
-			] = componentPromiseWrapper = _createPromiseWrapper();
+			componentPromiseWrappers[component] = componentPromiseWrapper =
+				_createPromiseWrapper();
 		}
 
 		componentPromise = componentPromiseWrapper.promise;
@@ -328,7 +317,7 @@ const destroyComponent = function (componentId) {
  *        component should be destroyed.
  */
 const destroyComponents = function (filterFn) {
-	var componentIds = Object.keys(components);
+	let componentIds = Object.keys(components);
 
 	if (filterFn) {
 		componentIds = componentIds.filter((componentId) => {

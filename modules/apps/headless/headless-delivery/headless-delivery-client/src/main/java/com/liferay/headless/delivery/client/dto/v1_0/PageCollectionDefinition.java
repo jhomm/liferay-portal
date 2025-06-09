@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.client.dto.v1_0;
@@ -17,11 +8,11 @@ package com.liferay.headless.delivery.client.dto.v1_0;
 import com.liferay.headless.delivery.client.function.UnsafeSupplier;
 import com.liferay.headless.delivery.client.serdes.v1_0.PageCollectionDefinitionSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -55,6 +46,96 @@ public class PageCollectionDefinition implements Cloneable, Serializable {
 	}
 
 	protected CollectionConfig collectionConfig;
+
+	public CollectionViewport[] getCollectionViewports() {
+		return collectionViewports;
+	}
+
+	public void setCollectionViewports(
+		CollectionViewport[] collectionViewports) {
+
+		this.collectionViewports = collectionViewports;
+	}
+
+	public void setCollectionViewports(
+		UnsafeSupplier<CollectionViewport[], Exception>
+			collectionViewportsUnsafeSupplier) {
+
+		try {
+			collectionViewports = collectionViewportsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected CollectionViewport[] collectionViewports;
+
+	public Boolean getDisplayAllItems() {
+		return displayAllItems;
+	}
+
+	public void setDisplayAllItems(Boolean displayAllItems) {
+		this.displayAllItems = displayAllItems;
+	}
+
+	public void setDisplayAllItems(
+		UnsafeSupplier<Boolean, Exception> displayAllItemsUnsafeSupplier) {
+
+		try {
+			displayAllItems = displayAllItemsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean displayAllItems;
+
+	public Boolean getDisplayAllPages() {
+		return displayAllPages;
+	}
+
+	public void setDisplayAllPages(Boolean displayAllPages) {
+		this.displayAllPages = displayAllPages;
+	}
+
+	public void setDisplayAllPages(
+		UnsafeSupplier<Boolean, Exception> displayAllPagesUnsafeSupplier) {
+
+		try {
+			displayAllPages = displayAllPagesUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean displayAllPages;
+
+	public EmptyCollectionConfig getEmptyCollectionConfig() {
+		return emptyCollectionConfig;
+	}
+
+	public void setEmptyCollectionConfig(
+		EmptyCollectionConfig emptyCollectionConfig) {
+
+		this.emptyCollectionConfig = emptyCollectionConfig;
+	}
+
+	public void setEmptyCollectionConfig(
+		UnsafeSupplier<EmptyCollectionConfig, Exception>
+			emptyCollectionConfigUnsafeSupplier) {
+
+		try {
+			emptyCollectionConfig = emptyCollectionConfigUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected EmptyCollectionConfig emptyCollectionConfig;
 
 	public FragmentStyle getFragmentStyle() {
 		return fragmentStyle;
@@ -99,6 +180,27 @@ public class PageCollectionDefinition implements Cloneable, Serializable {
 
 	protected FragmentViewport[] fragmentViewports;
 
+	public Layout getLayout() {
+		return layout;
+	}
+
+	public void setLayout(Layout layout) {
+		this.layout = layout;
+	}
+
+	public void setLayout(
+		UnsafeSupplier<Layout, Exception> layoutUnsafeSupplier) {
+
+		try {
+			layout = layoutUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Layout layout;
+
 	public String getListItemStyle() {
 		return listItemStyle;
 	}
@@ -140,6 +242,25 @@ public class PageCollectionDefinition implements Cloneable, Serializable {
 	}
 
 	protected String listStyle;
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
+		try {
+			name = nameUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String name;
 
 	public Integer getNumberOfColumns() {
 		return numberOfColumns;
@@ -204,6 +325,27 @@ public class PageCollectionDefinition implements Cloneable, Serializable {
 
 	protected Integer numberOfItemsPerPage;
 
+	public Integer getNumberOfPages() {
+		return numberOfPages;
+	}
+
+	public void setNumberOfPages(Integer numberOfPages) {
+		this.numberOfPages = numberOfPages;
+	}
+
+	public void setNumberOfPages(
+		UnsafeSupplier<Integer, Exception> numberOfPagesUnsafeSupplier) {
+
+		try {
+			numberOfPages = numberOfPagesUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Integer numberOfPages;
+
 	public PaginationType getPaginationType() {
 		return paginationType;
 	}
@@ -233,6 +375,27 @@ public class PageCollectionDefinition implements Cloneable, Serializable {
 	}
 
 	protected PaginationType paginationType;
+
+	public Boolean getShowAllItems() {
+		return showAllItems;
+	}
+
+	public void setShowAllItems(Boolean showAllItems) {
+		this.showAllItems = showAllItems;
+	}
+
+	public void setShowAllItems(
+		UnsafeSupplier<Boolean, Exception> showAllItemsUnsafeSupplier) {
+
+		try {
+			showAllItems = showAllItemsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean showAllItems;
 
 	public String getTemplateKey() {
 		return templateKey;
@@ -289,7 +452,7 @@ public class PageCollectionDefinition implements Cloneable, Serializable {
 
 	public static enum PaginationType {
 
-		NONE("None"), REGULAR("Regular"), SIMPLE("Simple");
+		NONE("None"), NUMERIC("Numeric"), REGULAR("Regular"), SIMPLE("Simple");
 
 		public static PaginationType create(String value) {
 			for (PaginationType paginationType : values()) {

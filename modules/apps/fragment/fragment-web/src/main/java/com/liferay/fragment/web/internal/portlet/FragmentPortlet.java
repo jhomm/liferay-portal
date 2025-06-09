@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.web.internal.portlet;
 
-import com.liferay.fragment.constants.FragmentActionKeys;
 import com.liferay.fragment.constants.FragmentPortletKeys;
-import com.liferay.fragment.contributor.FragmentCollectionContributorTracker;
+import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
+import com.liferay.fragment.helper.DefaultInputFragmentEntryConfigurationProvider;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
 import com.liferay.fragment.renderer.FragmentRendererController;
@@ -24,30 +15,27 @@ import com.liferay.fragment.service.FragmentCollectionService;
 import com.liferay.fragment.web.internal.configuration.FragmentPortletConfiguration;
 import com.liferay.fragment.web.internal.constants.FragmentWebKeys;
 import com.liferay.item.selector.ItemSelector;
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.staging.StagingGroupHelper;
+
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
 
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -68,12 +56,13 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Fragments",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + FragmentPortletKeys.FRAGMENT,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator"
+		"jakarta.portlet.display-name=Fragments",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + FragmentPortletKeys.FRAGMENT,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -108,46 +97,38 @@ public class FragmentPortlet extends MVCPortlet {
 		}
 
 		renderRequest.setAttribute(
-			FragmentWebKeys.FRAGMENT_COLLECTION_CONTRIBUTOR_TRACKER,
-			_fragmentCollectionContributorTracker);
+			DefaultInputFragmentEntryConfigurationProvider.class.getName(),
+			_defaultInputFragmentEntryConfigurationProvider);
+		renderRequest.setAttribute(
+			FragmentCollectionContributorRegistry.class.getName(),
+			_fragmentCollectionContributorRegistry);
+		renderRequest.setAttribute(
+			FragmentEntryProcessorRegistry.class.getName(),
+			_fragmentEntryProcessorRegistry);
+		renderRequest.setAttribute(
+			FragmentPortletConfiguration.class.getName(),
+			fragmentPortletConfiguration);
+		renderRequest.setAttribute(
+			FragmentRendererController.class.getName(),
+			_fragmentRendererController);
 		renderRequest.setAttribute(
 			FragmentWebKeys.FRAGMENT_COLLECTIONS,
 			_fragmentCollectionService.getFragmentCollections(
 				themeDisplay.getScopeGroupId()));
 		renderRequest.setAttribute(
-			FragmentPortletConfiguration.class.getName(),
-			fragmentPortletConfiguration);
-		renderRequest.setAttribute(
-			FragmentActionKeys.FRAGMENT_RENDERER_CONTROLLER,
-			_fragmentRendererController);
-		renderRequest.setAttribute(
-			FragmentWebKeys.FRAGMENT_ENTRY_PROCESSOR_REGISTRY,
-			_fragmentEntryProcessorRegistry);
-
-		try {
-			renderRequest.setAttribute(
-				FragmentWebKeys.INHERITED_FRAGMENT_COLLECTIONS,
-				_getInheritedFragmentCollections(themeDisplay));
-		}
-		catch (PortalException portalException) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(portalException, portalException);
-			}
-		}
-
-		renderRequest.setAttribute(
-			FragmentWebKeys.ITEM_SELECTOR, _itemSelector);
+			FragmentWebKeys.INHERITED_FRAGMENT_COLLECTIONS,
+			_getInheritedFragmentCollections(themeDisplay));
 		renderRequest.setAttribute(
 			FragmentWebKeys.SYSTEM_FRAGMENT_COLLECTIONS,
 			_fragmentCollectionService.getFragmentCollections(
 				CompanyConstants.SYSTEM));
+		renderRequest.setAttribute(ItemSelector.class.getName(), _itemSelector);
 
 		super.doDispatch(renderRequest, renderResponse);
 	}
 
 	private Map<String, List<FragmentCollection>>
-			_getInheritedFragmentCollections(ThemeDisplay themeDisplay)
-		throws PortalException {
+		_getInheritedFragmentCollections(ThemeDisplay themeDisplay) {
 
 		if (themeDisplay.getScopeGroupId() ==
 				themeDisplay.getCompanyGroupId()) {
@@ -163,26 +144,24 @@ public class FragmentPortlet extends MVCPortlet {
 				themeDisplay.getCompanyGroupId());
 
 		if (ListUtil.isNotEmpty(fragmentCollections)) {
-			Group group = _groupLocalService.getGroup(
-				themeDisplay.getCompanyGroupId());
-
 			inheritedFragmentCollections.put(
-				group.getDescriptiveName(themeDisplay.getLocale()),
+				_language.get(themeDisplay.getLocale(), "global"),
 				fragmentCollections);
 		}
 
 		return inheritedFragmentCollections;
 	}
 
-	private static final Log _log = LogFactoryUtil.getLog(
-		FragmentPortlet.class);
-
 	@Reference
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference
-	private FragmentCollectionContributorTracker
-		_fragmentCollectionContributorTracker;
+	private DefaultInputFragmentEntryConfigurationProvider
+		_defaultInputFragmentEntryConfigurationProvider;
+
+	@Reference
+	private FragmentCollectionContributorRegistry
+		_fragmentCollectionContributorRegistry;
 
 	@Reference
 	private FragmentCollectionService _fragmentCollectionService;
@@ -194,10 +173,10 @@ public class FragmentPortlet extends MVCPortlet {
 	private FragmentRendererController _fragmentRendererController;
 
 	@Reference
-	private GroupLocalService _groupLocalService;
+	private ItemSelector _itemSelector;
 
 	@Reference
-	private ItemSelector _itemSelector;
+	private Language _language;
 
 	@Reference
 	private StagingGroupHelper _stagingGroupHelper;

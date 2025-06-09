@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.exception.DuplicateCommerceOrderNoteExternalReferenceCodeException;
 import com.liferay.commerce.exception.NoSuchOrderNoteException;
 import com.liferay.commerce.model.CommerceOrderNote;
 import com.liferay.commerce.service.CommerceOrderNoteLocalServiceUtil;
@@ -127,6 +119,8 @@ public class CommerceOrderNotePersistenceTest {
 
 		newCommerceOrderNote.setMvccVersion(RandomTestUtil.nextLong());
 
+		newCommerceOrderNote.setUuid(RandomTestUtil.randomString());
+
 		newCommerceOrderNote.setExternalReferenceCode(
 			RandomTestUtil.randomString());
 
@@ -156,6 +150,9 @@ public class CommerceOrderNotePersistenceTest {
 		Assert.assertEquals(
 			existingCommerceOrderNote.getMvccVersion(),
 			newCommerceOrderNote.getMvccVersion());
+		Assert.assertEquals(
+			existingCommerceOrderNote.getUuid(),
+			newCommerceOrderNote.getUuid());
 		Assert.assertEquals(
 			existingCommerceOrderNote.getExternalReferenceCode(),
 			newCommerceOrderNote.getExternalReferenceCode());
@@ -191,6 +188,55 @@ public class CommerceOrderNotePersistenceTest {
 			newCommerceOrderNote.isRestricted());
 	}
 
+	@Test(
+		expected = DuplicateCommerceOrderNoteExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CommerceOrderNote commerceOrderNote = addCommerceOrderNote();
+
+		CommerceOrderNote newCommerceOrderNote = addCommerceOrderNote();
+
+		newCommerceOrderNote.setCompanyId(commerceOrderNote.getCompanyId());
+
+		newCommerceOrderNote = _persistence.update(newCommerceOrderNote);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCommerceOrderNote);
+
+		newCommerceOrderNote.setExternalReferenceCode(
+			commerceOrderNote.getExternalReferenceCode());
+
+		_persistence.update(newCommerceOrderNote);
+	}
+
+	@Test
+	public void testCountByUuid() throws Exception {
+		_persistence.countByUuid("");
+
+		_persistence.countByUuid("null");
+
+		_persistence.countByUuid((String)null);
+	}
+
+	@Test
+	public void testCountByUUID_G() throws Exception {
+		_persistence.countByUUID_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByUUID_G("null", 0L);
+
+		_persistence.countByUUID_G((String)null, 0L);
+	}
+
+	@Test
+	public void testCountByUuid_C() throws Exception {
+		_persistence.countByUuid_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByUuid_C("null", 0L);
+
+		_persistence.countByUuid_C((String)null, 0L);
+	}
+
 	@Test
 	public void testCountByCommerceOrderId() throws Exception {
 		_persistence.countByCommerceOrderId(RandomTestUtil.nextLong());
@@ -207,12 +253,12 @@ public class CommerceOrderNotePersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_ERC() throws Exception {
-		_persistence.countByC_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
 
-		_persistence.countByC_ERC(0L, "null");
+		_persistence.countByERC_C("null", 0L);
 
-		_persistence.countByC_ERC(0L, (String)null);
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -240,11 +286,11 @@ public class CommerceOrderNotePersistenceTest {
 
 	protected OrderByComparator<CommerceOrderNote> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CommerceOrderNote", "mvccVersion", true, "externalReferenceCode",
-			true, "commerceOrderNoteId", true, "groupId", true, "companyId",
-			true, "userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "commerceOrderId", true, "content", true,
-			"restricted", true);
+			"CommerceOrderNote", "mvccVersion", true, "uuid", true,
+			"externalReferenceCode", true, "commerceOrderNoteId", true,
+			"groupId", true, "companyId", true, "userId", true, "userName",
+			true, "createDate", true, "modifiedDate", true, "commerceOrderId",
+			true, "content", true, "restricted", true);
 	}
 
 	@Test
@@ -521,15 +567,26 @@ public class CommerceOrderNotePersistenceTest {
 
 	private void _assertOriginalValues(CommerceOrderNote commerceOrderNote) {
 		Assert.assertEquals(
-			Long.valueOf(commerceOrderNote.getCompanyId()),
+			commerceOrderNote.getUuid(),
+			ReflectionTestUtil.invoke(
+				commerceOrderNote, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "uuid_"));
+		Assert.assertEquals(
+			Long.valueOf(commerceOrderNote.getGroupId()),
 			ReflectionTestUtil.<Long>invoke(
 				commerceOrderNote, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
+				new Class<?>[] {String.class}, "groupId"));
+
 		Assert.assertEquals(
 			commerceOrderNote.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				commerceOrderNote, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(commerceOrderNote.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				commerceOrderNote, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CommerceOrderNote addCommerceOrderNote() throws Exception {
@@ -538,6 +595,8 @@ public class CommerceOrderNotePersistenceTest {
 		CommerceOrderNote commerceOrderNote = _persistence.create(pk);
 
 		commerceOrderNote.setMvccVersion(RandomTestUtil.nextLong());
+
+		commerceOrderNote.setUuid(RandomTestUtil.randomString());
 
 		commerceOrderNote.setExternalReferenceCode(
 			RandomTestUtil.randomString());

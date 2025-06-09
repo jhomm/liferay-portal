@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.internal.servlet.filter.test;
@@ -17,9 +8,13 @@ package com.liferay.saml.internal.servlet.filter.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.CompanyProviderClassTestRule;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
+import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelperUtil;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -37,10 +32,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -57,10 +50,27 @@ public class SamlSameSiteLaxCookiesFilterTest {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new LiferayIntegrationTestRule() {
+			{
+				skipTestRule(CompanyProviderClassTestRule.INSTANCE);
+			}
+		};
 
 	@BeforeClass
-	public static void setUpClass() {
+	public static void setUpClass() throws Exception {
+		samlProviderConfigurationHelper =
+			SamlProviderConfigurationHelperUtil.
+				getSamlProviderConfigurationHelper();
+
+		_enabled = samlProviderConfigurationHelper.isEnabled();
+
+		samlProviderConfigurationHelper.updateProperties(
+			UnicodePropertiesBuilder.create(
+				true
+			).put(
+				"saml.enabled", "true"
+			).build());
+
 		_paramsMap = HashMapBuilder.put(
 			"RelayState", "TEST_RELAYSTATE"
 		).put(
@@ -69,15 +79,28 @@ public class SamlSameSiteLaxCookiesFilterTest {
 			"SAMLResponse", "TEST_SAMLRESPONSE"
 		).build();
 
-		Set<Map.Entry<String, String>> entrySet = _paramsMap.entrySet();
+		StringBundler sb = new StringBundler(4 * _paramsMap.size());
 
-		Stream<Map.Entry<String, String>> stream = entrySet.stream();
+		for (Map.Entry<String, String> entry : _paramsMap.entrySet()) {
+			sb.append(entry.getKey());
+			sb.append("=");
+			sb.append(entry.getValue());
+			sb.append("&");
+		}
 
-		_postBody = stream.map(
-			entry -> StringBundler.concat(entry.getKey(), "=", entry.getValue())
-		).collect(
-			Collectors.joining("&")
-		);
+		sb.setIndex(sb.index() - 1);
+
+		_postBody = sb.toString();
+	}
+
+	@AfterClass
+	public static void tearDownClass() throws Exception {
+		samlProviderConfigurationHelper.updateProperties(
+			UnicodePropertiesBuilder.create(
+				true
+			).put(
+				"saml.enabled", String.valueOf(_enabled)
+			).build());
 	}
 
 	@Test
@@ -94,6 +117,9 @@ public class SamlSameSiteLaxCookiesFilterTest {
 	public void testSSOSameSiteLaxCookies() throws Exception {
 		_execute(new URL("http://localhost:8080/c/portal/saml/sso"));
 	}
+
+	protected static SamlProviderConfigurationHelper
+		samlProviderConfigurationHelper;
 
 	private void _execute(URL url) throws Exception {
 		CookieManager cookieManager = new CookieManager();
@@ -127,7 +153,7 @@ public class SamlSameSiteLaxCookiesFilterTest {
 			httpCookie -> Assert.assertFalse(
 				"New JSESSIONID cookie received, so session was undesirably " +
 					"invalidated",
-				Objects.equals("JSESSIONID", httpCookie.getName())));
+				Objects.equals(httpCookie.getName(), "JSESSIONID")));
 
 		Map<String, String> paramsMap = new HashMap<>(_paramsMap);
 
@@ -149,6 +175,7 @@ public class SamlSameSiteLaxCookiesFilterTest {
 			paramValues.isEmpty());
 	}
 
+	private static boolean _enabled;
 	private static Map<String, String> _paramsMap;
 	private static String _postBody;
 

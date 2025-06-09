@@ -1,20 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.openapi;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,8 +19,8 @@ public class OpenAPISchemaFilter {
 		return _applicationPath;
 	}
 
-	public DTOProperty getDTOProperty() {
-		return _dtoProperty;
+	public List<DTOProperty> getDTOProperties() {
+		return _dtoProperties;
 	}
 
 	public Map<String, String> getSchemaMappings() {
@@ -38,8 +31,8 @@ public class OpenAPISchemaFilter {
 		_applicationPath = applicationPath;
 	}
 
-	public void setDTOProperty(DTOProperty dtoProperty) {
-		_dtoProperty = dtoProperty;
+	public void setDTOProperties(List<DTOProperty> dtoProperties) {
+		_dtoProperties = dtoProperties;
 	}
 
 	public void setSchemaMappings(Map<String, String> schemaMappings) {
@@ -47,7 +40,7 @@ public class OpenAPISchemaFilter {
 	}
 
 	private String _applicationPath;
-	private DTOProperty _dtoProperty;
+	private List<DTOProperty> _dtoProperties = new ArrayList<>();
 	private Map<String, String> _schemaMappings = new HashMap<>();
 
 }

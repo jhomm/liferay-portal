@@ -1,8 +1,44 @@
 definition {
 
-	macro signIn {
+	@summary = "Default summary"
+	macro enableGoogleDrive() {
+		if (isSet(instanceSettings)) {
+			DMNavigator.openToConfigInInstanceSettings(portlet = "Google Drive");
+		}
+		else {
+			DMNavigator.openToConfigInSystemSettings(portlet = "Google Drive");
+		}
+
+		var num = MathUtil.randomNumber(3);
+
+		echo("###num:${num}");
+
+		var googleClientId = PropsUtil.get("google.client.id.${num}");
+
+		Type(
+			key_text = "clientId",
+			locator1 = "TextArea#ANY",
+			value1 = ${googleClientId});
+
+		var googleClientSecret = PropsUtil.get("google.client.secret.${num}");
+
+		Type(
+			key_text = "clientSecret",
+			locator1 = "TextArea#ANY",
+			value1 = ${googleClientSecret});
+
+		if (IsElementPresent(locator1 = "Button#UPDATE")) {
+			PortletEntry.update();
+		}
+		else if (IsElementPresent(locator1 = "Button#SAVE")) {
+			PortletEntry.save();
+		}
+	}
+
+	@summary = "Default summary"
+	macro signIn(userPassword = null, depotName = null, userEmailAddress = null) {
 		if (isSet(windowTitle)) {
-			SelectWindow(locator1 = "GoogleLogin#PAGE_TITLE");
+			SelectWindow(value1 = "GoogleLogin#PAGE_TITLE");
 
 			if (IsElementPresent(locator1 = "GoogleLogin#HEADER")) {
 				AssertClick(
@@ -12,7 +48,7 @@ definition {
 
 			Type(
 				locator1 = "GoogleLogin#LOGIN_EMAIL_FIELD",
-				value1 = "${userEmailAddress}");
+				value1 = ${userEmailAddress});
 
 			Click(locator1 = "GoogleLogin#LOGIN_NEXT_BUTTON");
 
@@ -20,18 +56,23 @@ definition {
 
 			Type(
 				locator1 = "GoogleLogin#LOGIN_PASSWORD_FIELD",
-				value1 = "${userPassword}");
+				value1 = ${userPassword});
 
 			Click(locator1 = "GoogleLogin#LOGIN_NEXT_BUTTON");
-
-			Pause(locator1 = "5000");
 		}
 
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		if (isSet(depotName)) {
+			AssertElementPresent(
+				key_text = "Save and Return to ${depotName}",
+				locator1 = "Button#ANY");
+		}
+		else {
+			var siteName = TestCase.getSiteName(siteName = ${siteName});
 
-		AssertElementPresent(
-			key_text = "Save and Return to ${siteName}",
-			locator1 = "Button#ANY");
+			AssertElementPresent(
+				key_text = "Save and Return to ${siteName}",
+				locator1 = "Button#ANY");
+		}
 	}
 
 }

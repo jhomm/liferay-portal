@@ -1,0 +1,50 @@
+{
+	"description_i18n": {
+		"en_US": "filter-by-exact-terms-match-description"
+	},
+	"elementDefinition": {
+		"category": "filter",
+		"configuration": {
+			"queryConfiguration": {
+				"queryEntries": [
+					{
+						"clauses": [
+							{
+								"context": "query",
+								"occur": "filter",
+								"query": {
+									"terms": {
+										"${configuration.field}": "${configuration.values}"
+									}
+								}
+							}
+						]
+					}
+				]
+			}
+		},
+		"icon": "filter",
+		"uiConfiguration": {
+			"fieldSets": [
+				{
+					"fields": [
+						{
+							"label": "field",
+							"name": "field",
+							"type": "fieldMapping"
+						},
+						{
+							"label": "Values",
+							"name": "values",
+							"type": "multiselect"
+						}
+					]
+				}
+			]
+		}
+	},
+	"externalReferenceCode": "FILTER_BY_EXACT_TERMS_MATCH",
+	"title_i18n": {
+		"en_US": "filter-by-exact-terms-match"
+	}
+}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service;
@@ -21,11 +12,12 @@ import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
 import com.liferay.portal.kernel.security.access.control.AccessControlled;
 import com.liferay.portal.kernel.service.BaseService;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
+
+import java.math.BigDecimal;
 
 import java.util.List;
 
@@ -42,13 +34,6 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @AccessControlled
 @JSONWebService
-@OSGiBeanProperties(
-	property = {
-		"json.web.service.context.name=commerce",
-		"json.web.service.context.path=CommerceShipmentItem"
-	},
-	service = CommerceShipmentItemService.class
-)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -62,9 +47,17 @@ public interface CommerceShipmentItemService extends BaseService {
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.commerce.service.impl.CommerceShipmentItemServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the commerce shipment item remote service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link CommerceShipmentItemServiceUtil} if injection and service tracking are not available.
 	 */
 	public CommerceShipmentItem addCommerceShipmentItem(
-			long commerceShipmentId, long commerceOrderItemId,
-			long commerceInventoryWarehouseId, int quantity,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long commerceShipmentId,
+			long commerceOrderItemId, long commerceInventoryWarehouseId,
+			BigDecimal quantity, String unitOfMeasureKey,
+			boolean validateInventory, ServiceContext serviceContext)
+		throws PortalException;
+
+	public CommerceShipmentItem addOrUpdateCommerceShipmentItem(
+			String externalReferenceCode, long commerceShipmentId,
+			long commerceOrderItemId, long commerceInventoryWarehouseId,
+			BigDecimal quantity, String unitOfMeasureKey,
+			boolean validateInventory, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -78,10 +71,20 @@ public interface CommerceShipmentItemService extends BaseService {
 			long commerceShipmentItemId, boolean restoreStockQuantity)
 		throws PortalException;
 
+	public void deleteCommerceShipmentItems(
+			long commerceShipmentId, boolean restoreStockQuantity)
+		throws PortalException;
+
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceShipmentItem fetchCommerceShipmentItem(
 			long commerceShipmentId, long commerceOrderItemId,
 			long commerceInventoryWarehouseId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceShipmentItem
+			fetchCommerceShipmentItemByExternalReferenceCode(
+				long companyId, String externalReferenceCode)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -120,7 +123,7 @@ public interface CommerceShipmentItemService extends BaseService {
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceShipmentOrderItemsQuantity(
+	public BigDecimal getCommerceShipmentOrderItemsQuantity(
 			long commerceShipmentId, long commerceOrderItemId)
 		throws PortalException;
 
@@ -132,12 +135,12 @@ public interface CommerceShipmentItemService extends BaseService {
 	public String getOSGiServiceIdentifier();
 
 	public CommerceShipmentItem updateCommerceShipmentItem(
-			long commerceShipmentItemId, int quantity)
+			long commerceShipmentItemId, long commerceInventoryWarehouseId,
+			BigDecimal quantity, boolean validateInventory)
 		throws PortalException;
 
-	public CommerceShipmentItem updateCommerceShipmentItem(
-			long commerceShipmentItemId, long commerceInventoryWarehouseId,
-			int quantity)
+	public CommerceShipmentItem updateExternalReferenceCode(
+			long commerceShipmentItemId, String externalReferenceCode)
 		throws PortalException;
 
 }

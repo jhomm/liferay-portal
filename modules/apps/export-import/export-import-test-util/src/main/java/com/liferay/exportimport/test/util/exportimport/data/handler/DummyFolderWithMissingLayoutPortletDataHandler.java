@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.test.util.exportimport.data.handler;
@@ -23,16 +14,15 @@ import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.exportimport.portlet.data.handler.helper.PortletDataHandlerHelper;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.exportimport.test.util.internal.exportimport.staged.model.repository.DummyFolderStagedModelRepository;
-import com.liferay.exportimport.test.util.model.Dummy;
 import com.liferay.exportimport.test.util.model.DummyFolder;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.xml.Element;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -41,13 +31,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Akos Thurzo
  */
-@Component(
-	immediate = true,
-	service = {
-		DummyFolderWithMissingLayoutPortletDataHandler.class,
-		PortletDataHandler.class
-	}
-)
+@Component(service = PortletDataHandler.class)
 public class DummyFolderWithMissingLayoutPortletDataHandler
 	extends BasePortletDataHandler {
 
@@ -165,28 +149,10 @@ public class DummyFolderWithMissingLayoutPortletDataHandler
 	}
 
 	@Reference(
-		target = "(model.class.name=com.liferay.exportimport.test.util.model.DummyFolder)",
-		unbind = "-"
+		target = "(model.class.name=com.liferay.exportimport.test.util.model.DummyFolder)"
 	)
-	protected void setDummyFolderStagedModelRepository(
-		StagedModelRepository<DummyFolder> dummyFolderStagedModelRepository) {
-
-		_dummyFolderStagedModelRepository = dummyFolderStagedModelRepository;
-	}
-
-	@Reference(
-		target = "(model.class.name=com.liferay.exportimport.test.util.model.Dummy)",
-		unbind = "-"
-	)
-	protected void setDummyStagedModelRepository(
-		StagedModelRepository<Dummy> dummyStagedModelRepository) {
-
-		_dummyStagedModelRepository = dummyStagedModelRepository;
-	}
-
 	private StagedModelRepository<DummyFolder>
 		_dummyFolderStagedModelRepository;
-	private StagedModelRepository<Dummy> _dummyStagedModelRepository;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

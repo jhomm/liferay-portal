@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.mentions.internal.service;
@@ -20,14 +11,14 @@ import com.liferay.mentions.util.MentionsUtil;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.message.boards.service.MBMessageLocalServiceWrapper;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.parsers.bbcode.BBCodeTranslatorUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 import com.liferay.portal.kernel.settings.LocalizedValuesMap;
-import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HtmlParser;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -43,19 +34,9 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Sergio González
  */
-@Component(immediate = true, service = ServiceWrapper.class)
+@Component(service = ServiceWrapper.class)
 public class MentionsMessageServiceWrapper
 	extends MBMessageLocalServiceWrapper {
-
-	public MentionsMessageServiceWrapper() {
-		super(null);
-	}
-
-	public MentionsMessageServiceWrapper(
-		MBMessageLocalService mbMessageLocalService) {
-
-		super(mbMessageLocalService);
-	}
 
 	@Override
 	public MBMessage updateStatus(
@@ -88,7 +69,7 @@ public class MentionsMessageServiceWrapper
 		String title = message.getSubject();
 
 		if (message.isDiscussion()) {
-			title = StringUtil.shorten(HtmlUtil.extractText(content), 100);
+			title = StringUtil.shorten(_htmlParser.extractText(content), 100);
 		}
 
 		MentionsGroupServiceConfiguration mentionsGroupServiceConfiguration =
@@ -118,7 +99,7 @@ public class MentionsMessageServiceWrapper
 		else {
 			serviceContext.setAttribute(
 				"contentURL",
-				_http.addParameter(
+				HttpComponentsUtil.addParameter(
 					contentURL,
 					serviceContext.getAttribute("namespace") + "messageId",
 					message.getMessageId()));
@@ -132,31 +113,16 @@ public class MentionsMessageServiceWrapper
 		return message;
 	}
 
-	@Reference(unbind = "-")
-	protected void setConfigurationProvider(
-		ConfigurationProvider configurationProvider) {
-
-		_configurationProvider = configurationProvider;
-	}
-
-	@Reference(unbind = "-")
-	protected void setMBMessageLocalService(
-		MBMessageLocalService mbMessageLocalService) {
-
-		_mbMessageLocalService = mbMessageLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setMentionsNotifier(MentionsNotifier mentionsNotifier) {
-		_mentionsNotifier = mentionsNotifier;
-	}
-
+	@Reference
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference
-	private Http _http;
+	private HtmlParser _htmlParser;
 
+	@Reference
 	private MBMessageLocalService _mbMessageLocalService;
+
+	@Reference
 	private MentionsNotifier _mentionsNotifier;
 
 	@Reference

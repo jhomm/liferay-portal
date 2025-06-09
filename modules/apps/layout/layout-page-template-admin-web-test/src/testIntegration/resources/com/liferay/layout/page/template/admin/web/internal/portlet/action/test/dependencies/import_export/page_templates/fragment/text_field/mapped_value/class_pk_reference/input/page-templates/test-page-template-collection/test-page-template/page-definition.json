@@ -1,5 +1,6 @@
 {
 	"pageElement": {
+		"id": "item1",
 		"pageElements": [
 			{
 				"definition": {
@@ -35,13 +36,13 @@
 						"maxWidth": "none",
 						"minHeight": "auto",
 						"minWidth": "auto",
-						"opacity": "100",
 						"overflow": "visible",
 						"shadow": "shadow-none",
 						"textAlign": "none",
 						"width": "w-auto"
 					}
 				},
+				"id": "item2",
 				"type": "Fragment"
 			}
 		],

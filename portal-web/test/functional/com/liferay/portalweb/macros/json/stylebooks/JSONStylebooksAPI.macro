@@ -1,0 +1,29 @@
+definition {
+
+	@summary = "Default summary"
+	macro _addStylebookEntry(groupId = null, styleBookEntryName = null) {
+		Variables.assertDefined(parameterList = "${groupId},${styleBookEntryName}");
+
+		var portalURL = JSONCompany.getPortalURL();
+		var userLoginInfo = JSONUtil2.formatJSONUser();
+
+		var curl = '''
+			${portalURL}/api/jsonws/stylebook.stylebookentry/add-style-book-entry \
+				-u ${userLoginInfo} \
+				-d externalReferenceCode='' \
+				-d groupId=${groupId} \
+				-d name=${styleBookEntryName} \
+				-d styleBookEntryKey= \
+				-d themeId=''
+		''';
+
+		var styleBookEntryId = JSONCurlUtil.post(${curl}, "$.styleBookEntryId");
+
+		if (${styleBookEntryId} == "") {
+			fail("FAIL. Cannot add style book entry.");
+		}
+
+		return ${styleBookEntryId};
+	}
+
+}

@@ -1,27 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.connection;
 
+import com.liferay.portal.search.elasticsearch7.internal.connection.helper.IndexCreationHelper;
+import com.liferay.portal.search.elasticsearch7.internal.connection.helper.LiferayIndexCreationHelper;
+import com.liferay.portal.search.elasticsearch7.internal.settings.SettingsHelperImpl;
+import com.liferay.portal.search.engine.SearchEngineInformation;
+
 import java.io.IOException;
 
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.common.settings.Settings;
 
 import org.mockito.Mockito;
@@ -32,7 +28,7 @@ import org.mockito.Mockito;
 public class IndexCreator {
 
 	public Index createIndex(IndexName indexName) {
-		IndicesClient indicesClient = getIndicesClient();
+		IndicesClient indicesClient = _getIndicesClient();
 
 		String name = indexName.getName();
 
@@ -40,18 +36,19 @@ public class IndexCreator {
 
 		CreateIndexRequest createIndexRequest = new CreateIndexRequest(name);
 
-		IndexCreationHelper indexCreationHelper = getIndexCreationHelper();
+		IndexCreationHelper indexCreationHelper = _getIndexCreationHelper();
 
 		indexCreationHelper.contribute(createIndexRequest);
 
-		Settings.Builder builder = Settings.builder();
+		SettingsHelperImpl settingsHelperImpl = new SettingsHelperImpl(
+			Settings.builder());
 
-		builder.put("index.number_of_replicas", 0);
-		builder.put("index.number_of_shards", 1);
+		settingsHelperImpl.put("index.number_of_replicas", "0");
+		settingsHelperImpl.put("index.number_of_shards", "1");
 
-		indexCreationHelper.contributeIndexSettings(builder);
+		indexCreationHelper.contributeIndexSettings(settingsHelperImpl);
 
-		createIndexRequest.settings(builder);
+		createIndexRequest.settings(settingsHelperImpl.getBuilder());
 
 		try {
 			indicesClient.create(createIndexRequest, RequestOptions.DEFAULT);
@@ -66,7 +63,7 @@ public class IndexCreator {
 	}
 
 	public void deleteIndex(IndexName indexName) {
-		deleteIndex(getIndicesClient(), indexName.getName());
+		deleteIndex(_getIndicesClient(), indexName.getName());
 	}
 
 	protected void deleteIndex(IndicesClient indicesClient, String name) {
@@ -80,55 +77,6 @@ public class IndexCreator {
 		catch (IOException ioException) {
 			throw new RuntimeException(ioException);
 		}
-	}
-
-	protected IndexCreationHelper getIndexCreationHelper() {
-		if (!_liferayMappingsAddedToIndex) {
-			if (_indexCreationHelper != null) {
-				return _indexCreationHelper;
-			}
-
-			return Mockito.mock(IndexCreationHelper.class);
-		}
-
-		LiferayIndexCreationHelper liferayIndexCreationHelper =
-			new LiferayIndexCreationHelper(_elasticsearchClientResolver);
-
-		if (_indexCreationHelper == null) {
-			return liferayIndexCreationHelper;
-		}
-
-		return new IndexCreationHelper() {
-
-			@Override
-			public void contribute(CreateIndexRequest createIndexRequest) {
-				_indexCreationHelper.contribute(createIndexRequest);
-
-				liferayIndexCreationHelper.contribute(createIndexRequest);
-			}
-
-			@Override
-			public void contributeIndexSettings(Settings.Builder builder) {
-				_indexCreationHelper.contributeIndexSettings(builder);
-
-				liferayIndexCreationHelper.contributeIndexSettings(builder);
-			}
-
-			@Override
-			public void whenIndexCreated(String indexName) {
-				_indexCreationHelper.whenIndexCreated(indexName);
-
-				liferayIndexCreationHelper.whenIndexCreated(indexName);
-			}
-
-		};
-	}
-
-	protected final IndicesClient getIndicesClient() {
-		RestHighLevelClient restHighLevelClient =
-			_elasticsearchClientResolver.getRestHighLevelClient();
-
-		return restHighLevelClient.indices();
 	}
 
 	protected void setElasticsearchClientResolver(
@@ -149,8 +97,69 @@ public class IndexCreator {
 		_liferayMappingsAddedToIndex = liferayMappingsAddedToIndex;
 	}
 
+	protected void setSearchEngineInformation(
+		SearchEngineInformation searchEngineInformation) {
+
+		_searchEngineInformation = searchEngineInformation;
+	}
+
+	private IndexCreationHelper _getIndexCreationHelper() {
+		if (!_liferayMappingsAddedToIndex) {
+			if (_indexCreationHelper != null) {
+				return _indexCreationHelper;
+			}
+
+			return Mockito.mock(IndexCreationHelper.class);
+		}
+
+		LiferayIndexCreationHelper liferayIndexCreationHelper =
+			new LiferayIndexCreationHelper(
+				_elasticsearchClientResolver, _searchEngineInformation);
+
+		if (_indexCreationHelper == null) {
+			return liferayIndexCreationHelper;
+		}
+
+		return new IndexCreationHelper() {
+
+			@Override
+			public void contribute(CreateIndexRequest createIndexRequest) {
+				_indexCreationHelper.contribute(createIndexRequest);
+
+				liferayIndexCreationHelper.contribute(createIndexRequest);
+			}
+
+			@Override
+			public void contributeIndexSettings(
+				SettingsHelperImpl settingsHelperImpl) {
+
+				_indexCreationHelper.contributeIndexSettings(
+					settingsHelperImpl);
+
+				liferayIndexCreationHelper.contributeIndexSettings(
+					settingsHelperImpl);
+			}
+
+			@Override
+			public void whenIndexCreated(String indexName) {
+				_indexCreationHelper.whenIndexCreated(indexName);
+
+				liferayIndexCreationHelper.whenIndexCreated(indexName);
+			}
+
+		};
+	}
+
+	private final IndicesClient _getIndicesClient() {
+		RestHighLevelClient restHighLevelClient =
+			_elasticsearchClientResolver.getRestHighLevelClient();
+
+		return restHighLevelClient.indices();
+	}
+
 	private ElasticsearchClientResolver _elasticsearchClientResolver;
 	private IndexCreationHelper _indexCreationHelper;
 	private boolean _liferayMappingsAddedToIndex;
+	private SearchEngineInformation _searchEngineInformation;
 
 }

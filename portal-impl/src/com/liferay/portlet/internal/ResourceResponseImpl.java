@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.internal;
 
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.PortletApp;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
@@ -22,16 +14,16 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portlet.extra.config.ExtraPortletAppConfig;
 import com.liferay.portlet.extra.config.ExtraPortletAppConfigRegistry;
 
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Locale;
-
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletRequest;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Brian Wing Shun Chan
@@ -57,8 +49,13 @@ public class ResourceResponseImpl
 
 	@Override
 	public void addProperty(Cookie cookie) {
+		if (cookie == null) {
+			throw new IllegalArgumentException();
+		}
+
 		if (!(isCalledFlushBuffer() || isCommitted())) {
-			httpServletResponse.addCookie(cookie);
+			CookiesManagerUtil.addCookie(
+				cookie, getHttpServletRequest(), httpServletResponse);
 		}
 	}
 
@@ -125,10 +122,8 @@ public class ResourceResponseImpl
 		httpServletResponse.setHeader(name, value);
 
 		if (name.equals(ResourceResponse.HTTP_STATUS_CODE)) {
-			int status = GetterUtil.getInteger(
-				value, HttpServletResponse.SC_OK);
-
-			httpServletResponse.setStatus(status);
+			httpServletResponse.setStatus(
+				GetterUtil.getInteger(value, HttpServletResponse.SC_OK));
 		}
 	}
 

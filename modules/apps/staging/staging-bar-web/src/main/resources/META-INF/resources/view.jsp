@@ -1,23 +1,13 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-boolean branchingEnabled = GetterUtil.getBoolean((String)renderRequest.getAttribute(StagingProcessesWebKeys.BRANCHING_ENABLED));
 LayoutRevision layoutRevision = (LayoutRevision)renderRequest.getAttribute(WebKeys.LAYOUT_REVISION);
 List<LayoutSetBranch> layoutSetBranches = (List<LayoutSetBranch>)renderRequest.getAttribute(StagingProcessesWebKeys.LAYOUT_SET_BRANCHES);
 liveGroup = (Group)renderRequest.getAttribute(StagingProcessesWebKeys.LIVE_GROUP);
@@ -61,14 +51,20 @@ if (liveLayout != null) {
 							<li class="nav-item">
 								<c:choose>
 									<c:when test="<%= !remoteSiteURL.isEmpty() %>">
-										<a class="nav-link" href="<%= HtmlUtil.escape(remoteSiteURL) %>" value="go-to-remote-live">
-											<aui:icon image="home" label="go-to-remote-live" markupView="lexicon" />
-										</a>
+										<clay:link
+											cssClass="nav-link"
+											href="<%= HtmlUtil.escape(remoteSiteURL) %>"
+											icon="home"
+											label="go-to-remote-live"
+										/>
 									</c:when>
 									<c:when test="<%= SessionErrors.contains(renderRequest, AuthException.class) %>">
-										<a class="nav-link" value="go-to-remote-live">
-											<aui:icon image="home" label="go-to-remote-live" markupView="lexicon" />
-										</a>
+										<clay:button
+											cssClass="nav-link"
+											displayType="unstyled"
+											icon="home"
+											label="go-to-remote-live"
+										/>
 
 										<liferay-ui:icon
 											icon="exclamation-full"
@@ -78,9 +74,12 @@ if (liveLayout != null) {
 										/>
 									</c:when>
 									<c:when test="<%= SessionErrors.contains(renderRequest, RemoteExportException.class) %>">
-										<a class="nav-link" value="go-to-remote-live">
-											<aui:icon image="home" label="go-to-remote-live" markupView="lexicon" />
-										</a>
+										<clay:button
+											cssClass="nav-link"
+											displayType="unstyled"
+											icon="home"
+											label="go-to-remote-live"
+										/>
 
 										<liferay-ui:icon
 											icon="exclamation-full"
@@ -90,9 +89,12 @@ if (liveLayout != null) {
 										/>
 									</c:when>
 									<c:otherwise>
-										<a class="nav-link" value="go-to-remote-live">
-											<aui:icon image="home" label="go-to-remote-live" markupView="lexicon" />
-										</a>
+										<clay:button
+											cssClass="nav-link"
+											displayType="unstyled"
+											icon="home"
+											label="go-to-remote-live"
+										/>
 
 										<liferay-ui:icon
 											icon="exclamation-full"
@@ -139,7 +141,7 @@ if (liveLayout != null) {
 									<liferay-ui:error exception="<%= Exception.class %>" message="an-unexpected-error-occurred" />
 
 									<c:choose>
-										<c:when test="<%= branchingEnabled %>">
+										<c:when test="<%= GetterUtil.getBoolean((String)renderRequest.getAttribute(StagingProcessesWebKeys.BRANCHING_ENABLED)) %>">
 											<clay:col>
 												<liferay-util:include page="/view_layout_set_branch_details.jsp" servletContext="<%= application %>" />
 											</clay:col>
@@ -222,7 +224,7 @@ if (liveLayout != null) {
 								<div class="container-fluid container-fluid-max-xl staging-alert-container">
 									<span class="alert-indicator">
 										<svg aria-hidden="true" class="lexicon-icon lexicon-icon-info-circle">
-											<use xlink:href="<%= themeDisplay.getPathThemeImages() %>/clay/icons.svg#info-circle" />
+											<use xlink:href="<%= themeDisplay.getPathThemeSpritemap() %>#info-circle" />
 										</svg>
 									</span>
 
@@ -248,15 +250,6 @@ if (liveLayout != null) {
 				</c:if>
 			</div>
 		</c:if>
-	</c:if>
-
-	<c:if test="<%= !branchingEnabled %>">
-		<aui:script use="liferay-staging">
-			Liferay.StagingBar.init({
-				namespace: '<portlet:namespace />',
-				portletId: '<%= portletDisplay.getId() %>',
-			});
-		</aui:script>
 	</c:if>
 
 	<aui:script use="aui-base">

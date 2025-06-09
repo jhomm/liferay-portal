@@ -1,355 +1,340 @@
 definition {
 
-	macro clearFilters {
-		Click(locator1 = "ContentDashboard#CLEAR_FILTERS_BUTTON");
+	@summary = "Default summary"
+	macro addMimeType(typeName = null) {
+		Click(
+			ariaLabel = "Add Duplicate Field Code File MIME types",
+			locator1 = "Button#ANY_WITH_ARIA_LABEL");
+
+		Type(
+			key_indexNumber = 2,
+			key_label = "Code File MIME types",
+			locator1 = "TextArea#ANY_LABELED_N",
+			value1 = ${typeName});
+
+		Button.clickSave();
+
+		Alert.viewSuccessMessage();
 	}
 
-	macro clickOnFirstBar {
-		Click(locator1 = "ContentDashboard#AUDIT_GRAPH_FIRST_BAR");
+	@summary = "Default summary"
+	macro applySelectedFilter() {
+		SelectFrame(value1 = "relative=top");
+
+		AssertClickNoError(
+			locator1 = "Button#SELECT",
+			value1 = "Select");
+
+		SelectFrame(value1 = "relative=top");
+
+		WaitForElementPresent(locator1 = "ContentDashboard#ROW_PANEL");
 	}
 
-	macro deleteSecondCategoryFilter {
+	@summary = "Default summary"
+	macro cancelSelectFilterTreeview(optionsList = null) {
+		Portlet.expandTree();
+
+		for (var optionName : list ${optionsList}) {
+			Check.checkNotVisible(
+				key_nodeName = ${optionName},
+				locator1 = "Treeview#NODE_CHECKBOX_2");
+		}
+
+		ClickNoError(
+			key_text = "Clear All",
+			locator1 = "Link#ANY");
+
+		AssertElementNotPresent(
+			key_text = "Clear All",
+			locator1 = "Link#ANY");
+
+		SelectFrame(value1 = "relative=top");
+
+		Button.clickCancel();
+	}
+
+	@summary = "Default summary"
+	macro checkMimeExtensionDisplayed(typeNameList = null) {
+		if (isSet(typeName)) {
+			AssertVisible(
+				key_nodeName = ${typeName},
+				locator1 = "Treeview#NODE_ITEM_2");
+		}
+		else {
+			for (var typeName : list ${typeNameList}) {
+				AssertVisible(
+					key_nodeName = ${typeName},
+					locator1 = "Treeview#NODE_ITEM_2");
+			}
+		}
+
+		SelectFrame(value1 = "relative=top");
+
+		Button.clickCancel();
+	}
+
+	@summary = "Default summary"
+	macro clearFilters() {
+		Click(
+			key_text = "Clear",
+			locator1 = "Button#ANY");
+	}
+
+	@summary = "Default summary"
+	macro clickMenuOfVersion(versionName = null, menuItem = null) {
+		Click.waitForMenuToggleJSClick(
+			key_version = ${versionName},
+			locator1 = "ContentDashboard#VERSION_ELLIPSIS");
+
+		if (IsVisible(locator1 = "ContentDashboard#INFO_PANEL")) {
+			MenuItem.clickNoError(menuItem = ${menuItem});
+		}
+		else {
+			ClickNoError(
+				key_menuItem = ${menuItem},
+				locator1 = "ContentDashboard#VERSION_HISTORY_ELLIPSIS");
+		}
+	}
+
+	@summary = "Default summary"
+	macro clickOnFirstBar() {
+		if (!(isSet(fillColor))) {
+			var fillColor = "4B9FFF";
+		}
+
+		Click(
+			fillColor = ${fillColor},
+			locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+	}
+
+	@summary = "Default summary"
+	macro clickQuickActionIcon(iconName = null, assetName = null) {
+		if (isSet(assetName)) {
+			Click.clickNoMouseOver(
+				key_assetName = ${assetName},
+				locator1 = "ContentDashboard#ROW_PANEL_ASSET_NAME");
+		}
+		else {
+			Click.clickNoMouseOver(locator1 = "ContentDashboard#ROW_PANEL");
+		}
+
+		Click.javaScriptClick(
+			locator1 = "ContentDashboard#QUICK_ACTION_ICON",
+			title = ${iconName});
+	}
+
+	@summary = "Default summary"
+	macro clickViewMore() {
+		Button.click(button = "View More");
+	}
+
+	@summary = "Default summary"
+	macro createVersionsForDocument(dmDocumentTitle = null, groupName = null, versionsCreated = null) {
+		var count = 0;
+
+		while (${count} != ${versionsCreated}) {
+			JSONDocument.checkOutFile(
+				dmDocumentTitle = ${dmDocumentTitle},
+				groupId = ${groupId},
+				groupName = ${groupName});
+
+			JSONDocument.checkInFile(
+				dmDocumentTitle = ${dmDocumentTitle},
+				groupId = ${groupId},
+				groupName = ${groupName});
+
+			var count = ${count} + 1;
+		}
+	}
+
+	@summary = "Default summary"
+	macro deleteSecondCategoryFilter() {
 		Click(locator1 = "ContentDashboard#DELETE_SECOND_FILTER_SELECTED");
 	}
 
-	macro editAsset {
-		Click(locator1 = "ContentDashboard#ASSET_MENU_DROPDOWN_BUTTON");
+	@summary = "Default summary"
+	macro downloadVersion(version = null) {
+		Click.waitForMenuToggleJSClick(
+			key_tableEntry = ${version},
+			locator1 = "LexiconTable#TABLE_ENTRY_ELLIPSIS");
 
-		Click(locator1 = "ContentDashboard#EDIT_OPTION");
-
-		if (isSet(assetTitle)) {
-			Click(locator1 = "TextInput#TITLE");
-
-			PortletEntry.inputTitle(title = "${assetTitle}");
-		}
-
-		Button.clickPublish();
+		ClickNoError(
+			key_text = "download",
+			locator1 = "MenuItem#ANY_ICON");
 	}
 
-	macro filterByAuthorAll {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
+	@summary = "Default summary"
+	macro editAsset(assetNewTitle = null, assetTitle = null) {
+		LexiconTable.clickEllipsisItem(
+			item = "Edit",
+			tableEntry = ${assetTitle});
+
+		if (isSet(assetNewTitle)) {
+			if (IsElementPresent(locator1 = "TextInput#TITLE")) {
+				Click(locator1 = "TextInput#TITLE");
+
+				PortletEntry.inputTitle(title = ${assetNewTitle});
+			}
+			else {
+				BlogsEntry.addTitle(entryTitle = ${assetNewTitle});
+			}
 		}
 
-		var key_filterOption = "${filterOption}";
+		if (isSet(saveAsDraft)) {
+			PortletEntry.saveAsDraft();
 
-		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
-	}
-
-	macro filterByAuthorCard {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
+			Click(locator1 = "Icon#BACK");
 		}
-
-		var key_filterOption = "${filterOption}";
-
-		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		Click(locator1 = "ContentDashboard#AUTHOR_SELECT_DISPLAY_MODE_BUTTON");
-
-		Click(locator1 = "ContentDashboard#AUTHOR_CARDS_DISPLAY_OPTION");
-
-		Click(locator1 = "ContentDashboard#SEARCH_FIELD");
-
-		Type(
-			locator1 = "ContentDashboard#SEARCH_FIELD",
-			value1 = "Test");
-
-		KeyPress(
-			locator1 = "ContentDashboard#SEARCH_FIELD",
-			value1 = "\ENTER");
-
-		Click(locator1 = "ContentDashboard#AUTHOR_CARDS_ELEMENT");
-
-		SelectFrame(value1 = "relative=top");
-
-		AssertClickNoError(
-			locator1 = "Button#SELECT",
-			value1 = "Select");
-
-		SelectFrame(value1 = "relative=top");
-
-		WaitForElementPresent(locator1 = "ContentDashboard#ASSET_MENU_DROPDOWN_BUTTON");
-	}
-
-	macro filterByAuthorList {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
-		}
-
-		var key_filterOption = "${filterOption}";
-
-		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		Click(locator1 = "ContentDashboard#AUTHOR_SELECT_DISPLAY_MODE_BUTTON");
-
-		Click(locator1 = "ContentDashboard#AUTHOR_LIST_DISPLAY_OPTION");
-
-		Click(locator1 = "ContentDashboard#SEARCH_FIELD");
-
-		Type(
-			locator1 = "ContentDashboard#SEARCH_FIELD",
-			value1 = "Test");
-
-		KeyPress(
-			locator1 = "ContentDashboard#SEARCH_FIELD",
-			value1 = "\ENTER");
-
-		Click(locator1 = "ContentDashboard#AUTHOR_ELEMENT_CHECKBOX");
-
-		SelectFrame(value1 = "relative=top");
-
-		AssertClickNoError(
-			locator1 = "Button#SELECT",
-			value1 = "Select");
-
-		SelectFrame(value1 = "relative=top");
-
-		WaitForElementPresent(locator1 = "ContentDashboard#ASSET_MENU_DROPDOWN_BUTTON");
-	}
-
-	macro filterByAuthorMe {
-		WaitForElementPresent(locator1 = "ContentDashboard#ASSET_MENU_DROPDOWN_BUTTON");
-
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
-		}
-
-		var key_filterOption = "${filterOption}";
-
-		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
-	}
-
-	macro filterByAuthorTable {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
-		}
-
-		var key_filterOption = "${filterOption}";
-
-		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		Click(locator1 = "ContentDashboard#AUTHOR_SELECT_DISPLAY_MODE_BUTTON");
-
-		Click(locator1 = "ContentDashboard#AUTHOR_TABLE_DISPLAY_OPTION");
-
-		Click(locator1 = "ContentDashboard#SEARCH_FIELD");
-
-		Type(
-			locator1 = "ContentDashboard#SEARCH_FIELD",
-			value1 = "Test");
-
-		KeyPress(
-			locator1 = "ContentDashboard#SEARCH_FIELD",
-			value1 = "\ENTER");
-
-		Click(locator1 = "ContentDashboard#AUTHOR_ELEMENT_CHECKBOX");
-
-		SelectFrame(value1 = "relative=top");
-
-		AssertClickNoError(
-			locator1 = "Button#SELECT",
-			value1 = "Select");
-
-		SelectFrame(value1 = "relative=top");
-
-		WaitForElementPresent(locator1 = "ContentDashboard#ASSET_MENU_DROPDOWN_BUTTON");
-	}
-
-	macro filterByCategory {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
-		}
-
-		var key_filterOption = "${filterOption}";
-
-		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
-
-		WaitForLiferayEvent.initializeLiferayEventLog();
-
-		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#IFRAME");
-
-		Click(locator1 = "ContentDashboard#SEARCH_CATEGORY_FIELD");
-
-		Type(
-			locator1 = "ContentDashboard#SEARCH_CATEGORY_FIELD",
-			value1 = "${categoryName}");
-
-		Click(locator1 = "ContentDashboard#CATEGORY_NAME_ELEMENT");
-
-		SelectFrame(value1 = "relative=top");
-
-		AssertClickNoError(
-			locator1 = "Button#SELECT",
-			value1 = "Select");
-
-		SelectFrame(value1 = "relative=top");
-
-		WaitForElementPresent(locator1 = "ContentDashboard#ASSET_MENU_DROPDOWN_BUTTON");
-	}
-
-	macro filterBySiteGlobal {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
-		}
-
-		var key_filterOption = "${filterOption}";
-
-		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
-
-		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_IFRAME");
-
-		Click(locator1 = "ContentDashboard#MY_SITES_TAB");
-
-		Click(locator1 = "ContentDashboard#GLOBAL_SITE_CARD");
-
-		SelectFrame(value1 = "relative=top");
-	}
-
-	macro filterByStatusAny {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
-		}
-
-		var key_filterOption = "${filterOption}";
-
-		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
-	}
-
-	macro filterByStatusApproved {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
-		}
-
-		var key_filterOption = "${filterOption}";
-
-		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
-	}
-
-	macro filterByStatusDraft {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
-		}
-
-		var key_filterOption = "${filterOption}";
-
-		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
-	}
-
-	macro filterByStatusScheduled {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
-		}
-
-		var key_filterOption = "${filterOption}";
-
-		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
-	}
-
-	macro filterByTag {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
-		}
-
-		var key_filterOption = "${filterOption}";
-
-		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		if (IsElementPresent(locator1 = "ContentDashboard#SEARCH_TAG_FIELD")) {
-			Click(locator1 = "ContentDashboard#SEARCH_TAG_FIELD");
-
-			Type(
-				locator1 = "ContentDashboard#SEARCH_TAG_FIELD",
-				value1 = "${tagName}");
-
-			KeyPress(
-				locator1 = "ContentDashboard#SEARCH_TAG_FIELD",
-				value1 = "\ENTER");
-
-			Click(locator1 = "ContentDashboard#CHECKBOX_TAGS");
+		else if (isSet(isWebContent)) {
+			WebContent.publishExistingWCArticleWithPermissions();
 		}
 		else {
-			Click(locator1 = "ContentDashboard#CHECKBOX_TAGS");
+			Button.clickPublish();
 		}
-
-		SelectFrame(value1 = "relative=top");
-
-		AssertClickNoError(
-			locator1 = "Button#SELECT",
-			value1 = "Select");
-
-		SelectFrame(value1 = "relative=top");
-
-		WaitForElementPresent(locator1 = "ContentDashboard#ASSET_MENU_DROPDOWN_BUTTON");
 	}
 
-	macro filterByType {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
+	@summary = "Default summary"
+	macro filterByAuthor(viewOption = null) {
+		ContentDashboard.openFilterModal(filterOption = "Author");
+
+		if (!(isSet(authorNameList))) {
+			var authorNameList = "Test Test";
 		}
 
-		var key_filterOption = "${filterOption}";
+		if (!(isSet(viewOption))) {
+			for (var authorName : list ${authorNameList}) {
+				LexiconTable.checkTableCheckbox(tableEntry = ${authorName});
+			}
+		}
+		else if (${viewOption} == "Cards") {
+			LexiconEntry.changeExportDisplayStyle(displayStyle = ${viewOption});
+
+			for (var authorName : list ${authorNameList}) {
+				LexiconCard.checkCardCheckbox(card = ${authorName});
+			}
+		}
+		else if (${viewOption} == "List") {
+			LexiconEntry.changeExportDisplayStyle(displayStyle = ${viewOption});
+
+			for (var authorName : list ${authorNameList}) {
+				Check(
+					key_listEntry = ${authorName},
+					locator1 = "LexiconList#LIST_ENTRY_CHECKBOX");
+			}
+		}
+
+		ContentDashboard.applySelectedFilter();
+	}
+
+	@summary = "Default summary"
+	macro filterByAuthorAll() {
+		Click(locator1 = "ManagementBar#FILTER");
 
 		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
+	}
 
-		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_IFRAME");
+	@summary = "Default summary"
+	macro filterByAuthorMe() {
+		Click(locator1 = "ManagementBar#FILTER");
 
-		Click(locator1 = "ContentDashboard#SEARCH_SUBTYPE_FIELD");
+		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
+	}
 
-		Type(
-			locator1 = "ContentDashboard#SEARCH_SUBTYPE_FIELD",
-			value1 = "${subtypeName}");
+	@summary = "Default summary"
+	macro filterByCategory(categoryNameList = null) {
+		ContentDashboard.openFilterModal(filterOption = "Categories");
 
-		Click(locator1 = "ContentDashboard#SUBTYPE_NAME_ELEMENT");
+		ContentDashboard.useTreeviewFilter(optionsList = ${categoryNameList});
 
-		SelectFrame(value1 = "relative=top");
+		ContentDashboard.applySelectedFilter();
+	}
 
-		AssertClickNoError(
-			locator1 = "Button#SELECT",
-			value1 = "Select");
+	@summary = "Default summary"
+	macro filterByExtension(extensionName = null) {
+		ContentDashboard.openFilterModal(filterOption = "Extension");
+
+		if (!(isSet(extensionNameList))) {
+			var extensionNameList = ${extensionName};
+		}
+
+		ContentDashboard.useTreeviewFilter(optionsList = ${extensionNameList});
+
+		ContentDashboard.applySelectedFilter();
+	}
+
+	@summary = "Default summary"
+	macro filterByMimeParent(parentExtension = null) {
+		ContentDashboard.openFilterModal(filterOption = "Extension");
+
+		ContentDashboard.useTreeviewFilter(optionsList = ${parentExtension});
+
+		ContentDashboard.applySelectedFilter();
+	}
+
+	@summary = "Default summary"
+	macro filterBySite(siteName = null) {
+		ContentDashboard.openFilterModal(filterOption = "Site or Asset Library");
+
+		AssertClick(
+			locator1 = "NavBar#MY_SITES",
+			value1 = "My Sites");
+
+		LexiconCard.clickCardTitle(card = ${siteName});
 
 		SelectFrame(value1 = "relative=top");
 	}
 
-	macro flipAxesButtonClick {
-		Click(locator1 = "ContentDashboard#FLIP_AXES_BUTTON");
+	@summary = "Default summary"
+	macro filterByStatus() {
+		Click(locator1 = "ManagementBar#FILTER");
+
+		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
 	}
 
-	macro goToContentDashboard {
+	@summary = "Default summary"
+	macro filterByTag(tagName = null) {
+		ContentDashboard.openFilterModal(filterOption = "Tag");
+
+		if (!(isSet(tagNameList))) {
+			var tagNameList = ${tagName};
+		}
+
+		for (var tableEntry : list ${tagNameList}) {
+			LexiconTable.checkTableCheckbox(tableEntry = ${tableEntry});
+		}
+
+		ContentDashboard.applySelectedFilter();
+	}
+
+	@summary = "Default summary"
+	macro filterByToBeReviewed() {
+		Click(locator1 = "ManagementBar#FILTER");
+
+		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
+	}
+
+	@summary = "Default summary"
+	macro filterByType(typeName = null) {
+		ContentDashboard.openFilterModal(filterOption = "Type");
+
+		if (!(isSet(typeNameList))) {
+			var typeNameList = ${typeName};
+		}
+
+		ContentDashboard.useTreeviewFilter(optionsList = ${typeNameList});
+
+		ContentDashboard.applySelectedFilter();
+	}
+
+	@summary = "Default summary"
+	macro flipGraphAxes() {
+		Click(
+			key_text = "change",
+			locator1 = "Icon#ANY");
+	}
+
+	@summary = "Default summary"
+	macro goToContentDashboard() {
 		ApplicationsMenu.gotoPortlet(
 			category = "Content",
 			panel = "Applications",
@@ -360,97 +345,166 @@ definition {
 		WaitForElementPresent(locator1 = "ContentDashboard#CONTENT_CHART_SVG");
 	}
 
-	macro moveToPage {
+	@summary = "Default summary"
+	macro goToVersionHistoryPage(assetName = null) {
+		ContentDashboard.goToContentDashboard();
+
+		LexiconTable.clickEllipsisItem(
+			item = "Info",
+			tableEntry = ${assetName});
+
+		ContentDashboard.openVersionsTab();
+
+		ContentDashboard.clickViewMore();
+	}
+
+	@summary = "Default summary"
+	macro moveToPage() {
 		Click(locator1 = "ContentDashboard#PAGINATION_MOVE_TO_PAGE");
 	}
 
-	macro moveVocabularyDisplayConfiguration {
-		Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_BUTTON");
+	@summary = "Default summary"
+	macro moveVocabularyDisplayConfiguration(warningMessage = null, vocabularyName = null) {
+		ContentDashboard.openAuditGraphConfiguration();
 
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+		for (var key_vocabularyName : list ${vocabularyName}) {
+			if (IsElementPresent(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_VOCABULARY_IN_USE")) {
+				Click.clickNoMouseOver(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_VOCABULARY_IN_USE");
 
-		if (IsElementPresent(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_VOCABULARY_IN_USE")) {
-			var key_vocabularyName = "${vocabularyName}";
+				Click(
+					ariaLabel = "Transfer Item Right to Left",
+					locator1 = "Button#ANY_WITH_ARIA_LABEL");
+			}
+			else if (IsElementPresent(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_VOCABULARY_AVAILABLE")) {
+				Click.clickNoMouseOver(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_VOCABULARY_AVAILABLE");
 
-			Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_VOCABULARY_IN_USE");
+				Click(
+					ariaLabel = "Transfer Item Left to Right",
+					locator1 = "Button#ANY_WITH_ARIA_LABEL");
+			}
 
-			Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_LEFT_ARROW_BUTTON");
+			AssertClick(
+				locator1 = "Button#SAVE",
+				value1 = "Save");
 		}
-		else if (IsElementPresent(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_VOCABULARY_AVAILABLE")) {
-			var key_vocabularyName = "${vocabularyName}";
 
-			Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_VOCABULARY_AVAILABLE");
-
-			Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_RIGHT_ARROW_BUTTON");
+		if (isSet(warningMessage)) {
+			Alert.viewWarningSpecific(warningMessage = ${warningMessage});
 		}
-
-		AssertClick(
-			locator1 = "Button#SAVE",
-			value1 = "Save");
-
-		if (!(isSet(notCloseFrame))) {
+		else {
 			Alert.viewSuccessMessage();
-
-			IFrame.closeFrame();
 		}
+
+		IFrame.closeFrame();
 	}
 
-	macro openAuditGraphConfiguration {
-		Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_BUTTON");
+	@summary = "Default summary"
+	macro navigateToDocumentVersionHistoryPage(dmDocumentTitle = null, groupName = null, siteURLKey = null) {
+		var fileEntryId = JSONDocument.getFileEntryId(
+			dmDocumentTitle = ${dmDocumentTitle},
+			groupName = ${groupName});
+
+		Navigator.openWithAppendToBaseURL(urlAppend = "group/${siteURLKey}/~/control_panel/manage?p_p_id=com_liferay_document_library_web_portlet_DLAdminPortlet&_com_liferay_document_library_web_portlet_DLAdminPortlet_mvcRenderCommandName=%2Fdocument_library%2Fview_file_entry_history&_com_liferay_document_library_web_portlet_DLAdminPortlet_fileEntryId=${fileEntryId}");
+	}
+
+	@summary = "Default summary"
+	macro openAuditGraphConfiguration() {
+		Click(
+			key_text = "cog",
+			locator1 = "Icon#ANY");
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 	}
 
-	macro openInfoPanelByDropdownMenu {
-		Click(locator1 = "ContentDashboard#ASSET_MENU_DROPDOWN_BUTTON");
+	@summary = "Default summary"
+	macro openFilterModal() {
+		Click(locator1 = "ManagementBar#FILTER");
 
-		Click(locator1 = "ContentDashboard#INFO_OPTION");
+		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		WaitForLiferayEvent.initializeLiferayEventLog();
 	}
 
-	macro orderByModificationDate {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
-		}
+	@summary = "Default summary"
+	macro openInfoPanel(assetName = null) {
+		Click.javaScriptClick(
+			key_tableEntry = ${assetName},
+			key_text = "info-circle",
+			locator1 = "LexiconTable#TABLE_ENTRY_ICON");
+	}
 
-		var key_filterOption = "${filterOption}";
+	@summary = "Default summary"
+	macro openVersionsTab() {
+		Click(locator1 = "ContentDashboard#INFO_PANEL_VERSIONS_TAB");
+	}
+
+	@summary = "Default summary"
+	macro orderByModificationDate() {
+		Click(locator1 = "ManagementBar#ORDER");
 
 		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
 	}
 
-	macro orderByTitle {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
-		}
-
-		var key_filterOption = "${filterOption}";
+	@summary = "Default summary"
+	macro orderByReviewDate() {
+		Click(locator1 = "ManagementBar#ORDER");
 
 		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
 	}
 
-	macro searchValue {
+	@summary = "Default summary"
+	macro orderByTitle() {
+		Click(locator1 = "ManagementBar#ORDER");
+
+		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
+	}
+
+	@summary = "Default summary"
+	macro searchValue(webContentTitle = null) {
 		Click(locator1 = "ContentDashboard#SEARCH_FIELD");
 
 		Type(
 			locator1 = "ContentDashboard#SEARCH_FIELD",
-			value1 = "${webContentTitle}");
+			value1 = ${webContentTitle});
 
 		KeyPress(
 			locator1 = "ContentDashboard#SEARCH_FIELD",
 			value1 = "\ENTER");
 	}
 
-	macro setVocabularyInUseSecondPosition {
-		Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_BUTTON");
+	@summary = "Default summary"
+	macro setUpGlobalCategories() {
+		var audienceCategory = JSONCategory.addCategory(
+			groupName = "Global",
+			title = "Audience 1",
+			vocabularyName = "Audience");
+		var stageCategory = JSONCategory.addCategory(
+			groupName = "Global",
+			title = "Stage 1",
+			vocabularyName = "Stage");
+		static var audienceId1 = ${audienceCategory};
+		static var stageId1 = ${stageCategory};
 
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+		return ${audienceId1};
 
-		Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_VOCABULARY_IN_USE");
+		return ${stageId1};
+	}
 
-		Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_DOWN_ARROW_BUTTON");
+	@summary = "Default summary"
+	macro setVocabularyInUseSecondPosition(key_vocabularyName = null) {
+		ContentDashboard.openAuditGraphConfiguration();
+
+		var secondVocabulary = selenium.getText("ContentDashboard#AUDIT_GRAPH_CONFIGURATION_SECOND_VOCABULARY_IN_USE");
+
+		if (!(contains(${secondVocabulary}, ${key_vocabularyName}))) {
+			Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_VOCABULARY_IN_USE");
+
+			Click(
+				ariaLabel = "Reorder Down",
+				locator1 = "Button#ANY_WITH_ARIA_LABEL");
+		}
 
 		AssertClick(
 			locator1 = "Button#SAVE",
@@ -459,14 +513,19 @@ definition {
 		IFrame.closeFrame();
 	}
 
-	macro setVocabularyInUseTopPosition {
-		Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_BUTTON");
+	@summary = "Default summary"
+	macro setVocabularyInUseTopPosition(key_vocabularyName = null) {
+		ContentDashboard.openAuditGraphConfiguration();
 
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+		var firstVocabulary = selenium.getText("ContentDashboard#AUDIT_GRAPH_CONFIGURATION_FIRST_VOCABULARY_IN_USE");
 
-		Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_VOCABULARY_IN_USE");
+		if (!(contains(${firstVocabulary}, ${key_vocabularyName}))) {
+			Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_VOCABULARY_IN_USE");
 
-		Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_UP_ARROW_BUTTON");
+			Click(
+				ariaLabel = "Reorder Up",
+				locator1 = "Button#ANY_WITH_ARIA_LABEL");
+		}
 
 		AssertClick(
 			locator1 = "Button#SAVE",
@@ -475,52 +534,59 @@ definition {
 		IFrame.closeFrame();
 	}
 
-	macro stageFirstVocabularyConfiguration {
-		Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_BUTTON");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_STAGE_VOCABULARY");
-
-		Click(locator1 = "ContentDashboard#AUDIT_GRAPH_CONFIGURATION_UP_ARROW_BUTTON");
-
-		AssertClick(
-			locator1 = "Button#SAVE",
-			value1 = "Save");
-
-		SelectFrame(value1 = "relative=top");
-	}
-
-	macro swapVocabularies {
+	@summary = "Default summary"
+	macro swapVocabularies() {
 		Click(locator1 = "ContentDashboard#SWAP_VOCABULARIES_BUTTON");
 	}
 
-	macro tearDown {
-		Category.openCategoriesAdmin(siteURLKey = "global");
+	@summary = "Default summary"
+	macro useTreeviewFilter(optionsList = null) {
+		Portlet.expandTree();
 
-		Navigator.gotoNavNested(navNested = "Audience");
-
-		var key_categoryName = "Audience 1";
-
-		if (IsElementPresent(locator1 = "Categories#VOCABULARY_CATEGORY")) {
-			Category.deleteCategoriesCP(vocabularyName = "Audience");
-		}
-
-		Navigator.gotoNavNested(navNested = "Stage");
-
-		var key_categoryName = "Stage 1";
-
-		if (IsElementPresent(locator1 = "Categories#VOCABULARY_CATEGORY")) {
-			Category.deleteCategoriesCP(vocabularyName = "Stage");
+		for (var optionName : list ${optionsList}) {
+			Check.checkNotVisible(
+				key_nodeName = ${optionName},
+				locator1 = "Treeview#NODE_CHECKBOX_2");
 		}
 	}
 
-	macro uncheckCheckbox {
-		var checkboxLabel = "${auditGraphCheckboxName}";
+	@summary = "Default summary"
+	macro viewAppliedFilters(filterLabelList = null) {
+		for (var filterLabel : list ${filterLabelList}) {
+			AssertElementPresent(
+				filterLabel = ${filterLabel},
+				locator1 = "ContentDashboard#FILTER_LABEL");
+		}
+	}
 
-		Click.javaScriptClick(
-			checkboxName = "Stage 1",
-			locator1 = "Checkbox#ANY_CHECKBOX");
+	@summary = "Default summary"
+	macro viewAssetsTranslatedVersion(language = null) {
+		Panel.expandPanel(panel = "Properties");
+
+		ClickNoError(
+			key_language = ${language},
+			locator1 = "ContentDashboard#VIEW_TRANSLATED_ASSET_ICON");
+	}
+
+	@summary = "Default summary"
+	macro viewHistoryVersionOrder(assetVersionList = null) {
+		var count = 1;
+		var list1 = ListUtil.newListFromString(${assetVersionList});
+
+		var size = ListUtil.size(${list1});
+
+		while (${count} != ${size}) {
+			var versionName = ListUtil.get(${list1}, ${count});
+
+			AssertVisible(
+				index = ${count},
+				key_tableEntry = ${versionName},
+				locator1 = "LexiconTable#TABLE_ENTRY_TITLE_INDEXED");
+
+			var count = ${count} + 1;
+
+			var count = StringUtil.valueOf(${count});
+		}
 	}
 
 }

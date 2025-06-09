@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.portlet.action;
@@ -23,12 +14,10 @@ import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSet;
 import com.liferay.portal.search.tuning.synonyms.web.internal.synchronizer.IndexToFilterSynchronizer;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import java.util.Optional;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -36,7 +25,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 /**
@@ -52,8 +40,6 @@ public class EditSynonymSetsMVCActionCommandTest
 
 	@Before
 	public void setUp() throws Exception {
-		super.setUp();
-
 		_editSynonymSetsMVCActionCommand =
 			new EditSynonymSetsMVCActionCommand();
 
@@ -93,88 +79,72 @@ public class EditSynonymSetsMVCActionCommandTest
 	}
 
 	@Test
-	public void testGetSynonymSetOptional() {
-		Optional<SynonymSet> synonymSetOptional =
-			_editSynonymSetsMVCActionCommand.getSynonymSetOptional(
-				Mockito.mock(SynonymSetIndexName.class), _actionRequest);
-
-		Assert.assertFalse(synonymSetOptional.isPresent());
+	public void testGetSynonymSet() {
+		Assert.assertNull(
+			_editSynonymSetsMVCActionCommand.getSynonymSet(
+				Mockito.mock(SynonymSetIndexName.class), _actionRequest));
 
 		setUpPortletRequestParameterValue(
 			_actionRequest, "synonymSetId", "synonymSetIdValue");
 		setUpSynonymSetIndexReader("id", "car,automobile");
 
-		synonymSetOptional =
-			_editSynonymSetsMVCActionCommand.getSynonymSetOptional(
-				Mockito.mock(SynonymSetIndexName.class), _actionRequest);
-
-		SynonymSet synonymSet = synonymSetOptional.get();
+		SynonymSet synonymSet = _editSynonymSetsMVCActionCommand.getSynonymSet(
+			Mockito.mock(SynonymSetIndexName.class), _actionRequest);
 
 		Assert.assertEquals("car,automobile", synonymSet.getSynonyms());
 		Assert.assertEquals("id", synonymSet.getSynonymSetDocumentId());
 	}
 
 	@Test
-	public void testUpdateSynonymSet() throws Exception {
-		_editSynonymSetsMVCActionCommand.updateSynonymSet(_actionRequest);
-
-		Mockito.verify(
-			_indexToFilterSynchronizer, Mockito.times(1)
-		).copyToFilter(
-			Mockito.anyObject(), Mockito.anyString(), Mockito.anyBoolean()
-		);
-	}
-
-	@Test
 	public void testUpdateSynonymSetIndex() throws PortalException {
-		Optional<SynonymSet> synonymSetOptional = Optional.empty();
-
 		_editSynonymSetsMVCActionCommand.updateSynonymSetIndex(
-			Mockito.mock(SynonymSetIndexName.class), "car,automobile",
-			synonymSetOptional);
+			Mockito.mock(SynonymSetIndexName.class), "car,automobile", null);
 
 		Mockito.verify(
 			synonymSetStorageAdapter, Mockito.times(1)
 		).create(
-			Mockito.anyObject(), Mockito.anyObject()
+			Mockito.any(), Mockito.any()
 		);
 
 		SynonymSet.SynonymSetBuilder synonymSetBuilder =
 			new SynonymSet.SynonymSetBuilder();
 
-		synonymSetOptional = Optional.of(
+		_editSynonymSetsMVCActionCommand.updateSynonymSetIndex(
+			Mockito.mock(SynonymSetIndexName.class), "car,automobile",
 			synonymSetBuilder.synonyms(
 				"car,atumobile"
 			).synonymSetDocumentId(
 				"id-1"
 			).build());
 
-		_editSynonymSetsMVCActionCommand.updateSynonymSetIndex(
-			Mockito.mock(SynonymSetIndexName.class), "car,automobile",
-			synonymSetOptional);
-
 		Mockito.verify(
 			synonymSetStorageAdapter, Mockito.times(1)
 		).update(
-			Mockito.anyObject(), Mockito.anyObject()
+			Mockito.any(), Mockito.any()
 		);
 	}
 
-	@Mock
-	private ActionRequest _actionRequest;
+	@Test
+	public void testUpdateSynonymSets() throws Exception {
+		_editSynonymSetsMVCActionCommand.updateSynonymSets(_actionRequest);
 
-	@Mock
-	private ActionResponse _actionResponse;
+		Mockito.verify(
+			_indexToFilterSynchronizer, Mockito.times(1)
+		).copyToFilter(
+			Mockito.any(), Mockito.nullable(String.class), Mockito.anyBoolean()
+		);
+	}
 
+	private final ActionRequest _actionRequest = Mockito.mock(
+		ActionRequest.class);
+	private final ActionResponse _actionResponse = Mockito.mock(
+		ActionResponse.class);
 	private EditSynonymSetsMVCActionCommand _editSynonymSetsMVCActionCommand;
-
-	@Mock
-	private HttpServletRequest _httpServletRequest;
-
-	@Mock
-	private IndexNameBuilder _indexNameBuilder;
-
-	@Mock
-	private IndexToFilterSynchronizer _indexToFilterSynchronizer;
+	private final HttpServletRequest _httpServletRequest = Mockito.mock(
+		HttpServletRequest.class);
+	private final IndexNameBuilder _indexNameBuilder = Mockito.mock(
+		IndexNameBuilder.class);
+	private final IndexToFilterSynchronizer _indexToFilterSynchronizer =
+		Mockito.mock(IndexToFilterSynchronizer.class);
 
 }

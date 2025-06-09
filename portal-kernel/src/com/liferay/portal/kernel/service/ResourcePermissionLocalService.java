@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -37,6 +28,7 @@ import com.liferay.portal.kernel.service.permission.ModelPermissions;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.spring.aop.Property;
 import com.liferay.portal.kernel.spring.aop.Retry;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -62,6 +54,11 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @CTAware
+@OSGiBeanProperties(
+	property = {
+		"model.class.name=com.liferay.portal.kernel.model.ResourcePermission"
+	}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -184,13 +181,17 @@ public interface ResourcePermissionLocalService
 	 optionally an empty string if no instance exists
 	 * @param portletActions whether to associate portlet actions with the
 	 resource
-	 * @param addGroupPermissions whether to add group permissions
-	 * @param addGuestPermissions whether to add guest permissions
 	 */
 	public void addResourcePermissions(
 			long companyId, long groupId, long userId, String name,
-			String primKey, boolean portletActions, boolean addGroupPermissions,
-			boolean addGuestPermissions)
+			String primKey, boolean portletActions,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	public void addResourcePermissions(
+			long companyId, long groupId, long userId, String name,
+			String[] primKeys, boolean portletActions,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -215,7 +216,7 @@ public interface ResourcePermissionLocalService
 		long resourceActionBitwiseValue);
 
 	public void copyModelResourcePermissions(
-			long companyId, String name, long oldPrimKey, long newPrimKey)
+			long companyId, String name, long sourcePrimKey, long targetPrimKey)
 		throws PortalException;
 
 	/**
@@ -271,6 +272,10 @@ public interface ResourcePermissionLocalService
 	public ResourcePermission deleteResourcePermission(
 		ResourcePermission resourcePermission);
 
+	public void deleteResourcePermissions(
+			long companyId, String name, int scope)
+		throws PortalException;
+
 	/**
 	 * Deletes all resource permissions at the scope to resources of the type.
 	 * This method should not be confused with any of the
@@ -320,6 +325,8 @@ public interface ResourcePermissionLocalService
 	public void deleteResourcePermissions(
 			long companyId, String name, int scope, String primKey)
 		throws PortalException;
+
+	public void deleteResourcePermissions(String name);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public <T> T dslQuery(DSLQuery dslQuery);
@@ -493,6 +500,11 @@ public interface ResourcePermissionLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<ResourcePermission> getResourcePermissions(int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ResourcePermission> getResourcePermissions(
+		long companyId, String name, int scope, long roleId,
+		boolean viewActionId);
 
 	/**
 	 * Returns all the resource permissions at the scope of the type.
@@ -717,6 +729,10 @@ public interface ResourcePermissionLocalService
 	public boolean hasScopeResourcePermission(
 			long companyId, String name, int scope, long roleId,
 			String actionId)
+		throws PortalException;
+
+	public void initDefaultModelResourcePermissions(
+			long companyId, Collection<String> modelResources)
 		throws PortalException;
 
 	public void initPortletDefaultPermissions(Portlet portlet)

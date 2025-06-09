@@ -1,18 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.shielded.container.internal.proxy;
+
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterRegistration;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.http.HttpSessionListener;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
@@ -25,25 +23,27 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterRegistration;
-import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletRegistration;
-import javax.servlet.http.HttpSessionListener;
-
 /**
  * @author Shuyang Zhou
  */
 public class ServletContextDelegate {
 
-	public ServletContextDelegate(
-		ProxyFactory proxyFactory, ServletContext servletContext,
-		ClassLoader classLoader) {
+	public static ServletContext create(
+		ClassLoader classLoader, ServletContext servletContext) {
 
-		_proxyFactory = proxyFactory;
-		_servletContext = servletContext;
-		_classLoader = classLoader;
+		ProxyFactory proxyFactory = new ProxyFactory(classLoader);
+
+		ServletContextDelegate servletContextDelegate =
+			new ServletContextDelegate(
+				classLoader, proxyFactory, servletContext);
+
+		servletContext = proxyFactory.createASMWrapper(
+			classLoader, ServletContext.class, servletContextDelegate,
+			servletContext);
+
+		servletContextDelegate._proxiedServletContext = servletContext;
+
+		return servletContext;
 	}
 
 	public FilterRegistration.Dynamic addFilter(
@@ -232,8 +232,13 @@ public class ServletContextDelegate {
 		return _servletContext.setInitParameter(_encodeName(name), value);
 	}
 
-	public void setProxiedServletContext(ServletContext proxiedServletContext) {
-		_proxiedServletContext = proxiedServletContext;
+	private ServletContextDelegate(
+		ClassLoader classLoader, ProxyFactory proxyFactory,
+		ServletContext servletContext) {
+
+		_classLoader = classLoader;
+		_proxyFactory = proxyFactory;
+		_servletContext = servletContext;
 	}
 
 	private String _decodeName(String name) {

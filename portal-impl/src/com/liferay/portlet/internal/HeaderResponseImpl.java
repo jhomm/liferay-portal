@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.internal;
@@ -35,7 +26,13 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.xml.StAXReaderUtil;
+import com.liferay.portal.kernel.xml.StAXReaderUtil;
+
+import jakarta.portlet.HeaderRequest;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -49,12 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.HeaderRequest;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
@@ -81,7 +72,7 @@ public class HeaderResponseImpl
 		}
 
 		if (Objects.equals(name, "PortletHub") &&
-			Objects.equals(scope, "javax.portlet")) {
+			Objects.equals(scope, "jakarta.portlet")) {
 
 			return;
 		}
@@ -95,22 +86,8 @@ public class HeaderResponseImpl
 
 			xml = _addClosingTags(xml);
 
-			List<ParsedElement> parsedElements = _parseElements(xml);
-
-			if (parsedElements.isEmpty()) {
+			if (_validateParsedElements(xml) == 0) {
 				return;
-			}
-
-			if (parsedElements.size() > 1) {
-				throw new IllegalArgumentException(
-					"More than one element in markup: " + xml);
-			}
-
-			ParsedElement parsedElement = parsedElements.get(0);
-
-			if (!parsedElement.isValid()) {
-				throw new IllegalArgumentException(
-					"Invalid dependency: " + xml);
 			}
 		}
 
@@ -477,6 +454,7 @@ public class HeaderResponseImpl
 			Map<String, String> elementAttributeValues = null;
 			String elementName = null;
 			StringBundler elementTextSB = null;
+			boolean parsingScriptTemplate = false;
 
 			while (xmlStreamReader.hasNext()) {
 				int event = xmlStreamReader.next();
@@ -508,7 +486,14 @@ public class HeaderResponseImpl
 						parsedElements.add(
 							new ParsedElement(
 								elementName, elementAttributeValues,
-								elementTextSB.toString(), true));
+								parsingScriptTemplate, elementTextSB.toString(),
+								true));
+
+						if (parsingScriptTemplate &&
+							elementName.equals("script")) {
+
+							parsingScriptTemplate = false;
+						}
 
 						elementAttributeValues = null;
 						elementName = null;
@@ -519,7 +504,7 @@ public class HeaderResponseImpl
 					String localName = xmlStreamReader.getLocalName();
 
 					if (!localName.equals("head")) {
-						if (localName.equals("link") ||
+						if (parsingScriptTemplate || localName.equals("link") ||
 							localName.equals("meta") ||
 							localName.equals("script") ||
 							localName.equals("style")) {
@@ -532,9 +517,20 @@ public class HeaderResponseImpl
 								xmlStreamReader.getAttributeCount();
 
 							for (int i = 0; i < attributeCount; i++) {
-								elementAttributeValues.put(
-									xmlStreamReader.getAttributeLocalName(i),
-									xmlStreamReader.getAttributeValue(i));
+								String name =
+									xmlStreamReader.getAttributeLocalName(i);
+								String value =
+									xmlStreamReader.getAttributeValue(i);
+
+								if (localName.equals("script") &&
+									Objects.equals(name, "type") &&
+									(Objects.equals(value, "data/template") ||
+									 Objects.equals(value, "text/template"))) {
+
+									parsingScriptTemplate = true;
+								}
+
+								elementAttributeValues.put(name, value);
 							}
 						}
 						else {
@@ -546,9 +542,10 @@ public class HeaderResponseImpl
 			}
 		}
 		catch (XMLStreamException xmlStreamException) {
-			_log.error(xmlStreamException, xmlStreamException);
+			_log.error(xmlStreamException);
 
-			parsedElements.add(new ParsedElement(null, null, null, false));
+			parsedElements.add(
+				new ParsedElement(null, null, false, null, false));
 		}
 		finally {
 			if (xmlStreamReader != null) {
@@ -556,12 +553,40 @@ public class HeaderResponseImpl
 					xmlStreamReader.close();
 				}
 				catch (XMLStreamException xmlStreamException) {
-					_log.error(xmlStreamException, xmlStreamException);
+					_log.error(xmlStreamException);
 				}
 			}
 		}
 
 		return parsedElements;
+	}
+
+	private int _validateParsedElements(String xml) {
+		List<ParsedElement> parsedElements = _parseElements(xml);
+
+		int totalParsedElements = parsedElements.size();
+
+		if (totalParsedElements == 0) {
+			return totalParsedElements;
+		}
+
+		ParsedElement firstParsedElement = parsedElements.get(0);
+
+		if (!firstParsedElement.isScriptTemplate() &&
+			(totalParsedElements > 1)) {
+
+			throw new IllegalArgumentException(
+				"More than one element in markup: " + xml);
+		}
+
+		for (ParsedElement parsedElement : parsedElements) {
+			if (!parsedElement.isValid()) {
+				throw new IllegalArgumentException(
+					"Invalid dependency: " + xml);
+			}
+		}
+
+		return totalParsedElements;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -575,6 +600,10 @@ public class HeaderResponseImpl
 	private PrintWriter _printWriter;
 
 	private static class ParsedElement {
+
+		public boolean isScriptTemplate() {
+			return _scriptTemplate;
+		}
 
 		public boolean isValid() {
 			return _valid;
@@ -612,8 +641,8 @@ public class HeaderResponseImpl
 		}
 
 		private ParsedElement(
-			String name, Map<String, String> attributes, String text,
-			boolean valid) {
+			String name, Map<String, String> attributes, boolean scriptTemplate,
+			String text, boolean valid) {
 
 			_name = name;
 
@@ -624,12 +653,14 @@ public class HeaderResponseImpl
 				_attributes = attributes;
 			}
 
+			_scriptTemplate = scriptTemplate;
 			_text = text;
 			_valid = valid;
 		}
 
 		private final Map<String, String> _attributes;
 		private final String _name;
+		private final boolean _scriptTemplate;
 		private final String _text;
 		private final boolean _valid;
 
@@ -701,8 +732,7 @@ public class HeaderResponseImpl
 				return toString(getCharacterEncoding());
 			}
 			catch (UnsupportedEncodingException unsupportedEncodingException) {
-				_log.error(
-					unsupportedEncodingException, unsupportedEncodingException);
+				_log.error(unsupportedEncodingException);
 			}
 
 			return StringPool.BLANK;

@@ -1,0 +1,32 @@
+{
+	"properties": {
+		"antecedentIds": {
+			"index": true,
+			"type": "keyword"
+		},
+		"antecedentIdsLength": {
+			"index": true,
+			"type": "long"
+		},
+		"companyId": {
+			"index": true,
+			"type": "long"
+		},
+		"createDate": {
+			"index": false,
+			"type": "date"
+		},
+		"jobId": {
+			"index": false,
+			"type": "keyword"
+		},
+		"recommendedEntryClassPK": {
+			"index": true,
+			"type": "long"
+		},
+		"score": {
+			"index": false,
+			"type": "float"
+		}
+	}
+}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.service;
@@ -131,6 +122,14 @@ public class DLFileEntryMetadataLocalServiceUtil {
 		getService().deleteFileEntryMetadata(fileEntryId);
 	}
 
+	public static void deleteFileEntryMetadataByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		getService().deleteFileEntryMetadataByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static void deleteFileVersionFileEntryMetadata(long fileVersionId)
 		throws PortalException {
 
@@ -238,6 +237,14 @@ public class DLFileEntryMetadataLocalServiceUtil {
 		return getService().fetchDLFileEntryMetadata(fileEntryMetadataId);
 	}
 
+	public static DLFileEntryMetadata
+		fetchDLFileEntryMetadataByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return getService().fetchDLFileEntryMetadataByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the document library file entry metadata with the matching UUID and company.
 	 *
@@ -284,6 +291,15 @@ public class DLFileEntryMetadataLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getDLFileEntryMetadata(fileEntryMetadataId);
+	}
+
+	public static DLFileEntryMetadata
+			getDLFileEntryMetadataByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getDLFileEntryMetadataByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -409,7 +425,7 @@ public class DLFileEntryMetadataLocalServiceUtil {
 	}
 
 	public static void updateFileEntryMetadata(
-			long companyId,
+			String externalReferenceCode, long companyId,
 			List<com.liferay.dynamic.data.mapping.kernel.DDMStructure>
 				ddmStructures,
 			long fileEntryId, long fileVersionId,
@@ -419,24 +435,29 @@ public class DLFileEntryMetadataLocalServiceUtil {
 		throws PortalException {
 
 		getService().updateFileEntryMetadata(
-			companyId, ddmStructures, fileEntryId, fileVersionId,
-			ddmFormValuesMap, serviceContext);
+			externalReferenceCode, companyId, ddmStructures, fileEntryId,
+			fileVersionId, ddmFormValuesMap, serviceContext);
 	}
 
 	public static void updateFileEntryMetadata(
-			long fileEntryTypeId, long fileEntryId, long fileVersionId,
+			String externalReferenceCode, long fileEntryTypeId,
+			long fileEntryId, long fileVersionId,
 			Map<String, com.liferay.dynamic.data.mapping.kernel.DDMFormValues>
 				ddmFormValuesMap,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		getService().updateFileEntryMetadata(
-			fileEntryTypeId, fileEntryId, fileVersionId, ddmFormValuesMap,
-			serviceContext);
+			externalReferenceCode, fileEntryTypeId, fileEntryId, fileVersionId,
+			ddmFormValuesMap, serviceContext);
 	}
 
 	public static DLFileEntryMetadataLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(DLFileEntryMetadataLocalService service) {
+		_service = service;
 	}
 
 	private static volatile DLFileEntryMetadataLocalService _service;

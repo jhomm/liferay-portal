@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.search.test;
@@ -49,7 +40,7 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
@@ -167,18 +158,18 @@ public class DDMTemplateSearchTest {
 		serviceContext.setAddGuestPermissions(false);
 
 		_ddmTemplate = DDMTemplateLocalServiceUtil.addTemplate(
-			TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
+			null, TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
 			PortalUtil.getClassNameId(DDMStructure.class),
 			_ddmStructure.getStructureId(),
 			PortalUtil.getClassNameId(JournalArticle.class), null, nameMap,
 			null, DDMTemplateConstants.TEMPLATE_TYPE_DISPLAY, null,
 			TemplateConstants.LANG_TYPE_VM,
-			DDMTemplateTestUtil.getSampleTemplateXSL(), false, false, null,
-			null, serviceContext);
+			DDMTemplateTestUtil.getSampleTemplateVM(), false, false, null, null,
+			serviceContext);
 	}
 
 	protected void assertSearch() throws Exception {
-		List<DDMTemplate> results = DDMTemplateServiceUtil.search(
+		List<DDMTemplate> ddmTemplates = DDMTemplateServiceUtil.search(
 			TestPropsValues.getCompanyId(),
 			new long[] {TestPropsValues.getGroupId()},
 			new long[] {PortalUtil.getClassNameId(DDMStructure.class)},
@@ -187,8 +178,8 @@ public class DDMTemplateSearchTest {
 			StringPool.BLANK, StringPool.BLANK, WorkflowConstants.STATUS_ANY,
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
-		Assert.assertEquals(results.toString(), 1, results.size());
-		Assert.assertEquals(results.get(0), _ddmTemplate);
+		Assert.assertEquals(ddmTemplates.toString(), 1, ddmTemplates.size());
+		Assert.assertEquals(ddmTemplates.get(0), _ddmTemplate);
 	}
 
 	@DeleteAfterTestRun

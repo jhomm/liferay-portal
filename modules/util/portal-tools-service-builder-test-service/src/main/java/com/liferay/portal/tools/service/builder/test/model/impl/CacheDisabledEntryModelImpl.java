@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.tools.service.builder.test.model.CacheDisabledEntryMod
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -208,74 +198,61 @@ public class CacheDisabledEntryModelImpl
 	public Map<String, Function<CacheDisabledEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CacheDisabledEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CacheDisabledEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CacheDisabledEntry.class.getClassLoader(), CacheDisabledEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<CacheDisabledEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<CacheDisabledEntry> constructor =
-				(Constructor<CacheDisabledEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CacheDisabledEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<CacheDisabledEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"cacheDisabledEntryId",
+				CacheDisabledEntry::getCacheDisabledEntryId);
+			attributeGetterFunctions.put("name", CacheDisabledEntry::getName);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CacheDisabledEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<CacheDisabledEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CacheDisabledEntry, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<CacheDisabledEntry, Object>>();
-		Map<String, BiConsumer<CacheDisabledEntry, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<CacheDisabledEntry, ?>>();
+		private static final Map<String, BiConsumer<CacheDisabledEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"cacheDisabledEntryId",
-			CacheDisabledEntry::getCacheDisabledEntryId);
-		attributeSetterBiConsumers.put(
-			"cacheDisabledEntryId",
-			(BiConsumer<CacheDisabledEntry, Long>)
-				CacheDisabledEntry::setCacheDisabledEntryId);
-		attributeGetterFunctions.put("name", CacheDisabledEntry::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<CacheDisabledEntry, String>)
-				CacheDisabledEntry::setName);
+		static {
+			Map<String, BiConsumer<CacheDisabledEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<CacheDisabledEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"cacheDisabledEntryId",
+				(BiConsumer<CacheDisabledEntry, Long>)
+					CacheDisabledEntry::setCacheDisabledEntryId);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<CacheDisabledEntry, String>)
+					CacheDisabledEntry::setName);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -535,41 +512,12 @@ public class CacheDisabledEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CacheDisabledEntry, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CacheDisabledEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CacheDisabledEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((CacheDisabledEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, CacheDisabledEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					CacheDisabledEntry.class, ModelWrapper.class);
 
 	}
 
@@ -578,7 +526,8 @@ public class CacheDisabledEntryModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<CacheDisabledEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

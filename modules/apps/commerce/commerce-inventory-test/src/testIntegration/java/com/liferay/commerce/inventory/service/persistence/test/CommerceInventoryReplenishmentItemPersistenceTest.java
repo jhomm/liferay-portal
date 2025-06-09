@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.inventory.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.inventory.exception.DuplicateCommerceInventoryReplenishmentItemExternalReferenceCodeException;
 import com.liferay.commerce.inventory.exception.NoSuchInventoryReplenishmentItemException;
 import com.liferay.commerce.inventory.model.CommerceInventoryReplenishmentItem;
 import com.liferay.commerce.inventory.service.CommerceInventoryReplenishmentItemLocalServiceUtil;
@@ -26,6 +18,8 @@ import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -38,6 +32,8 @@ import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
 
 import java.io.Serializable;
+
+import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -134,6 +130,12 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 		newCommerceInventoryReplenishmentItem.setMvccVersion(
 			RandomTestUtil.nextLong());
 
+		newCommerceInventoryReplenishmentItem.setUuid(
+			RandomTestUtil.randomString());
+
+		newCommerceInventoryReplenishmentItem.setExternalReferenceCode(
+			RandomTestUtil.randomString());
+
 		newCommerceInventoryReplenishmentItem.setCompanyId(
 			RandomTestUtil.nextLong());
 
@@ -152,14 +154,17 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 		newCommerceInventoryReplenishmentItem.setCommerceInventoryWarehouseId(
 			RandomTestUtil.nextLong());
 
-		newCommerceInventoryReplenishmentItem.setSku(
-			RandomTestUtil.randomString());
-
 		newCommerceInventoryReplenishmentItem.setAvailabilityDate(
 			RandomTestUtil.nextDate());
 
 		newCommerceInventoryReplenishmentItem.setQuantity(
-			RandomTestUtil.nextInt());
+			new BigDecimal(RandomTestUtil.nextDouble()));
+
+		newCommerceInventoryReplenishmentItem.setSku(
+			RandomTestUtil.randomString());
+
+		newCommerceInventoryReplenishmentItem.setUnitOfMeasureKey(
+			RandomTestUtil.randomString());
 
 		_commerceInventoryReplenishmentItems.add(
 			_persistence.update(newCommerceInventoryReplenishmentItem));
@@ -172,6 +177,13 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 		Assert.assertEquals(
 			existingCommerceInventoryReplenishmentItem.getMvccVersion(),
 			newCommerceInventoryReplenishmentItem.getMvccVersion());
+		Assert.assertEquals(
+			existingCommerceInventoryReplenishmentItem.getUuid(),
+			newCommerceInventoryReplenishmentItem.getUuid());
+		Assert.assertEquals(
+			existingCommerceInventoryReplenishmentItem.
+				getExternalReferenceCode(),
+			newCommerceInventoryReplenishmentItem.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingCommerceInventoryReplenishmentItem.
 				getCommerceInventoryReplenishmentItemId(),
@@ -202,9 +214,6 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 			newCommerceInventoryReplenishmentItem.
 				getCommerceInventoryWarehouseId());
 		Assert.assertEquals(
-			existingCommerceInventoryReplenishmentItem.getSku(),
-			newCommerceInventoryReplenishmentItem.getSku());
-		Assert.assertEquals(
 			Time.getShortTimestamp(
 				existingCommerceInventoryReplenishmentItem.
 					getAvailabilityDate()),
@@ -213,6 +222,57 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 		Assert.assertEquals(
 			existingCommerceInventoryReplenishmentItem.getQuantity(),
 			newCommerceInventoryReplenishmentItem.getQuantity());
+		Assert.assertEquals(
+			existingCommerceInventoryReplenishmentItem.getSku(),
+			newCommerceInventoryReplenishmentItem.getSku());
+		Assert.assertEquals(
+			existingCommerceInventoryReplenishmentItem.getUnitOfMeasureKey(),
+			newCommerceInventoryReplenishmentItem.getUnitOfMeasureKey());
+	}
+
+	@Test(
+		expected = DuplicateCommerceInventoryReplenishmentItemExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CommerceInventoryReplenishmentItem commerceInventoryReplenishmentItem =
+			addCommerceInventoryReplenishmentItem();
+
+		CommerceInventoryReplenishmentItem
+			newCommerceInventoryReplenishmentItem =
+				addCommerceInventoryReplenishmentItem();
+
+		newCommerceInventoryReplenishmentItem.setCompanyId(
+			commerceInventoryReplenishmentItem.getCompanyId());
+
+		newCommerceInventoryReplenishmentItem = _persistence.update(
+			newCommerceInventoryReplenishmentItem);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCommerceInventoryReplenishmentItem);
+
+		newCommerceInventoryReplenishmentItem.setExternalReferenceCode(
+			commerceInventoryReplenishmentItem.getExternalReferenceCode());
+
+		_persistence.update(newCommerceInventoryReplenishmentItem);
+	}
+
+	@Test
+	public void testCountByUuid() throws Exception {
+		_persistence.countByUuid("");
+
+		_persistence.countByUuid("null");
+
+		_persistence.countByUuid((String)null);
+	}
+
+	@Test
+	public void testCountByUuid_C() throws Exception {
+		_persistence.countByUuid_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByUuid_C("null", 0L);
+
+		_persistence.countByUuid_C((String)null, 0L);
 	}
 
 	@Test
@@ -221,6 +281,13 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 			RandomTestUtil.nextLong());
 
 		_persistence.countByCommerceInventoryWarehouseId(0L);
+	}
+
+	@Test
+	public void testCountByAvailabilityDate() throws Exception {
+		_persistence.countByAvailabilityDate(RandomTestUtil.nextDate());
+
+		_persistence.countByAvailabilityDate(RandomTestUtil.nextDate());
 	}
 
 	@Test
@@ -233,28 +300,31 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 	}
 
 	@Test
-	public void testCountByAvailabilityDate() throws Exception {
-		_persistence.countByAvailabilityDate(RandomTestUtil.nextDate());
+	public void testCountByC_S_U() throws Exception {
+		_persistence.countByC_S_U(RandomTestUtil.nextLong(), "", "");
 
-		_persistence.countByAvailabilityDate(RandomTestUtil.nextDate());
+		_persistence.countByC_S_U(0L, "null", "null");
+
+		_persistence.countByC_S_U(0L, (String)null, (String)null);
 	}
 
 	@Test
-	public void testCountByC_S() throws Exception {
-		_persistence.countByC_S(RandomTestUtil.nextLong(), "");
+	public void testCountByAD_S_U() throws Exception {
+		_persistence.countByAD_S_U(RandomTestUtil.nextDate(), "", "");
 
-		_persistence.countByC_S(0L, "null");
+		_persistence.countByAD_S_U(RandomTestUtil.nextDate(), "null", "null");
 
-		_persistence.countByC_S(0L, (String)null);
+		_persistence.countByAD_S_U(
+			RandomTestUtil.nextDate(), (String)null, (String)null);
 	}
 
 	@Test
-	public void testCountByS_AD() throws Exception {
-		_persistence.countByS_AD("", RandomTestUtil.nextDate());
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
 
-		_persistence.countByS_AD("null", RandomTestUtil.nextDate());
+		_persistence.countByERC_C("null", 0L);
 
-		_persistence.countByS_AD((String)null, RandomTestUtil.nextDate());
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -290,11 +360,13 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 		getOrderByComparator() {
 
 		return OrderByComparatorFactoryUtil.create(
-			"CIReplenishmentItem", "mvccVersion", true,
+			"CIReplenishmentItem", "mvccVersion", true, "uuid", true,
+			"externalReferenceCode", true,
 			"commerceInventoryReplenishmentItemId", true, "companyId", true,
 			"userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "commerceInventoryWarehouseId", true, "sku",
-			true, "availabilityDate", true, "quantity", true);
+			"modifiedDate", true, "commerceInventoryWarehouseId", true,
+			"availabilityDate", true, "quantity", true, "sku", true,
+			"unitOfMeasureKey", true);
 	}
 
 	@Test
@@ -558,6 +630,78 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 		Assert.assertEquals(0, result.size());
 	}
 
+	@Test
+	public void testResetOriginalValues() throws Exception {
+		CommerceInventoryReplenishmentItem
+			newCommerceInventoryReplenishmentItem =
+				addCommerceInventoryReplenishmentItem();
+
+		_persistence.clearCache();
+
+		_assertOriginalValues(
+			_persistence.findByPrimaryKey(
+				newCommerceInventoryReplenishmentItem.getPrimaryKey()));
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromDatabase()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(true);
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromSession()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(false);
+	}
+
+	private void _testResetOriginalValuesWithDynamicQuery(boolean clearSession)
+		throws Exception {
+
+		CommerceInventoryReplenishmentItem
+			newCommerceInventoryReplenishmentItem =
+				addCommerceInventoryReplenishmentItem();
+
+		if (clearSession) {
+			Session session = _persistence.openSession();
+
+			session.flush();
+
+			session.clear();
+		}
+
+		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
+			CommerceInventoryReplenishmentItem.class, _dynamicQueryClassLoader);
+
+		dynamicQuery.add(
+			RestrictionsFactoryUtil.eq(
+				"commerceInventoryReplenishmentItemId",
+				newCommerceInventoryReplenishmentItem.
+					getCommerceInventoryReplenishmentItemId()));
+
+		List<CommerceInventoryReplenishmentItem> result =
+			_persistence.findWithDynamicQuery(dynamicQuery);
+
+		_assertOriginalValues(result.get(0));
+	}
+
+	private void _assertOriginalValues(
+		CommerceInventoryReplenishmentItem commerceInventoryReplenishmentItem) {
+
+		Assert.assertEquals(
+			commerceInventoryReplenishmentItem.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				commerceInventoryReplenishmentItem, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(commerceInventoryReplenishmentItem.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				commerceInventoryReplenishmentItem, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
+	}
+
 	protected CommerceInventoryReplenishmentItem
 			addCommerceInventoryReplenishmentItem()
 		throws Exception {
@@ -569,6 +713,12 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 
 		commerceInventoryReplenishmentItem.setMvccVersion(
 			RandomTestUtil.nextLong());
+
+		commerceInventoryReplenishmentItem.setUuid(
+			RandomTestUtil.randomString());
+
+		commerceInventoryReplenishmentItem.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		commerceInventoryReplenishmentItem.setCompanyId(
 			RandomTestUtil.nextLong());
@@ -587,14 +737,17 @@ public class CommerceInventoryReplenishmentItemPersistenceTest {
 		commerceInventoryReplenishmentItem.setCommerceInventoryWarehouseId(
 			RandomTestUtil.nextLong());
 
-		commerceInventoryReplenishmentItem.setSku(
-			RandomTestUtil.randomString());
-
 		commerceInventoryReplenishmentItem.setAvailabilityDate(
 			RandomTestUtil.nextDate());
 
 		commerceInventoryReplenishmentItem.setQuantity(
-			RandomTestUtil.nextInt());
+			new BigDecimal(RandomTestUtil.nextDouble()));
+
+		commerceInventoryReplenishmentItem.setSku(
+			RandomTestUtil.randomString());
+
+		commerceInventoryReplenishmentItem.setUnitOfMeasureKey(
+			RandomTestUtil.randomString());
 
 		_commerceInventoryReplenishmentItems.add(
 			_persistence.update(commerceInventoryReplenishmentItem));

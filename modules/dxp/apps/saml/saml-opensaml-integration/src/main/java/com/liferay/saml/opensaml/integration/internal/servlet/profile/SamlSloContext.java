@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.opensaml.integration.internal.servlet.profile;
@@ -21,15 +12,15 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.saml.persistence.exception.NoSuchIdpSpConnectionException;
 import com.liferay.saml.persistence.model.SamlIdpSpConnection;
 import com.liferay.saml.persistence.model.SamlIdpSpSession;
 import com.liferay.saml.persistence.model.SamlIdpSsoSession;
 import com.liferay.saml.persistence.model.SamlPeerBinding;
-import com.liferay.saml.persistence.service.SamlIdpSpConnectionLocalService;
-import com.liferay.saml.persistence.service.SamlIdpSpSessionLocalService;
-import com.liferay.saml.persistence.service.SamlPeerBindingLocalService;
+import com.liferay.saml.persistence.service.SamlIdpSpConnectionLocalServiceUtil;
+import com.liferay.saml.persistence.service.SamlIdpSpSessionLocalServiceUtil;
+import com.liferay.saml.persistence.service.SamlPeerBindingLocalServiceUtil;
 
 import java.io.Serializable;
 
@@ -47,17 +38,14 @@ import org.opensaml.saml.common.messaging.context.SAMLPeerEntityContext;
  */
 public class SamlSloContext implements Serializable {
 
+	public SamlSloContext(SamlIdpSsoSession samlIdpSsoSession) {
+		this(samlIdpSsoSession, null);
+	}
+
 	public SamlSloContext(
-		SamlIdpSsoSession samlIdpSsoSession, MessageContext<?> messageContext,
-		SamlIdpSpConnectionLocalService samlIdpSpConnectionLocalService,
-		SamlIdpSpSessionLocalService samlIdpSpSessionLocalService,
-		SamlPeerBindingLocalService samlPeerBindingLocalService,
-		UserLocalService userLocalService) {
+		SamlIdpSsoSession samlIdpSsoSession, MessageContext<?> messageContext) {
 
 		_messageContext = messageContext;
-		_samlIdpSpConnectionLocalService = samlIdpSpConnectionLocalService;
-		_samlIdpSpSessionLocalService = samlIdpSpSessionLocalService;
-		_userLocalService = userLocalService;
 
 		if (samlIdpSsoSession == null) {
 			return;
@@ -65,15 +53,15 @@ public class SamlSloContext implements Serializable {
 
 		try {
 			List<SamlIdpSpSession> samlIdpSpSessions =
-				_samlIdpSpSessionLocalService.getSamlIdpSpSessions(
+				SamlIdpSpSessionLocalServiceUtil.getSamlIdpSpSessions(
 					samlIdpSsoSession.getSamlIdpSsoSessionId());
 
 			for (SamlIdpSpSession samlIdpSpSession : samlIdpSpSessions) {
-				_samlIdpSpSessionLocalService.deleteSamlIdpSpSession(
+				SamlIdpSpSessionLocalServiceUtil.deleteSamlIdpSpSession(
 					samlIdpSpSession);
 
 				SamlPeerBinding samlPeerBinding =
-					samlPeerBindingLocalService.getSamlPeerBinding(
+					SamlPeerBindingLocalServiceUtil.getSamlPeerBinding(
 						samlIdpSpSession.getSamlPeerBindingId());
 
 				String samlSpEntityId = samlPeerBinding.getSamlPeerEntityId();
@@ -94,8 +82,10 @@ public class SamlSloContext implements Serializable {
 
 				try {
 					SamlIdpSpConnection samlIdpSpConnection =
-						_samlIdpSpConnectionLocalService.getSamlIdpSpConnection(
-							samlIdpSpSession.getCompanyId(), samlSpEntityId);
+						SamlIdpSpConnectionLocalServiceUtil.
+							getSamlIdpSpConnection(
+								samlIdpSpSession.getCompanyId(),
+								samlSpEntityId);
 
 					name = samlIdpSpConnection.getName();
 				}
@@ -103,9 +93,7 @@ public class SamlSloContext implements Serializable {
 							noSuchIdpSpConnectionException) {
 
 					if (_log.isDebugEnabled()) {
-						_log.debug(
-							noSuchIdpSpConnectionException,
-							noSuchIdpSpConnectionException);
+						_log.debug(noSuchIdpSpConnectionException);
 					}
 				}
 
@@ -120,30 +108,18 @@ public class SamlSloContext implements Serializable {
 			}
 		}
 		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception.getMessage(), exception);
-			}
-			else if (_log.isWarnEnabled()) {
-				_log.warn(exception.getMessage());
+			if (_log.isWarnEnabled()) {
+				_log.warn(exception);
 			}
 		}
 	}
 
-	public SamlSloContext(
-		SamlIdpSsoSession samlIdpSsoSession,
-		SamlIdpSpConnectionLocalService samlIdpSpConnectionLocalService,
-		SamlIdpSpSessionLocalService samlIdpSpSessionLocalService,
-		SamlPeerBindingLocalService samlPeerBindingLocalService,
-		UserLocalService userLocalService) {
-
-		this(
-			samlIdpSsoSession, null, samlIdpSpConnectionLocalService,
-			samlIdpSpSessionLocalService, samlPeerBindingLocalService,
-			userLocalService);
-	}
-
 	public MessageContext<?> getMessageContext() {
 		return _messageContext;
+	}
+
+	public String getRelayState() {
+		return _relayState;
 	}
 
 	public SamlSloRequestInfo getSamlSloRequestInfo(String entityId) {
@@ -164,11 +140,11 @@ public class SamlSloContext implements Serializable {
 
 	public User getUser() {
 		try {
-			return _userLocalService.fetchUserById(_userId);
+			return UserLocalServiceUtil.fetchUserById(_userId);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return null;
@@ -177,6 +153,10 @@ public class SamlSloContext implements Serializable {
 
 	public long getUserId() {
 		return _userId;
+	}
+
+	public void setRelayState(String relayState) {
+		_relayState = relayState;
 	}
 
 	public void setSamlSsoSessionId(String samlSsoSessionId) {
@@ -206,13 +186,10 @@ public class SamlSloContext implements Serializable {
 	private static final Log _log = LogFactoryUtil.getLog(SamlSloContext.class);
 
 	private final MessageContext<?> _messageContext;
-	private final SamlIdpSpConnectionLocalService
-		_samlIdpSpConnectionLocalService;
-	private final SamlIdpSpSessionLocalService _samlIdpSpSessionLocalService;
+	private String _relayState;
 	private final Map<String, SamlSloRequestInfo> _samlRequestInfos =
 		new ConcurrentHashMap<>();
 	private String _samlSsoSessionId;
 	private long _userId;
-	private final UserLocalService _userLocalService;
 
 }

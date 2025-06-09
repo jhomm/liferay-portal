@@ -1,46 +1,42 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-kaleo-designer-xml-definition-serializer',
 	(A) => {
-		var AArray = A.Array;
-		var AObject = A.Object;
-		var Lang = A.Lang;
+		const AArray = A.Array;
 
-		var XMLUtil = Liferay.XMLUtil;
+		// eslint-disable-next-line @liferay/aui/no-object
+		const AObject = A.Object;
+		const Lang = A.Lang;
 
-		var isArray = Lang.isArray;
-		var isObject = Lang.isObject;
-		var isValue = Lang.isValue;
+		const XMLUtil = Liferay.XMLUtil;
 
-		var cdata = Liferay.KaleoDesignerUtils.cdata;
-		var jsonStringify = Liferay.KaleoDesignerUtils.jsonStringify;
+		const isArray = Lang.isArray;
+		const isObject = Lang.isObject;
+		const isValue = Lang.isValue;
 
-		var STR_BLANK = '';
+		const cdata = Liferay.KaleoDesignerUtils.cdata;
+		const jsonStringify = Liferay.KaleoDesignerUtils.jsonStringify;
 
-		var STR_CHAR_CRLF = '\r\n';
+		const STR_BLANK = '';
 
-		var isNotEmptyValue = function (item) {
+		const STR_CHAR_CRLF = '\r\n';
+
+		const isNotEmptyValue = function (item) {
 			return isValue(item) && item !== STR_BLANK;
 		};
 
-		var serializeDefinition = function (xmlNamespace, metadata, json) {
-			var description = metadata.description;
-			var name = metadata.name;
-			var version = metadata.version;
+		const serializeDefinition = function (xmlNamespace, metadata, json) {
+			const description = metadata.description;
+			const name = metadata.name;
+			const version = parseInt(metadata.version, 10);
 
-			var buffer = [];
+			const buffer = [];
 
-			var xmlWorkflowDefinition = XMLUtil.createObj(
+			const xmlWorkflowDefinition = XMLUtil.createObj(
 				'workflow-definition',
 				xmlNamespace
 			);
@@ -64,14 +60,14 @@ AUI.add(
 			}
 
 			json.nodes.forEach((item) => {
-				var description = item.description;
-				var initial = item.initial;
-				var metadata = item.metadata;
-				var name = item.name;
-				var script = item.script;
-				var scriptLanguage = item.scriptLanguage;
+				const description = item.description;
+				const initial = item.initial;
+				const metadata = item.metadata;
+				const name = item.name;
+				const script = item.script;
+				const scriptLanguage = item.scriptLanguage;
 
-				var xmlNode = XMLUtil.createObj(item.xmlType);
+				const xmlNode = XMLUtil.createObj(item.xmlType);
 
 				buffer.push(xmlNode.open, XMLUtil.create('name', name));
 
@@ -126,26 +122,26 @@ AUI.add(
 			notificationNodeName,
 			assignmentNodeName
 		) {
-			var hasAction = isObject(actions) && !AObject.isEmpty(actions);
-			var hasAssignment =
+			const hasAction = isObject(actions) && !AObject.isEmpty(actions);
+			const hasAssignment =
 				isObject(assignments) && !AObject.isEmpty(assignments);
-			var hasNotification =
+			const hasNotification =
 				isObject(notifications) &&
 				!AObject.isEmpty(notifications) &&
 				!AObject.isEmpty(notifications.recipients);
-			var xmlActions = XMLUtil.createObj(wrapperNodeName || 'actions');
+			const xmlActions = XMLUtil.createObj(wrapperNodeName || 'actions');
 
 			if (hasAction || hasNotification || hasAssignment) {
 				buffer.push(xmlActions.open);
 			}
 
 			if (hasAction) {
-				var description = actions.description;
-				var executionType = actions.executionType;
-				var language = actions.scriptLanguage;
-				var script = actions.script;
+				const description = actions.description;
+				const executionType = actions.executionType;
+				const language = actions.scriptLanguage;
+				const script = actions.script;
 
-				var xmlAction = XMLUtil.createObj(actionNodeName || 'action');
+				const xmlAction = XMLUtil.createObj(actionNodeName || 'action');
 
 				actions.name.forEach((item, index) => {
 					buffer.push(xmlAction.open, XMLUtil.create('name', item));
@@ -205,9 +201,11 @@ AUI.add(
 			wrapperNodeAttrs
 		) {
 			if (dataAssignments) {
-				var assignmentType = AArray(dataAssignments.assignmentType)[0];
+				const assignmentType = AArray(
+					dataAssignments.assignmentType
+				)[0];
 
-				var xmlAssignments = XMLUtil.createObj(
+				const xmlAssignments = XMLUtil.createObj(
 					wrapperNodeName || 'assignments',
 					wrapperNodeAttrs
 				);
@@ -222,10 +220,10 @@ AUI.add(
 					});
 				}
 
-				var xmlRoles = XMLUtil.createObj('roles');
+				const xmlRoles = XMLUtil.createObj('roles');
 
 				if (assignmentType === 'resourceActions') {
-					var xmlResourceAction = XMLUtil.create(
+					const xmlResourceAction = XMLUtil.create(
 						'resourceAction',
 						dataAssignments.resourceAction
 					);
@@ -235,7 +233,7 @@ AUI.add(
 					);
 				}
 				else if (assignmentType === 'roleId') {
-					var xmlRoleId = XMLUtil.create(
+					const xmlRoleId = XMLUtil.create(
 						'roleId',
 						dataAssignments.roleId
 					);
@@ -249,10 +247,10 @@ AUI.add(
 				else if (assignmentType === 'roleType') {
 					buffer.push(xmlRoles.open);
 
-					var xmlRole = XMLUtil.createObj('role');
+					const xmlRole = XMLUtil.createObj('role');
 
 					dataAssignments.roleType.forEach((item, index) => {
-						var roleName = dataAssignments.roleName[index];
+						const roleName = dataAssignments.roleName[index];
 
 						if (roleName) {
 							buffer.push(
@@ -261,7 +259,10 @@ AUI.add(
 								XMLUtil.create('name', roleName)
 							);
 
-							if (dataAssignments.autoCreate[index] != null) {
+							if (
+								dataAssignments.autoCreate[index] !== null &&
+								dataAssignments.autoCreate[index] !== undefined
+							) {
 								buffer.push(
 									XMLUtil.create(
 										'autoCreate',
@@ -277,9 +278,8 @@ AUI.add(
 					buffer.push(xmlRoles.close);
 				}
 				else if (assignmentType === 'scriptedAssignment') {
-					var xmlScriptedAssignment = XMLUtil.createObj(
-						'scriptedAssignment'
-					);
+					const xmlScriptedAssignment =
+						XMLUtil.createObj('scriptedAssignment');
 
 					dataAssignments.script.forEach((item, index) => {
 						buffer.push(
@@ -294,9 +294,8 @@ AUI.add(
 					});
 				}
 				else if (assignmentType === 'scriptedRecipient') {
-					var xmlScriptedRecipient = XMLUtil.createObj(
-						'scriptedRecipient'
-					);
+					const xmlScriptedRecipient =
+						XMLUtil.createObj('scriptedRecipient');
 
 					dataAssignments.script.forEach((item, index) => {
 						buffer.push(
@@ -373,7 +372,7 @@ AUI.add(
 				}
 				else if (
 					!dataAssignments.address ||
-					dataAssignments.address.filter(isNotEmptyValue).length === 0
+					!dataAssignments.address.filter(isNotEmptyValue).length
 				) {
 					buffer.push('<user />');
 				}
@@ -386,16 +385,16 @@ AUI.add(
 			if (
 				notifications &&
 				notifications.name &&
-				notifications.name.length > 0
+				!!notifications.name.length
 			) {
-				var description = notifications.description;
-				var executionType = notifications.executionType;
-				var notificationTypes = notifications.notificationTypes;
-				var recipients = notifications.recipients;
-				var template = notifications.template;
-				var templateLanguage = notifications.templateLanguage;
+				const description = notifications.description;
+				const executionType = notifications.executionType;
+				const notificationTypes = notifications.notificationTypes;
+				const recipients = notifications.recipients;
+				const template = notifications.template;
+				const templateLanguage = notifications.templateLanguage;
 
-				var xmlNotification = XMLUtil.createObj(
+				const xmlNotification = XMLUtil.createObj(
 					nodeName || 'notification'
 				);
 
@@ -440,7 +439,7 @@ AUI.add(
 						});
 					}
 
-					var recipientsAttrs = {};
+					const recipientsAttrs = {};
 
 					if (
 						recipients[index].receptionType &&
@@ -480,19 +479,19 @@ AUI.add(
 		}
 
 		function appendXMLTaskTimers(buffer, taskTimers) {
-			if (taskTimers && taskTimers.name && taskTimers.name.length > 0) {
-				var xmlTaskTimers = XMLUtil.createObj('task-timers');
+			if (taskTimers && taskTimers.name && !!taskTimers.name.length) {
+				const xmlTaskTimers = XMLUtil.createObj('task-timers');
 
 				buffer.push(xmlTaskTimers.open);
 
-				var blocking = taskTimers.blocking;
-				var delay = taskTimers.delay;
-				var description = taskTimers.description;
-				var reassignments = taskTimers.reassignments;
-				var timerActions = taskTimers.timerActions;
-				var timerNotifications = taskTimers.timerNotifications;
+				const blocking = taskTimers.blocking;
+				const delay = taskTimers.delay;
+				const description = taskTimers.description;
+				const reassignments = taskTimers.reassignments;
+				const timerActions = taskTimers.timerActions;
+				const timerNotifications = taskTimers.timerNotifications;
 
-				var xmlTaskTimer = XMLUtil.createObj('task-timer');
+				const xmlTaskTimer = XMLUtil.createObj('task-timer');
 
 				taskTimers.name.forEach((item, index) => {
 					buffer.push(
@@ -506,7 +505,7 @@ AUI.add(
 						);
 					}
 
-					var xmlDelay = XMLUtil.createObj('delay');
+					const xmlDelay = XMLUtil.createObj('delay');
 
 					buffer.push(xmlDelay.open);
 
@@ -521,7 +520,7 @@ AUI.add(
 						delay[index].duration.length > 1 &&
 						delay[index].duration[1]
 					) {
-						var xmlRecurrence = XMLUtil.createObj('recurrence');
+						const xmlRecurrence = XMLUtil.createObj('recurrence');
 
 						buffer.push(xmlRecurrence.open);
 
@@ -563,20 +562,20 @@ AUI.add(
 		}
 
 		function appendXMLTransitions(buffer, transitions) {
-			if (transitions && transitions.length > 0) {
-				var xmlTransition = XMLUtil.createObj('transition');
-				var xmlTransitions = XMLUtil.createObj('transitions');
+			if (transitions && !!transitions.length) {
+				const xmlTransition = XMLUtil.createObj('transition');
+				const xmlTransitions = XMLUtil.createObj('transitions');
 
 				buffer.push(xmlTransitions.open);
 
-				var pickDefault = transitions.some((item) => {
+				let pickDefault = transitions.some((item) => {
 					return item.connector.default === true;
 				});
 
 				pickDefault = !pickDefault;
 
 				transitions.forEach((item, index) => {
-					var defaultValue = item.connector.default;
+					let defaultValue = item.connector.default;
 
 					if (pickDefault && index === 0) {
 						defaultValue = true;

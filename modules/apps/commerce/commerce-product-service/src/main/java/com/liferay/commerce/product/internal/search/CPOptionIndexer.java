@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.internal.search;
@@ -31,14 +22,14 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import java.util.LinkedHashMap;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,7 +37,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Marco Leo
  */
-@Component(enabled = false, immediate = true, service = Indexer.class)
+@Component(service = Indexer.class)
 public class CPOptionIndexer extends BaseIndexer<CPOption> {
 
 	public static final String CLASS_NAME = CPOption.class.getName();
@@ -70,14 +61,14 @@ public class CPOptionIndexer extends BaseIndexer<CPOption> {
 			SearchContext searchContext)
 		throws Exception {
 
-		addSearchLocalizedTerm(
-			searchQuery, searchContext, Field.DESCRIPTION, false);
-		addSearchTerm(searchQuery, searchContext, Field.ENTRY_CLASS_PK, false);
 		addSearchTerm(searchQuery, searchContext, CPField.KEY, false);
 		addSearchTerm(
 			searchQuery, searchContext, CPField.OPTION_VALUE_NAME, false);
 		addSearchLocalizedTerm(
 			searchQuery, searchContext, CPField.OPTION_VALUE_NAME, false);
+		addSearchLocalizedTerm(
+			searchQuery, searchContext, Field.DESCRIPTION, false);
+		addSearchTerm(searchQuery, searchContext, Field.ENTRY_CLASS_PK, false);
 		addSearchTerm(searchQuery, searchContext, Field.NAME, false);
 		addSearchLocalizedTerm(searchQuery, searchContext, Field.NAME, false);
 		addSearchTerm(searchQuery, searchContext, Field.USER_NAME, false);
@@ -102,15 +93,15 @@ public class CPOptionIndexer extends BaseIndexer<CPOption> {
 	@Override
 	protected Document doGetDocument(CPOption cpOption) throws Exception {
 		if (_log.isDebugEnabled()) {
-			_log.debug("Indexing option " + cpOption);
+			_log.debug("Indexing commerce product option " + cpOption);
 		}
 
 		Document document = getBaseModelDocument(CLASS_NAME, cpOption);
 
-		String cpOptionDefaultLanguageId =
-			LocalizationUtil.getDefaultLanguageId(cpOption.getName());
+		String cpOptionDefaultLanguageId = _localization.getDefaultLanguageId(
+			cpOption.getName());
 
-		String[] languageIds = LocalizationUtil.getAvailableLanguageIds(
+		String[] languageIds = _localization.getAvailableLanguageIds(
 			cpOption.getName());
 
 		for (String languageId : languageIds) {
@@ -124,23 +115,21 @@ public class CPOptionIndexer extends BaseIndexer<CPOption> {
 			}
 
 			document.addText(
-				LocalizationUtil.getLocalizedName(Field.NAME, languageId),
-				name);
-			document.addText(
-				LocalizationUtil.getLocalizedName(
-					Field.DESCRIPTION, languageId),
-				description);
-
+				CPField.COMMERCE_OPTION_TYPE_KEY,
+				cpOption.getCommerceOptionTypeKey());
 			document.addText(CPField.KEY, cpOption.getKey());
 			document.addText(Field.CONTENT, name);
-
 			document.addText(
-				CPField.DDM_FORM_FIELD_TYPE_NAME,
-				cpOption.getDDMFormFieldTypeName());
+				_localization.getLocalizedName(Field.DESCRIPTION, languageId),
+				description);
+			document.addText(
+				_localization.getLocalizedName(Field.NAME, languageId), name);
 		}
 
 		if (_log.isDebugEnabled()) {
-			_log.debug("Document " + cpOption + " indexed successfully");
+			_log.debug(
+				"Commerce product option " + cpOption +
+					" indexed successfully");
 		}
 
 		return document;
@@ -162,8 +151,7 @@ public class CPOptionIndexer extends BaseIndexer<CPOption> {
 	@Override
 	protected void doReindex(CPOption cpOption) throws Exception {
 		_indexWriterHelper.updateDocument(
-			getSearchEngineId(), cpOption.getCompanyId(), getDocument(cpOption),
-			isCommitImmediately());
+			cpOption.getCompanyId(), getDocument(cpOption));
 	}
 
 	@Override
@@ -175,10 +163,10 @@ public class CPOptionIndexer extends BaseIndexer<CPOption> {
 	protected void doReindex(String[] ids) throws Exception {
 		long companyId = GetterUtil.getLong(ids[0]);
 
-		reindexCPOptions(companyId);
+		_reindexCPOptions(companyId);
 	}
 
-	protected void reindexCPOptions(long companyId) throws PortalException {
+	private void _reindexCPOptions(long companyId) throws Exception {
 		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
 			_cpOptionLocalService.getIndexableActionableDynamicQuery();
 
@@ -193,12 +181,11 @@ public class CPOptionIndexer extends BaseIndexer<CPOption> {
 					if (_log.isWarnEnabled()) {
 						_log.warn(
 							"Unable to index commerce product option " +
-								cpOption.getCPOptionId(),
+								cpOption,
 							portalException);
 					}
 				}
 			});
-		indexableActionableDynamicQuery.setSearchEngineId(getSearchEngineId());
 
 		indexableActionableDynamicQuery.performActions();
 	}
@@ -211,5 +198,8 @@ public class CPOptionIndexer extends BaseIndexer<CPOption> {
 
 	@Reference
 	private IndexWriterHelper _indexWriterHelper;
+
+	@Reference
+	private Localization _localization;
 
 }

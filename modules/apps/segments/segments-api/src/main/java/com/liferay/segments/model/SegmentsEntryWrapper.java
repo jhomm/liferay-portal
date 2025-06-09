@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.model;
@@ -61,7 +52,6 @@ public class SegmentsEntryWrapper
 		attributes.put("active", isActive());
 		attributes.put("criteria", getCriteria());
 		attributes.put("source", getSource());
-		attributes.put("type", getType());
 		attributes.put("lastPublishDate", getLastPublishDate());
 
 		return attributes;
@@ -163,12 +153,6 @@ public class SegmentsEntryWrapper
 
 		if (source != null) {
 			setSource(source);
-		}
-
-		String type = (String)attributes.get("type");
-
-		if (type != null) {
-			setType(type);
 		}
 
 		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
@@ -483,16 +467,6 @@ public class SegmentsEntryWrapper
 	@Override
 	public String getSource() {
 		return model.getSource();
-	}
-
-	/**
-	 * Returns the type of this segments entry.
-	 *
-	 * @return the type of this segments entry
-	 */
-	@Override
-	public String getType() {
-		return model.getType();
 	}
 
 	/**
@@ -826,16 +800,6 @@ public class SegmentsEntryWrapper
 	}
 
 	/**
-	 * Sets the type of this segments entry.
-	 *
-	 * @param type the type of this segments entry
-	 */
-	@Override
-	public void setType(String type) {
-		model.setType(type);
-	}
-
-	/**
 	 * Sets the user ID of this segments entry.
 	 *
 	 * @param userId the user ID of this segments entry
@@ -873,6 +837,11 @@ public class SegmentsEntryWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

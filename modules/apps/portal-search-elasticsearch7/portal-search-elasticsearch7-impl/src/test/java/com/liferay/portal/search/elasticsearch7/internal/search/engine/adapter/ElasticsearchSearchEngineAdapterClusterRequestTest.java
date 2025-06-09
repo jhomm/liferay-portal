@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter;
@@ -17,6 +8,7 @@ package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchClientResolver;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionFixture;
 import com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.cluster.ClusterRequestExecutorFixture;
@@ -100,12 +92,12 @@ public class ElasticsearchSearchEngineAdapterClusterRequestTest {
 		HealthClusterResponse healthClusterResponse =
 			_searchEngineAdapter.execute(healthClusterRequest);
 
-		assertHealthy(healthClusterResponse.getClusterHealthStatus());
+		_assertHealthy(healthClusterResponse.getClusterHealthStatus());
 
 		JSONObject jsonObject = createJSONObject(
 			healthClusterResponse.getHealthStatusMessage());
 
-		assertClusterName(jsonObject);
+		_assertClusterName(jsonObject);
 
 		Assert.assertEquals(
 			_ELASTICSEARCH_DEFAULT_NUMBER_OF_SHARDS,
@@ -120,20 +112,42 @@ public class ElasticsearchSearchEngineAdapterClusterRequestTest {
 		StateClusterResponse stateClusterResponse =
 			_searchEngineAdapter.execute(stateClusterRequest);
 
-		assertNodesContainLocalhost(stateClusterResponse.getStateMessage());
+		_assertNodesContainLocalhost(stateClusterResponse.getStateMessage());
 	}
 
 	@Test
 	public void testExecuteStatsClusterRequest() {
-		doTestExecuteStatsClusterRequest(null);
+		_testExecuteStatsClusterRequest(null);
 	}
 
 	@Test
 	public void testExecuteStatsClusterRequestWithNodeId() {
-		doTestExecuteStatsClusterRequest(new String[] {"liferay"});
+		_testExecuteStatsClusterRequest(new String[] {"liferay_sidecar"});
 	}
 
-	protected static ClusterRequestExecutor createClusterRequestExecutor(
+	protected static SearchEngineAdapter createSearchEngineAdapter(
+		ElasticsearchClientResolver elasticsearchClientResolver) {
+
+		SearchEngineAdapter searchEngineAdapter =
+			new ElasticsearchSearchEngineAdapterImpl();
+
+		ReflectionTestUtil.setFieldValue(
+			searchEngineAdapter, "_clusterRequestExecutor",
+			_createClusterRequestExecutor(elasticsearchClientResolver));
+
+		return searchEngineAdapter;
+	}
+
+	protected JSONObject createJSONObject(String message) {
+		try {
+			return JSONFactoryUtil.createJSONObject(message);
+		}
+		catch (JSONException jsonException) {
+			throw new RuntimeException(jsonException);
+		}
+	}
+
+	private static ClusterRequestExecutor _createClusterRequestExecutor(
 		ElasticsearchClientResolver elasticsearchClientResolver) {
 
 		ClusterRequestExecutorFixture clusterRequestExecutorFixture =
@@ -148,29 +162,18 @@ public class ElasticsearchSearchEngineAdapterClusterRequestTest {
 		return clusterRequestExecutorFixture.getClusterRequestExecutor();
 	}
 
-	protected static SearchEngineAdapter createSearchEngineAdapter(
-		ElasticsearchClientResolver elasticsearchClientResolver) {
-
-		return new ElasticsearchSearchEngineAdapterImpl() {
-			{
-				setClusterRequestExecutor(
-					createClusterRequestExecutor(elasticsearchClientResolver));
-			}
-		};
-	}
-
-	protected void assertClusterName(JSONObject jsonObject) {
+	private void _assertClusterName(JSONObject jsonObject) {
 		Assert.assertEquals(
 			_CLUSTER_NAME, jsonObject.getString("cluster_name"));
 	}
 
-	protected void assertHealthy(ClusterHealthStatus clusterHealthStatus) {
+	private void _assertHealthy(ClusterHealthStatus clusterHealthStatus) {
 		Assert.assertTrue(
 			clusterHealthStatus.equals(ClusterHealthStatus.GREEN) ||
 			clusterHealthStatus.equals(ClusterHealthStatus.YELLOW));
 	}
 
-	protected void assertNodesContainLocalhost(String message) {
+	private void _assertNodesContainLocalhost(String message) {
 		JSONObject jsonObject = createJSONObject(message);
 
 		String nodesString = jsonObject.getString("nodes");
@@ -178,33 +181,12 @@ public class ElasticsearchSearchEngineAdapterClusterRequestTest {
 		Assert.assertTrue(nodesString.contains("127.0.0.1"));
 	}
 
-	protected void assertOneIndex(String message) {
+	private void _assertOneIndex(String message) {
 		JSONObject jsonObject = createJSONObject(message);
 
 		JSONObject indicesJSONObject = jsonObject.getJSONObject("indices");
 
 		Assert.assertEquals("1", indicesJSONObject.getString("count"));
-	}
-
-	protected JSONObject createJSONObject(String message) {
-		try {
-			return JSONFactoryUtil.createJSONObject(message);
-		}
-		catch (JSONException jsonException) {
-			throw new RuntimeException(jsonException);
-		}
-	}
-
-	protected void doTestExecuteStatsClusterRequest(String[] nodeIds) {
-		StatsClusterRequest statsClusterRequest = new StatsClusterRequest(
-			nodeIds);
-
-		StatsClusterResponse statsClusterResponse =
-			_searchEngineAdapter.execute(statsClusterRequest);
-
-		assertHealthy(statsClusterResponse.getClusterHealthStatus());
-
-		assertOneIndex(statsClusterResponse.getStatsMessage());
 	}
 
 	private void _createIndex() {
@@ -229,6 +211,18 @@ public class ElasticsearchSearchEngineAdapterClusterRequestTest {
 		catch (IOException ioException) {
 			throw new RuntimeException(ioException);
 		}
+	}
+
+	private void _testExecuteStatsClusterRequest(String[] nodeIds) {
+		StatsClusterRequest statsClusterRequest = new StatsClusterRequest(
+			nodeIds);
+
+		StatsClusterResponse statsClusterResponse =
+			_searchEngineAdapter.execute(statsClusterRequest);
+
+		_assertHealthy(statsClusterResponse.getClusterHealthStatus());
+
+		_assertOneIndex(statsClusterResponse.getStatsMessage());
 	}
 
 	private static final String _CLUSTER_NAME =

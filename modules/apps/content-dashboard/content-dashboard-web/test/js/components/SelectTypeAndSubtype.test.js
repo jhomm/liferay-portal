@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {cleanup, render} from '@testing-library/react';
+import {render} from '@testing-library/react';
 import React from 'react';
 
 import '@testing-library/jest-dom/extend-expect';
 
-import SelectTypeAndSubtype from '../../../src/main/resources/META-INF/resources/js/SelectTypeAndSubtype';
+import SelectTypeAndSubtype from '../../../src/main/resources/META-INF/resources/js/components/SelectTypeAndSubtype';
 
 const mockProps = {
 	contentDashboardItemTypes: [
@@ -69,24 +60,25 @@ const mockProps = {
 		'_com_liferay_item_selector_web_portlet_ItemSelectorPortlet_',
 };
 
+jest.mock('frontend-js-web', () => ({
+	...jest.requireActual('frontend-js-web'),
+	getOpener: jest.fn(() => ({
+		Liferay: {
+			fire: jest.fn(),
+		},
+	})),
+}));
+
 describe('SelectTypeAndSubtype', () => {
-	beforeEach(() => {
-		cleanup();
-
-		window.Liferay.Util.getOpener = jest.fn().mockReturnValue({
-			Liferay: {
-				fire: jest.fn(),
-			},
-		});
-	});
-
 	it('renders a TreeFilter with parent nodes indicating the number of children', () => {
 		const {getByRole, getByText, queryByText} = render(
 			<SelectTypeAndSubtype {...mockProps} />
 		);
 
 		const {className} = getByRole('tree');
-		expect(className).toContain('lfr-treeview-node-list');
+		expect(className).toContain(
+			'treeview show-quick-actions-on-hover treeview-light'
+		);
 
 		expect(
 			getByText('Document (3 items)', {exact: false})

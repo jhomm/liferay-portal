@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.web.internal.display.context;
@@ -19,22 +10,22 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBu
 import com.liferay.message.boards.constants.MBPortletKeys;
 import com.liferay.message.boards.settings.MBGroupServiceSettings;
 import com.liferay.message.boards.web.internal.security.permission.MBResourcePermission;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -51,8 +42,7 @@ public class MBNavigationDisplayContext {
 		_renderResponse = renderResponse;
 
 		_mvcRenderCommandName = ParamUtil.getString(
-			_httpServletRequest, "mvcRenderCommandName",
-			"/message_boards/view");
+			httpServletRequest, "mvcRenderCommandName", "/message_boards/view");
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
@@ -187,24 +177,13 @@ public class MBNavigationDisplayContext {
 	private boolean _isMBPortlet() {
 		PortletDisplay portletDisplay = _themeDisplay.getPortletDisplay();
 
-		if (Objects.equals(
-				portletDisplay.getPortletName(),
-				MBPortletKeys.MESSAGE_BOARDS)) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			portletDisplay.getPortletName(), MBPortletKeys.MESSAGE_BOARDS);
 	}
 
 	private boolean _isViewBannedUsersNavigationItemActive() {
-		if (_mvcRenderCommandName.equals(
-				"/message_boards_admin/view_banned_users")) {
-
-			return true;
-		}
-
-		return false;
+		return _mvcRenderCommandName.equals(
+			"/message_boards_admin/view_banned_users");
 	}
 
 	private boolean _isViewCategoriesNavigationItemActive() {
@@ -221,37 +200,21 @@ public class MBNavigationDisplayContext {
 	}
 
 	private boolean _isViewMyPostsNavigationItemActive() {
-		if (_mvcRenderCommandName.equals("/message_boards/view_my_posts")) {
-			return true;
-		}
-
-		return false;
+		return _mvcRenderCommandName.equals("/message_boards/view_my_posts");
 	}
 
 	private boolean _isViewMySubscriptionsNavigationItemActive() {
-		if (_mvcRenderCommandName.equals(
-				"/message_boards/view_my_subscriptions")) {
-
-			return true;
-		}
-
-		return false;
+		return _mvcRenderCommandName.equals(
+			"/message_boards/view_my_subscriptions");
 	}
 
 	private boolean _isViewRecentPostsNavigationItemActive() {
-		if (_mvcRenderCommandName.equals("/message_boards/view_recent_posts")) {
-			return true;
-		}
-
-		return false;
+		return _mvcRenderCommandName.equals(
+			"/message_boards/view_recent_posts");
 	}
 
 	private boolean _isViewStatisticsNavigationItemActive() {
-		if (_mvcRenderCommandName.equals("/message_boards/view_statistics")) {
-			return true;
-		}
-
-		return false;
+		return _mvcRenderCommandName.equals("/message_boards/view_statistics");
 	}
 
 	private final HttpServletRequest _httpServletRequest;

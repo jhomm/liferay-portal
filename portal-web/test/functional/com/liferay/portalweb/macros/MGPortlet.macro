@@ -1,13 +1,14 @@
 definition {
 
-	macro configureShowAllPG {
+	@summary = "Default summary"
+	macro configureShowAllPG() {
 		Portlet.gotoPortletOptions(
 			portletName = "Media Gallery",
 			portletOption = "Configuration");
 
 		SelectFrame(locator1 = "IFrame#CONFIGURATION");
 
-		Pause(locator1 = "5000");
+		WaitForElementPresent.waitForLastScript();
 
 		WaitForElementPresent(locator1 = "Checkbox#SHOW_ACTIONS_CHECKBOX");
 
@@ -16,10 +17,106 @@ definition {
 		PortletEntry.save();
 	}
 
-	macro viewCustomADTCarouselPG {
+	@summary = "Default summary"
+	macro setRootFolder(selectHomeFolder = null, breadcrumbName = null, depotName = null, dmRootFolderName = null, dmFolderName = null, selectSubfolder = null) {
+		Portlet.gotoPortletOptions(
+			portletName = "Media Gallery",
+			portletOption = "Configuration");
+
+		SelectFrame(locator1 = "DocumentsAndMedia#CONFIGURATION_IFRAME");
+
+		if (isSet(invalidRootFolder)) {
+			AssertTextEquals(
+				locator1 = "DocumentsAndMediaConfiguration#DISPLAY_SETTINGS_ROOT_FOLDER_FIELD",
+				value1 = ${dmRootFolderName});
+
+			AssertTextEquals.assertPartialText(
+				key_warningMessage = "The selected root folder cannot be found. Please select another one",
+				locator1 = "Message#WARNING_SPECIFIC",
+				value1 = "The selected root folder cannot be found. Please select another one");
+		}
+		else {
+			Panel.expandPanel(panel = "Folders Listing");
+
+			AssertClick(
+				locator1 = "Button#SELECT",
+				value1 = "Select");
+
+			SelectFrame.selectSecondFrame(
+				key_title = "Select Folder",
+				locator1 = "IFrame#MODAL_ANY");
+
+			if (isSet(depotName)) {
+				AssertClick(
+					key_breadcrumbName = "Sites and Libraries",
+					locator1 = "Breadcrumb#BREADCRUMB_ENTRY",
+					value1 = "Sites and Libraries");
+
+				AssertClick(
+					key_groupTab = "Asset Library",
+					locator1 = "ItemSelector#NAVIGATION_GROUP_TAB",
+					value1 = "Asset Library");
+
+				LexiconCard.clickCard(card = ${depotName});
+			}
+
+			if (${selectHomeFolder} == "true") {
+				var siteName = TestCase.getSiteName(siteName = ${siteName});
+
+				if (IsElementPresent(key_breadcrumbName = ${siteName}, locator1 = "BreadcrumbPortlet#BREADCRUMB_FOLDER")) {
+					AssertVisible(
+						key_text = "Select This Folder",
+						locator1 = "Button#ANY_DISABLED");
+
+					AssertClick(
+						key_breadcrumbName = ${siteName},
+						locator1 = "BreadcrumbPortlet#BREADCRUMB_FOLDER",
+						value1 = ${siteName});
+				}
+			}
+
+			if (${selectSubfolder} == "true") {
+				AssertClick(
+					key_dmFolderName = ${dmFolderName},
+					locator1 = "DocumentsAndMediaSelectFolder#FOLDER_LINK",
+					value1 = ${dmFolderName});
+			}
+
+			if (isSet(selectRootFolder)) {
+				AssertClick(
+					key_text = "Select This Folder",
+					locator1 = "Button#ANY",
+					value1 = "Select This Folder");
+			}
+			else {
+				if (isSet(selectBreadcrumb)) {
+					AssertClick(
+						key_breadcrumbName = ${breadcrumbName},
+						locator1 = "BreadcrumbPortlet#BREADCRUMB_FOLDER",
+						value1 = ${breadcrumbName});
+				}
+
+				AssertClick(
+					key_dmFolderName = ${dmRootFolderName},
+					locator1 = "DocumentsAndMedia#SELECT_RESOURCE_BUTTON",
+					value1 = "Select");
+			}
+
+			SelectFrame(locator1 = "relative=top");
+
+			SelectFrame(locator1 = "DocumentsAndMedia#CONFIGURATION_IFRAME");
+
+			PortletEntry.save();
+		}
+
+		IFrame.closeFrame();
+	}
+
+	@summary = "Default summary"
+	macro viewCustomADTCarouselPG() {
 		AssertElementPresent(locator1 = "MediaGallery#ADT_CAROUSEL_ITEM");
 
-		AssertElementPresent(locator1 = "MediaGallery#ADT_CAROUSEL_PLAY_PAUSE");
+		AssertElementPresent(locator1 = "MediaGallery#ADT_CAROUSEL_ITEM_ICON");
 
 		AssertElementPresent(locator1 = "MediaGallery#ADT_CAROUSEL_PREVIOUS_ARROW");
 
@@ -28,11 +125,19 @@ definition {
 		AssertElementPresent(locator1 = "MediaGallery#ADT_CAROUSEL_MENU_INDEX");
 	}
 
-	macro viewShowAllPG {
-		Click.waitForMenuToggleJSClick(locator1 = "Icon#BODY_VERTICAL_ELLIPSIS");
+	@summary = "Default summary"
+	macro viewDefault() {
+		AssertTextEquals.assertPartialText(
+			locator1 = "Message#EMPTY_INFO",
+			value1 = "There are no media files in this folder.");
+	}
+
+	@summary = "Default summary"
+	macro viewFolderItemsPG(mgFolderName = null) {
+		LexiconEntry.openEntryMenu(rowEntry = ${mgFolderName});
 
 		for (var menuItem : list "Permissions,Multiple Media,Add Shortcut,Access from Desktop") {
-			MenuItem.viewPresent(menuItem = "${menuItem}");
+			MenuItem.viewPresent(menuItem = ${menuItem});
 		}
 	}
 

@@ -1,21 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.content.web.internal.exportimport.portlet.preferences.processor;
 
-import com.liferay.asset.kernel.model.AssetEntry;
-import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalService;
@@ -27,37 +16,36 @@ import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
 import com.liferay.exportimport.portlet.preferences.processor.Capability;
 import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessor;
+import com.liferay.exportimport.portlet.preferences.processor.base.BaseExportImportPortletPreferencesProcessor;
 import com.liferay.journal.constants.JournalConstants;
 import com.liferay.journal.constants.JournalContentPortletKeys;
 import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.journal.model.JournalArticle;
-import com.liferay.journal.model.JournalArticleResource;
 import com.liferay.journal.service.JournalArticleLocalService;
-import com.liferay.journal.service.JournalArticleResourceLocalService;
-import com.liferay.journal.service.JournalContentSearchLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portlet.PortletPreferencesImpl;
+import com.liferay.portal.kernel.xml.Element;
+
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.ReadOnlyException;
 
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.ReadOnlyException;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -66,12 +54,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Máté Thurzó
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + JournalContentPortletKeys.JOURNAL_CONTENT,
+	property = "jakarta.portlet.name=" + JournalContentPortletKeys.JOURNAL_CONTENT,
 	service = ExportImportPortletPreferencesProcessor.class
 )
 public class JournalContentExportImportPortletPreferencesProcessor
-	implements ExportImportPortletPreferencesProcessor {
+	extends BaseExportImportPortletPreferencesProcessor {
 
 	@Override
 	public List<Capability> getExportCapabilities() {
@@ -83,6 +70,11 @@ public class JournalContentExportImportPortletPreferencesProcessor
 	public List<Capability> getImportCapabilities() {
 		return ListUtil.fromArray(
 			_journalContentMetadataExporterImporterCapability, _capability);
+	}
+
+	@Override
+	public boolean isPublishDisplayedContent() {
+		return false;
 	}
 
 	@Override
@@ -109,20 +101,43 @@ public class JournalContentExportImportPortletPreferencesProcessor
 			throw portletDataException;
 		}
 
-		String articleId = portletPreferences.getValue("articleId", null);
+		String articleExternalReferenceCode = portletPreferences.getValue(
+			"articleExternalReferenceCode", null);
 
-		if (articleId == null) {
+		if (articleExternalReferenceCode == null) {
 			if (_log.isDebugEnabled()) {
 				_log.debug(
-					"No article ID found in preferences of portlet " +
-						portletId);
+					"No article external reference code found in preferences " +
+						"of portlet " + portletId);
 			}
 
 			return portletPreferences;
 		}
 
-		long articleGroupId = GetterUtil.getLong(
-			portletPreferences.getValue("groupId", StringPool.BLANK));
+		long companyId = _getCompanyId(portletDataContext);
+
+		long articleGroupId = _getGroupId(companyId, portletPreferences);
+
+		try {
+			updateExportPortletPreferencesExternalReferenceCodes(
+				portletDataContext,
+				_portletLocalService.getPortletById(companyId, portletId),
+				portletPreferences, "groupExternalReferenceCode",
+				Group.class.getName());
+		}
+		catch (Exception exception) {
+			PortletDataException portletDataException =
+				new PortletDataException(
+					"Unable to update portlet preferences during export",
+					exception);
+
+			portletDataException.setPortletId(
+				JournalContentPortletKeys.JOURNAL_CONTENT);
+			portletDataException.setType(
+				PortletDataException.EXPORT_PORTLET_DATA);
+
+			throw portletDataException;
+		}
 
 		if (articleGroupId <= 0) {
 			if (_log.isWarnEnabled()) {
@@ -160,20 +175,21 @@ public class JournalContentExportImportPortletPreferencesProcessor
 			portletDataContext.setScopeGroupId(articleGroupId);
 		}
 
-		JournalArticle article = null;
+		JournalArticle article =
+			_journalArticleLocalService.
+				fetchLatestArticleByExternalReferenceCode(
+					articleGroupId, articleExternalReferenceCode,
+					new int[] {
+						WorkflowConstants.STATUS_APPROVED,
+						WorkflowConstants.STATUS_EXPIRED,
+						WorkflowConstants.STATUS_SCHEDULED
+					});
 
-		JournalArticleResource journalArticleResource =
-			_journalArticleResourceLocalService.fetchArticleResource(
-				articleGroupId, articleId);
+		if ((article != null) &&
+			Objects.equals(
+				article.getStatus(), WorkflowConstants.STATUS_IN_TRASH)) {
 
-		if (journalArticleResource != null) {
-			article = _journalArticleLocalService.fetchLatestArticle(
-				journalArticleResource.getResourcePrimKey(),
-				new int[] {
-					WorkflowConstants.STATUS_APPROVED,
-					WorkflowConstants.STATUS_EXPIRED,
-					WorkflowConstants.STATUS_SCHEDULED
-				});
+			article = null;
 		}
 
 		if (article == null) {
@@ -181,7 +197,8 @@ public class JournalContentExportImportPortletPreferencesProcessor
 				_log.warn(
 					StringBundler.concat(
 						"Portlet ", portletId,
-						" refers to an invalid article ID ", articleId));
+						" refers to an invalid external reference code ",
+						articleExternalReferenceCode));
 			}
 
 			portletDataContext.setScopeGroupId(previousScopeGroupId);
@@ -206,12 +223,37 @@ public class JournalContentExportImportPortletPreferencesProcessor
 			PortletDataHandlerKeys.PORTLET_DATA_ALL,
 			new String[] {Boolean.TRUE.toString()});
 
-		StagedModelDataHandlerUtil.exportReferenceStagedModel(
-			portletDataContext, portletId, article);
+		Element articleElement = portletDataContext.getExportDataElement(
+			article);
+
+		if (!GetterUtil.getBoolean(
+				articleElement.attributeValue("articleAdded"))) {
+
+			articleElement.addAttribute("articleAdded", "true");
+
+			StagedModelDataHandlerUtil.exportReferenceStagedModel(
+				portletDataContext, portletId, article);
+		}
 
 		String defaultDDMTemplateKey = article.getDDMTemplateKey();
-		String preferenceDDMTemplateKey = portletPreferences.getValue(
-			"ddmTemplateKey", null);
+
+		String preferenceDDMTemplateKey = null;
+
+		String preferenceDDMTemplateExternalReferenceCode =
+			portletPreferences.getValue(
+				"ddmTemplateExternalReferenceCode", null);
+
+		if (Validator.isNotNull(preferenceDDMTemplateExternalReferenceCode)) {
+			DDMTemplate ddmTemplate =
+				_ddmTemplateLocalService.
+					fetchDDMTemplateByExternalReferenceCode(
+						preferenceDDMTemplateExternalReferenceCode,
+						article.getGroupId(), true);
+
+			if (ddmTemplate != null) {
+				preferenceDDMTemplateKey = ddmTemplate.getTemplateKey();
+			}
+		}
 
 		if (Validator.isNotNull(defaultDDMTemplateKey) &&
 			Validator.isNotNull(preferenceDDMTemplateKey) &&
@@ -231,7 +273,8 @@ public class JournalContentExportImportPortletPreferencesProcessor
 						defaultDDMTemplateKey, true);
 
 					portletPreferences.setValue(
-						"ddmTemplateKey", defaultDDMTemplateKey);
+						"ddmTemplateExternalReferenceCode",
+						ddmTemplate.getExternalReferenceCode());
 				}
 
 				StagedModelDataHandlerUtil.exportReferenceStagedModel(
@@ -284,8 +327,8 @@ public class JournalContentExportImportPortletPreferencesProcessor
 			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
 				Group.class);
 
-		long importGroupId = GetterUtil.getLong(
-			portletPreferences.getValue("groupId", null));
+		long importGroupId = _getGroupId(
+			_getCompanyId(portletDataContext), portletPreferences);
 
 		if ((importGroupId == portletDataContext.getCompanyGroupId()) &&
 			MergeLayoutPrototypesThreadLocal.isInProgress()) {
@@ -294,21 +337,23 @@ public class JournalContentExportImportPortletPreferencesProcessor
 		}
 
 		long groupId = MapUtil.getLong(groupIds, importGroupId, importGroupId);
-
-		String articleId = portletPreferences.getValue("articleId", null);
+		String articleExternalReferenceCode = portletPreferences.getValue(
+			"articleExternalReferenceCode", null);
 
 		Map<String, Long> articleGroupIds =
 			(Map<String, Long>)portletDataContext.getNewPrimaryKeysMap(
 				JournalArticle.class + ".groupId");
 
-		if (articleGroupIds.containsKey(articleId)) {
-			groupId = articleGroupIds.get(articleId);
+		if (articleGroupIds.containsKey(articleExternalReferenceCode)) {
+			groupId = articleGroupIds.get(articleExternalReferenceCode);
 		}
 
 		portletDataContext.setScopeGroupId(groupId);
 
 		try {
-			if (Validator.isNotNull(articleId) && (groupId != 0)) {
+			if (Validator.isNotNull(articleExternalReferenceCode) &&
+				(groupId != 0)) {
+
 				Group importedArticleGroup = _groupLocalService.fetchGroup(
 					groupId);
 
@@ -324,85 +369,47 @@ public class JournalContentExportImportPortletPreferencesProcessor
 					importedArticleGroup.isStagedPortlet(
 						JournalPortletKeys.JOURNAL)) {
 
-					Map<String, String> articleIds =
+					Map<String, String> articleExternalReferenceCodes =
 						(Map<String, String>)
 							portletDataContext.getNewPrimaryKeysMap(
-								JournalArticle.class + ".articleId");
+								JournalArticle.class +
+									".articleExternalReferenceCode");
 
-					articleId = MapUtil.getString(
-						articleIds, articleId, articleId);
-
-					portletPreferences.setValue("articleId", articleId);
+					articleExternalReferenceCode = MapUtil.getString(
+						articleExternalReferenceCodes,
+						articleExternalReferenceCode,
+						articleExternalReferenceCode);
 
 					portletPreferences.setValue(
-						"groupId", String.valueOf(groupId));
+						"articleExternalReferenceCode",
+						articleExternalReferenceCode);
 
-					JournalArticle article =
-						_journalArticleLocalService.fetchLatestArticle(
-							groupId, articleId, WorkflowConstants.STATUS_ANY);
-
-					if (article != null) {
-						AssetEntry assetEntry =
-							_assetEntryLocalService.fetchEntry(
-								JournalArticle.class.getName(),
-								article.getResourcePrimKey());
-
-						if (assetEntry != null) {
-							portletPreferences.setValue(
-								"assetEntryId",
-								String.valueOf(assetEntry.getEntryId()));
-						}
-					}
-
-					int prefOwnerType = -1;
-
-					if (portletPreferences instanceof PortletPreferencesImpl) {
-						PortletPreferencesImpl portletPreferencesImpl =
-							(PortletPreferencesImpl)portletPreferences;
-
-						prefOwnerType = portletPreferencesImpl.getOwnerType();
-					}
-
-					if ((portletDataContext.getPlid() > 0) &&
-						(prefOwnerType !=
-							PortletKeys.PREFS_OWNER_TYPE_ARCHIVED)) {
-
-						Layout layout = _layoutLocalService.fetchLayout(
-							portletDataContext.getPlid());
-
-						_journalContentSearchLocalService.updateContentSearch(
-							layout.getGroupId(), layout.isPrivateLayout(),
-							layout.getLayoutId(),
-							portletDataContext.getPortletId(), articleId, true);
-					}
+					portletPreferences.setValue(
+						"groupExternalReferenceCode",
+						importedArticleGroup.getExternalReferenceCode());
 				}
 			}
 
-			String ddmTemplateKey = portletPreferences.getValue(
-				"ddmTemplateKey", null);
+			String ddmTemplateExternalReferenceCode =
+				portletPreferences.getValue(
+					"ddmTemplateExternalReferenceCode", null);
 
-			if (Validator.isNotNull(ddmTemplateKey)) {
-				Map<String, String> ddmTemplateKeys =
+			if (Validator.isNotNull(ddmTemplateExternalReferenceCode)) {
+				Map<String, String> ddmTemplateExternalReferenceCodes =
 					(Map<String, String>)
 						portletDataContext.getNewPrimaryKeysMap(
-							DDMTemplate.class + ".ddmTemplateKey");
+							DDMTemplate.class +
+								".ddmTemplateExternalReferenceCode");
 
-				ddmTemplateKey = MapUtil.getString(
-					ddmTemplateKeys, ddmTemplateKey, ddmTemplateKey);
+				ddmTemplateExternalReferenceCode = MapUtil.getString(
+					ddmTemplateExternalReferenceCodes,
+					ddmTemplateExternalReferenceCode,
+					ddmTemplateExternalReferenceCode);
 
-				portletPreferences.setValue("ddmTemplateKey", ddmTemplateKey);
+				portletPreferences.setValue(
+					"ddmTemplateExternalReferenceCode",
+					ddmTemplateExternalReferenceCode);
 			}
-		}
-		catch (PortalException portalException) {
-			PortletDataException portletDataException =
-				new PortletDataException(portalException);
-
-			portletDataException.setPortletId(
-				JournalContentPortletKeys.JOURNAL_CONTENT);
-			portletDataException.setType(
-				PortletDataException.UPDATE_JOURNAL_CONTENT_SEARCH_DATA);
-
-			throw portletDataException;
 		}
 		catch (ReadOnlyException readOnlyException) {
 			PortletDataException portletDataException =
@@ -421,11 +428,55 @@ public class JournalContentExportImportPortletPreferencesProcessor
 		return portletPreferences;
 	}
 
+	@Override
+	protected String getExportPortletPreferencesValue(
+			PortletDataContext portletDataContext, Portlet portlet,
+			String className, long primaryKeyLong)
+		throws Exception {
+
+		return "";
+	}
+
+	@Override
+	protected Long getImportPortletPreferencesNewValue(
+			PortletDataContext portletDataContext, Class<?> clazz,
+			long companyGroupId, Map<Long, Long> primaryKeys,
+			String portletPreferencesOldValue)
+		throws Exception {
+
+		return 0L;
+	}
+
+	private long _getCompanyId(PortletDataContext portletDataContext) {
+		if (portletDataContext != null) {
+			return portletDataContext.getCompanyId();
+		}
+
+		return CompanyThreadLocal.getCompanyId();
+	}
+
+	private long _getGroupId(
+		long companyId, PortletPreferences portletPreferences) {
+
+		String groupExternalReferenceCode = portletPreferences.getValue(
+			"groupExternalReferenceCode", StringPool.BLANK);
+
+		if (Validator.isNull(groupExternalReferenceCode)) {
+			return 0;
+		}
+
+		Group group = _groupLocalService.fetchGroupByExternalReferenceCode(
+			groupExternalReferenceCode, companyId);
+
+		if (group == null) {
+			return 0;
+		}
+
+		return group.getGroupId();
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		JournalContentExportImportPortletPreferencesProcessor.class);
-
-	@Reference(unbind = "-")
-	private AssetEntryLocalService _assetEntryLocalService;
 
 	@Reference(target = "(name=ReferencedStagedModelImporter)")
 	private Capability _capability;
@@ -439,21 +490,15 @@ public class JournalContentExportImportPortletPreferencesProcessor
 	@Reference(unbind = "-")
 	private JournalArticleLocalService _journalArticleLocalService;
 
-	@Reference
-	private JournalArticleResourceLocalService
-		_journalArticleResourceLocalService;
-
-	@Reference
-	private JournalContentMetadataExporterImporterCapability
-		_journalContentMetadataExporterImporterCapability;
-
-	@Reference(unbind = "-")
-	private JournalContentSearchLocalService _journalContentSearchLocalService;
-
-	@Reference(unbind = "-")
-	private LayoutLocalService _layoutLocalService;
+	@Reference(
+		target = "(component.name=com.liferay.journal.content.web.internal.exportimport.portlet.preferences.processor.JournalContentMetadataExporterImporterCapability)"
+	)
+	private Capability _journalContentMetadataExporterImporterCapability;
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private PortletLocalService _portletLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {useThunk} from '@liferay/frontend-js-react-web';
@@ -47,7 +38,7 @@ FormStateContext.displayName = 'FormStateContext';
  *  </FormBuilder>
  * </LayoutProvider>
  */
-export const FormNoopProvider = ({children, initialState, onAction, value}) => {
+export function FormNoopProvider({children, initialState, onAction, value}) {
 	const [, dispatch] = useThunk([{}, onAction]);
 
 	return (
@@ -57,7 +48,7 @@ export const FormNoopProvider = ({children, initialState, onAction, value}) => {
 			</FormStateContext.Provider>
 		</FormDispatchContext.Provider>
 	);
-};
+}
 
 /**
  * Propagate Action is used in conjunction with useReducer that "listens"
@@ -119,14 +110,14 @@ const usePropagateAction = ([state, dispatch], onAction) => {
  *  </FormProvider>
  * </ConfigProvider>
  */
-export const FormProvider = ({
+export function FormProvider({
 	children,
 	init = (props) => props,
 	initialState = {},
 	onAction,
 	reducers,
 	value,
-}) => {
+}) {
 	const config = useConfig();
 
 	const [state, dispatch] = useThunk(
@@ -147,14 +138,14 @@ export const FormProvider = ({
 			</FormStateContext.Provider>
 		</FormDispatchContext.Provider>
 	);
-};
+}
 
 FormProvider.displayName = 'FormProvider';
 
-export const useForm = () => {
+export function useForm() {
 	return useContext(FormDispatchContext);
-};
+}
 
-export const useFormState = ({schema} = {}) => {
+export function useFormState({schema} = {}) {
 	return useDataView(useContext(FormStateContext), schema);
-};
+}

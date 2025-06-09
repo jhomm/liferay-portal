@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -28,7 +19,7 @@
 	<div class="sheet-section">
 		<liferay-portlet:actionURL name="/connected_app/revoke_connected_app" varImpl="actionCommandURL" />
 
-		<aui:form action="<%= actionCommandURL.toString() %>" cssClass="portlet-users-admin-edit-user" data-senna-off="true" method="post" name="fm">
+		<aui:form action="<%= actionCommandURL %>" cssClass="portlet-users-admin-edit-user" data-senna-off="true" method="post" name="fm">
 
 			<%
 			User selUser = PortalUtil.getSelectedUser(request);
@@ -77,7 +68,7 @@
 			%>
 
 			<c:if test="<%= connectedApps.isEmpty() %>">
-				<span class="text-muted">
+				<span class="text-secondary">
 					<liferay-ui:message key="no-applications-have-been-approved-yet" />
 				</span>
 			</c:if>
@@ -85,14 +76,12 @@
 	</div>
 </div>
 
-<aui:script require="frontend-js-web/liferay/delegate/delegate.es as delegateModule">
+<aui:script sandbox="<%= true %>">
 	var connectedAppKeyInput = document.querySelector(
 		'[name=<portlet:namespace />connectedAppKey]'
 	);
 
-	var delegate = delegateModule.default;
-
-	delegate(
+	Liferay.Util.delegate(
 		document.getElementById('<portlet:namespace />connectedApp'),
 		'click',
 		'[data-key]',

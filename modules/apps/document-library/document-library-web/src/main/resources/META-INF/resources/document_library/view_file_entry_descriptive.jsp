@@ -1,22 +1,15 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/document_library/init.jsp" %>
 
 <%
+DLAdminDisplayContext dlAdminDisplayContext = (DLAdminDisplayContext)request.getAttribute(DLAdminDisplayContext.class.getName());
+
 ResultRow row = (ResultRow)request.getAttribute(WebKeys.SEARCH_CONTAINER_RESULT_ROW);
 
 Object result = row.getObject();
@@ -57,7 +50,7 @@ if ((user.getUserId() == fileEntry.getUserId()) || permissionChecker.isContentRe
 
 latestFileVersion = latestFileVersion.toEscapedModel();
 
-Date modifiedDate = latestFileVersion.getModifiedDate();
+Date modifiedDate = fileEntry.getModifiedDate();
 
 String modifiedDateDescription = LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - modifiedDate.getTime(), true);
 
@@ -79,7 +72,7 @@ else {
 			).setMVCRenderCommandName(
 				"/document_library/view_file_entry"
 			).setRedirect(
-				HttpUtil.removeParameter(currentURL, liferayPortletResponse.getNamespace() + "ajax")
+				HttpComponentsUtil.removeParameter(currentURL, liferayPortletResponse.getNamespace() + "ajax")
 			).setParameter(
 				"fileEntryId", fileEntry.getFileEntryId()
 			).buildString()
@@ -87,13 +80,29 @@ else {
 	>
 		<%= latestFileVersion.getTitle() %>
 	</aui:a>
+
+	<span>
+
+		<%
+		DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDisplayContext(liferayPortletRequest, liferayPortletResponse);
+		%>
+
+		<c:if test="<%= !dlViewEntriesDisplayContext.hasGuestViewPermission(fileEntry) %>">
+			<clay:icon
+				aria-label='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+				cssClass="c-ml-2 c-mt-1 lfr-portal-tooltip text-4 text-secondary"
+				data-title='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+				symbol="password-policies"
+			/>
+		</c:if>
+	</span>
 </h2>
 
 <span>
-	<liferay-ui:message arguments="<%= new String[] {HtmlUtil.escape(latestFileVersion.getUserName()), modifiedDateDescription} %>" key="x-modified-x-ago" />
+	<liferay-ui:message arguments="<%= new String[] {modifiedDateDescription, HtmlUtil.escape(latestFileVersion.getUserName())} %>" key="modified-x-ago-by-x" />
 </span>
 <span>
-	<%= DLUtil.getAbsolutePath(liferayPortletRequest, fileEntry.getFolderId()).replace(StringPool.RAQUO_CHAR, StringPool.GREATER_THAN) %>
+	<%= DLUtil.getAbsolutePath(liferayPortletRequest, dlAdminDisplayContext.getRootFolderId(), fileEntry.getFolderId()).replace(StringPool.RAQUO_CHAR, StringPool.GREATER_THAN) %>
 </span>
 
 <c:if test="<%= latestFileVersion.getModel() instanceof DLFileVersion %>">
@@ -110,24 +119,57 @@ else {
 </c:if>
 
 <span class="file-entry-status">
-	<aui:workflow-status showIcon="<%= false %>" showLabel="<%= false %>" status="<%= latestFileVersion.getStatus() %>" />
+	<c:if test="<%= !latestFileVersion.isApproved() && dlViewFileVersionDisplayContext.hasApprovedVersion() %>">
+		<liferay-portal-workflow:status
+			showStatusLabel="<%= false %>"
+			status="<%= WorkflowConstants.STATUS_APPROVED %>"
+		/>
+	</c:if>
+
+	<liferay-portal-workflow:status
+		showStatusLabel="<%= false %>"
+		status="<%= latestFileVersion.getStatus() %>"
+	/>
+
+	<c:if test="<%= latestFileVersion.isScheduled() %>">
+
+		<%
+		String displayDateString = StringPool.BLANK;
+
+		if (latestFileVersion.getDisplayDate() != null) {
+			displayDateString = dateTimeFormat.format(latestFileVersion.getDisplayDate());
+		}
+		%>
+
+		<span aria-label="<%= displayDateString %>" class="lfr-portal-tooltip" tabindex="0" title="<%= displayDateString %>">
+			<clay:icon
+				symbol="question-circle-full"
+			/>
+		</span>
+	</c:if>
 
 	<c:choose>
 		<c:when test="<%= fileShortcut != null %>">
-			<span class="inline-item inline-item-after state-icon">
-				<aui:icon image="shortcut" markupView="lexicon" message="shortcut" />
-			</span>
+			<clay:icon
+				cssClass="inline-item inline-item-after state-icon"
+				symbol="shortcut"
+			/>
 		</c:when>
 		<c:when test="<%= fileEntry.hasLock() || fileEntry.isCheckedOut() %>">
-			<span class="inline-item inline-item-after state-icon">
-				<aui:icon image="lock" markupView="lexicon" message="locked" />
+			<span class="lfr-portal-tooltip" title="<%= LanguageUtil.get(request, "locked-document") %>">
+				<clay:icon
+					aria-label='<%= LanguageUtil.get(request, "locked-document") %>'
+					cssClass="inline-item inline-item-after state-icon"
+					symbol="lock"
+				/>
 			</span>
 		</c:when>
 	</c:choose>
 
 	<c:if test="<%= dlViewFileVersionDisplayContext.isShared() %>">
-		<span class="inline-item inline-item-after lfr-portal-tooltip state-icon" title="<%= LanguageUtil.get(request, "shared") %>">
-			<aui:icon image="users" markupView="lexicon" message="shared" />
-		</span>
+		<clay:icon
+			cssClass="inline-item inline-item-after lfr-portal-tooltip state-icon"
+			symbol="users"
+		/>
 	</c:if>
 </span>

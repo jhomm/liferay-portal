@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.model.UserGroup;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -28,6 +20,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class UserGroupLocalServiceWrapper
 	implements ServiceWrapper<UserGroupLocalService>, UserGroupLocalService {
 
+	public UserGroupLocalServiceWrapper() {
+		this(null);
+	}
+
 	public UserGroupLocalServiceWrapper(
 		UserGroupLocalService userGroupLocalService) {
 
@@ -35,47 +31,58 @@ public class UserGroupLocalServiceWrapper
 	}
 
 	@Override
-	public void addGroupUserGroup(long groupId, long userGroupId) {
-		_userGroupLocalService.addGroupUserGroup(groupId, userGroupId);
+	public boolean addGroupUserGroup(long groupId, long userGroupId) {
+		return _userGroupLocalService.addGroupUserGroup(groupId, userGroupId);
 	}
 
 	@Override
-	public void addGroupUserGroup(long groupId, UserGroup userGroup) {
-		_userGroupLocalService.addGroupUserGroup(groupId, userGroup);
+	public boolean addGroupUserGroup(long groupId, UserGroup userGroup) {
+		return _userGroupLocalService.addGroupUserGroup(groupId, userGroup);
 	}
 
 	@Override
-	public void addGroupUserGroups(
+	public boolean addGroupUserGroups(
 		long groupId, java.util.List<UserGroup> userGroups) {
 
-		_userGroupLocalService.addGroupUserGroups(groupId, userGroups);
+		return _userGroupLocalService.addGroupUserGroups(groupId, userGroups);
 	}
 
 	@Override
-	public void addGroupUserGroups(long groupId, long[] userGroupIds) {
-		_userGroupLocalService.addGroupUserGroups(groupId, userGroupIds);
+	public boolean addGroupUserGroups(long groupId, long[] userGroupIds) {
+		return _userGroupLocalService.addGroupUserGroups(groupId, userGroupIds);
 	}
 
 	@Override
-	public void addTeamUserGroup(long teamId, long userGroupId) {
-		_userGroupLocalService.addTeamUserGroup(teamId, userGroupId);
+	public UserGroup addOrUpdateUserGroup(
+			String externalReferenceCode, long userId, long companyId,
+			String name, String description, ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _userGroupLocalService.addOrUpdateUserGroup(
+			externalReferenceCode, userId, companyId, name, description,
+			serviceContext);
 	}
 
 	@Override
-	public void addTeamUserGroup(long teamId, UserGroup userGroup) {
-		_userGroupLocalService.addTeamUserGroup(teamId, userGroup);
+	public boolean addTeamUserGroup(long teamId, long userGroupId) {
+		return _userGroupLocalService.addTeamUserGroup(teamId, userGroupId);
 	}
 
 	@Override
-	public void addTeamUserGroups(
+	public boolean addTeamUserGroup(long teamId, UserGroup userGroup) {
+		return _userGroupLocalService.addTeamUserGroup(teamId, userGroup);
+	}
+
+	@Override
+	public boolean addTeamUserGroups(
 		long teamId, java.util.List<UserGroup> userGroups) {
 
-		_userGroupLocalService.addTeamUserGroups(teamId, userGroups);
+		return _userGroupLocalService.addTeamUserGroups(teamId, userGroups);
 	}
 
 	@Override
-	public void addTeamUserGroups(long teamId, long[] userGroupIds) {
-		_userGroupLocalService.addTeamUserGroups(teamId, userGroupIds);
+	public boolean addTeamUserGroups(long teamId, long[] userGroupIds) {
+		return _userGroupLocalService.addTeamUserGroups(teamId, userGroupIds);
 	}
 
 	/**
@@ -99,12 +106,13 @@ public class UserGroupLocalServiceWrapper
 	 */
 	@Override
 	public UserGroup addUserGroup(
-			long userId, long companyId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long companyId,
+			String name, String description, ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _userGroupLocalService.addUserGroup(
-			userId, companyId, name, description, serviceContext);
+			externalReferenceCode, userId, companyId, name, description,
+			serviceContext);
 	}
 
 	/**
@@ -122,26 +130,45 @@ public class UserGroupLocalServiceWrapper
 		return _userGroupLocalService.addUserGroup(userGroup);
 	}
 
+	/**
+	 * @throws PortalException
+	 */
 	@Override
-	public void addUserUserGroup(long userId, long userGroupId) {
-		_userGroupLocalService.addUserUserGroup(userId, userGroupId);
+	public boolean addUserUserGroup(long userId, long userGroupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _userGroupLocalService.addUserUserGroup(userId, userGroupId);
 	}
 
+	/**
+	 * @throws PortalException
+	 */
 	@Override
-	public void addUserUserGroup(long userId, UserGroup userGroup) {
-		_userGroupLocalService.addUserUserGroup(userId, userGroup);
+	public boolean addUserUserGroup(long userId, UserGroup userGroup)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _userGroupLocalService.addUserUserGroup(userId, userGroup);
 	}
 
+	/**
+	 * @throws PortalException
+	 */
 	@Override
-	public void addUserUserGroups(
-		long userId, java.util.List<UserGroup> userGroups) {
+	public boolean addUserUserGroups(
+			long userId, java.util.List<UserGroup> userGroups)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
-		_userGroupLocalService.addUserUserGroups(userId, userGroups);
+		return _userGroupLocalService.addUserUserGroups(userId, userGroups);
 	}
 
+	/**
+	 * @throws PortalException
+	 */
 	@Override
-	public void addUserUserGroups(long userId, long[] userGroupIds) {
-		_userGroupLocalService.addUserUserGroups(userId, userGroupIds);
+	public boolean addUserUserGroups(long userId, long[] userGroupIds)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _userGroupLocalService.addUserUserGroups(userId, userGroupIds);
 	}
 
 	@Override
@@ -413,31 +440,12 @@ public class UserGroupLocalServiceWrapper
 		return _userGroupLocalService.fetchUserGroup(companyId, name);
 	}
 
-	/**
-	 * Returns the user group with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the user group's external reference code
-	 * @return the matching user group, or <code>null</code> if a matching user group could not be found
-	 */
 	@Override
 	public UserGroup fetchUserGroupByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
+		String externalReferenceCode, long companyId) {
 
 		return _userGroupLocalService.fetchUserGroupByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchUserGroupByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public UserGroup fetchUserGroupByReferenceCode(
-		long companyId, String externalReferenceCode) {
-
-		return _userGroupLocalService.fetchUserGroupByReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -612,21 +620,13 @@ public class UserGroupLocalServiceWrapper
 		return _userGroupLocalService.getUserGroup(companyId, name);
 	}
 
-	/**
-	 * Returns the user group with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the user group's external reference code
-	 * @return the matching user group
-	 * @throws PortalException if a matching user group could not be found
-	 */
 	@Override
 	public UserGroup getUserGroupByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _userGroupLocalService.getUserGroupByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -678,6 +678,16 @@ public class UserGroupLocalServiceWrapper
 
 		return _userGroupLocalService.getUserGroups(
 			companyId, name, start, end);
+	}
+
+	@Override
+	public java.util.List<UserGroup> getUserGroups(
+		long companyId, String name, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<UserGroup>
+			orderByComparator) {
+
+		return _userGroupLocalService.getUserGroups(
+			companyId, name, start, end, orderByComparator);
 	}
 
 	/**
@@ -1048,9 +1058,19 @@ public class UserGroupLocalServiceWrapper
 		_userGroupLocalService.unsetTeamUserGroups(teamId, userGroupIds);
 	}
 
+	@Override
+	public UserGroup updateExternalReferenceCode(
+			UserGroup userGroup, String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _userGroupLocalService.updateExternalReferenceCode(
+			userGroup, externalReferenceCode);
+	}
+
 	/**
 	 * Updates the user group.
 	 *
+	 * @param externalReferenceCode the user group's external reference code
 	 * @param companyId the primary key of the user group's company
 	 * @param userGroupId the primary key of the user group
 	 * @param name the user group's name
@@ -1062,12 +1082,13 @@ public class UserGroupLocalServiceWrapper
 	 */
 	@Override
 	public UserGroup updateUserGroup(
-			long companyId, long userGroupId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long companyId, long userGroupId,
+			String name, String description, ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _userGroupLocalService.updateUserGroup(
-			companyId, userGroupId, name, description, serviceContext);
+			externalReferenceCode, companyId, userGroupId, name, description,
+			serviceContext);
 	}
 
 	/**
@@ -1083,6 +1104,11 @@ public class UserGroupLocalServiceWrapper
 	@Override
 	public UserGroup updateUserGroup(UserGroup userGroup) {
 		return _userGroupLocalService.updateUserGroup(userGroup);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _userGroupLocalService.getBasePersistence();
 	}
 
 	@Override

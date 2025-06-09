@@ -1,4 +1,4 @@
-@component-name = "portal-user-management-and-portal-configuration"
+@component-name = "portal-commerce"
 definition {
 
 	property portal.release = "true";
@@ -10,11 +10,11 @@ definition {
 	}
 
 	tearDown {
-		Page.tearDownCP();
+		PagesAdmin.tearDownCP();
 	}
 
 	@description = "This test asserts that apps in App Management do not display in non default instances"
-	@priority = "4"
+	@priority = 3
 	test AppManagementAppsAreNotInDefaultInstances {
 		PortalInstances.openVirtualInstancesAdmin();
 
@@ -24,7 +24,7 @@ definition {
 			webId = "www.able.com");
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "test@www.able.com");
 
@@ -34,55 +34,54 @@ definition {
 			Portlet.viewNoPortletsPresentCP(
 				category = "System",
 				panel = "Control Panel",
-				portlet = "${portlet}");
+				portlet = ${portlet});
 		}
 
 		for (var portlet : list "Purchased,Store") {
 			Portlet.viewNoPortletsPresentCP(
 				category = "Marketplace",
 				panel = "Control Panel",
-				portlet = "${portlet}");
+				portlet = ${portlet});
 		}
 	}
 
-	@priority = "3"
+	@priority = 3
 	test AppManagerFilterAndOrder {
-		property test.name.skip.portal.instance = "AppManagement#AppManagerFilterAndOrder";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		ApplicationsMenu.gotoPortlet(
 			category = "System",
 			panel = "Control Panel",
 			portlet = "App Manager");
 
-		ManagementBar.setFilterAndOrder(orderBy = "Title");
+		AssertTextEquals.assertPartialText(
+			key_rowEntry = "Independent",
+			locator1 = "ContentRow#ENTRY_CONTENT_PARTIAL_TEXt",
+			value1 = "Independent");
+
+		ManagementBar.setFilterAndOrder(filterBy = "Installed");
+
+		AssertTextEquals(
+			locator1 = "Message#EMPTY_INFO",
+			value1 = "No apps were found.");
+
+		Click.clickNoMouseOver(locator1 = "ManagementBar#ORDER_ICON_GENERIC");
+
+		ManagementBar.setFilterAndOrder(filterBy = "Active");
 
 		AssertTextEquals.assertPartialText(
 			key_rowEntry = "Independent",
 			locator1 = "ContentRow#ENTRY_CONTENT_PARTIAL_TEXt",
 			value1 = "Independent");
 
-		ManagementBar.toggleViewOrder(order = "up");
-
-		ManagementBar.setFilterAndOrder(filterBy = "Communication");
-
-		AssertTextEquals.assertPartialText(
-			key_rowEntry = "Wiki",
-			locator1 = "ContentRow#ENTRY_CONTENT_PARTIAL_TEXt",
-			value1 = "Wiki");
-
-		ManagementBar.toggleViewOrder(order = "down");
-
-		ManagementBar.setFilterAndOrder(filterBy = "Utility");
-
-		AssertTextEquals.assertPartialText(
-			key_rowEntry = "Account",
-			locator1 = "ContentRow#ENTRY_CONTENT_PARTIAL_TEXt",
-			value1 = "Account");
+		Click.clickNoMouseOver(locator1 = "ManagementBar#ORDER_ICON_GENERIC");
 	}
 
-	@priority = "3"
+	@priority = 3
 	test AppManagerLocalization {
-		property test.name.skip.portal.instance = "AppManagement#AppManagerLocalization";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "Localization",
@@ -105,41 +104,38 @@ definition {
 
 	@description = "This is a test for LPS-102506."
 	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test AppsCanBeActivatedAfterUninstalling {
 
 		// TODO LPS-102506 Unable to activate an app (lpkg) after uninstalling it via the app manager, waiting for fix
 
 	}
 
-	@priority = "4"
+	@priority = 3
 	test AppShouldNotBeNestedWithinItself {
-		property test.name.skip.portal.instance = "AppManagement#AppShouldNotBeNestedWithinItself";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		var key_appName = "Independent Modules";
 
 		AssertClick(
-			locator1 = "AppManager#APP_NAME",
-			value1 = "Independent Modules");
+			key_text = ${key_appName},
+			locator1 = "Link#ANY",
+			value1 = ${key_appName});
 
 		AssertElementNotPresent(locator1 = "AppManager#APP_NAME");
 	}
 
 	@description = "This ensures that the Adaptive Media app in the app manager can be deactivated and reactivated."
-	@priority = "5"
+	@priority = 3
 	test CanDeactivateAndActivateAdaptiveMedia {
-		property test.name.skip.portal.instance = "AppManagement#CanDeactivateAndActivateAdaptiveMedia";
-		property testray.main.component.name = "Adaptive Media";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.viewApp(
 			appName = "Adaptive Media",
@@ -163,47 +159,49 @@ definition {
 	}
 
 	@description = "This ensures that the Asset Libraries app in the app manager can be deactivated and reactivated."
-	@priority = "5"
+	@priority = 3
 	test CanDeactivateAndActivateAssetLibraries {
-		property test.name.skip.portal.instance = "AppManagement#CanDeactivateAndActivateAssetLibraries";
-		property testray.main.component.name = "Depot";
+		property portal.acceptance = "quarantine";
+		property portal.release = "quarantine";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.viewApp(
-			appName = "Asset Libraries",
-			appStatus = "Active");
+			appName = "Liferay Depot Web",
+			appStatus = "Active",
+			searchTerm = "com.liferay.depot.web");
 
-		AppManager.deactivateApp(appName = "Asset Libraries");
+		AppManager.deactivateApp(appName = "com.liferay.depot.web");
 
 		AssertConsoleTextNotPresent(value1 = "java.lang.NullPointerException");
 
 		AppManager.viewApp(
-			appName = "Asset Libraries",
-			appStatus = "Resolved");
+			appName = "Liferay Depot Web",
+			appStatus = "Resolved",
+			searchTerm = "com.liferay.depot.web");
 
-		AppManager.activateApp(appName = "Asset Libraries");
+		AppManager.activateApp(appName = "com.liferay.depot.web");
 
 		AssertConsoleTextNotPresent(value1 = "java.lang.NullPointerException");
 
 		AppManager.viewApp(
-			appName = "Asset Libraries",
-			appStatus = "Active");
+			appName = "Liferay Depot Web",
+			appStatus = "Active",
+			searchTerm = "com.liferay.depot.web");
 	}
 
 	@description = "This ensures that the Blogs app in the app manager can be deactivated and reactivated."
-	@priority = "5"
+	@priority = 3
 	test CanDeactivateAndActivateBlogs {
-		property test.name.skip.portal.instance = "AppManagement#CanDeactivateAndActivateBlogs";
-		property testray.main.component.name = "Blogs";
+		property app.server.types = "jboss,tomcat,weblogic,wildfly";
+		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.viewApp(
 			appName = "Blogs",
@@ -227,15 +225,13 @@ definition {
 	}
 
 	@description = "This ensures that the Comment app in the app manager can be deactivated and reactivated."
-	@priority = "5"
+	@priority = 3
 	test CanDeactivateAndActivateComment {
-		property test.name.skip.portal.instance = "AppManagement#CanDeactivateAndActivateComment";
-		property testray.main.component.name = "Content Page Review";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.viewApp(
 			appName = "Comment",
@@ -259,47 +255,47 @@ definition {
 	}
 
 	@description = "This ensures that the Document Library Opener app in the app manager can be deactivated and reactivated."
-	@priority = "5"
+	@priority = 3
 	test CanDeactivateAndActivateDocumentLibraryOpener {
-		property test.name.skip.portal.instance = "AppManagement#CanDeactivateAndActivateDocumentLibraryOpener";
-		property testray.main.component.name = "Document Management";
+		property portal.acceptance = "quarantine";
+		property portal.release = "quarantine";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.viewApp(
-			appName = "Document Library Opener",
-			appStatus = "Active");
+			appName = "Liferay Document Library Opener Service",
+			appStatus = "Active",
+			searchTerm = "com.liferay.document.library.opener.service");
 
-		AppManager.deactivateApp(appName = "Document Library Opener");
+		AppManager.deactivateApp(appName = "Liferay Document Library Opener Service");
 
 		AssertConsoleTextNotPresent(value1 = "java.lang.NullPointerException");
 
 		AppManager.viewApp(
-			appName = "Document Library Opener",
-			appStatus = "Resolved");
+			appName = "Liferay Document Library Opener Service",
+			appStatus = "Resolved",
+			searchTerm = "com.liferay.document.library.opener.service");
 
-		AppManager.activateApp(appName = "Document Library Opener");
+		AppManager.activateApp(appName = "Liferay Document Library Opener Service");
 
 		AssertConsoleTextNotPresent(value1 = "java.lang.NullPointerException");
 
 		AppManager.viewApp(
-			appName = "Document Library Opener",
-			appStatus = "Active");
+			appName = "Liferay Document Library Opener Service",
+			appStatus = "Active",
+			searchTerm = "com.liferay.document.library.opener.service");
 	}
 
 	@description = "This ensures that the Knowledge Base app in the app manager can be deactivated and reactivated."
-	@priority = "5"
+	@priority = 3
 	test CanDeactivateAndActivateKnowledgeBase {
-		property test.name.skip.portal.instance = "AppManagement#CanDeactivateAndActivateKnowledgeBase";
-		property testray.main.component.name = "Knowledge Base";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.viewApp(
 			appName = "Knowledge Base",
@@ -323,15 +319,13 @@ definition {
 	}
 
 	@description = "This ensures that the Message Boards app in the app manager can be deactivated and reactivated."
-	@priority = "5"
+	@priority = 3
 	test CanDeactivateAndActivateMessageBoards {
-		property test.name.skip.portal.instance = "AppManagement#CanDeactivateAndActivateMessageBoards";
-		property testray.main.component.name = "Message Boards";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.viewApp(
 			appName = "Message Boards",
@@ -355,15 +349,13 @@ definition {
 	}
 
 	@description = "This ensures that the Notifications app in the app manager can be deactivated and reactivated."
-	@priority = "5"
+	@priority = 3
 	test CanDeactivateAndActivateNotifications {
-		property test.name.skip.portal.instance = "AppManagement#CanDeactivateAndActivateNotifications";
-		property testray.main.component.name = "Notifications";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.viewApp(
 			appName = "Notifications",
@@ -387,15 +379,13 @@ definition {
 	}
 
 	@description = "This ensures that the Questions app in the app manager can be deactivated and reactivated."
-	@priority = "5"
+	@priority = 3
 	test CanDeactivateAndActivateQuestions {
-		property test.name.skip.portal.instance = "AppManagement#CanDeactivateAndActivateQuestions";
-		property testray.main.component.name = "Questions";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.viewApp(
 			appName = "Questions",
@@ -419,15 +409,13 @@ definition {
 	}
 
 	@description = "This ensures that the Ratings app in the app manager can be deactivated and reactivated."
-	@priority = "5"
+	@priority = 3
 	test CanDeactivateAndActivateRatings {
-		property test.name.skip.portal.instance = "AppManagement#CanDeactivateAndActivateRatings";
-		property testray.main.component.name = "Ratings";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.viewApp(
 			appName = "Ratings",
@@ -451,15 +439,13 @@ definition {
 	}
 
 	@description = "This ensures that the Sharing app in the app manager can be deactivated and reactivated."
-	@priority = "5"
+	@priority = 3
 	test CanDeactivateAndActivateSharing {
-		property test.name.skip.portal.instance = "AppManagement#CanDeactivateAndActivateSharing";
-		property testray.main.component.name = "Asset Sharing";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.viewApp(
 			appName = "Sharing",
@@ -483,15 +469,13 @@ definition {
 	}
 
 	@description = "This ensures that the Translation app in the app manager can be deactivated and reactivated."
-	@priority = "5"
+	@priority = 3
 	test CanDeactivateAndActivateTranslation {
-		property test.name.skip.portal.instance = "AppManagement#CanDeactivateAndActivateTranslation";
-		property testray.main.component.name = "Translations Management";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.viewApp(
 			appName = "Translation",
@@ -515,15 +499,13 @@ definition {
 	}
 
 	@description = "This ensures that the Wiki app in the app manager can be deactivated and reactivated."
-	@priority = "5"
+	@priority = 3
 	test CanDeactivateAndActivateWiki {
-		property test.name.skip.portal.instance = "AppManagement#CanDeactivateAndActivateWiki";
-		property testray.main.component.name = "Wiki";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.viewApp(
 			appName = "Wiki",
@@ -546,33 +528,166 @@ definition {
 			appStatus = "Active");
 	}
 
-	@priority = "5"
-	test InstallViaUploadIsSuccessful {
-		property test.name.skip.portal.instance = "AppManagement#InstallViaUploadIsSuccessful";
+	@description = "This test asserts that user can filter app by Category in marketplace store."
+	@ignore = "true"
+	@priority = 3
+	test CanFilterMarketplaceStoreAppsByCategory {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		task ("Given user login marketplace") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Marketplace",
+				panel = "Control Panel",
+				portlet = "Store");
+
+			AppManager.loginMarketplaceStore();
+
+			Navigator.openURL();
+		}
+
+		task ("When user filter by Category with value Page Layouts") {
+
+			// Navigate the store again for filter Category failure issue
+
+			ApplicationsMenu.gotoPortlet(
+				category = "Marketplace",
+				panel = "Control Panel",
+				portlet = "Store");
+
+			WaitForPageLoad();
+
+			AppManager.filtersApp(
+				filterBy = "   Page Layouts",
+				filterName = "Category");
+		}
+
+		task ("Then the results filtered by Page Layouts display properly") {
+			AssertElementPresent(
+				key_appCategory = "Page Layouts",
+				locator1 = "AppManager#APP_CATEGORY");
+
+			AssertElementNotPresent(
+				key_appCategory = "Themes / Site Templates",
+				locator1 = "AppManager#APP_CATEGORY");
+		}
+	}
+
+	@description = "This test asserts that user can filter app by liferay version in marketplace store."
+	@ignore = "true"
+	@priority = 3
+	test CanFilterMarketplaceStoreAppsByLiferayVersion {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given user login marketplace") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Marketplace",
+				panel = "Control Panel",
+				portlet = "Store");
+
+			AppManager.loginMarketplaceStore();
+
+			Navigator.openURL();
+		}
+
+		task ("When user filter by Liferay Version with value Liferay Portal 6.1 CE GA3") {
+
+			// Navigate the store again for filter Liferay Version failure issue
+
+			ApplicationsMenu.gotoPortlet(
+				category = "Marketplace",
+				panel = "Control Panel",
+				portlet = "Store");
+
+			WaitForPageLoad();
+
+			AppManager.filtersApp(
+				filterBy = "Liferay Portal 6.1 CE GA3",
+				filterName = "Liferay Version");
+		}
+
+		task ("Then the results filtered by Liferay Version display properly") {
+			AssertElementPresent(
+				key_appVersion = "Liferay Portal 6.1 CE GA3",
+				locator1 = "AppManager#APP_FILTER_RESULT_LABEL");
+
+			AssertElementNotPresent(
+				key_searchName = "EE Only",
+				locator1 = "AppManager#APP_TITLE_TYPE");
+		}
+	}
+
+	@description = "This test asserts that user can filter app by Price in marketplace store."
+	@ignore = "true"
+	@priority = 3
+	test CanFilterMarketplaceStoreAppsByPrice {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given user login marketplace") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Marketplace",
+				panel = "Control Panel",
+				portlet = "Store");
+
+			AppManager.loginMarketplaceStore();
+
+			Navigator.openURL();
+		}
+
+		task ("When user filter by Price with value Free") {
+
+			// Navigate the store again for filter price failure issue
+
+			ApplicationsMenu.gotoPortlet(
+				category = "Marketplace",
+				panel = "Control Panel",
+				portlet = "Store");
+
+			WaitForPageLoad();
+
+			AppManager.filtersApp(
+				filterBy = "Free",
+				filterName = "Price");
+		}
+
+		task ("Then the results filtered by Free display properly") {
+			AssertElementPresent(
+				key_searchName = "Free",
+				locator1 = "AppManager#APP_TITLE_TYPE");
+
+			AssertElementNotPresent(
+				key_searchName = "EE Only",
+				locator1 = "AppManager#APP_TITLE_TYPE");
+		}
+	}
+
+	@priority = 3
+	test InstallViaUploadIsSuccessful {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		AppManager.openAppManagerAdmin();
 
 		var appName = "test-app-portlet";
 
 		AppManager.uploadApp(
-			appName = "${appName}",
+			appName = ${appName},
 			warFileName = "${appName}-7.2.0.war");
 
 		AppManager.viewApp(
-			appName = "${appName}",
+			appName = ${appName},
 			appStatus = "Active");
 	}
 
 	@description = "This test attempts to install an app by uploading a file that is invalid. Error message is asserted."
-	@priority = "3"
+	@priority = 3
 	test InvalidFileShouldNotBeUploaded {
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		AppManager.openAppManagerAdmin();
 
 		var key_appName = "title.zip";
 
@@ -584,9 +699,7 @@ definition {
 
 		AssertElementPresent(locator1 = "TextInput#FILE");
 
-		UploadFileWithCustomPath.uploadArchiveFile(
-			fileName = "title.zip",
-			filePath = "enduser/wem/fragment");
+		UploadDependencyFile.uploadArchiveFile(fileName = "title.zip");
 
 		Button.clickInstall();
 
@@ -595,51 +708,148 @@ definition {
 			value1 = "Error:Please upload a file with a valid extension (JAR, LPKG, or WAR File).");
 	}
 
-	@priority = "5"
+	@description = "This test check search apps in marketplace store and check sign in and sign out."
+	@ignore = "true"
+	@priority = 3
+	test SearchMarketplaceStore {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given user login marketplace store assert user login in Purchased page") {
+			Navigator.openStoreURL();
+
+			AppManager.loginMarketplaceStore();
+
+			Navigator.openURL();
+
+			ApplicationsMenu.gotoPortlet(
+				category = "Marketplace",
+				panel = "Control Panel",
+				portlet = "Purchased");
+
+			AssertElementPresent(
+				locator1 = "UserBar#USER_SIGN_OUT",
+				value1 = "Sign Out");
+		}
+
+		task ("When go to marketplace store and search apps and purchase") {
+			Navigator.openStoreURL();
+
+			WaitForPageLoad();
+
+			AppManager.searchApp(searchName = "No Robots");
+		}
+
+		task ("Then assert logout from marketplace store page also logout in Purchase page") {
+			Navigator.openURL();
+
+			Navigator.openStoreURL();
+
+			ScrollBy(value1 = "0, 2000");
+
+			AssertClick(
+				locator1 = "UserBar#USER_SIGN_OUT",
+				value1 = "Sign Out");
+
+			AppManager.viewLogoutMarketplace();
+
+			ApplicationsMenu.gotoPortlet(
+				category = "Marketplace",
+				panel = "Control Panel",
+				portlet = "Purchased");
+
+			AppManager.viewLogoutMarketplace();
+		}
+	}
+
+	@priority = 3
 	test UninstallAppIsSuccessful {
-		property test.name.skip.portal.instance = "AppManagement#UninstallAppIsSuccessful";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		var appName = "test-app-portlet";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "App Manager");
+		AppManager.openAppManagerAdmin();
 
 		AppManager.uploadApp(
-			appName = "${appName}",
+			appName = ${appName},
 			warFileName = "${appName}-7.2.0.war");
 
 		AppManager.viewApp(
-			appName = "${appName}",
+			appName = ${appName},
 			appStatus = "Active");
 
-		AppManager.uninstallApp(appName = "${appName}");
+		AppManager.uninstallApp(appName = ${appName});
 
-		Search.searchCP(searchTerm = "${appName}");
+		WaitForConsoleTextPresent(value1 = "STOPPED ${appName}");
+
+		Search.searchCP(searchTerm = ${appName});
 
 		AssertElementNotPresent(
-			key_appName = "${appName}",
+			key_appName = ${appName},
 			locator1 = "AppManager#APP_NAME");
-
-		AssertConsoleTextPresent(value1 = "STOPPED ${appName}");
 	}
 
 	@description = "This is a use case for LPS-99031."
-	@priority = "5"
+	@priority = 3
 	test ViewLicenseManager {
-		property test.name.skip.portal.instance = "AppManagement#ViewLicenseManager";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		ApplicationsMenu.gotoPortlet(
 			category = "Marketplace",
 			panel = "Control Panel",
 			portlet = "License Manager");
 
-		Pause(locator1 = "3000");
-
 		LicenseManager.viewDefaultCP(tableTexts = "Server Info,Host Name,IP Addresses,Licenses Registered,Owner,Start Date");
 
 		AssertElementNotPresent(locator1 = "Portlet#HEADER_DUPLICATE");
+	}
+
+	@description = "This test view purchased apps in marketplace purchased page."
+	@ignore = "true"
+	@priority = 3
+	test ViewPurchasedApp {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given login marketplace store") {
+			Navigator.openStoreURL();
+
+			AppManager.loginMarketplaceStore();
+		}
+
+		task ("When purchase the Control Panel Documentation app in marketplace store") {
+			Navigator.openStoreURL();
+
+			WaitForPageLoad();
+
+			AppManager.searchApp(searchName = "Control Panel Documentation");
+
+			WaitForSPARefresh();
+
+			AppManager.purchaseApp(
+				searchName = "Control Panel Documentation",
+				type = "Free");
+		}
+
+		task ("Then view the Control Panel Documentation app displays in Purchased portlet") {
+			WaitForElementPresent(
+				key_text = "See Purchased",
+				locator1 = "Button#ANY");
+
+			Click(
+				key_text = "See Purchased",
+				locator1 = "Button#ANY");
+
+			WaitForPageLoad();
+
+			SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MARKETPLACE_PURCHASED_PORTLET_IFRAME");
+
+			AssertElementPresent(
+				key_searchName = "Control Panel Documentation",
+				locator1 = "AppManager#APP_TITLE_TYPE");
+		}
 	}
 
 }

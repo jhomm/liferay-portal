@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.reports.web.internal.data.provider;
@@ -21,7 +12,9 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.net.HttpURLConnection;
@@ -92,6 +85,10 @@ public class LayoutReportsDataProvider {
 		LayoutReportsIssue.Detail.Key key,
 		JSONObject lighthouseAuditJSONObject) {
 
+		if (lighthouseAuditJSONObject == null) {
+			return null;
+		}
+
 		return new LayoutReportsIssue.Detail(key, lighthouseAuditJSONObject);
 	}
 
@@ -109,19 +106,19 @@ public class LayoutReportsDataProvider {
 			"https://content-pagespeedonline.googleapis.com/pagespeedonline" +
 				"/v5/runPagespeed";
 
-		googlePageSpeedURL = HttpUtil.addParameter(
+		googlePageSpeedURL = HttpComponentsUtil.addParameter(
 			googlePageSpeedURL, "category", "ACCESSIBILITY");
-		googlePageSpeedURL = HttpUtil.addParameter(
+		googlePageSpeedURL = HttpComponentsUtil.addParameter(
 			googlePageSpeedURL, "category", "BEST_PRACTICES");
-		googlePageSpeedURL = HttpUtil.addParameter(
+		googlePageSpeedURL = HttpComponentsUtil.addParameter(
 			googlePageSpeedURL, "category", "SEO");
-		googlePageSpeedURL = HttpUtil.addParameter(
+		googlePageSpeedURL = HttpComponentsUtil.addParameter(
 			googlePageSpeedURL, "key", _apiKey);
-		googlePageSpeedURL = HttpUtil.addParameter(
+		googlePageSpeedURL = HttpComponentsUtil.addParameter(
 			googlePageSpeedURL, "locale", LanguageUtil.getLanguageId(locale));
-		googlePageSpeedURL = HttpUtil.addParameter(
+		googlePageSpeedURL = HttpComponentsUtil.addParameter(
 			googlePageSpeedURL, "strategy", _strategy);
-		googlePageSpeedURL = HttpUtil.addParameter(
+		googlePageSpeedURL = HttpComponentsUtil.addParameter(
 			googlePageSpeedURL, "url", url);
 
 		options.setLocation(googlePageSpeedURL);
@@ -151,54 +148,61 @@ public class LayoutReportsDataProvider {
 
 		return Arrays.asList(
 			new LayoutReportsIssue(
-				Arrays.asList(
-					_getDetail(
-						LayoutReportsIssue.Detail.Key.LOW_CONTRAST_RATIO,
-						auditsJSONObject.getJSONObject("color-contrast")),
-					_getDetail(
-						LayoutReportsIssue.Detail.Key.
-							MISSING_IMG_ALT_ATTRIBUTES,
-						auditsJSONObject.getJSONObject("image-alt")),
-					_getDetail(
-						LayoutReportsIssue.Detail.Key.
-							MISSING_INPUT_ALT_ATTRIBUTES,
-						auditsJSONObject.getJSONObject("input-image-alt"))),
+				ListUtil.filter(
+					Arrays.asList(
+						_getDetail(
+							LayoutReportsIssue.Detail.Key.LOW_CONTRAST_RATIO,
+							auditsJSONObject.getJSONObject("color-contrast")),
+						_getDetail(
+							LayoutReportsIssue.Detail.Key.
+								MISSING_IMG_ALT_ATTRIBUTES,
+							auditsJSONObject.getJSONObject("image-alt")),
+						_getDetail(
+							LayoutReportsIssue.Detail.Key.
+								MISSING_INPUT_ALT_ATTRIBUTES,
+							auditsJSONObject.getJSONObject("input-image-alt"))),
+					detail -> detail != null),
 				LayoutReportsIssue.Key.ACCESSIBILITY),
 			new LayoutReportsIssue(
-				Arrays.asList(
-					_getDetail(
-						LayoutReportsIssue.Detail.Key.INVALID_CANONICAL_URL,
-						auditsJSONObject.getJSONObject("canonical")),
-					_getDetail(
-						LayoutReportsIssue.Detail.Key.
-							NOT_ALL_LINKS_ARE_CRAWLABLE,
-						auditsJSONObject.getJSONObject("crawlable-anchors")),
-					_getDetail(
-						LayoutReportsIssue.Detail.Key.
-							PAGE_BLOCKED_FROM_INDEXING,
-						auditsJSONObject.getJSONObject("is-crawlable")),
-					_getDetail(
-						LayoutReportsIssue.Detail.Key.ILLEGIBLE_FONT_SIZES,
-						auditsJSONObject.getJSONObject("font-size")),
-					_getDetail(
-						LayoutReportsIssue.Detail.Key.INVALID_HREFLANG,
-						auditsJSONObject.getJSONObject("hreflang")),
-					_getDetail(
-						LayoutReportsIssue.Detail.Key.
-							INCORRECT_IMAGE_ASPECT_RATIOS,
-						auditsJSONObject.getJSONObject("image-aspect-ratio")),
-					_getDetail(
-						LayoutReportsIssue.Detail.Key.LINK_TEXTS,
-						auditsJSONObject.getJSONObject("link-text")),
-					_getDetail(
-						LayoutReportsIssue.Detail.Key.MISSING_META_DESCRIPTION,
-						auditsJSONObject.getJSONObject("meta-description")),
-					_getDetail(
-						LayoutReportsIssue.Detail.Key.SMALL_TAP_TARGETS,
-						auditsJSONObject.getJSONObject("tap-targets")),
-					_getDetail(
-						LayoutReportsIssue.Detail.Key.MISSING_TITLE_ELEMENT,
-						auditsJSONObject.getJSONObject("document-title"))),
+				ListUtil.filter(
+					Arrays.asList(
+						_getDetail(
+							LayoutReportsIssue.Detail.Key.INVALID_CANONICAL_URL,
+							auditsJSONObject.getJSONObject("canonical")),
+						_getDetail(
+							LayoutReportsIssue.Detail.Key.
+								NOT_ALL_LINKS_ARE_CRAWLABLE,
+							auditsJSONObject.getJSONObject(
+								"crawlable-anchors")),
+						_getDetail(
+							LayoutReportsIssue.Detail.Key.
+								PAGE_BLOCKED_FROM_INDEXING,
+							auditsJSONObject.getJSONObject("is-crawlable")),
+						_getDetail(
+							LayoutReportsIssue.Detail.Key.ILLEGIBLE_FONT_SIZES,
+							auditsJSONObject.getJSONObject("font-size")),
+						_getDetail(
+							LayoutReportsIssue.Detail.Key.INVALID_HREFLANG,
+							auditsJSONObject.getJSONObject("hreflang")),
+						_getDetail(
+							LayoutReportsIssue.Detail.Key.
+								INCORRECT_IMAGE_ASPECT_RATIOS,
+							auditsJSONObject.getJSONObject(
+								"image-aspect-ratio")),
+						_getDetail(
+							LayoutReportsIssue.Detail.Key.LINK_TEXTS,
+							auditsJSONObject.getJSONObject("link-text")),
+						_getDetail(
+							LayoutReportsIssue.Detail.Key.
+								MISSING_META_DESCRIPTION,
+							auditsJSONObject.getJSONObject("meta-description")),
+						_getDetail(
+							LayoutReportsIssue.Detail.Key.SMALL_TAP_TARGETS,
+							auditsJSONObject.getJSONObject("tap-targets")),
+						_getDetail(
+							LayoutReportsIssue.Detail.Key.MISSING_TITLE_ELEMENT,
+							auditsJSONObject.getJSONObject("document-title"))),
+					detail -> detail != null),
 				LayoutReportsIssue.Key.SEO));
 	}
 

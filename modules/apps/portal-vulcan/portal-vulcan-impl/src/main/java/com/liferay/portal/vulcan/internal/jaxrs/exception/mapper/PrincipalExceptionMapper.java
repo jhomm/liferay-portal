@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.internal.jaxrs.exception.mapper;
@@ -19,10 +10,13 @@ import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.BaseExceptionMapper;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.Problem;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Providers;
 
 /**
  * Converts any {@code PrincipalException} to a {@code 404} error in case it is
@@ -35,19 +29,30 @@ public class PrincipalExceptionMapper
 	extends BaseExceptionMapper<PrincipalException> {
 
 	@Override
-	protected Problem getProblem(PrincipalException principalException) {
-		Response.Status status = Response.Status.FORBIDDEN;
-
+	public Response toResponse(PrincipalException principalException) {
 		String method = _httpServletRequest.getMethod();
 
 		if (method.equals(HttpMethods.GET)) {
-			status = Response.Status.NOT_FOUND;
+			ExceptionMapper<NotFoundException> exceptionMapper =
+				_providers.getExceptionMapper(NotFoundException.class);
+
+			return exceptionMapper.toResponse(
+				new NotFoundException(principalException));
 		}
 
-		return new Problem(status, principalException.getMessage());
+		return super.toResponse(principalException);
+	}
+
+	@Override
+	protected Problem getProblem(PrincipalException principalException) {
+		return new Problem(
+			Response.Status.FORBIDDEN, principalException.getMessage());
 	}
 
 	@Context
 	private HttpServletRequest _httpServletRequest;
+
+	@Context
+	private Providers _providers;
 
 }

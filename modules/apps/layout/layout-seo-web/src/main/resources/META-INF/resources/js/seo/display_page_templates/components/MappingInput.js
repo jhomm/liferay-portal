@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayForm, {ClayInput} from '@clayui/form';
@@ -24,7 +15,7 @@ const fieldTemplate = (key, label) => ` $\{${key}:${sanitizeLabel(label)}} `;
 
 function MappingInput({
 	component,
-	fieldType,
+	fieldTypes,
 	fields,
 	helpMessage,
 	label,
@@ -34,7 +25,7 @@ function MappingInput({
 }) {
 	const [source, setSource] = useState(selectedSource);
 	const [value, setValue] = useState(initialValue || '');
-	const inputEl = useRef(null);
+	const inputElRef = useRef(null);
 	const isMounted = useIsMounted();
 
 	const isActive = !!value.trim();
@@ -49,8 +40,8 @@ function MappingInput({
 	};
 
 	const addNewVar = ({key, label}) => {
-		const selectionStart = inputEl.current.selectionStart;
-		const selectionEnd = inputEl.current.selectionEnd;
+		const selectionStart = inputElRef.current.selectionStart;
+		const selectionEnd = inputElRef.current.selectionEnd;
 		const fieldVariable = fieldTemplate(key, label);
 
 		setValue((value) =>
@@ -61,9 +52,10 @@ function MappingInput({
 
 		setTimeout(() => {
 			if (isMounted()) {
-				inputEl.current.selectionStart = inputEl.current.selectionEnd =
-					selectionStart + fieldVariable.length;
-				inputEl.current.focus();
+				inputElRef.current.selectionStart =
+					inputElRef.current.selectionEnd =
+						selectionStart + fieldVariable.length;
+				inputElRef.current.focus();
 			}
 		}, 100);
 	};
@@ -73,6 +65,7 @@ function MappingInput({
 			<label className="control-label" htmlFor={name}>
 				{label}
 			</label>
+
 			<ClayInput.Group>
 				<ClayInput.GroupItem>
 					<ClayInput
@@ -82,14 +75,15 @@ function MappingInput({
 						onChange={(event) => {
 							setValue(event.target.value);
 						}}
-						ref={inputEl}
+						ref={inputElRef}
 						value={value}
 					/>
 				</ClayInput.GroupItem>
+
 				<ClayInput.GroupItem shrink>
 					<MappingPanel
 						clearSelectionOnClose
-						fieldType={fieldType}
+						fieldTypes={fieldTypes}
 						fields={fields}
 						isActive={isActive}
 						name={name}
@@ -101,6 +95,7 @@ function MappingInput({
 					/>
 				</ClayInput.GroupItem>
 			</ClayInput.Group>
+
 			{helpMessage && <ClayForm.Text>{helpMessage}</ClayForm.Text>}
 		</ClayForm.Group>
 	);

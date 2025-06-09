@@ -1,22 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.petra.string;
 
+import com.liferay.portal.kernel.test.randomizerbumpers.RandomizerBumper;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
+import java.io.ByteArrayInputStream;
+
+import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,8 +44,28 @@ public class StringUtilTest {
 
 				@Override
 				public void appendAssertClasses(List<Class<?>> assertClasses) {
+					assertClasses.clear();
+
 					assertClasses.add(CharPool.class);
 					assertClasses.add(StringPool.class);
+				}
+
+				@Override
+				public List<Method> getAssertMethods()
+					throws ReflectiveOperationException {
+
+					List<Method> assertMethods = new ArrayList<>(
+						Arrays.asList(StringUtil.class.getDeclaredMethods()));
+
+					assertMethods.removeAll(
+						Arrays.asList(
+							StringUtil.class.getDeclaredMethod(
+								"read", ClassLoader.class, String.class),
+							StringUtil.class.getDeclaredMethod(
+								"read", ClassLoader.class, String.class,
+								boolean.class)));
+
+					return assertMethods;
 				}
 
 			},
@@ -59,6 +76,38 @@ public class StringUtilTest {
 		new CharPool();
 		new StringPool();
 		new StringUtil();
+	}
+
+	@Test
+	public void testEqualsIgnoreCase() {
+
+		// char
+
+		Assert.assertFalse(StringUtil.equalsIgnoreCase('!', 'a'));
+		Assert.assertFalse(StringUtil.equalsIgnoreCase('B', 'a'));
+		Assert.assertFalse(StringUtil.equalsIgnoreCase('a', '!'));
+		Assert.assertFalse(StringUtil.equalsIgnoreCase('a', '{'));
+		Assert.assertFalse(StringUtil.equalsIgnoreCase('a', 'ⴀ'));
+		Assert.assertFalse(StringUtil.equalsIgnoreCase('{', 'a'));
+		Assert.assertTrue(StringUtil.equalsIgnoreCase('A', 'a'));
+		Assert.assertTrue(StringUtil.equalsIgnoreCase('a', 'A'));
+		Assert.assertTrue(StringUtil.equalsIgnoreCase('a', 'a'));
+		Assert.assertTrue(StringUtil.equalsIgnoreCase('ⴀ', 'Ⴀ'));
+		Assert.assertTrue(StringUtil.equalsIgnoreCase((char)305, 'i'));
+
+		// java.lang.String
+
+		Assert.assertFalse(StringUtil.equalsIgnoreCase("!", "A"));
+		Assert.assertFalse(
+			StringUtil.equalsIgnoreCase("HELLO WORLD", "HELLO WORLD1"));
+		Assert.assertFalse(StringUtil.equalsIgnoreCase("HELLO WORLD", null));
+		Assert.assertFalse(StringUtil.equalsIgnoreCase(null, "HELLO WORLD"));
+		Assert.assertTrue(
+			StringUtil.equalsIgnoreCase("Hello \n World", "hello \n worlD"));
+
+		String string = "HELLO WORLD";
+
+		Assert.assertTrue(StringUtil.equalsIgnoreCase(string, string));
 	}
 
 	@Test
@@ -205,6 +254,45 @@ public class StringUtilTest {
 			StringUtil.merge(
 				new HashSet<>(Arrays.asList("a", "b")), s -> s + "x",
 				StringPool.COMMA));
+	}
+
+	@Test
+	public void testRead() throws Exception {
+		Assert.assertEquals(
+			StringPool.BLANK,
+			StringUtil.read(new ByteArrayInputStream(new byte[0])));
+
+		String string = RandomTestUtil.randomString(
+			8193,
+			(RandomizerBumper<String>)randomValue ->
+				(randomValue.indexOf(CharPool.RETURN) == -1) &&
+				!Character.isWhitespace(randomValue.charAt(0)) &&
+				!Character.isWhitespace(randomValue.charAt(8192)));
+
+		Assert.assertEquals(
+			string,
+			StringUtil.read(new ByteArrayInputStream(string.getBytes())));
+	}
+
+	@Test
+	public void testReplace() {
+
+		// char
+
+		Assert.assertEquals(
+			"127_0_0_1", StringUtil.replace("127.0.0.1", '.', '_'));
+		Assert.assertNull(StringUtil.replace(null, '.', '_'));
+
+		// java.lang.String
+
+		Assert.assertEquals(
+			"hello world",
+			StringUtil.replace("hello world", StringPool.BLANK, "HELLO", 0));
+		Assert.assertEquals(
+			"hello world", StringUtil.replace("hello world", null, "HELLO", 0));
+		Assert.assertEquals(
+			"world", StringUtil.replace("hello world", "hello ", null, 0));
+		Assert.assertNull(StringUtil.replace(null, "hello", "HELLO", 0));
 	}
 
 	@Test

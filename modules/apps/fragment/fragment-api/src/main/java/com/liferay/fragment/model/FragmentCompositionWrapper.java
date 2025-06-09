@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.model;
@@ -48,6 +39,7 @@ public class FragmentCompositionWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("fragmentCompositionId", getFragmentCompositionId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -61,6 +53,7 @@ public class FragmentCompositionWrapper
 		attributes.put("description", getDescription());
 		attributes.put("data", getData());
 		attributes.put("previewFileEntryId", getPreviewFileEntryId());
+		attributes.put("marketplace", isMarketplace());
 		attributes.put("lastPublishDate", getLastPublishDate());
 		attributes.put("status", getStatus());
 		attributes.put("statusByUserId", getStatusByUserId());
@@ -88,6 +81,13 @@ public class FragmentCompositionWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long fragmentCompositionId = (Long)attributes.get(
@@ -169,6 +169,12 @@ public class FragmentCompositionWrapper
 
 		if (previewFileEntryId != null) {
 			setPreviewFileEntryId(previewFileEntryId);
+		}
+
+		Boolean marketplace = (Boolean)attributes.get("marketplace");
+
+		if (marketplace != null) {
+			setMarketplace(marketplace);
 		}
 
 		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
@@ -265,6 +271,16 @@ public class FragmentCompositionWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this fragment composition.
+	 *
+	 * @return the external reference code of this fragment composition
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the fragment collection ID of this fragment composition.
 	 *
 	 * @return the fragment collection ID of this fragment composition
@@ -324,6 +340,16 @@ public class FragmentCompositionWrapper
 	@Override
 	public Date getLastPublishDate() {
 		return model.getLastPublishDate();
+	}
+
+	/**
+	 * Returns the marketplace of this fragment composition.
+	 *
+	 * @return the marketplace of this fragment composition
+	 */
+	@Override
+	public boolean getMarketplace() {
+		return model.getMarketplace();
 	}
 
 	/**
@@ -527,6 +553,16 @@ public class FragmentCompositionWrapper
 	}
 
 	/**
+	 * Returns <code>true</code> if this fragment composition is marketplace.
+	 *
+	 * @return <code>true</code> if this fragment composition is marketplace; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isMarketplace() {
+		return model.isMarketplace();
+	}
+
+	/**
 	 * Returns <code>true</code> if this fragment composition is pending.
 	 *
 	 * @return <code>true</code> if this fragment composition is pending; <code>false</code> otherwise
@@ -610,6 +646,16 @@ public class FragmentCompositionWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this fragment composition.
+	 *
+	 * @param externalReferenceCode the external reference code of this fragment composition
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the fragment collection ID of this fragment composition.
 	 *
 	 * @param fragmentCollectionId the fragment collection ID of this fragment composition
@@ -667,6 +713,16 @@ public class FragmentCompositionWrapper
 	@Override
 	public void setLastPublishDate(Date lastPublishDate) {
 		model.setLastPublishDate(lastPublishDate);
+	}
+
+	/**
+	 * Sets whether this fragment composition is marketplace.
+	 *
+	 * @param marketplace the marketplace of this fragment composition
+	 */
+	@Override
+	public void setMarketplace(boolean marketplace) {
+		model.setMarketplace(marketplace);
 	}
 
 	/**
@@ -807,6 +863,11 @@ public class FragmentCompositionWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

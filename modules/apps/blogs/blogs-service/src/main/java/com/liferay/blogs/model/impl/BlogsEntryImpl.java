@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.model.impl;
@@ -18,6 +9,8 @@ import com.liferay.document.library.util.DLURLHelperUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -40,8 +33,11 @@ public class BlogsEntryImpl extends BlogsEntryBaseImpl {
 			return null;
 		}
 
-		FileEntry fileEntry = PortletFileRepositoryUtil.getPortletFileEntry(
-			coverImageFileEntryId);
+		FileEntry fileEntry = _fetchFileEntry(coverImageFileEntryId);
+
+		if (fileEntry == null) {
+			return null;
+		}
 
 		return fileEntry.getTitle();
 	}
@@ -56,8 +52,11 @@ public class BlogsEntryImpl extends BlogsEntryBaseImpl {
 			return null;
 		}
 
-		FileEntry fileEntry = PortletFileRepositoryUtil.getPortletFileEntry(
-			coverImageFileEntryId);
+		FileEntry fileEntry = _fetchFileEntry(coverImageFileEntryId);
+
+		if (fileEntry == null) {
+			return null;
+		}
 
 		return DLURLHelperUtil.getPreviewURL(
 			fileEntry, fileEntry.getFileVersion(), themeDisplay,
@@ -73,8 +72,11 @@ public class BlogsEntryImpl extends BlogsEntryBaseImpl {
 		long smallImageFileEntryId = getSmallImageFileEntryId();
 
 		if (smallImageFileEntryId != 0) {
-			FileEntry fileEntry = PortletFileRepositoryUtil.getPortletFileEntry(
-				smallImageFileEntryId);
+			FileEntry fileEntry = _fetchFileEntry(smallImageFileEntryId);
+
+			if (fileEntry == null) {
+				return null;
+			}
 
 			return fileEntry.getTitle();
 		}
@@ -99,8 +101,11 @@ public class BlogsEntryImpl extends BlogsEntryBaseImpl {
 		long smallImageFileEntryId = getSmallImageFileEntryId();
 
 		if (smallImageFileEntryId != 0) {
-			FileEntry fileEntry = PortletFileRepositoryUtil.getPortletFileEntry(
-				smallImageFileEntryId);
+			FileEntry fileEntry = _fetchFileEntry(smallImageFileEntryId);
+
+			if (fileEntry == null) {
+				return null;
+			}
 
 			return DLURLHelperUtil.getPreviewURL(
 				fileEntry, fileEntry.getFileVersion(), themeDisplay,
@@ -134,6 +139,21 @@ public class BlogsEntryImpl extends BlogsEntryBaseImpl {
 	public void setSmallImageType(String smallImageType) {
 		_smallImageType = smallImageType;
 	}
+
+	private FileEntry _fetchFileEntry(long fileEntryId) {
+		try {
+			return PortletFileRepositoryUtil.getPortletFileEntry(fileEntryId);
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Unable to get file entry", portalException);
+			}
+
+			return null;
+		}
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(BlogsEntryImpl.class);
 
 	private String _smallImageType;
 

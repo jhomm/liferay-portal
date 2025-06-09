@@ -1,27 +1,14 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/html/common/init.jsp" %>
 
 <%
-String jSecurityCheck = "j_security_check";
-
-if (!ServerDetector.isWebSphere()) {
-	jSecurityCheck = themeDisplay.getPathMain() + "/portal/" + jSecurityCheck;
-}
+String jSecurityCheck = themeDisplay.getPathMain() + "/portal/j_security_check";
 
 String jUserName = (String)session.getAttribute("j_username");
 String jPassword = (String)session.getAttribute("j_password");
@@ -52,31 +39,33 @@ if (PropsValues.PORTAL_JAAS_ENABLE && (jUserName != null)) {
 				<meta content="no-cache" http-equiv="Pragma" />
 				<meta content="0" http-equiv="Expires" />
 
-				<link class="lfr-css-file" href="<%= HtmlUtil.escapeAttribute(PortalUtil.getStaticResourceURL(request, themeDisplay.getPathThemeCss() + "/clay.css")) %>" rel="stylesheet" type="text/css" />
+				<aui:link cssClass="lfr-css-file" href="<%= HtmlUtil.escapeAttribute(themeDisplay.getClayCSSURL()) %>" rel="stylesheet" type="text/css" />
 			</head>
 
-			<body onLoad="setTimeout('document.fm.submit()', 100);">
-				<center>
-					<table border="0" cellpadding="0" cellspacing="0" height="100%" width="600">
-						<tr>
-							<td align="center" valign="middle">
-								<form action="<%= jSecurityCheck %>" method="post" name="fm">
-									<input name="j_username" type="hidden" value="<%= HtmlUtil.escapeAttribute(jUserName) %>" />
-									<input name="j_password" type="hidden" value="<%= HtmlUtil.escapeAttribute(jPassword) %>" />
-								</form>
+			<liferay-ui:csp>
+				<body onload="setTimeout('document.fm.submit()', 100);">
+					<center>
+						<table border="0" cellpadding="0" cellspacing="0" height="100%" width="600">
+							<tr>
+								<td align="center" valign="middle">
+									<form action="<%= jSecurityCheck %>" method="post" name="fm">
+										<input name="j_username" type="hidden" value="<%= HtmlUtil.escapeAttribute(jUserName) %>" />
+										<input name="j_password" type="hidden" value="<%= HtmlUtil.escapeAttribute(jPassword) %>" />
+									</form>
 
-								<font face="Verdana, Tahoma, Arial" size="3">
-									<strong><liferay-ui:message key="processing-login" /></strong>
-								</font>
+									<font face="Verdana, Tahoma, Arial" size="3">
+										<strong><liferay-ui:message key="processing-login" /></strong>
+									</font>
 
-								<br /><br />
+									<br /><br />
 
-								<span aria-hidden="true" class="loading-animation loading-animation-sm"></span>
-							</td>
-						</tr>
-					</table>
-				</center>
-			</body>
+									<span aria-hidden="true" class="loading-animation loading-animation-sm"></span>
+								</td>
+							</tr>
+						</table>
+					</center>
+				</body>
+			</liferay-ui:csp>
 		</html>
 
 		<%
@@ -102,7 +91,7 @@ if (PropsValues.PORTAL_JAAS_ENABLE && (jUserName != null)) {
 			session.invalidate();
 		}
 		catch (Exception e) {
-			_log.error(e, e);
+			_log.error(e);
 		}
 		%>
 
@@ -116,9 +105,10 @@ if (PropsValues.PORTAL_JAAS_ENABLE && (jUserName != null)) {
 				<meta content="0" http-equiv="Expires" />
 			</head>
 
-			<body onLoad="javascript:location.replace('<%= themeDisplay.getPathMain() %>')">
-
-			</body>
+			<liferay-ui:csp>
+				<body onload="window.location.replace('<%= themeDisplay.getPathMain() %>');">
+				</body>
+			</liferay-ui:csp>
 		</html>
 	</c:otherwise>
 </c:choose>

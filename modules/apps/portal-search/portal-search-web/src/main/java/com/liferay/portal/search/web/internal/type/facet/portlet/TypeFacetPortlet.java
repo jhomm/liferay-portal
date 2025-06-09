@@ -1,52 +1,31 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.type.facet.portlet;
 
-import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
-import com.liferay.asset.kernel.model.AssetRendererFactory;
-import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.asset.SearchableAssetClassNamesProvider;
 import com.liferay.portal.search.searcher.SearchRequest;
 import com.liferay.portal.search.searcher.SearchResponse;
-import com.liferay.portal.search.web.internal.facet.display.builder.AssetEntriesSearchFacetDisplayBuilder;
 import com.liferay.portal.search.web.internal.facet.display.context.AssetEntriesSearchFacetDisplayContext;
+import com.liferay.portal.search.web.internal.facet.display.context.builder.AssetEntriesSearchFacetDisplayContextBuilder;
 import com.liferay.portal.search.web.internal.type.facet.constants.TypeFacetPortletKeys;
-import com.liferay.portal.search.web.internal.util.SearchOptionalUtil;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
 
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.io.IOException;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -68,13 +47,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.restore-current-view=false",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Type Facet",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/type/facet/view.jsp",
-		"javax.portlet.name=" + TypeFacetPortletKeys.TYPE_FACET,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user"
+		"jakarta.portlet.display-name=Type Facet",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/type/facet/view.jsp",
+		"jakarta.portlet.name=" + TypeFacetPortletKeys.TYPE_FACET,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=guest,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -89,7 +69,7 @@ public class TypeFacetPortlet extends MVCPortlet {
 			portletSharedSearchRequest.search(renderRequest);
 
 		AssetEntriesSearchFacetDisplayContext
-			assetEntriesSearchFacetDisplayContext = buildDisplayContext(
+			assetEntriesSearchFacetDisplayContext = _buildDisplayContext(
 				portletSharedSearchResponse, renderRequest);
 
 		renderRequest.setAttribute(
@@ -104,144 +84,6 @@ public class TypeFacetPortlet extends MVCPortlet {
 		super.render(renderRequest, renderResponse);
 	}
 
-	protected AssetEntriesSearchFacetDisplayContext buildDisplayContext(
-		PortletSharedSearchResponse portletSharedSearchResponse,
-		RenderRequest renderRequest) {
-
-		Facet facet = portletSharedSearchResponse.getFacet(
-			getAggregationName(renderRequest));
-
-		AssetEntriesFacetConfiguration assetEntriesFacetConfiguration =
-			new AssetEntriesFacetConfigurationImpl(
-				facet.getFacetConfiguration());
-
-		TypeFacetPortletPreferences typeFacetPortletPreferences =
-			new TypeFacetPortletPreferencesImpl(
-				objectDefinitionLocalService,
-				portletSharedSearchResponse.getPortletPreferences(
-					renderRequest),
-				searchableAssetClassNamesProvider);
-
-		AssetEntriesSearchFacetDisplayBuilder
-			assetEntriesSearchFacetDisplayBuilder =
-				createAssetEntriesSearchFacetDisplayBuilder(renderRequest);
-
-		ThemeDisplay themeDisplay = portletSharedSearchResponse.getThemeDisplay(
-			renderRequest);
-
-		assetEntriesSearchFacetDisplayBuilder.setClassNames(
-			getAssetTypesClassNames(typeFacetPortletPreferences, themeDisplay));
-
-		assetEntriesSearchFacetDisplayBuilder.setFacet(facet);
-		assetEntriesSearchFacetDisplayBuilder.setFrequencyThreshold(
-			assetEntriesFacetConfiguration.getFrequencyThreshold());
-		assetEntriesSearchFacetDisplayBuilder.setFrequenciesVisible(
-			typeFacetPortletPreferences.isFrequenciesVisible());
-		assetEntriesSearchFacetDisplayBuilder.setLocale(
-			themeDisplay.getLocale());
-		assetEntriesSearchFacetDisplayBuilder.setPaginationStartParameterName(
-			getPaginationStartParameterName(portletSharedSearchResponse));
-
-		String parameterName = typeFacetPortletPreferences.getParameterName();
-
-		assetEntriesSearchFacetDisplayBuilder.setParameterName(parameterName);
-
-		assetEntriesSearchFacetDisplayBuilder.setTypeNames(
-			getAssetTypesTypeNames(typeFacetPortletPreferences, themeDisplay));
-
-		SearchOptionalUtil.copy(
-			() -> getParameterValuesOptional(
-				parameterName, portletSharedSearchResponse, renderRequest),
-			assetEntriesSearchFacetDisplayBuilder::setParameterValues);
-
-		return assetEntriesSearchFacetDisplayBuilder.build();
-	}
-
-	protected AssetEntriesSearchFacetDisplayBuilder
-		createAssetEntriesSearchFacetDisplayBuilder(
-			RenderRequest renderRequest) {
-
-		try {
-			return new AssetEntriesSearchFacetDisplayBuilder(renderRequest);
-		}
-		catch (ConfigurationException configurationException) {
-			throw new RuntimeException(configurationException);
-		}
-	}
-
-	protected String getAggregationName(RenderRequest renderRequest) {
-		return portal.getPortletId(renderRequest);
-	}
-
-	protected String[] getAssetTypesClassNames(
-		TypeFacetPortletPreferences typeFacetPortletPreferences,
-		ThemeDisplay themeDisplay) {
-
-		return typeFacetPortletPreferences.getCurrentAssetTypesArray(
-			themeDisplay.getCompanyId());
-	}
-
-	protected Map<String, String> getAssetTypesTypeNames(
-		TypeFacetPortletPreferences typeFacetPortletPreferences,
-		ThemeDisplay themeDisplay) {
-
-		Map<String, String> assetTypesTypeNames = new HashMap<>();
-
-		String[] classNames = getAssetTypesClassNames(
-			typeFacetPortletPreferences, themeDisplay);
-
-		for (String className : classNames) {
-			AssetRendererFactory<?> assetRendererFactory =
-				AssetRendererFactoryRegistryUtil.
-					getAssetRendererFactoryByClassName(className);
-
-			String typeName = className;
-
-			if (assetRendererFactory != null) {
-				typeName = assetRendererFactory.getTypeName(
-					themeDisplay.getLocale());
-			}
-			else if (className.startsWith(
-						ObjectDefinition.class.getName() + "#")) {
-
-				String[] parts = StringUtil.split(className, "#");
-
-				ObjectDefinition objectDefinition =
-					objectDefinitionLocalService.fetchObjectDefinition(
-						Long.valueOf(parts[1]));
-
-				typeName = objectDefinition.getLabel(themeDisplay.getLocale());
-			}
-
-			assetTypesTypeNames.put(className, typeName);
-		}
-
-		return assetTypesTypeNames;
-	}
-
-	protected String getPaginationStartParameterName(
-		PortletSharedSearchResponse portletSharedSearchResponse) {
-
-		SearchResponse searchResponse =
-			portletSharedSearchResponse.getSearchResponse();
-
-		SearchRequest searchRequest = searchResponse.getRequest();
-
-		return searchRequest.getPaginationStartParameterName();
-	}
-
-	protected Optional<List<String>> getParameterValuesOptional(
-		String parameterName,
-		PortletSharedSearchResponse portletSharedSearchResponse,
-		RenderRequest renderRequest) {
-
-		Optional<String[]> optional =
-			portletSharedSearchResponse.getParameterValues(
-				parameterName, renderRequest);
-
-		return optional.map(Arrays::asList);
-	}
-
 	@Reference
 	protected ObjectDefinitionLocalService objectDefinitionLocalService;
 
@@ -254,5 +96,90 @@ public class TypeFacetPortlet extends MVCPortlet {
 	@Reference
 	protected SearchableAssetClassNamesProvider
 		searchableAssetClassNamesProvider;
+
+	private AssetEntriesSearchFacetDisplayContext _buildDisplayContext(
+		PortletSharedSearchResponse portletSharedSearchResponse,
+		RenderRequest renderRequest) {
+
+		AssetEntriesSearchFacetDisplayContextBuilder
+			assetEntriesSearchFacetDisplayContextBuilder =
+				_createAssetEntriesSearchFacetDisplayContextBuilder(
+					renderRequest);
+
+		TypeFacetPortletPreferences typeFacetPortletPreferences =
+			new TypeFacetPortletPreferencesImpl(
+				objectDefinitionLocalService,
+				portletSharedSearchResponse.getPortletPreferences(
+					renderRequest),
+				searchableAssetClassNamesProvider);
+
+		ThemeDisplay themeDisplay = portletSharedSearchResponse.getThemeDisplay(
+			renderRequest);
+
+		assetEntriesSearchFacetDisplayContextBuilder.setClassNames(
+			_getAssetTypesClassNames(
+				typeFacetPortletPreferences, themeDisplay));
+
+		assetEntriesSearchFacetDisplayContextBuilder.setFacet(
+			portletSharedSearchResponse.getFacet(
+				_getAggregationName(renderRequest)));
+		assetEntriesSearchFacetDisplayContextBuilder.setFrequenciesVisible(
+			typeFacetPortletPreferences.isFrequenciesVisible());
+		assetEntriesSearchFacetDisplayContextBuilder.setFrequencyThreshold(
+			typeFacetPortletPreferences.getFrequencyThreshold());
+		assetEntriesSearchFacetDisplayContextBuilder.setLocale(
+			themeDisplay.getLocale());
+		assetEntriesSearchFacetDisplayContextBuilder.setOrder(
+			typeFacetPortletPreferences.getOrder());
+		assetEntriesSearchFacetDisplayContextBuilder.
+			setPaginationStartParameterName(
+				_getPaginationStartParameterName(portletSharedSearchResponse));
+
+		String parameterName = typeFacetPortletPreferences.getParameterName();
+
+		assetEntriesSearchFacetDisplayContextBuilder.setParameterName(
+			parameterName);
+		assetEntriesSearchFacetDisplayContextBuilder.setParameterValues(
+			portletSharedSearchResponse.getParameterValues(
+				parameterName, renderRequest));
+
+		return assetEntriesSearchFacetDisplayContextBuilder.build();
+	}
+
+	private AssetEntriesSearchFacetDisplayContextBuilder
+		_createAssetEntriesSearchFacetDisplayContextBuilder(
+			RenderRequest renderRequest) {
+
+		try {
+			return new AssetEntriesSearchFacetDisplayContextBuilder(
+				renderRequest);
+		}
+		catch (ConfigurationException configurationException) {
+			throw new RuntimeException(configurationException);
+		}
+	}
+
+	private String _getAggregationName(RenderRequest renderRequest) {
+		return portal.getPortletId(renderRequest);
+	}
+
+	private String[] _getAssetTypesClassNames(
+		TypeFacetPortletPreferences typeFacetPortletPreferences,
+		ThemeDisplay themeDisplay) {
+
+		return typeFacetPortletPreferences.getCurrentAssetTypesArray(
+			themeDisplay.getCompanyId());
+	}
+
+	private String _getPaginationStartParameterName(
+		PortletSharedSearchResponse portletSharedSearchResponse) {
+
+		SearchResponse searchResponse =
+			portletSharedSearchResponse.getSearchResponse();
+
+		SearchRequest searchRequest = searchResponse.getRequest();
+
+		return searchRequest.getPaginationStartParameterName();
+	}
 
 }

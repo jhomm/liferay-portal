@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.admin.web.internal.portlet.action;
@@ -28,11 +19,10 @@ import com.liferay.portal.kernel.service.GroupService;
 import com.liferay.portal.kernel.service.MembershipRequestLocalService;
 import com.liferay.portal.kernel.service.MembershipRequestService;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PropertiesParamUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
@@ -40,12 +30,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.liveusers.LiveUsers;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,9 +44,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
 		"mvc.command.name=/site_admin/edit_details"
 	},
 	service = MVCActionCommand.class
@@ -92,18 +81,17 @@ public class EditDetailsMVCActionCommand
 				GroupConstants.MEMBERSHIP_RESTRICTION_TO_PARENT_SITE_MEMBERS;
 		}
 
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			Group.class.getName(), actionRequest);
+		ServiceContext serviceContext = ActionUtil.getServiceContext(
+			actionRequest, liveGroupId);
 
 		ServiceContextThreadLocal.pushServiceContext(serviceContext);
 
 		Group liveGroup = _groupLocalService.getGroup(liveGroupId);
 
-		Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			actionRequest, "name", liveGroup.getNameMap());
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(
-				actionRequest, "description", liveGroup.getDescriptionMap());
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			actionRequest, "description", liveGroup.getDescriptionMap());
 		int type = ParamUtil.getInteger(
 			actionRequest, "type", liveGroup.getType());
 		boolean manualMembership = ParamUtil.getBoolean(
@@ -165,6 +153,9 @@ public class EditDetailsMVCActionCommand
 
 	@Reference
 	private GroupService _groupService;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private MembershipRequestLocalService _membershipRequestLocalService;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.util;
@@ -60,26 +51,20 @@ public class PortalImplGroupFriendlyURLTest {
 
 	@Test
 	public void testGroupFriendlyURLIndexWithConflictiveLayoutURL1() {
-		int[] groupFriendlyURLIndex = _portalImpl.getGroupFriendlyURLIndex(
-			"/web-content-page");
-
-		Assert.assertNull(groupFriendlyURLIndex);
+		Assert.assertNull(
+			_portalImpl.getGroupFriendlyURLIndex("/web-content-page"));
 	}
 
 	@Test
 	public void testGroupFriendlyURLIndexWithConflictiveLayoutURL2() {
-		int[] groupFriendlyURLIndex = _portalImpl.getGroupFriendlyURLIndex(
-			"/group-content-page");
-
-		Assert.assertNull(groupFriendlyURLIndex);
+		Assert.assertNull(
+			_portalImpl.getGroupFriendlyURLIndex("/group-content-page"));
 	}
 
 	@Test
 	public void testGroupFriendlyURLIndexWithConflictiveLayoutURL3() {
-		int[] groupFriendlyURLIndex = _portalImpl.getGroupFriendlyURLIndex(
-			"/user-content-page");
-
-		Assert.assertNull(groupFriendlyURLIndex);
+		Assert.assertNull(
+			_portalImpl.getGroupFriendlyURLIndex("/user-content-page"));
 	}
 
 	@Test
@@ -93,10 +78,7 @@ public class PortalImplGroupFriendlyURLTest {
 
 	@Test
 	public void testGroupFriendlyURLIndexWithLayoutURL() {
-		int[] groupFriendlyURLIndex = _portalImpl.getGroupFriendlyURLIndex(
-			"/home");
-
-		Assert.assertNull(groupFriendlyURLIndex);
+		Assert.assertNull(_portalImpl.getGroupFriendlyURLIndex("/home"));
 	}
 
 	private final PortalImpl _portalImpl = new PortalImpl();

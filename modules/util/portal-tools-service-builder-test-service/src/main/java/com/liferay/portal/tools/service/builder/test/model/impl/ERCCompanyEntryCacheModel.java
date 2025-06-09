@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.model.impl;
@@ -60,14 +51,22 @@ public class ERCCompanyEntryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(7);
+		StringBundler sb = new StringBundler(15);
 
-		sb.append("{externalReferenceCode=");
+		sb.append("{uuid=");
+		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
 		sb.append(externalReferenceCode);
 		sb.append(", ercCompanyEntryId=");
 		sb.append(ercCompanyEntryId);
 		sb.append(", companyId=");
 		sb.append(companyId);
+		sb.append(", userId=");
+		sb.append(userId);
+		sb.append(", userName=");
+		sb.append(userName);
+		sb.append(", column1=");
+		sb.append(column1);
 		sb.append("}");
 
 		return sb.toString();
@@ -76,6 +75,13 @@ public class ERCCompanyEntryCacheModel
 	@Override
 	public ERCCompanyEntry toEntityModel() {
 		ERCCompanyEntryImpl ercCompanyEntryImpl = new ERCCompanyEntryImpl();
+
+		if (uuid == null) {
+			ercCompanyEntryImpl.setUuid("");
+		}
+		else {
+			ercCompanyEntryImpl.setUuid(uuid);
+		}
 
 		if (externalReferenceCode == null) {
 			ercCompanyEntryImpl.setExternalReferenceCode("");
@@ -86,6 +92,16 @@ public class ERCCompanyEntryCacheModel
 
 		ercCompanyEntryImpl.setErcCompanyEntryId(ercCompanyEntryId);
 		ercCompanyEntryImpl.setCompanyId(companyId);
+		ercCompanyEntryImpl.setUserId(userId);
+
+		if (userName == null) {
+			ercCompanyEntryImpl.setUserName("");
+		}
+		else {
+			ercCompanyEntryImpl.setUserName(userName);
+		}
+
+		ercCompanyEntryImpl.setColumn1(column1);
 
 		ercCompanyEntryImpl.resetOriginalValues();
 
@@ -94,15 +110,28 @@ public class ERCCompanyEntryCacheModel
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		uuid = objectInput.readUTF();
 		externalReferenceCode = objectInput.readUTF();
 
 		ercCompanyEntryId = objectInput.readLong();
 
 		companyId = objectInput.readLong();
+
+		userId = objectInput.readLong();
+		userName = objectInput.readUTF();
+
+		column1 = objectInput.readInt();
 	}
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		if (uuid == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
+
 		if (externalReferenceCode == null) {
 			objectOutput.writeUTF("");
 		}
@@ -113,10 +142,25 @@ public class ERCCompanyEntryCacheModel
 		objectOutput.writeLong(ercCompanyEntryId);
 
 		objectOutput.writeLong(companyId);
+
+		objectOutput.writeLong(userId);
+
+		if (userName == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(userName);
+		}
+
+		objectOutput.writeInt(column1);
 	}
 
+	public String uuid;
 	public String externalReferenceCode;
 	public long ercCompanyEntryId;
 	public long companyId;
+	public long userId;
+	public String userName;
+	public int column1;
 
 }

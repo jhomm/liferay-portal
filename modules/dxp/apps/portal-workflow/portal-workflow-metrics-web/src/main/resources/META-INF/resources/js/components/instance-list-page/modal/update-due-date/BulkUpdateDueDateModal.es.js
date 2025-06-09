@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {useModal} from '@clayui/modal';
@@ -69,7 +63,7 @@ export default function BulkUpdateDueDateModal() {
 				comment,
 				dueDate,
 				workflowTaskId,
-		  }))
+			}))
 		: [];
 
 	const {patchData} = usePatch({
@@ -82,10 +76,10 @@ export default function BulkUpdateDueDateModal() {
 				tasks.length > 1
 					? Liferay.Language.get(
 							'the-due-dates-for-these-tasks-have-been-updated'
-					  )
+						)
 					: Liferay.Language.get(
 							'the-due-date-for-this-task-has-been-updated'
-					  )
+						)
 			);
 
 			onCloseModal(true);
@@ -98,12 +92,12 @@ export default function BulkUpdateDueDateModal() {
 	const handleDone = useCallback(() => {
 		setUpdating(true);
 
-		patchData().catch(({response}) => {
+		patchData().catch((dataError) => {
 			const errorMessage = `${Liferay.Language.get(
 				'your-request-has-failed'
 			)} ${Liferay.Language.get('select-done-to-retry')}`;
 
-			setErrorToast(response?.data?.title ?? errorMessage);
+			setErrorToast(dataError.title ?? errorMessage);
 			setUpdating(false);
 		});
 
@@ -164,7 +158,7 @@ export default function BulkUpdateDueDateModal() {
 			},
 			component: SelectTasksStep,
 			nextBtn: {
-				disabled: tasks.length === 0 || fetching,
+				disabled: !tasks.length || fetching,
 				handle: handleNext,
 				text: Liferay.Language.get('next'),
 			},

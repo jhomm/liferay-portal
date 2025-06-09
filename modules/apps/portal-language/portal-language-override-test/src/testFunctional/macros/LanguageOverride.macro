@@ -1,0 +1,182 @@
+definition {
+
+	@summary = "Default summary"
+	macro addLanguageKey(translationOverrideValueList = null, translationOverrideList = null, languageKey = null) {
+		LexiconEntry.gotoAdd();
+
+		PortletEntry.inputText(
+			fieldLabel = "Key",
+			text = ${languageKey});
+
+		var j = 0;
+
+		for (var translationOverride : list ${translationOverrideList}) {
+			var k = 0;
+
+			for (var translationOverrideValue : list ${translationOverrideValueList}) {
+				if (${j} == ${k}) {
+					PortletEntry.inputText(
+						fieldLabel = ${translationOverride},
+						text = ${translationOverrideValue});
+				}
+
+				var k = ${k} + 1;
+			}
+
+			var j = ${j} + 1;
+		}
+
+		Button.clickSave();
+
+		Alert.viewSuccessMessage();
+	}
+
+	@description = "Assert the filter scope label in management toolbar"
+	@summary = "Default summary"
+	macro assertFilterScope(filterScope = null) {
+		AssertElementPresent(
+			key_filterScope = ${filterScope},
+			locator1 = "ManagementBar#FILTER_RESULTS_SCOPE");
+	}
+
+	@description = "Assert values for existing language keys"
+	@summary = "Default summary"
+	macro assertLanguageKeyWithoutOverride(translation = null, languageKey = null) {
+		LexiconList.viewListEntryPresent(listEntry = ${languageKey});
+
+		LexiconList.viewListEntrySubtitle(
+			listEntry = ${languageKey},
+			listEntrySubtitle = ${translation});
+	}
+
+	@description = "Assert the following values for language key with override when a language is NOT selected: language key, languages with override but not highlighted"
+	@summary = "Default summary"
+	macro assertLanguageKeyWithOverrideInListView(languagesWithOverride = null, languageKey = null) {
+		LexiconList.viewListEntryPresent(listEntry = ${languageKey});
+
+		LexiconList.viewListEntrySubtitle(
+			listEntry = ${languageKey},
+			listEntrySubtitle = "Languages With Override: ${languagesWithOverride}");
+	}
+
+	@description = "Assert the following values for language key with override when a language is selected: language key, current translation, and the highlighted language with override"
+	@summary = "Default summary"
+	macro assertSelectedLanguageInListView(currentTranslationOverride = null, languagesWithOverride = null, selectedLanguage = null, languageKey = null) {
+		LexiconList.viewListEntryPresent(listEntry = ${languageKey});
+
+		LexiconList.viewListEntrySubtitle(
+			listEntry = ${languageKey},
+			listEntrySubtitle = ${currentTranslationOverride});
+
+		if (isSet(languagesWithOverride)) {
+			LexiconList.viewListEntrySubtitle(
+				listEntry = ${languageKey},
+				listEntrySubtitle = "Languages With Override: ${languagesWithOverride}");
+		}
+
+		AssertElementPresent(
+			key_language = ${selectedLanguage},
+			key_languageKey = ${languageKey},
+			locator1 = "LanguageOverride#FILTER_BY_OVERRIDE_BOLD_LANGUAGE_WITH_OVERRIDE");
+	}
+
+	@summary = "Default summary"
+	macro clearAllOverridesViaEditPage() {
+		ClickNoError(
+			key_text = "Clear All Overrides",
+			locator1 = "Link#ANY");
+
+		AssertConfirm(value1 = "Are you sure you want to reset all translation overrides?");
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro exportOverriddenTranslations() {
+		Portlet.gotoPortletOptions(portletOption = "Export Overridden Translations");
+
+		DownloadTempFile();
+
+		var tempFileName = TestCase.getDownloadedTempFileName(fileNamePattern = "*.zip");
+		var tempFileDirectory = selenium.getOutputDirName();
+
+		var exportedZipFile = FileUtil.exists("${tempFileDirectory}/${tempFileName}");
+
+		if (${exportedZipFile} == "true") {
+			echo("Overridden translations are exported");
+		}
+		else {
+			fail("FAIL! Cannot find the exported zip file for overridden translations");
+		}
+	}
+
+	@summary = "Default summary"
+	macro goToLanguageKey(languageKey = null) {
+		LexiconList.clickListEntryTitle(listEntry = ${languageKey});
+	}
+
+	@summary = "Default summary"
+	macro openLanguageOverridePortlet(baseURL = null) {
+		Navigator.openWithAppendToBaseURL(
+			baseURL = ${baseURL},
+			urlAppend = "group/control_panel/manage?p_p_id=com_liferay_portal_language_override_web_internal_portlet_PLOPortlet");
+	}
+
+	@summary = "Default summary"
+	macro removeAllTranslationOverrides(languageKey = null) {
+		LexiconEntry.gotoEntryMenuItemNoError(
+			menuItem = "Remove all translation overrides",
+			rowEntry = ${languageKey});
+
+		AssertConfirm(value1 = "Do you want to reset all translation overrides?");
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro removeTranslationOverrideForSelectedLanguage(currentLanguage = null, languageKey = null) {
+		PageEditor.changeLocale(
+			currentLocale = ${currentLanguage},
+			locale = ${newLanguage});
+
+		var newLanguage = StringUtil.replace(${newLanguage}, "-", "_");
+
+		LexiconEntry.gotoEntryMenuItemNoError(
+			menuItem = "Remove translation override for ${newLanguage}",
+			rowEntry = ${languageKey});
+
+		AssertConfirm(value1 = "Do you want to reset the translation override for ${newLanguage}?");
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro updateTranslationOverrideValues(translationOverrideValueList = null, translationOverrideList = null, languageKey = null) {
+		LexiconEntry.gotoEntryMenuItemNoError(
+			menuItem = "Edit",
+			rowEntry = ${languageKey});
+
+		var j = 0;
+
+		for (var translationOverride : list ${translationOverrideList}) {
+			var k = 0;
+
+			for (var translationOverrideValue : list ${translationOverrideValueList}) {
+				if (${j} == ${k}) {
+					PortletEntry.inputText(
+						fieldLabel = ${translationOverride},
+						text = ${translationOverrideValue});
+				}
+
+				var k = ${k} + 1;
+			}
+
+			var j = ${j} + 1;
+		}
+
+		Button.clickSave();
+
+		Alert.viewSuccessMessage();
+	}
+
+}

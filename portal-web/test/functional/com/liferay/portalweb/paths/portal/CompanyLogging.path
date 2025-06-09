@@ -1,0 +1,31 @@
+<html>
+<head>
+<title>CompanyLogging</title>
+</head>
+
+<body>
+<table border="1" cellpadding="1" cellspacing="1">
+<thead>
+<tr><td rowspan="1" colspan="3">CompanyLogging</td></tr>
+</thead>
+
+<tbody>
+	<tr>
+	<td>COMPANY_LOG_CONTENT</td>
+	<td>//pre[contains(@class,'logs-container')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>COMPANY_LOG_NAME</td>
+	<td>//div[contains(.,'Logs')]//p[@class='list-group-title']/a[contains(.,'${key_logName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>COMPANY_LOG_TITLE</td>
+	<td>//div[contains(.,'Logs')]//p[contains(.,'${key_virtualHost}')]</td>
+	<td></td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

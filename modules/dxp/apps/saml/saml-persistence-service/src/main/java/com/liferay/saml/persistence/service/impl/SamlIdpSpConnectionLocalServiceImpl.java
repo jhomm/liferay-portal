@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.persistence.service.impl;
@@ -93,7 +84,6 @@ public class SamlIdpSpConnectionLocalServiceImpl
 			attributesNamespaceEnabled);
 		samlIdpSpConnection.setEnabled(enabled);
 		samlIdpSpConnection.setEncryptionForced(encryptionForced);
-		samlIdpSpConnection.setExpandoBridgeAttributes(serviceContext);
 		samlIdpSpConnection.setMetadataUpdatedDate(date);
 
 		if ((metadataXmlInputStream == null) &&
@@ -119,11 +109,12 @@ public class SamlIdpSpConnectionLocalServiceImpl
 		}
 
 		samlIdpSpConnection.setMetadataXml(
-			getMetadataXml(metadataXmlInputStream, samlSpEntityId));
+			_getMetadataXml(metadataXmlInputStream, samlSpEntityId));
 		samlIdpSpConnection.setName(name);
 		samlIdpSpConnection.setNameIdAttribute(nameIdAttribute);
 		samlIdpSpConnection.setNameIdFormat(nameIdFormat);
 		samlIdpSpConnection.setSamlSpEntityId(samlSpEntityId);
+		samlIdpSpConnection.setExpandoBridgeAttributes(serviceContext);
 
 		return samlIdpSpConnectionPersistence.update(samlIdpSpConnection);
 	}
@@ -251,7 +242,7 @@ public class SamlIdpSpConnectionLocalServiceImpl
 			attributesNamespaceEnabled);
 		samlIdpSpConnection.setEnabled(enabled);
 		samlIdpSpConnection.setEncryptionForced(encryptionForced);
-		samlIdpSpConnection.setExpandoBridgeAttributes(serviceContext);
+		samlIdpSpConnection.setMetadataUrl(StringPool.BLANK);
 
 		if ((metadataXmlInputStream == null) &&
 			Validator.isNotNull(metadataUrl)) {
@@ -273,7 +264,7 @@ public class SamlIdpSpConnectionLocalServiceImpl
 		String metadataXml = StringPool.BLANK;
 
 		if (metadataXmlInputStream != null) {
-			metadataXml = getMetadataXml(
+			metadataXml = _getMetadataXml(
 				metadataXmlInputStream, samlSpEntityId);
 		}
 
@@ -286,11 +277,12 @@ public class SamlIdpSpConnectionLocalServiceImpl
 		samlIdpSpConnection.setNameIdAttribute(nameIdAttribute);
 		samlIdpSpConnection.setNameIdFormat(nameIdFormat);
 		samlIdpSpConnection.setSamlSpEntityId(samlSpEntityId);
+		samlIdpSpConnection.setExpandoBridgeAttributes(serviceContext);
 
 		return samlIdpSpConnectionPersistence.update(samlIdpSpConnection);
 	}
 
-	protected String getMetadataXml(
+	private String _getMetadataXml(
 			InputStream metadataXmlInputStream, String samlSpEntityId)
 		throws PortalException {
 

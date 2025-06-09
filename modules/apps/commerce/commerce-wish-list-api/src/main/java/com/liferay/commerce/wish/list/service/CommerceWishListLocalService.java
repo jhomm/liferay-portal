@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.service;
@@ -31,7 +22,6 @@ import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -84,7 +74,7 @@ public interface CommerceWishListLocalService
 		CommerceWishList commerceWishList);
 
 	public CommerceWishList addCommerceWishList(
-			String name, boolean defaultWishList, ServiceContext serviceContext)
+			long userId, long groupId, String name, boolean defaultWishList)
 		throws PortalException;
 
 	/**
@@ -111,11 +101,13 @@ public interface CommerceWishListLocalService
 	 *
 	 * @param commerceWishList the commerce wish list
 	 * @return the commerce wish list that was removed
+	 * @throws PortalException
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public CommerceWishList deleteCommerceWishList(
-		CommerceWishList commerceWishList);
+			CommerceWishList commerceWishList)
+		throws PortalException;
 
 	/**
 	 * Deletes the commerce wish list with the primary key from the database. Also notifies the appropriate model listeners.
@@ -222,7 +214,7 @@ public interface CommerceWishListLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceWishList fetchCommerceWishList(
-		long groupId, long userId, boolean defaultWishList,
+		long userId, long groupId, boolean defaultWishList,
 		OrderByComparator<CommerceWishList> orderByComparator);
 
 	/**
@@ -235,6 +227,10 @@ public interface CommerceWishListLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceWishList fetchCommerceWishListByUuidAndGroupId(
 		String uuid, long groupId);
+
+	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
+	public CommerceWishList forceDeleteCommerceWishList(
+		CommerceWishList commerceWishList);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -284,7 +280,7 @@ public interface CommerceWishListLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceWishList> getCommerceWishLists(
-		long groupId, long userId, int start, int end,
+		long userId, long groupId, int start, int end,
 		OrderByComparator<CommerceWishList> orderByComparator);
 
 	/**
@@ -325,12 +321,12 @@ public interface CommerceWishListLocalService
 	public int getCommerceWishListsCount(long groupId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceWishListsCount(long groupId, long userId);
+	public int getCommerceWishListsCount(long userId, long groupId);
 
 	@ThreadLocalCachable
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceWishList getDefaultCommerceWishList(
-			long groupId, long userId, String guestUuid)
+			long userId, long groupId, String guestUuid)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.model.impl;
@@ -33,7 +24,6 @@ import com.liferay.portal.workflow.kaleo.model.KaleoConditionModel;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -70,11 +60,11 @@ public class KaleoConditionModelImpl
 	public static final String TABLE_NAME = "KaleoCondition";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"mvccVersion", Types.BIGINT}, {"kaleoConditionId", Types.BIGINT},
-		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
-		{"kaleoDefinitionId", Types.BIGINT},
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
+		{"kaleoConditionId", Types.BIGINT}, {"groupId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP}, {"kaleoDefinitionId", Types.BIGINT},
 		{"kaleoDefinitionVersionId", Types.BIGINT},
 		{"kaleoNodeId", Types.BIGINT}, {"script", Types.CLOB},
 		{"scriptLanguage", Types.VARCHAR},
@@ -86,6 +76,7 @@ public class KaleoConditionModelImpl
 
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("kaleoConditionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -102,7 +93,7 @@ public class KaleoConditionModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table KaleoCondition (mvccVersion LONG default 0 not null,kaleoConditionId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(200) null,createDate DATE null,modifiedDate DATE null,kaleoDefinitionId LONG,kaleoDefinitionVersionId LONG,kaleoNodeId LONG,script TEXT null,scriptLanguage VARCHAR(75) null,scriptRequiredContexts STRING null)";
+		"create table KaleoCondition (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,kaleoConditionId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(200) null,createDate DATE null,modifiedDate DATE null,kaleoDefinitionId LONG,kaleoDefinitionVersionId LONG,kaleoNodeId LONG,script TEXT null,scriptLanguage VARCHAR(75) null,scriptRequiredContexts STRING null,primary key (kaleoConditionId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table KaleoCondition";
 
@@ -233,131 +224,133 @@ public class KaleoConditionModelImpl
 	public Map<String, Function<KaleoCondition, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<KaleoCondition, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, KaleoCondition>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			KaleoCondition.class.getClassLoader(), KaleoCondition.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<KaleoCondition, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<KaleoCondition> constructor =
-				(Constructor<KaleoCondition>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<KaleoCondition, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<KaleoCondition, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", KaleoCondition::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", KaleoCondition::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"kaleoConditionId", KaleoCondition::getKaleoConditionId);
+			attributeGetterFunctions.put("groupId", KaleoCondition::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", KaleoCondition::getCompanyId);
+			attributeGetterFunctions.put("userId", KaleoCondition::getUserId);
+			attributeGetterFunctions.put(
+				"userName", KaleoCondition::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", KaleoCondition::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", KaleoCondition::getModifiedDate);
+			attributeGetterFunctions.put(
+				"kaleoDefinitionId", KaleoCondition::getKaleoDefinitionId);
+			attributeGetterFunctions.put(
+				"kaleoDefinitionVersionId",
+				KaleoCondition::getKaleoDefinitionVersionId);
+			attributeGetterFunctions.put(
+				"kaleoNodeId", KaleoCondition::getKaleoNodeId);
+			attributeGetterFunctions.put("script", KaleoCondition::getScript);
+			attributeGetterFunctions.put(
+				"scriptLanguage", KaleoCondition::getScriptLanguage);
+			attributeGetterFunctions.put(
+				"scriptRequiredContexts",
+				KaleoCondition::getScriptRequiredContexts);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<KaleoCondition, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<KaleoCondition, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<KaleoCondition, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<KaleoCondition, Object>>();
-		Map<String, BiConsumer<KaleoCondition, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<KaleoCondition, ?>>();
+		private static final Map<String, BiConsumer<KaleoCondition, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", KaleoCondition::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<KaleoCondition, Long>)KaleoCondition::setMvccVersion);
-		attributeGetterFunctions.put(
-			"kaleoConditionId", KaleoCondition::getKaleoConditionId);
-		attributeSetterBiConsumers.put(
-			"kaleoConditionId",
-			(BiConsumer<KaleoCondition, Long>)
-				KaleoCondition::setKaleoConditionId);
-		attributeGetterFunctions.put("groupId", KaleoCondition::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<KaleoCondition, Long>)KaleoCondition::setGroupId);
-		attributeGetterFunctions.put("companyId", KaleoCondition::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<KaleoCondition, Long>)KaleoCondition::setCompanyId);
-		attributeGetterFunctions.put("userId", KaleoCondition::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<KaleoCondition, Long>)KaleoCondition::setUserId);
-		attributeGetterFunctions.put("userName", KaleoCondition::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<KaleoCondition, String>)KaleoCondition::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", KaleoCondition::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<KaleoCondition, Date>)KaleoCondition::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", KaleoCondition::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<KaleoCondition, Date>)KaleoCondition::setModifiedDate);
-		attributeGetterFunctions.put(
-			"kaleoDefinitionId", KaleoCondition::getKaleoDefinitionId);
-		attributeSetterBiConsumers.put(
-			"kaleoDefinitionId",
-			(BiConsumer<KaleoCondition, Long>)
-				KaleoCondition::setKaleoDefinitionId);
-		attributeGetterFunctions.put(
-			"kaleoDefinitionVersionId",
-			KaleoCondition::getKaleoDefinitionVersionId);
-		attributeSetterBiConsumers.put(
-			"kaleoDefinitionVersionId",
-			(BiConsumer<KaleoCondition, Long>)
-				KaleoCondition::setKaleoDefinitionVersionId);
-		attributeGetterFunctions.put(
-			"kaleoNodeId", KaleoCondition::getKaleoNodeId);
-		attributeSetterBiConsumers.put(
-			"kaleoNodeId",
-			(BiConsumer<KaleoCondition, Long>)KaleoCondition::setKaleoNodeId);
-		attributeGetterFunctions.put("script", KaleoCondition::getScript);
-		attributeSetterBiConsumers.put(
-			"script",
-			(BiConsumer<KaleoCondition, String>)KaleoCondition::setScript);
-		attributeGetterFunctions.put(
-			"scriptLanguage", KaleoCondition::getScriptLanguage);
-		attributeSetterBiConsumers.put(
-			"scriptLanguage",
-			(BiConsumer<KaleoCondition, String>)
-				KaleoCondition::setScriptLanguage);
-		attributeGetterFunctions.put(
-			"scriptRequiredContexts",
-			KaleoCondition::getScriptRequiredContexts);
-		attributeSetterBiConsumers.put(
-			"scriptRequiredContexts",
-			(BiConsumer<KaleoCondition, String>)
-				KaleoCondition::setScriptRequiredContexts);
+		static {
+			Map<String, BiConsumer<KaleoCondition, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<KaleoCondition, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<KaleoCondition, Long>)
+					KaleoCondition::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<KaleoCondition, Long>)
+					KaleoCondition::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"kaleoConditionId",
+				(BiConsumer<KaleoCondition, Long>)
+					KaleoCondition::setKaleoConditionId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<KaleoCondition, Long>)KaleoCondition::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<KaleoCondition, Long>)KaleoCondition::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<KaleoCondition, Long>)KaleoCondition::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<KaleoCondition, String>)
+					KaleoCondition::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<KaleoCondition, Date>)
+					KaleoCondition::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<KaleoCondition, Date>)
+					KaleoCondition::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"kaleoDefinitionId",
+				(BiConsumer<KaleoCondition, Long>)
+					KaleoCondition::setKaleoDefinitionId);
+			attributeSetterBiConsumers.put(
+				"kaleoDefinitionVersionId",
+				(BiConsumer<KaleoCondition, Long>)
+					KaleoCondition::setKaleoDefinitionVersionId);
+			attributeSetterBiConsumers.put(
+				"kaleoNodeId",
+				(BiConsumer<KaleoCondition, Long>)
+					KaleoCondition::setKaleoNodeId);
+			attributeSetterBiConsumers.put(
+				"script",
+				(BiConsumer<KaleoCondition, String>)KaleoCondition::setScript);
+			attributeSetterBiConsumers.put(
+				"scriptLanguage",
+				(BiConsumer<KaleoCondition, String>)
+					KaleoCondition::setScriptLanguage);
+			attributeSetterBiConsumers.put(
+				"scriptRequiredContexts",
+				(BiConsumer<KaleoCondition, String>)
+					KaleoCondition::setScriptRequiredContexts);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -372,6 +365,20 @@ public class KaleoConditionModelImpl
 		}
 
 		_mvccVersion = mvccVersion;
+	}
+
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@Override
@@ -685,6 +692,7 @@ public class KaleoConditionModelImpl
 		KaleoConditionImpl kaleoConditionImpl = new KaleoConditionImpl();
 
 		kaleoConditionImpl.setMvccVersion(getMvccVersion());
+		kaleoConditionImpl.setCtCollectionId(getCtCollectionId());
 		kaleoConditionImpl.setKaleoConditionId(getKaleoConditionId());
 		kaleoConditionImpl.setGroupId(getGroupId());
 		kaleoConditionImpl.setCompanyId(getCompanyId());
@@ -712,6 +720,8 @@ public class KaleoConditionModelImpl
 
 		kaleoConditionImpl.setMvccVersion(
 			this.<Long>getColumnOriginalValue("mvccVersion"));
+		kaleoConditionImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		kaleoConditionImpl.setKaleoConditionId(
 			this.<Long>getColumnOriginalValue("kaleoConditionId"));
 		kaleoConditionImpl.setGroupId(
@@ -823,6 +833,8 @@ public class KaleoConditionModelImpl
 			new KaleoConditionCacheModel();
 
 		kaleoConditionCacheModel.mvccVersion = getMvccVersion();
+
+		kaleoConditionCacheModel.ctCollectionId = getCtCollectionId();
 
 		kaleoConditionCacheModel.kaleoConditionId = getKaleoConditionId();
 
@@ -945,45 +957,17 @@ public class KaleoConditionModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<KaleoCondition, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<KaleoCondition, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<KaleoCondition, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((KaleoCondition)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, KaleoCondition>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					KaleoCondition.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
+	private long _ctCollectionId;
 	private long _kaleoConditionId;
 	private long _groupId;
 	private long _companyId;
@@ -1001,7 +985,8 @@ public class KaleoConditionModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<KaleoCondition, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1027,6 +1012,7 @@ public class KaleoConditionModelImpl
 		_columnOriginalValues = new HashMap<String, Object>();
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("kaleoConditionId", _kaleoConditionId);
 		_columnOriginalValues.put("groupId", _groupId);
 		_columnOriginalValues.put("companyId", _companyId);
@@ -1057,31 +1043,33 @@ public class KaleoConditionModelImpl
 
 		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("kaleoConditionId", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("groupId", 4L);
+		columnBitmasks.put("kaleoConditionId", 4L);
 
-		columnBitmasks.put("companyId", 8L);
+		columnBitmasks.put("groupId", 8L);
 
-		columnBitmasks.put("userId", 16L);
+		columnBitmasks.put("companyId", 16L);
 
-		columnBitmasks.put("userName", 32L);
+		columnBitmasks.put("userId", 32L);
 
-		columnBitmasks.put("createDate", 64L);
+		columnBitmasks.put("userName", 64L);
 
-		columnBitmasks.put("modifiedDate", 128L);
+		columnBitmasks.put("createDate", 128L);
 
-		columnBitmasks.put("kaleoDefinitionId", 256L);
+		columnBitmasks.put("modifiedDate", 256L);
 
-		columnBitmasks.put("kaleoDefinitionVersionId", 512L);
+		columnBitmasks.put("kaleoDefinitionId", 512L);
 
-		columnBitmasks.put("kaleoNodeId", 1024L);
+		columnBitmasks.put("kaleoDefinitionVersionId", 1024L);
 
-		columnBitmasks.put("script", 2048L);
+		columnBitmasks.put("kaleoNodeId", 2048L);
 
-		columnBitmasks.put("scriptLanguage", 4096L);
+		columnBitmasks.put("script", 4096L);
 
-		columnBitmasks.put("scriptRequiredContexts", 8192L);
+		columnBitmasks.put("scriptLanguage", 8192L);
+
+		columnBitmasks.put("scriptRequiredContexts", 16384L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

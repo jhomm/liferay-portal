@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.dao.orm.hibernate;
@@ -32,8 +23,14 @@ import java.sql.Connection;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
-import org.hibernate.engine.SessionFactoryImplementor;
+import org.hibernate.SessionBuilder;
+import org.hibernate.engine.jdbc.spi.JdbcCoordinator;
+import org.hibernate.engine.jdbc.spi.JdbcServices;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.resource.jdbc.spi.LogicalConnectionImplementor;
+import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode;
 
 /**
  * @author Brian Wing Shun Chan
@@ -57,41 +54,68 @@ public class SessionFactoryImpl implements SessionFactory {
 
 	@Override
 	public Session getCurrentSession() throws ORMException {
-		return wrapSession(_sessionFactoryImplementor.getCurrentSession());
+		SessionFactoryImplementor sessionFactoryImplementor =
+			getSessionFactoryImplementor();
+
+		return wrapSession(sessionFactoryImplementor.getCurrentSession());
 	}
 
 	@Override
 	public Dialect getDialect() throws ORMException {
-		return new DialectImpl(_sessionFactoryImplementor.getDialect());
+		SessionFactoryImplementor sessionFactoryImplementor =
+			getSessionFactoryImplementor();
+
+		JdbcServices jdbcServices = sessionFactoryImplementor.getJdbcServices();
+
+		return new DialectImpl(jdbcServices.getDialect());
 	}
 
 	public SessionFactoryImplementor getSessionFactoryImplementor() {
-		return _sessionFactoryImplementor;
+		return _sessionFactoryImplementorSupplier.get();
 	}
 
 	@Override
 	public Session openNewSession(Connection connection) throws ORMException {
-		return wrapSession(_sessionFactoryImplementor.openSession(connection));
+		SessionFactoryImplementor sessionFactoryImplementor =
+			getSessionFactoryImplementor();
+
+		SessionBuilder sessionBuilder = sessionFactoryImplementor.withOptions();
+
+		return wrapSession(
+			sessionBuilder.connection(
+				connection
+			).openSession());
 	}
 
 	@Override
 	public Session openSession() throws ORMException {
 		org.hibernate.Session session = null;
 
+		SessionFactoryImplementor sessionFactoryImplementor =
+			getSessionFactoryImplementor();
+
 		if (PropsValues.SPRING_HIBERNATE_SESSION_DELEGATED) {
-			session = _sessionFactoryImplementor.getCurrentSession();
+			session = sessionFactoryImplementor.getCurrentSession();
 		}
 		else {
-			session = _sessionFactoryImplementor.openSession();
+			session = sessionFactoryImplementor.openSession();
 		}
 
 		if (_log.isDebugEnabled()) {
-			org.hibernate.impl.SessionImpl sessionImpl =
-				(org.hibernate.impl.SessionImpl)session;
+			org.hibernate.internal.SessionImpl sessionImpl =
+				(org.hibernate.internal.SessionImpl)session;
+
+			JdbcCoordinator jdbcCoordinator = sessionImpl.getJdbcCoordinator();
+
+			LogicalConnectionImplementor logicalConnectionImplementor =
+				jdbcCoordinator.getLogicalConnection();
+
+			PhysicalConnectionHandlingMode physicalConnectionHandlingMode =
+				logicalConnectionImplementor.getConnectionHandlingMode();
 
 			_log.debug(
 				"Session is using connection release mode " +
-					sessionImpl.getConnectionReleaseMode());
+					physicalConnectionHandlingMode.getReleaseMode());
 		}
 
 		return wrapSession(session);
@@ -111,7 +135,13 @@ public class SessionFactoryImpl implements SessionFactory {
 	public void setSessionFactoryImplementor(
 		SessionFactoryImplementor sessionFactoryImplementor) {
 
-		_sessionFactoryImplementor = sessionFactoryImplementor;
+		setSessionFactoryImplementorSupplier(() -> sessionFactoryImplementor);
+	}
+
+	public void setSessionFactoryImplementorSupplier(
+		Supplier<SessionFactoryImplementor> sessionFactoryImplementorSupplier) {
+
+		_sessionFactoryImplementorSupplier = sessionFactoryImplementorSupplier;
 	}
 
 	protected Map<String, Class<?>> getPreloadClassLoaderClasses() {
@@ -156,6 +186,7 @@ public class SessionFactoryImpl implements SessionFactory {
 		ServiceTrackerListFactory.open(
 			SystemBundleUtil.getBundleContext(), SessionCustomizer.class);
 	private ClassLoader _sessionFactoryClassLoader;
-	private SessionFactoryImplementor _sessionFactoryImplementor;
+	private Supplier<SessionFactoryImplementor>
+		_sessionFactoryImplementorSupplier;
 
 }

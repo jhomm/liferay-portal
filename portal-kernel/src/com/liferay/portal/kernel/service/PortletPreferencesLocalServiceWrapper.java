@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.model.PortletPreferences;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -28,6 +20,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class PortletPreferencesLocalServiceWrapper
 	implements PortletPreferencesLocalService,
 			   ServiceWrapper<PortletPreferencesLocalService> {
+
+	public PortletPreferencesLocalServiceWrapper() {
+		this(null);
+	}
 
 	public PortletPreferencesLocalServiceWrapper(
 		PortletPreferencesLocalService portletPreferencesLocalService) {
@@ -288,7 +284,7 @@ public class PortletPreferencesLocalServiceWrapper
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences fetchPreferences(
+	public jakarta.portlet.PortletPreferences fetchPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId) {
 
@@ -297,7 +293,7 @@ public class PortletPreferencesLocalServiceWrapper
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences fetchPreferences(
+	public jakarta.portlet.PortletPreferences fetchPreferences(
 		com.liferay.portal.kernel.model.PortletPreferencesIds
 			portletPreferencesIds) {
 
@@ -313,7 +309,7 @@ public class PortletPreferencesLocalServiceWrapper
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences getDefaultPreferences(
+	public jakarta.portlet.PortletPreferences getDefaultPreferences(
 		long companyId, String portletId) {
 
 		return _portletPreferencesLocalService.getDefaultPreferences(
@@ -451,6 +447,14 @@ public class PortletPreferencesLocalServiceWrapper
 	}
 
 	@Override
+	public java.util.List<PortletPreferences> getPortletPreferencesByPortletId(
+		String portletId) {
+
+		return _portletPreferencesLocalService.getPortletPreferencesByPortletId(
+			portletId);
+	}
+
+	@Override
 	public long getPortletPreferencesCount(
 		int ownerType, long plid, String portletId) {
 
@@ -483,6 +487,14 @@ public class PortletPreferencesLocalServiceWrapper
 			ownerId, ownerType, portletId, excludeDefaultPreferences);
 	}
 
+	@Override
+	public int getPortletPreferencesCount(
+		long companyId, long ownerId, int ownerType, String portletId) {
+
+		return _portletPreferencesLocalService.getPortletPreferencesCount(
+			companyId, ownerId, ownerType, portletId);
+	}
+
 	/**
 	 * Returns a range of all the portlet preferenceses.
 	 *
@@ -513,7 +525,7 @@ public class PortletPreferencesLocalServiceWrapper
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences getPreferences(
+	public jakarta.portlet.PortletPreferences getPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId) {
 
@@ -522,7 +534,7 @@ public class PortletPreferencesLocalServiceWrapper
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences getPreferences(
+	public jakarta.portlet.PortletPreferences getPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId, String defaultPreferences) {
 
@@ -531,7 +543,7 @@ public class PortletPreferencesLocalServiceWrapper
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences getPreferences(
+	public jakarta.portlet.PortletPreferences getPreferences(
 		com.liferay.portal.kernel.model.PortletPreferencesIds
 			portletPreferencesIds) {
 
@@ -540,7 +552,7 @@ public class PortletPreferencesLocalServiceWrapper
 	}
 
 	@Override
-	public java.util.Map<String, javax.portlet.PortletPreferences>
+	public java.util.Map<String, jakarta.portlet.PortletPreferences>
 		getStrictPreferences(
 			com.liferay.portal.kernel.model.Layout layout,
 			java.util.List<com.liferay.portal.kernel.model.Portlet> portlets) {
@@ -550,7 +562,7 @@ public class PortletPreferencesLocalServiceWrapper
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences getStrictPreferences(
+	public jakarta.portlet.PortletPreferences getStrictPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId) {
 
@@ -559,7 +571,7 @@ public class PortletPreferencesLocalServiceWrapper
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences getStrictPreferences(
+	public jakarta.portlet.PortletPreferences getStrictPreferences(
 		com.liferay.portal.kernel.model.PortletPreferencesIds
 			portletPreferencesIds) {
 
@@ -588,7 +600,7 @@ public class PortletPreferencesLocalServiceWrapper
 	@Override
 	public PortletPreferences updatePreferences(
 		long ownerId, int ownerType, long plid, String portletId,
-		javax.portlet.PortletPreferences portletPreferences) {
+		jakarta.portlet.PortletPreferences portletPreferences) {
 
 		return _portletPreferencesLocalService.updatePreferences(
 			ownerId, ownerType, plid, portletId, portletPreferences);
@@ -600,6 +612,11 @@ public class PortletPreferencesLocalServiceWrapper
 
 		return _portletPreferencesLocalService.updatePreferences(
 			ownerId, ownerType, plid, portletId, xml);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _portletPreferencesLocalService.getBasePersistence();
 	}
 
 	@Override

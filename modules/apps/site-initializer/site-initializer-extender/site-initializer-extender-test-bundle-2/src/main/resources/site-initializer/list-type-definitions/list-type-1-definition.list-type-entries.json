@@ -1,0 +1,12 @@
+[
+	{
+		"key": "testlisttypeentry1",
+		"name": "Test List Type Entry 1 Update",
+		"type": "string"
+	},
+	{
+		"key": "testlisttypeentry2",
+		"name": "Test List Type Entry 2 Update",
+		"type": "string"
+	}
+]

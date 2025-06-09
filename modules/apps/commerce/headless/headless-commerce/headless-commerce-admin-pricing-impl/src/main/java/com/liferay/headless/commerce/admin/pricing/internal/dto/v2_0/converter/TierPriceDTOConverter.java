@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter;
@@ -20,6 +11,8 @@ import com.liferay.commerce.price.list.model.CommercePriceEntry;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.model.CommerceTierPriceEntry;
 import com.liferay.commerce.price.list.service.CommerceTierPriceEntryService;
+import com.liferay.commerce.product.service.CPInstanceLocalService;
+import com.liferay.commerce.util.CommerceQuantityFormatter;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.TierPrice;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
@@ -36,9 +29,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
 	property = "dto.class.name=com.liferay.commerce.price.list.model.CommerceTierPriceEntry",
-	service = {DTOConverter.class, TierPriceDTOConverter.class}
+	service = DTOConverter.class
 )
 public class TierPriceDTOConverter
 	implements DTOConverter<CommerceTierPriceEntry, TierPrice> {
@@ -73,45 +65,56 @@ public class TierPriceDTOConverter
 
 		return new TierPrice() {
 			{
-				actions = dtoConverterContext.getActions();
-				customFields = expandoBridge.getAttributes();
-				discountDiscovery =
-					commerceTierPriceEntry.isDiscountDiscovery();
-				discountLevel1 = commerceTierPriceEntry.getDiscountLevel1();
-				discountLevel2 = commerceTierPriceEntry.getDiscountLevel2();
-				discountLevel3 = commerceTierPriceEntry.getDiscountLevel3();
-				discountLevel4 = commerceTierPriceEntry.getDiscountLevel4();
-				displayDate = commerceTierPriceEntry.getDisplayDate();
-				expirationDate = commerceTierPriceEntry.getExpirationDate();
-				externalReferenceCode =
-					commerceTierPriceEntry.getExternalReferenceCode();
-				id = commerceTierPriceEntry.getCommerceTierPriceEntryId();
-				minimumQuantity = commerceTierPriceEntry.getMinQuantity();
-				price = tierPriceEntryPrice.doubleValue();
-				priceEntryExternalReferenceCode =
-					commercePriceEntry.getExternalReferenceCode();
-				priceEntryId = commercePriceEntry.getCommercePriceEntryId();
-				priceFormatted = _formatPrice(
-					tierPriceEntryPrice, commerceCurrency, locale);
+				setActions(dtoConverterContext::getActions);
+				setCustomFields(expandoBridge::getAttributes);
+				setDiscountDiscovery(
+					commerceTierPriceEntry::isDiscountDiscovery);
+				setDiscountLevel1(commerceTierPriceEntry::getDiscountLevel1);
+				setDiscountLevel2(commerceTierPriceEntry::getDiscountLevel2);
+				setDiscountLevel3(commerceTierPriceEntry::getDiscountLevel3);
+				setDiscountLevel4(commerceTierPriceEntry::getDiscountLevel4);
+				setDisplayDate(commerceTierPriceEntry::getDisplayDate);
+				setExpirationDate(commerceTierPriceEntry::getExpirationDate);
+				setExternalReferenceCode(
+					commerceTierPriceEntry::getExternalReferenceCode);
+				setId(commerceTierPriceEntry::getCommerceTierPriceEntryId);
+				setMinimumQuantity(
+					() -> _commerceQuantityFormatter.format(
+						_cpInstanceLocalService.fetchCPInstance(
+							commercePriceEntry.getCProductId(),
+							commercePriceEntry.getCPInstanceUuid()),
+						commerceTierPriceEntry.getMinQuantity(),
+						commercePriceEntry.getUnitOfMeasureKey()));
+				setPrice(tierPriceEntryPrice::doubleValue);
+				setPriceEntryExternalReferenceCode(
+					commercePriceEntry::getExternalReferenceCode);
+				setPriceEntryId(commercePriceEntry::getCommercePriceEntryId);
+				setPriceFormatted(
+					() -> {
+						BigDecimal price = tierPriceEntryPrice;
+
+						if (price == null) {
+							price = BigDecimal.ZERO;
+						}
+
+						return _commercePriceFormatter.format(
+							commerceCurrency, price, locale);
+					});
+				setUnitOfMeasureKey(commercePriceEntry::getUnitOfMeasureKey);
 			}
 		};
-	}
-
-	private String _formatPrice(
-			BigDecimal price, CommerceCurrency commerceCurrency, Locale locale)
-		throws Exception {
-
-		if (price == null) {
-			price = BigDecimal.ZERO;
-		}
-
-		return _commercePriceFormatter.format(commerceCurrency, price, locale);
 	}
 
 	@Reference
 	private CommercePriceFormatter _commercePriceFormatter;
 
 	@Reference
+	private CommerceQuantityFormatter _commerceQuantityFormatter;
+
+	@Reference
 	private CommerceTierPriceEntryService _commerceTierPriceEntryService;
+
+	@Reference
+	private CPInstanceLocalService _cpInstanceLocalService;
 
 }

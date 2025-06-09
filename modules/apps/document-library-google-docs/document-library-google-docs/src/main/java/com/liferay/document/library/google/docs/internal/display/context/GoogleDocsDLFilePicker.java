@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.google.docs.internal.display.context;
 
 import com.liferay.document.library.display.context.DLFilePicker;
-import com.liferay.document.library.google.docs.internal.util.GoogleDocsConfigurationHelper;
-import com.liferay.document.library.google.docs.internal.util.GoogleDocsMetadataHelper;
+import com.liferay.document.library.google.docs.internal.helper.GoogleDocsConfigurationHelper;
+import com.liferay.document.library.google.docs.internal.helper.GoogleDocsMetadataHelper;
 import com.liferay.document.library.google.docs.internal.util.constants.GoogleDocsConstants;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.petra.string.StringPool;
@@ -26,7 +17,7 @@ import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.template.TemplateManagerUtil;
 import com.liferay.portal.kernel.template.URLTemplateResource;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HtmlUtil_IW;
 
 /**
  * @author Iván Zaera
@@ -101,7 +92,7 @@ public class GoogleDocsDLFilePicker implements DLFilePicker {
 		template.put(
 			"googleClientId",
 			_googleDocsConfigurationHelper.getGoogleClientId());
-		template.put("htmlUtil", HtmlUtil.getHtml());
+		template.put("htmlUtil", HtmlUtil_IW.getInstance());
 		template.put("namespace", _namespace);
 		template.put("onFilePickCallback", _onFilePickCallback);
 

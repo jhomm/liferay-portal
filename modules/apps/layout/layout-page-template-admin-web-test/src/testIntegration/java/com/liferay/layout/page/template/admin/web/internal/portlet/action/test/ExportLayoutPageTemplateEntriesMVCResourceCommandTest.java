@@ -1,20 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.admin.web.internal.portlet.action.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.layout.page.template.constants.LayoutPageTemplateCollectionTypeConstants;
+import com.liferay.layout.page.template.constants.LayoutPageTemplateConstants;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateCollection;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
@@ -47,6 +40,9 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
+
+import jakarta.portlet.ResourceRequest;
 
 import java.io.File;
 
@@ -55,8 +51,6 @@ import java.util.Enumeration;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
-import javax.portlet.ResourceRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -93,8 +87,11 @@ public class ExportLayoutPageTemplateEntriesMVCResourceCommandTest {
 		LayoutPageTemplateCollection layoutPageTemplateCollection =
 			_layoutPageTemplateCollectionLocalService.
 				addLayoutPageTemplateCollection(
-					TestPropsValues.getUserId(), _group.getGroupId(),
-					"Page Template Collection One", StringPool.BLANK,
+					null, TestPropsValues.getUserId(), _group.getGroupId(),
+					LayoutPageTemplateConstants.
+						PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
+					null, "Page Template Collection One", StringPool.BLANK,
+					LayoutPageTemplateCollectionTypeConstants.BASIC,
 					_serviceContext);
 
 		String name1 = "Page Template One";
@@ -157,17 +154,21 @@ public class ExportLayoutPageTemplateEntriesMVCResourceCommandTest {
 		LayoutPageTemplateCollection layoutPageTemplateCollection =
 			_layoutPageTemplateCollectionLocalService.
 				addLayoutPageTemplateCollection(
-					TestPropsValues.getUserId(), _group.getGroupId(),
-					"Page Template Collection One", StringPool.BLANK,
+					null, TestPropsValues.getUserId(), _group.getGroupId(),
+					LayoutPageTemplateConstants.
+						PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
+					null, "Page Template Collection One", StringPool.BLANK,
+					LayoutPageTemplateCollectionTypeConstants.BASIC,
 					_serviceContext);
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				_serviceContext.getUserId(), _serviceContext.getScopeGroupId(),
+				null, _serviceContext.getUserId(),
+				_serviceContext.getScopeGroupId(),
 				layoutPageTemplateCollection.
 					getLayoutPageTemplateCollectionId(),
-				"Page Template One",
-				LayoutPageTemplateEntryTypeConstants.TYPE_BASIC, 0,
+				null, "Page Template One",
+				LayoutPageTemplateEntryTypeConstants.BASIC, 0,
 				WorkflowConstants.STATUS_DRAFT, _serviceContext);
 
 		String fileName = ReflectionTestUtil.invoke(
@@ -189,8 +190,11 @@ public class ExportLayoutPageTemplateEntriesMVCResourceCommandTest {
 		LayoutPageTemplateCollection layoutPageTemplateCollection =
 			_layoutPageTemplateCollectionLocalService.
 				addLayoutPageTemplateCollection(
-					TestPropsValues.getUserId(), _group.getGroupId(),
-					"Page Template Collection One", StringPool.BLANK,
+					null, TestPropsValues.getUserId(), _group.getGroupId(),
+					LayoutPageTemplateConstants.
+						PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
+					null, "Page Template Collection One", StringPool.BLANK,
+					LayoutPageTemplateCollectionTypeConstants.BASIC,
 					_serviceContext);
 
 		String name = "Page Template One";
@@ -231,8 +235,11 @@ public class ExportLayoutPageTemplateEntriesMVCResourceCommandTest {
 		LayoutPageTemplateCollection layoutPageTemplateCollection =
 			_layoutPageTemplateCollectionLocalService.
 				addLayoutPageTemplateCollection(
-					TestPropsValues.getUserId(), _group.getGroupId(),
-					RandomTestUtil.randomString(10), StringPool.BLANK,
+					null, TestPropsValues.getUserId(), _group.getGroupId(),
+					LayoutPageTemplateConstants.
+						PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
+					null, RandomTestUtil.randomString(10), StringPool.BLANK,
+					LayoutPageTemplateCollectionTypeConstants.BASIC,
 					_serviceContext);
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
@@ -285,15 +292,19 @@ public class ExportLayoutPageTemplateEntriesMVCResourceCommandTest {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				_serviceContext.getUserId(), _serviceContext.getScopeGroupId(),
-				layoutPageTemplateCollectionId, name,
-				LayoutPageTemplateEntryTypeConstants.TYPE_BASIC, 0, status,
+				null, _serviceContext.getUserId(),
+				_serviceContext.getScopeGroupId(),
+				layoutPageTemplateCollectionId, null, name,
+				LayoutPageTemplateEntryTypeConstants.BASIC, 0, status,
 				_serviceContext);
 
-		_layoutPageTemplateStructureLocalService.addLayoutPageTemplateStructure(
-			TestPropsValues.getUserId(), _group.getGroupId(),
-			layoutPageTemplateEntry.getPlid(), _read("layout_data.json"),
-			_serviceContext);
+		_layoutPageTemplateStructureLocalService.
+			updateLayoutPageTemplateStructureData(
+				_group.getGroupId(), layoutPageTemplateEntry.getPlid(),
+				_segmentsExperienceLocalService.
+					fetchDefaultSegmentsExperienceId(
+						layoutPageTemplateEntry.getPlid()),
+				_read("layout_data.json"));
 
 		Repository repository = PortletFileRepositoryUtil.addPortletRepository(
 			_group.getGroupId(), RandomTestUtil.randomString(),
@@ -302,7 +313,7 @@ public class ExportLayoutPageTemplateEntriesMVCResourceCommandTest {
 		Class<?> clazz = getClass();
 
 		FileEntry fileEntry = PortletFileRepositoryUtil.addPortletFileEntry(
-			_group.getGroupId(), TestPropsValues.getUserId(),
+			null, _group.getGroupId(), TestPropsValues.getUserId(),
 			LayoutPageTemplateEntry.class.getName(),
 			layoutPageTemplateEntry.getLayoutPageTemplateEntryId(),
 			RandomTestUtil.randomString(), repository.getDlFolderId(),
@@ -395,7 +406,7 @@ public class ExportLayoutPageTemplateEntriesMVCResourceCommandTest {
 			_read(expectedFileName));
 
 		Assert.assertEquals(
-			expectedJSONObject.toJSONString(), jsonObject.toJSONString());
+			expectedJSONObject.toString(), jsonObject.toString());
 	}
 
 	private void _validateContent(
@@ -408,16 +419,15 @@ public class ExportLayoutPageTemplateEntriesMVCResourceCommandTest {
 		boolean equals = false;
 
 		for (String expectedPageTemplateName : expectedPageTemplateNames) {
-			JSONObject expectedJSONObject = JSONFactoryUtil.createJSONObject(
-				StringUtil.replace(
-					_read(expectedFileName), "${", "}",
-					HashMapBuilder.put(
-						"PAGE_TEMPLATE_NAME", expectedPageTemplateName
-					).build()));
+			String expectedJSON = String.valueOf(
+				JSONFactoryUtil.createJSONObject(
+					StringUtil.replace(
+						_read(expectedFileName), "${", "}",
+						HashMapBuilder.put(
+							"PAGE_TEMPLATE_NAME", expectedPageTemplateName
+						).build())));
 
-			String expectedJSON1 = expectedJSONObject.toJSONString();
-
-			equals = expectedJSON1.equals(jsonObject.toJSONString());
+			equals = expectedJSON.equals(jsonObject.toString());
 
 			if (equals) {
 				break;
@@ -476,6 +486,9 @@ public class ExportLayoutPageTemplateEntriesMVCResourceCommandTest {
 		filter = "mvc.command.name=/layout_page_template_admin/export_layout_page_template_entries"
 	)
 	private MVCResourceCommand _mvcResourceCommand;
+
+	@Inject
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 	private ServiceContext _serviceContext;
 

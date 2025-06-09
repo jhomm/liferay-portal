@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.persistence.impl;
@@ -22,7 +13,9 @@ import com.liferay.fragment.model.impl.FragmentEntryVersionModelImpl;
 import com.liferay.fragment.service.persistence.FragmentEntryVersionPersistence;
 import com.liferay.fragment.service.persistence.FragmentEntryVersionUtil;
 import com.liferay.fragment.service.persistence.impl.constants.FragmentPersistenceConstants;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
@@ -33,24 +26,29 @@ import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.SessionFactory;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.sanitizer.SanitizerException;
+import com.liferay.portal.kernel.sanitizer.SanitizerUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -82,9 +80,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(
-	service = {FragmentEntryVersionPersistence.class, BasePersistence.class}
-)
+@Component(service = FragmentEntryVersionPersistence.class)
 public class FragmentEntryVersionPersistenceImpl
 	extends BasePersistenceImpl<FragmentEntryVersion>
 	implements FragmentEntryVersionPersistence {
@@ -185,100 +181,103 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByFragmentEntryId;
-				finderArgs = new Object[] {fragmentEntryId};
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindByFragmentEntryId;
+					finderArgs = new Object[] {fragmentEntryId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByFragmentEntryId;
-			finderArgs = new Object[] {
-				fragmentEntryId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByFragmentEntryId;
+				finderArgs = new Object[] {
+					fragmentEntryId, start, end, orderByComparator
+				};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if (fragmentEntryId !=
-							fragmentEntryVersion.getFragmentEntryId()) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if (fragmentEntryId !=
+								fragmentEntryVersion.getFragmentEntryId()) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_FRAGMENTENTRYID_FRAGMENTENTRYID_2);
+				sb.append(_FINDER_COLUMN_FRAGMENTENTRYID_FRAGMENTENTRYID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(fragmentEntryId);
+					queryPos.add(fragmentEntryId);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -577,57 +576,51 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public int countByFragmentEntryId(long fragmentEntryId) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByFragmentEntryId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {fragmentEntryId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByFragmentEntryId;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {fragmentEntryId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_FRAGMENTENTRYID_FRAGMENTENTRYID_2);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_FRAGMENTENTRYID_FRAGMENTENTRYID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(fragmentEntryId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(fragmentEntryId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String
@@ -635,7 +628,6 @@ public class FragmentEntryVersionPersistenceImpl
 			"fragmentEntryVersion.fragmentEntryId = ?";
 
 	private FinderPath _finderPathFetchByFragmentEntryId_Version;
-	private FinderPath _finderPathCountByFragmentEntryId_Version;
 
 	/**
 	 * Returns the fragment entry version where fragmentEntryId = &#63; and version = &#63; or throws a <code>NoSuchEntryVersionException</code> if it could not be found.
@@ -702,88 +694,92 @@ public class FragmentEntryVersionPersistenceImpl
 	public FragmentEntryVersion fetchByFragmentEntryId_Version(
 		long fragmentEntryId, int version, boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {fragmentEntryId, version};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(
-				_finderPathFetchByFragmentEntryId_Version, finderArgs);
-		}
-
-		if (result instanceof FragmentEntryVersion) {
-			FragmentEntryVersion fragmentEntryVersion =
-				(FragmentEntryVersion)result;
-
-			if ((fragmentEntryId !=
-					fragmentEntryVersion.getFragmentEntryId()) ||
-				(version != fragmentEntryVersion.getVersion())) {
-
-				result = null;
+			if (useFinderCache) {
+				finderArgs = new Object[] {fragmentEntryId, version};
 			}
-		}
 
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
+			Object result = null;
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByFragmentEntryId_Version, finderArgs,
+					this);
+			}
 
-			sb.append(_FINDER_COLUMN_FRAGMENTENTRYID_VERSION_FRAGMENTENTRYID_2);
+			if (result instanceof FragmentEntryVersion) {
+				FragmentEntryVersion fragmentEntryVersion =
+					(FragmentEntryVersion)result;
 
-			sb.append(_FINDER_COLUMN_FRAGMENTENTRYID_VERSION_VERSION_2);
+				if ((fragmentEntryId !=
+						fragmentEntryVersion.getFragmentEntryId()) ||
+					(version != fragmentEntryVersion.getVersion())) {
 
-			String sql = sb.toString();
+					result = null;
+				}
+			}
 
-			Session session = null;
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-			try {
-				session = openSession();
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-				Query query = session.createQuery(sql);
+				sb.append(
+					_FINDER_COLUMN_FRAGMENTENTRYID_VERSION_FRAGMENTENTRYID_2);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+				sb.append(_FINDER_COLUMN_FRAGMENTENTRYID_VERSION_VERSION_2);
 
-				queryPos.add(fragmentEntryId);
+				String sql = sb.toString();
 
-				queryPos.add(version);
+				Session session = null;
 
-				List<FragmentEntryVersion> list = query.list();
+				try {
+					session = openSession();
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						finderCache.putResult(
-							_finderPathFetchByFragmentEntryId_Version,
-							finderArgs, list);
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(fragmentEntryId);
+
+					queryPos.add(version);
+
+					List<FragmentEntryVersion> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByFragmentEntryId_Version,
+								finderArgs, list);
+						}
+					}
+					else {
+						FragmentEntryVersion fragmentEntryVersion = list.get(0);
+
+						result = fragmentEntryVersion;
+
+						cacheResult(fragmentEntryVersion);
 					}
 				}
-				else {
-					FragmentEntryVersion fragmentEntryVersion = list.get(0);
-
-					result = fragmentEntryVersion;
-
-					cacheResult(fragmentEntryVersion);
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (FragmentEntryVersion)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (FragmentEntryVersion)result;
+			}
 		}
 	}
 
@@ -816,61 +812,14 @@ public class FragmentEntryVersionPersistenceImpl
 	public int countByFragmentEntryId_Version(
 		long fragmentEntryId, int version) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		FragmentEntryVersion fragmentEntryVersion =
+			fetchByFragmentEntryId_Version(fragmentEntryId, version);
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByFragmentEntryId_Version;
-
-			finderArgs = new Object[] {fragmentEntryId, version};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+		if (fragmentEntryVersion == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
-
-			sb.append(_FINDER_COLUMN_FRAGMENTENTRYID_VERSION_FRAGMENTENTRYID_2);
-
-			sb.append(_FINDER_COLUMN_FRAGMENTENTRYID_VERSION_VERSION_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(fragmentEntryId);
-
-				queryPos.add(version);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String
@@ -956,109 +905,111 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid;
-				finderArgs = new Object[] {uuid};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUuid;
+					finderArgs = new Object[] {uuid};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid;
-			finderArgs = new Object[] {uuid, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid;
+				finderArgs = new Object[] {uuid, start, end, orderByComparator};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if (!uuid.equals(fragmentEntryVersion.getUuid())) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if (!uuid.equals(fragmentEntryVersion.getUuid())) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
 				}
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-				cacheResult(list);
+				boolean bindUuid = false;
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_UUID_3);
+				}
+				else {
+					bindUuid = true;
+
+					sb.append(_FINDER_COLUMN_UUID_UUID_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1365,70 +1316,64 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public int countByUuid(String uuid) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByUuid;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {uuid};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {uuid};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				boolean bindUuid = false;
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_UUID_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_UUID_UUID_2 =
@@ -1520,117 +1465,119 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid_Version;
-				finderArgs = new Object[] {uuid, version};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUuid_Version;
+					finderArgs = new Object[] {uuid, version};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid_Version;
-			finderArgs = new Object[] {
-				uuid, version, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid_Version;
+				finderArgs = new Object[] {
+					uuid, version, start, end, orderByComparator
+				};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if (!uuid.equals(fragmentEntryVersion.getUuid()) ||
-						(version != fragmentEntryVersion.getVersion())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if (!uuid.equals(fragmentEntryVersion.getUuid()) ||
+							(version != fragmentEntryVersion.getVersion())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_VERSION_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_VERSION_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_VERSION_VERSION_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				queryPos.add(version);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+				boolean bindUuid = false;
 
-				cacheResult(list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_VERSION_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					sb.append(_FINDER_COLUMN_UUID_VERSION_UUID_2);
+				}
+
+				sb.append(_FINDER_COLUMN_UUID_VERSION_VERSION_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(version);
+
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1958,74 +1905,68 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public int countByUuid_Version(String uuid, int version) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByUuid_Version;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {uuid, version};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid_Version;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {uuid, version};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				boolean bindUuid = false;
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_VERSION_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_VERSION_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_VERSION_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_VERSION_VERSION_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_VERSION_UUID_2);
 				}
 
-				queryPos.add(version);
+				sb.append(_FINDER_COLUMN_UUID_VERSION_VERSION_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(version);
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_UUID_VERSION_UUID_2 =
@@ -2117,117 +2058,119 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUUID_G;
-				finderArgs = new Object[] {uuid, groupId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUUID_G;
+					finderArgs = new Object[] {uuid, groupId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUUID_G;
-			finderArgs = new Object[] {
-				uuid, groupId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUUID_G;
+				finderArgs = new Object[] {
+					uuid, groupId, start, end, orderByComparator
+				};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if (!uuid.equals(fragmentEntryVersion.getUuid()) ||
-						(groupId != fragmentEntryVersion.getGroupId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if (!uuid.equals(fragmentEntryVersion.getUuid()) ||
+							(groupId != fragmentEntryVersion.getGroupId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				queryPos.add(groupId);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+				boolean bindUuid = false;
 
-				cacheResult(list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
+				}
+
+				sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(groupId);
+
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -2555,74 +2498,68 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public int countByUUID_G(String uuid, long groupId) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByUUID_G;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {uuid, groupId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByUUID_G;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {uuid, groupId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				boolean bindUuid = false;
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
 				}
 
-				queryPos.add(groupId);
+				sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(groupId);
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_UUID_G_UUID_2 =
@@ -2635,7 +2572,6 @@ public class FragmentEntryVersionPersistenceImpl
 		"fragmentEntryVersion.groupId = ?";
 
 	private FinderPath _finderPathFetchByUUID_G_Version;
-	private FinderPath _finderPathCountByUUID_G_Version;
 
 	/**
 	 * Returns the fragment entry version where uuid = &#63; and groupId = &#63; and version = &#63; or throws a <code>NoSuchEntryVersionException</code> if it could not be found.
@@ -2708,104 +2644,107 @@ public class FragmentEntryVersionPersistenceImpl
 	public FragmentEntryVersion fetchByUUID_G_Version(
 		String uuid, long groupId, int version, boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			uuid = Objects.toString(uuid, "");
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {uuid, groupId, version};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(
-				_finderPathFetchByUUID_G_Version, finderArgs);
-		}
-
-		if (result instanceof FragmentEntryVersion) {
-			FragmentEntryVersion fragmentEntryVersion =
-				(FragmentEntryVersion)result;
-
-			if (!Objects.equals(uuid, fragmentEntryVersion.getUuid()) ||
-				(groupId != fragmentEntryVersion.getGroupId()) ||
-				(version != fragmentEntryVersion.getVersion())) {
-
-				result = null;
-			}
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(5);
-
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_VERSION_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_VERSION_UUID_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {uuid, groupId, version};
 			}
 
-			sb.append(_FINDER_COLUMN_UUID_G_VERSION_GROUPID_2);
+			Object result = null;
 
-			sb.append(_FINDER_COLUMN_UUID_G_VERSION_VERSION_2);
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByUUID_G_Version, finderArgs, this);
+			}
 
-			String sql = sb.toString();
+			if (result instanceof FragmentEntryVersion) {
+				FragmentEntryVersion fragmentEntryVersion =
+					(FragmentEntryVersion)result;
 
-			Session session = null;
+				if (!Objects.equals(uuid, fragmentEntryVersion.getUuid()) ||
+					(groupId != fragmentEntryVersion.getGroupId()) ||
+					(version != fragmentEntryVersion.getVersion())) {
 
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					result = null;
 				}
+			}
 
-				queryPos.add(groupId);
+			if (result == null) {
+				StringBundler sb = new StringBundler(5);
 
-				queryPos.add(version);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-				List<FragmentEntryVersion> list = query.list();
+				boolean bindUuid = false;
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						finderCache.putResult(
-							_finderPathFetchByUUID_G_Version, finderArgs, list);
-					}
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_G_VERSION_UUID_3);
 				}
 				else {
-					FragmentEntryVersion fragmentEntryVersion = list.get(0);
+					bindUuid = true;
 
-					result = fragmentEntryVersion;
+					sb.append(_FINDER_COLUMN_UUID_G_VERSION_UUID_2);
+				}
 
-					cacheResult(fragmentEntryVersion);
+				sb.append(_FINDER_COLUMN_UUID_G_VERSION_GROUPID_2);
+
+				sb.append(_FINDER_COLUMN_UUID_G_VERSION_VERSION_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(groupId);
+
+					queryPos.add(version);
+
+					List<FragmentEntryVersion> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByUUID_G_Version, finderArgs,
+								list);
+						}
+					}
+					else {
+						FragmentEntryVersion fragmentEntryVersion = list.get(0);
+
+						result = fragmentEntryVersion;
+
+						cacheResult(fragmentEntryVersion);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (FragmentEntryVersion)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (FragmentEntryVersion)result;
+			}
 		}
 	}
 
@@ -2838,78 +2777,14 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public int countByUUID_G_Version(String uuid, long groupId, int version) {
-		uuid = Objects.toString(uuid, "");
+		FragmentEntryVersion fragmentEntryVersion = fetchByUUID_G_Version(
+			uuid, groupId, version);
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByUUID_G_Version;
-
-			finderArgs = new Object[] {uuid, groupId, version};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+		if (fragmentEntryVersion == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_VERSION_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_VERSION_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_G_VERSION_GROUPID_2);
-
-			sb.append(_FINDER_COLUMN_UUID_G_VERSION_VERSION_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
-				}
-
-				queryPos.add(groupId);
-
-				queryPos.add(version);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_UUID_G_VERSION_UUID_2 =
@@ -3007,117 +2882,120 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid_C;
-				finderArgs = new Object[] {uuid, companyId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUuid_C;
+					finderArgs = new Object[] {uuid, companyId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid_C;
-			finderArgs = new Object[] {
-				uuid, companyId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid_C;
+				finderArgs = new Object[] {
+					uuid, companyId, start, end, orderByComparator
+				};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if (!uuid.equals(fragmentEntryVersion.getUuid()) ||
-						(companyId != fragmentEntryVersion.getCompanyId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if (!uuid.equals(fragmentEntryVersion.getUuid()) ||
+							(companyId !=
+								fragmentEntryVersion.getCompanyId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+				boolean bindUuid = false;
 
-				cacheResult(list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
+				}
+
+				sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -3446,74 +3324,68 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public int countByUuid_C(String uuid, long companyId) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByUuid_C;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {uuid, companyId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid_C;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {uuid, companyId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				boolean bindUuid = false;
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_UUID_C_UUID_2 =
@@ -3613,122 +3485,126 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid_C_Version;
-				finderArgs = new Object[] {uuid, companyId, version};
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindByUuid_C_Version;
+					finderArgs = new Object[] {uuid, companyId, version};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid_C_Version;
-			finderArgs = new Object[] {
-				uuid, companyId, version, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid_C_Version;
+				finderArgs = new Object[] {
+					uuid, companyId, version, start, end, orderByComparator
+				};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if (!uuid.equals(fragmentEntryVersion.getUuid()) ||
-						(companyId != fragmentEntryVersion.getCompanyId()) ||
-						(version != fragmentEntryVersion.getVersion())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if (!uuid.equals(fragmentEntryVersion.getUuid()) ||
+							(companyId !=
+								fragmentEntryVersion.getCompanyId()) ||
+							(version != fragmentEntryVersion.getVersion())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_VERSION_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_VERSION_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_VERSION_COMPANYID_2);
-
-			sb.append(_FINDER_COLUMN_UUID_C_VERSION_VERSION_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						5 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(5);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-				queryPos.add(version);
+				boolean bindUuid = false;
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_VERSION_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-				cacheResult(list);
+					sb.append(_FINDER_COLUMN_UUID_C_VERSION_UUID_2);
+				}
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				sb.append(_FINDER_COLUMN_UUID_C_VERSION_COMPANYID_2);
+
+				sb.append(_FINDER_COLUMN_UUID_C_VERSION_VERSION_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					queryPos.add(version);
+
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -4077,78 +3953,72 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public int countByUuid_C_Version(String uuid, long companyId, int version) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByUuid_C_Version;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {uuid, companyId, version};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid_C_Version;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {uuid, companyId, version};
+			if (count == null) {
+				StringBundler sb = new StringBundler(4);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
+				boolean bindUuid = false;
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_VERSION_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_VERSION_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_VERSION_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_VERSION_COMPANYID_2);
-
-			sb.append(_FINDER_COLUMN_UUID_C_VERSION_VERSION_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_C_VERSION_UUID_2);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_FINDER_COLUMN_UUID_C_VERSION_COMPANYID_2);
 
-				queryPos.add(version);
+				sb.append(_FINDER_COLUMN_UUID_C_VERSION_VERSION_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					queryPos.add(version);
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_UUID_C_VERSION_UUID_2 =
@@ -4239,96 +4109,100 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByGroupId;
-				finderArgs = new Object[] {groupId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByGroupId;
+					finderArgs = new Object[] {groupId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByGroupId;
-			finderArgs = new Object[] {groupId, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByGroupId;
+				finderArgs = new Object[] {
+					groupId, start, end, orderByComparator
+				};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if (groupId != fragmentEntryVersion.getGroupId()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if (groupId != fragmentEntryVersion.getGroupId()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
+				sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -4625,57 +4499,51 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public int countByGroupId(long groupId) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByGroupId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {groupId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByGroupId;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(groupId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(groupId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_GROUPID_GROUPID_2 =
@@ -4764,104 +4632,107 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByGroupId_Version;
-				finderArgs = new Object[] {groupId, version};
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindByGroupId_Version;
+					finderArgs = new Object[] {groupId, version};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByGroupId_Version;
-			finderArgs = new Object[] {
-				groupId, version, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByGroupId_Version;
+				finderArgs = new Object[] {
+					groupId, version, start, end, orderByComparator
+				};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						(version != fragmentEntryVersion.getVersion())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							(version != fragmentEntryVersion.getVersion())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_GROUPID_VERSION_GROUPID_2);
+				sb.append(_FINDER_COLUMN_GROUPID_VERSION_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_GROUPID_VERSION_VERSION_2);
+				sb.append(_FINDER_COLUMN_GROUPID_VERSION_VERSION_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(version);
+					queryPos.add(version);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -5177,61 +5048,55 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public int countByGroupId_Version(long groupId, int version) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByGroupId_Version;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {groupId, version};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByGroupId_Version;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId, version};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_GROUPID_VERSION_GROUPID_2);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_FINDER_COLUMN_GROUPID_VERSION_VERSION_2);
 
-			sb.append(_FINDER_COLUMN_GROUPID_VERSION_GROUPID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_GROUPID_VERSION_VERSION_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(groupId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(version);
 
-				queryPos.add(groupId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(version);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_GROUPID_VERSION_GROUPID_2 =
@@ -5320,102 +5185,106 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath =
-					_finderPathWithoutPaginationFindByFragmentCollectionId;
-				finderArgs = new Object[] {fragmentCollectionId};
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindByFragmentCollectionId;
+					finderArgs = new Object[] {fragmentCollectionId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByFragmentCollectionId;
-			finderArgs = new Object[] {
-				fragmentCollectionId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath =
+					_finderPathWithPaginationFindByFragmentCollectionId;
+				finderArgs = new Object[] {
+					fragmentCollectionId, start, end, orderByComparator
+				};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if (fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId()) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if (fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId()) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(
-				_FINDER_COLUMN_FRAGMENTCOLLECTIONID_FRAGMENTCOLLECTIONID_2);
+				sb.append(
+					_FINDER_COLUMN_FRAGMENTCOLLECTIONID_FRAGMENTCOLLECTIONID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -5716,58 +5585,52 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public int countByFragmentCollectionId(long fragmentCollectionId) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByFragmentCollectionId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {fragmentCollectionId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByFragmentCollectionId;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {fragmentCollectionId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(
+					_FINDER_COLUMN_FRAGMENTCOLLECTIONID_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				String sql = sb.toString();
 
-			sb.append(
-				_FINDER_COLUMN_FRAGMENTCOLLECTIONID_FRAGMENTCOLLECTIONID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(fragmentCollectionId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(fragmentCollectionId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String
@@ -5861,108 +5724,112 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath =
-					_finderPathWithoutPaginationFindByFragmentCollectionId_Version;
-				finderArgs = new Object[] {fragmentCollectionId, version};
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindByFragmentCollectionId_Version;
+					finderArgs = new Object[] {fragmentCollectionId, version};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath =
-				_finderPathWithPaginationFindByFragmentCollectionId_Version;
-			finderArgs = new Object[] {
-				fragmentCollectionId, version, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath =
+					_finderPathWithPaginationFindByFragmentCollectionId_Version;
+				finderArgs = new Object[] {
+					fragmentCollectionId, version, start, end, orderByComparator
+				};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId()) ||
-						(version != fragmentEntryVersion.getVersion())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId()) ||
+							(version != fragmentEntryVersion.getVersion())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(
-				_FINDER_COLUMN_FRAGMENTCOLLECTIONID_VERSION_FRAGMENTCOLLECTIONID_2);
+				sb.append(
+					_FINDER_COLUMN_FRAGMENTCOLLECTIONID_VERSION_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_FRAGMENTCOLLECTIONID_VERSION_VERSION_2);
+				sb.append(
+					_FINDER_COLUMN_FRAGMENTCOLLECTIONID_VERSION_VERSION_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(version);
+					queryPos.add(version);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -6289,62 +6156,58 @@ public class FragmentEntryVersionPersistenceImpl
 	public int countByFragmentCollectionId_Version(
 		long fragmentCollectionId, int version) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath =
+				_finderPathCountByFragmentCollectionId_Version;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {fragmentCollectionId, version};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByFragmentCollectionId_Version;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {fragmentCollectionId, version};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(
+					_FINDER_COLUMN_FRAGMENTCOLLECTIONID_VERSION_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(
+					_FINDER_COLUMN_FRAGMENTCOLLECTIONID_VERSION_VERSION_2);
 
-			sb.append(
-				_FINDER_COLUMN_FRAGMENTCOLLECTIONID_VERSION_FRAGMENTCOLLECTIONID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_FRAGMENTCOLLECTIONID_VERSION_VERSION_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(fragmentCollectionId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(version);
 
-				queryPos.add(fragmentCollectionId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(version);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String
@@ -6354,6 +6217,1064 @@ public class FragmentEntryVersionPersistenceImpl
 	private static final String
 		_FINDER_COLUMN_FRAGMENTCOLLECTIONID_VERSION_VERSION_2 =
 			"fragmentEntryVersion.version = ?";
+
+	private FinderPath _finderPathWithPaginationFindByType;
+	private FinderPath _finderPathWithoutPaginationFindByType;
+	private FinderPath _finderPathCountByType;
+
+	/**
+	 * Returns all the fragment entry versions where type = &#63;.
+	 *
+	 * @param type the type
+	 * @return the matching fragment entry versions
+	 */
+	@Override
+	public List<FragmentEntryVersion> findByType(int type) {
+		return findByType(type, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry versions where type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryVersionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param start the lower bound of the range of fragment entry versions
+	 * @param end the upper bound of the range of fragment entry versions (not inclusive)
+	 * @return the range of matching fragment entry versions
+	 */
+	@Override
+	public List<FragmentEntryVersion> findByType(int type, int start, int end) {
+		return findByType(type, start, end, null);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry versions where type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryVersionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param start the lower bound of the range of fragment entry versions
+	 * @param end the upper bound of the range of fragment entry versions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry versions
+	 */
+	@Override
+	public List<FragmentEntryVersion> findByType(
+		int type, int start, int end,
+		OrderByComparator<FragmentEntryVersion> orderByComparator) {
+
+		return findByType(type, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry versions where type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryVersionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param start the lower bound of the range of fragment entry versions
+	 * @param end the upper bound of the range of fragment entry versions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry versions
+	 */
+	@Override
+	public List<FragmentEntryVersion> findByType(
+		int type, int start, int end,
+		OrderByComparator<FragmentEntryVersion> orderByComparator,
+		boolean useFinderCache) {
+
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
+
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
+
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
+
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByType;
+					finderArgs = new Object[] {type};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByType;
+				finderArgs = new Object[] {type, start, end, orderByComparator};
+			}
+
+			List<FragmentEntryVersion> list = null;
+
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
+
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if (type != fragmentEntryVersion.getType()) {
+							list = null;
+
+							break;
+						}
+					}
+				}
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
+
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+
+				sb.append(_FINDER_COLUMN_TYPE_TYPE_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(type);
+
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
+	}
+
+	/**
+	 * Returns the first fragment entry version in the ordered set where type = &#63;.
+	 *
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry version
+	 * @throws NoSuchEntryVersionException if a matching fragment entry version could not be found
+	 */
+	@Override
+	public FragmentEntryVersion findByType_First(
+			int type, OrderByComparator<FragmentEntryVersion> orderByComparator)
+		throws NoSuchEntryVersionException {
+
+		FragmentEntryVersion fragmentEntryVersion = fetchByType_First(
+			type, orderByComparator);
+
+		if (fragmentEntryVersion != null) {
+			return fragmentEntryVersion;
+		}
+
+		StringBundler sb = new StringBundler(4);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("type=");
+		sb.append(type);
+
+		sb.append("}");
+
+		throw new NoSuchEntryVersionException(sb.toString());
+	}
+
+	/**
+	 * Returns the first fragment entry version in the ordered set where type = &#63;.
+	 *
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry version, or <code>null</code> if a matching fragment entry version could not be found
+	 */
+	@Override
+	public FragmentEntryVersion fetchByType_First(
+		int type, OrderByComparator<FragmentEntryVersion> orderByComparator) {
+
+		List<FragmentEntryVersion> list = findByType(
+			type, 0, 1, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last fragment entry version in the ordered set where type = &#63;.
+	 *
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry version
+	 * @throws NoSuchEntryVersionException if a matching fragment entry version could not be found
+	 */
+	@Override
+	public FragmentEntryVersion findByType_Last(
+			int type, OrderByComparator<FragmentEntryVersion> orderByComparator)
+		throws NoSuchEntryVersionException {
+
+		FragmentEntryVersion fragmentEntryVersion = fetchByType_Last(
+			type, orderByComparator);
+
+		if (fragmentEntryVersion != null) {
+			return fragmentEntryVersion;
+		}
+
+		StringBundler sb = new StringBundler(4);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("type=");
+		sb.append(type);
+
+		sb.append("}");
+
+		throw new NoSuchEntryVersionException(sb.toString());
+	}
+
+	/**
+	 * Returns the last fragment entry version in the ordered set where type = &#63;.
+	 *
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry version, or <code>null</code> if a matching fragment entry version could not be found
+	 */
+	@Override
+	public FragmentEntryVersion fetchByType_Last(
+		int type, OrderByComparator<FragmentEntryVersion> orderByComparator) {
+
+		int count = countByType(type);
+
+		if (count == 0) {
+			return null;
+		}
+
+		List<FragmentEntryVersion> list = findByType(
+			type, count - 1, count, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the fragment entry versions before and after the current fragment entry version in the ordered set where type = &#63;.
+	 *
+	 * @param fragmentEntryVersionId the primary key of the current fragment entry version
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next fragment entry version
+	 * @throws NoSuchEntryVersionException if a fragment entry version with the primary key could not be found
+	 */
+	@Override
+	public FragmentEntryVersion[] findByType_PrevAndNext(
+			long fragmentEntryVersionId, int type,
+			OrderByComparator<FragmentEntryVersion> orderByComparator)
+		throws NoSuchEntryVersionException {
+
+		FragmentEntryVersion fragmentEntryVersion = findByPrimaryKey(
+			fragmentEntryVersionId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			FragmentEntryVersion[] array = new FragmentEntryVersionImpl[3];
+
+			array[0] = getByType_PrevAndNext(
+				session, fragmentEntryVersion, type, orderByComparator, true);
+
+			array[1] = fragmentEntryVersion;
+
+			array[2] = getByType_PrevAndNext(
+				session, fragmentEntryVersion, type, orderByComparator, false);
+
+			return array;
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	protected FragmentEntryVersion getByType_PrevAndNext(
+		Session session, FragmentEntryVersion fragmentEntryVersion, int type,
+		OrderByComparator<FragmentEntryVersion> orderByComparator,
+		boolean previous) {
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				4 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
+		}
+		else {
+			sb = new StringBundler(3);
+		}
+
+		sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+
+		sb.append(_FINDER_COLUMN_TYPE_TYPE_2);
+
+		if (orderByComparator != null) {
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
+
+			if (orderByConditionFields.length > 0) {
+				sb.append(WHERE_AND);
+			}
+
+			for (int i = 0; i < orderByConditionFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByConditionFields[i]);
+
+				if ((i + 1) < orderByConditionFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN);
+					}
+				}
+			}
+
+			sb.append(ORDER_BY_CLAUSE);
+
+			String[] orderByFields = orderByComparator.getOrderByFields();
+
+			for (int i = 0; i < orderByFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByFields[i]);
+
+				if ((i + 1) < orderByFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
+					}
+					else {
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC);
+					}
+					else {
+						sb.append(ORDER_BY_DESC);
+					}
+				}
+			}
+		}
+		else {
+			sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+		}
+
+		String sql = sb.toString();
+
+		Query query = session.createQuery(sql);
+
+		query.setFirstResult(0);
+		query.setMaxResults(2);
+
+		QueryPos queryPos = QueryPos.getInstance(query);
+
+		queryPos.add(type);
+
+		if (orderByComparator != null) {
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(
+						fragmentEntryVersion)) {
+
+				queryPos.add(orderByConditionValue);
+			}
+		}
+
+		List<FragmentEntryVersion> list = query.list();
+
+		if (list.size() == 2) {
+			return list.get(1);
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Removes all the fragment entry versions where type = &#63; from the database.
+	 *
+	 * @param type the type
+	 */
+	@Override
+	public void removeByType(int type) {
+		for (FragmentEntryVersion fragmentEntryVersion :
+				findByType(type, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+
+			remove(fragmentEntryVersion);
+		}
+	}
+
+	/**
+	 * Returns the number of fragment entry versions where type = &#63;.
+	 *
+	 * @param type the type
+	 * @return the number of matching fragment entry versions
+	 */
+	@Override
+	public int countByType(int type) {
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
+
+			FinderPath finderPath = _finderPathCountByType;
+
+			Object[] finderArgs = new Object[] {type};
+
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
+
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
+
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+
+				sb.append(_FINDER_COLUMN_TYPE_TYPE_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(type);
+
+					count = (Long)query.uniqueResult();
+
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return count.intValue();
+		}
+	}
+
+	private static final String _FINDER_COLUMN_TYPE_TYPE_2 =
+		"fragmentEntryVersion.type = ?";
+
+	private FinderPath _finderPathWithPaginationFindByType_Version;
+	private FinderPath _finderPathWithoutPaginationFindByType_Version;
+	private FinderPath _finderPathCountByType_Version;
+
+	/**
+	 * Returns all the fragment entry versions where type = &#63; and version = &#63;.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @return the matching fragment entry versions
+	 */
+	@Override
+	public List<FragmentEntryVersion> findByType_Version(
+		int type, int version) {
+
+		return findByType_Version(
+			type, version, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry versions where type = &#63; and version = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryVersionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param start the lower bound of the range of fragment entry versions
+	 * @param end the upper bound of the range of fragment entry versions (not inclusive)
+	 * @return the range of matching fragment entry versions
+	 */
+	@Override
+	public List<FragmentEntryVersion> findByType_Version(
+		int type, int version, int start, int end) {
+
+		return findByType_Version(type, version, start, end, null);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry versions where type = &#63; and version = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryVersionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param start the lower bound of the range of fragment entry versions
+	 * @param end the upper bound of the range of fragment entry versions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry versions
+	 */
+	@Override
+	public List<FragmentEntryVersion> findByType_Version(
+		int type, int version, int start, int end,
+		OrderByComparator<FragmentEntryVersion> orderByComparator) {
+
+		return findByType_Version(
+			type, version, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry versions where type = &#63; and version = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryVersionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param start the lower bound of the range of fragment entry versions
+	 * @param end the upper bound of the range of fragment entry versions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry versions
+	 */
+	@Override
+	public List<FragmentEntryVersion> findByType_Version(
+		int type, int version, int start, int end,
+		OrderByComparator<FragmentEntryVersion> orderByComparator,
+		boolean useFinderCache) {
+
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
+
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
+
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
+
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByType_Version;
+					finderArgs = new Object[] {type, version};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByType_Version;
+				finderArgs = new Object[] {
+					type, version, start, end, orderByComparator
+				};
+			}
+
+			List<FragmentEntryVersion> list = null;
+
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
+
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((type != fragmentEntryVersion.getType()) ||
+							(version != fragmentEntryVersion.getVersion())) {
+
+							list = null;
+
+							break;
+						}
+					}
+				}
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
+
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+
+				sb.append(_FINDER_COLUMN_TYPE_VERSION_TYPE_2);
+
+				sb.append(_FINDER_COLUMN_TYPE_VERSION_VERSION_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(type);
+
+					queryPos.add(version);
+
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
+	}
+
+	/**
+	 * Returns the first fragment entry version in the ordered set where type = &#63; and version = &#63;.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry version
+	 * @throws NoSuchEntryVersionException if a matching fragment entry version could not be found
+	 */
+	@Override
+	public FragmentEntryVersion findByType_Version_First(
+			int type, int version,
+			OrderByComparator<FragmentEntryVersion> orderByComparator)
+		throws NoSuchEntryVersionException {
+
+		FragmentEntryVersion fragmentEntryVersion = fetchByType_Version_First(
+			type, version, orderByComparator);
+
+		if (fragmentEntryVersion != null) {
+			return fragmentEntryVersion;
+		}
+
+		StringBundler sb = new StringBundler(6);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("type=");
+		sb.append(type);
+
+		sb.append(", version=");
+		sb.append(version);
+
+		sb.append("}");
+
+		throw new NoSuchEntryVersionException(sb.toString());
+	}
+
+	/**
+	 * Returns the first fragment entry version in the ordered set where type = &#63; and version = &#63;.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry version, or <code>null</code> if a matching fragment entry version could not be found
+	 */
+	@Override
+	public FragmentEntryVersion fetchByType_Version_First(
+		int type, int version,
+		OrderByComparator<FragmentEntryVersion> orderByComparator) {
+
+		List<FragmentEntryVersion> list = findByType_Version(
+			type, version, 0, 1, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last fragment entry version in the ordered set where type = &#63; and version = &#63;.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry version
+	 * @throws NoSuchEntryVersionException if a matching fragment entry version could not be found
+	 */
+	@Override
+	public FragmentEntryVersion findByType_Version_Last(
+			int type, int version,
+			OrderByComparator<FragmentEntryVersion> orderByComparator)
+		throws NoSuchEntryVersionException {
+
+		FragmentEntryVersion fragmentEntryVersion = fetchByType_Version_Last(
+			type, version, orderByComparator);
+
+		if (fragmentEntryVersion != null) {
+			return fragmentEntryVersion;
+		}
+
+		StringBundler sb = new StringBundler(6);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("type=");
+		sb.append(type);
+
+		sb.append(", version=");
+		sb.append(version);
+
+		sb.append("}");
+
+		throw new NoSuchEntryVersionException(sb.toString());
+	}
+
+	/**
+	 * Returns the last fragment entry version in the ordered set where type = &#63; and version = &#63;.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry version, or <code>null</code> if a matching fragment entry version could not be found
+	 */
+	@Override
+	public FragmentEntryVersion fetchByType_Version_Last(
+		int type, int version,
+		OrderByComparator<FragmentEntryVersion> orderByComparator) {
+
+		int count = countByType_Version(type, version);
+
+		if (count == 0) {
+			return null;
+		}
+
+		List<FragmentEntryVersion> list = findByType_Version(
+			type, version, count - 1, count, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the fragment entry versions before and after the current fragment entry version in the ordered set where type = &#63; and version = &#63;.
+	 *
+	 * @param fragmentEntryVersionId the primary key of the current fragment entry version
+	 * @param type the type
+	 * @param version the version
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next fragment entry version
+	 * @throws NoSuchEntryVersionException if a fragment entry version with the primary key could not be found
+	 */
+	@Override
+	public FragmentEntryVersion[] findByType_Version_PrevAndNext(
+			long fragmentEntryVersionId, int type, int version,
+			OrderByComparator<FragmentEntryVersion> orderByComparator)
+		throws NoSuchEntryVersionException {
+
+		FragmentEntryVersion fragmentEntryVersion = findByPrimaryKey(
+			fragmentEntryVersionId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			FragmentEntryVersion[] array = new FragmentEntryVersionImpl[3];
+
+			array[0] = getByType_Version_PrevAndNext(
+				session, fragmentEntryVersion, type, version, orderByComparator,
+				true);
+
+			array[1] = fragmentEntryVersion;
+
+			array[2] = getByType_Version_PrevAndNext(
+				session, fragmentEntryVersion, type, version, orderByComparator,
+				false);
+
+			return array;
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	protected FragmentEntryVersion getByType_Version_PrevAndNext(
+		Session session, FragmentEntryVersion fragmentEntryVersion, int type,
+		int version, OrderByComparator<FragmentEntryVersion> orderByComparator,
+		boolean previous) {
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				5 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
+		}
+		else {
+			sb = new StringBundler(4);
+		}
+
+		sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+
+		sb.append(_FINDER_COLUMN_TYPE_VERSION_TYPE_2);
+
+		sb.append(_FINDER_COLUMN_TYPE_VERSION_VERSION_2);
+
+		if (orderByComparator != null) {
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
+
+			if (orderByConditionFields.length > 0) {
+				sb.append(WHERE_AND);
+			}
+
+			for (int i = 0; i < orderByConditionFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByConditionFields[i]);
+
+				if ((i + 1) < orderByConditionFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN);
+					}
+				}
+			}
+
+			sb.append(ORDER_BY_CLAUSE);
+
+			String[] orderByFields = orderByComparator.getOrderByFields();
+
+			for (int i = 0; i < orderByFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByFields[i]);
+
+				if ((i + 1) < orderByFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
+					}
+					else {
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC);
+					}
+					else {
+						sb.append(ORDER_BY_DESC);
+					}
+				}
+			}
+		}
+		else {
+			sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+		}
+
+		String sql = sb.toString();
+
+		Query query = session.createQuery(sql);
+
+		query.setFirstResult(0);
+		query.setMaxResults(2);
+
+		QueryPos queryPos = QueryPos.getInstance(query);
+
+		queryPos.add(type);
+
+		queryPos.add(version);
+
+		if (orderByComparator != null) {
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(
+						fragmentEntryVersion)) {
+
+				queryPos.add(orderByConditionValue);
+			}
+		}
+
+		List<FragmentEntryVersion> list = query.list();
+
+		if (list.size() == 2) {
+			return list.get(1);
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Removes all the fragment entry versions where type = &#63; and version = &#63; from the database.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 */
+	@Override
+	public void removeByType_Version(int type, int version) {
+		for (FragmentEntryVersion fragmentEntryVersion :
+				findByType_Version(
+					type, version, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					null)) {
+
+			remove(fragmentEntryVersion);
+		}
+	}
+
+	/**
+	 * Returns the number of fragment entry versions where type = &#63; and version = &#63;.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @return the number of matching fragment entry versions
+	 */
+	@Override
+	public int countByType_Version(int type, int version) {
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
+
+			FinderPath finderPath = _finderPathCountByType_Version;
+
+			Object[] finderArgs = new Object[] {type, version};
+
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
+
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
+
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+
+				sb.append(_FINDER_COLUMN_TYPE_VERSION_TYPE_2);
+
+				sb.append(_FINDER_COLUMN_TYPE_VERSION_VERSION_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(type);
+
+					queryPos.add(version);
+
+					count = (Long)query.uniqueResult();
+
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return count.intValue();
+		}
+	}
+
+	private static final String _FINDER_COLUMN_TYPE_VERSION_TYPE_2 =
+		"fragmentEntryVersion.type = ? AND ";
+
+	private static final String _FINDER_COLUMN_TYPE_VERSION_VERSION_2 =
+		"fragmentEntryVersion.version = ?";
 
 	private FinderPath _finderPathWithPaginationFindByG_FCI;
 	private FinderPath _finderPathWithoutPaginationFindByG_FCI;
@@ -6439,105 +7360,108 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_FCI;
-				finderArgs = new Object[] {groupId, fragmentCollectionId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByG_FCI;
+					finderArgs = new Object[] {groupId, fragmentCollectionId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_FCI;
-			finderArgs = new Object[] {
-				groupId, fragmentCollectionId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_FCI;
+				finderArgs = new Object[] {
+					groupId, fragmentCollectionId, start, end, orderByComparator
+				};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						(fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							(fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_FRAGMENTCOLLECTIONID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_FRAGMENTCOLLECTIONID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -6854,61 +7778,55 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public int countByG_FCI(long groupId, long fragmentCollectionId) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_FCI;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {groupId, fragmentCollectionId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FCI;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId, fragmentCollectionId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_G_FCI_GROUPID_2);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_FINDER_COLUMN_G_FCI_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_GROUPID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_G_FCI_FRAGMENTCOLLECTIONID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(groupId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(groupId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(fragmentCollectionId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_FCI_GROUPID_2 =
@@ -7008,113 +7926,117 @@ public class FragmentEntryVersionPersistenceImpl
 		int end, OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_FCI_Version;
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindByG_FCI_Version;
+					finderArgs = new Object[] {
+						groupId, fragmentCollectionId, version
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_FCI_Version;
 				finderArgs = new Object[] {
-					groupId, fragmentCollectionId, version
+					groupId, fragmentCollectionId, version, start, end,
+					orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_FCI_Version;
-			finderArgs = new Object[] {
-				groupId, fragmentCollectionId, version, start, end,
-				orderByComparator
-			};
-		}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						(fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId()) ||
-						(version != fragmentEntryVersion.getVersion())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							(fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId()) ||
+							(version != fragmentEntryVersion.getVersion())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						5 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(5);
+				}
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_VERSION_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_VERSION_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_VERSION_FRAGMENTCOLLECTIONID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_VERSION_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_VERSION_VERSION_2);
+				sb.append(_FINDER_COLUMN_G_FCI_VERSION_VERSION_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(version);
+					queryPos.add(version);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -7454,65 +8376,61 @@ public class FragmentEntryVersionPersistenceImpl
 	public int countByG_FCI_Version(
 		long groupId, long fragmentCollectionId, int version) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_FCI_Version;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {
+				groupId, fragmentCollectionId, version
+			};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FCI_Version;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId, fragmentCollectionId, version};
+			if (count == null) {
+				StringBundler sb = new StringBundler(4);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
+				sb.append(_FINDER_COLUMN_G_FCI_VERSION_GROUPID_2);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_FINDER_COLUMN_G_FCI_VERSION_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_VERSION_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_VERSION_VERSION_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_VERSION_FRAGMENTCOLLECTIONID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_G_FCI_VERSION_VERSION_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(groupId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(groupId);
+					queryPos.add(version);
 
-				queryPos.add(fragmentCollectionId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(version);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_FCI_VERSION_GROUPID_2 =
@@ -7609,118 +8527,120 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		fragmentEntryKey = Objects.toString(fragmentEntryKey, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			fragmentEntryKey = Objects.toString(fragmentEntryKey, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_FEK;
-				finderArgs = new Object[] {groupId, fragmentEntryKey};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByG_FEK;
+					finderArgs = new Object[] {groupId, fragmentEntryKey};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_FEK;
-			finderArgs = new Object[] {
-				groupId, fragmentEntryKey, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_FEK;
+				finderArgs = new Object[] {
+					groupId, fragmentEntryKey, start, end, orderByComparator
+				};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						!fragmentEntryKey.equals(
-							fragmentEntryVersion.getFragmentEntryKey())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							!fragmentEntryKey.equals(
+								fragmentEntryVersion.getFragmentEntryKey())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_FEK_GROUPID_2);
-
-			boolean bindFragmentEntryKey = false;
-
-			if (fragmentEntryKey.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FEK_FRAGMENTENTRYKEY_3);
-			}
-			else {
-				bindFragmentEntryKey = true;
-
-				sb.append(_FINDER_COLUMN_G_FEK_FRAGMENTENTRYKEY_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindFragmentEntryKey) {
-					queryPos.add(fragmentEntryKey);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_G_FEK_GROUPID_2);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				boolean bindFragmentEntryKey = false;
+
+				if (fragmentEntryKey.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_FEK_FRAGMENTENTRYKEY_3);
+				}
+				else {
+					bindFragmentEntryKey = true;
+
+					sb.append(_FINDER_COLUMN_G_FEK_FRAGMENTENTRYKEY_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					if (bindFragmentEntryKey) {
+						queryPos.add(fragmentEntryKey);
+					}
+
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -8049,74 +8969,68 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public int countByG_FEK(long groupId, String fragmentEntryKey) {
-		fragmentEntryKey = Objects.toString(fragmentEntryKey, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			fragmentEntryKey = Objects.toString(fragmentEntryKey, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_FEK;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {groupId, fragmentEntryKey};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FEK;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId, fragmentEntryKey};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_G_FEK_GROUPID_2);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				boolean bindFragmentEntryKey = false;
 
-			sb.append(_FINDER_COLUMN_G_FEK_GROUPID_2);
+				if (fragmentEntryKey.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_FEK_FRAGMENTENTRYKEY_3);
+				}
+				else {
+					bindFragmentEntryKey = true;
 
-			boolean bindFragmentEntryKey = false;
-
-			if (fragmentEntryKey.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FEK_FRAGMENTENTRYKEY_3);
-			}
-			else {
-				bindFragmentEntryKey = true;
-
-				sb.append(_FINDER_COLUMN_G_FEK_FRAGMENTENTRYKEY_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindFragmentEntryKey) {
-					queryPos.add(fragmentEntryKey);
+					sb.append(_FINDER_COLUMN_G_FEK_FRAGMENTENTRYKEY_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					if (bindFragmentEntryKey) {
+						queryPos.add(fragmentEntryKey);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_FEK_GROUPID_2 =
@@ -8129,7 +9043,6 @@ public class FragmentEntryVersionPersistenceImpl
 		"(fragmentEntryVersion.fragmentEntryKey IS NULL OR fragmentEntryVersion.fragmentEntryKey = '')";
 
 	private FinderPath _finderPathFetchByG_FEK_Version;
-	private FinderPath _finderPathCountByG_FEK_Version;
 
 	/**
 	 * Returns the fragment entry version where groupId = &#63; and fragmentEntryKey = &#63; and version = &#63; or throws a <code>NoSuchEntryVersionException</code> if it could not be found.
@@ -8203,106 +9116,109 @@ public class FragmentEntryVersionPersistenceImpl
 		long groupId, String fragmentEntryKey, int version,
 		boolean useFinderCache) {
 
-		fragmentEntryKey = Objects.toString(fragmentEntryKey, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			fragmentEntryKey = Objects.toString(fragmentEntryKey, "");
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {groupId, fragmentEntryKey, version};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(
-				_finderPathFetchByG_FEK_Version, finderArgs);
-		}
-
-		if (result instanceof FragmentEntryVersion) {
-			FragmentEntryVersion fragmentEntryVersion =
-				(FragmentEntryVersion)result;
-
-			if ((groupId != fragmentEntryVersion.getGroupId()) ||
-				!Objects.equals(
-					fragmentEntryKey,
-					fragmentEntryVersion.getFragmentEntryKey()) ||
-				(version != fragmentEntryVersion.getVersion())) {
-
-				result = null;
-			}
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(5);
-
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_FEK_VERSION_GROUPID_2);
-
-			boolean bindFragmentEntryKey = false;
-
-			if (fragmentEntryKey.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FEK_VERSION_FRAGMENTENTRYKEY_3);
-			}
-			else {
-				bindFragmentEntryKey = true;
-
-				sb.append(_FINDER_COLUMN_G_FEK_VERSION_FRAGMENTENTRYKEY_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {groupId, fragmentEntryKey, version};
 			}
 
-			sb.append(_FINDER_COLUMN_G_FEK_VERSION_VERSION_2);
+			Object result = null;
 
-			String sql = sb.toString();
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByG_FEK_Version, finderArgs, this);
+			}
 
-			Session session = null;
+			if (result instanceof FragmentEntryVersion) {
+				FragmentEntryVersion fragmentEntryVersion =
+					(FragmentEntryVersion)result;
 
-			try {
-				session = openSession();
+				if ((groupId != fragmentEntryVersion.getGroupId()) ||
+					!Objects.equals(
+						fragmentEntryKey,
+						fragmentEntryVersion.getFragmentEntryKey()) ||
+					(version != fragmentEntryVersion.getVersion())) {
 
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindFragmentEntryKey) {
-					queryPos.add(fragmentEntryKey);
+					result = null;
 				}
+			}
 
-				queryPos.add(version);
+			if (result == null) {
+				StringBundler sb = new StringBundler(5);
 
-				List<FragmentEntryVersion> list = query.list();
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						finderCache.putResult(
-							_finderPathFetchByG_FEK_Version, finderArgs, list);
-					}
+				sb.append(_FINDER_COLUMN_G_FEK_VERSION_GROUPID_2);
+
+				boolean bindFragmentEntryKey = false;
+
+				if (fragmentEntryKey.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_FEK_VERSION_FRAGMENTENTRYKEY_3);
 				}
 				else {
-					FragmentEntryVersion fragmentEntryVersion = list.get(0);
+					bindFragmentEntryKey = true;
 
-					result = fragmentEntryVersion;
+					sb.append(_FINDER_COLUMN_G_FEK_VERSION_FRAGMENTENTRYKEY_2);
+				}
 
-					cacheResult(fragmentEntryVersion);
+				sb.append(_FINDER_COLUMN_G_FEK_VERSION_VERSION_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					if (bindFragmentEntryKey) {
+						queryPos.add(fragmentEntryKey);
+					}
+
+					queryPos.add(version);
+
+					List<FragmentEntryVersion> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByG_FEK_Version, finderArgs,
+								list);
+						}
+					}
+					else {
+						FragmentEntryVersion fragmentEntryVersion = list.get(0);
+
+						result = fragmentEntryVersion;
+
+						cacheResult(fragmentEntryVersion);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (FragmentEntryVersion)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (FragmentEntryVersion)result;
+			}
 		}
 	}
 
@@ -8337,78 +9253,14 @@ public class FragmentEntryVersionPersistenceImpl
 	public int countByG_FEK_Version(
 		long groupId, String fragmentEntryKey, int version) {
 
-		fragmentEntryKey = Objects.toString(fragmentEntryKey, "");
+		FragmentEntryVersion fragmentEntryVersion = fetchByG_FEK_Version(
+			groupId, fragmentEntryKey, version);
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FEK_Version;
-
-			finderArgs = new Object[] {groupId, fragmentEntryKey, version};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+		if (fragmentEntryVersion == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_FEK_VERSION_GROUPID_2);
-
-			boolean bindFragmentEntryKey = false;
-
-			if (fragmentEntryKey.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FEK_VERSION_FRAGMENTENTRYKEY_3);
-			}
-			else {
-				bindFragmentEntryKey = true;
-
-				sb.append(_FINDER_COLUMN_G_FEK_VERSION_FRAGMENTENTRYKEY_2);
-			}
-
-			sb.append(_FINDER_COLUMN_G_FEK_VERSION_VERSION_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindFragmentEntryKey) {
-					queryPos.add(fragmentEntryKey);
-				}
-
-				queryPos.add(version);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_G_FEK_VERSION_GROUPID_2 =
@@ -8516,124 +9368,129 @@ public class FragmentEntryVersionPersistenceImpl
 		int end, OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			name = Objects.toString(name, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_FCI_LikeN;
-				finderArgs = new Object[] {groupId, fragmentCollectionId, name};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByG_FCI_LikeN;
+					finderArgs = new Object[] {
+						groupId, fragmentCollectionId, name
+					};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_FCI_LikeN;
-			finderArgs = new Object[] {
-				groupId, fragmentCollectionId, name, start, end,
-				orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_FCI_LikeN;
+				finderArgs = new Object[] {
+					groupId, fragmentCollectionId, name, start, end,
+					orderByComparator
+				};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						(fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId()) ||
-						!name.equals(fragmentEntryVersion.getName())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							(fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId()) ||
+							!name.equals(fragmentEntryVersion.getName())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_GROUPID_2);
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_FRAGMENTCOLLECTIONID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_NAME_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(fragmentCollectionId);
-
-				if (bindName) {
-					queryPos.add(name);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						5 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(5);
 				}
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_GROUPID_2);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_FRAGMENTCOLLECTIONID_2);
+
+				boolean bindName = false;
+
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_NAME_3);
+				}
+				else {
+					bindName = true;
+
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_NAME_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(fragmentCollectionId);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -8985,78 +9842,74 @@ public class FragmentEntryVersionPersistenceImpl
 	public int countByG_FCI_LikeN(
 		long groupId, long fragmentCollectionId, String name) {
 
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			name = Objects.toString(name, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_FCI_LikeN;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {
+				groupId, fragmentCollectionId, name
+			};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FCI_LikeN;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId, fragmentCollectionId, name};
+			if (count == null) {
+				StringBundler sb = new StringBundler(4);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_GROUPID_2);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_GROUPID_2);
+				boolean bindName = false;
 
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_FRAGMENTCOLLECTIONID_2);
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_NAME_3);
+				}
+				else {
+					bindName = true;
 
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_NAME_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(fragmentCollectionId);
-
-				if (bindName) {
-					queryPos.add(name);
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_NAME_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(fragmentCollectionId);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_FCI_LIKEN_GROUPID_2 =
@@ -9169,133 +10022,136 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			name = Objects.toString(name, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath =
-					_finderPathWithoutPaginationFindByG_FCI_LikeN_Version;
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindByG_FCI_LikeN_Version;
+					finderArgs = new Object[] {
+						groupId, fragmentCollectionId, name, version
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_FCI_LikeN_Version;
 				finderArgs = new Object[] {
-					groupId, fragmentCollectionId, name, version
+					groupId, fragmentCollectionId, name, version, start, end,
+					orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_FCI_LikeN_Version;
-			finderArgs = new Object[] {
-				groupId, fragmentCollectionId, name, version, start, end,
-				orderByComparator
-			};
-		}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						(fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId()) ||
-						!name.equals(fragmentEntryVersion.getName()) ||
-						(version != fragmentEntryVersion.getVersion())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							(fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId()) ||
+							!name.equals(fragmentEntryVersion.getName()) ||
+							(version != fragmentEntryVersion.getVersion())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					6 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(6);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_GROUPID_2);
-
-			sb.append(
-				_FINDER_COLUMN_G_FCI_LIKEN_VERSION_FRAGMENTCOLLECTIONID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_NAME_2);
-			}
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_VERSION_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(fragmentCollectionId);
-
-				if (bindName) {
-					queryPos.add(name);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						6 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(6);
 				}
 
-				queryPos.add(version);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_GROUPID_2);
 
-				cacheResult(list);
+				sb.append(
+					_FINDER_COLUMN_G_FCI_LIKEN_VERSION_FRAGMENTCOLLECTIONID_2);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				boolean bindName = false;
+
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_NAME_3);
+				}
+				else {
+					bindName = true;
+
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_NAME_2);
+				}
+
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_VERSION_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(fragmentCollectionId);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					queryPos.add(version);
+
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -9670,85 +10526,79 @@ public class FragmentEntryVersionPersistenceImpl
 	public int countByG_FCI_LikeN_Version(
 		long groupId, long fragmentCollectionId, String name, int version) {
 
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			name = Objects.toString(name, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_FCI_LikeN_Version;
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FCI_LikeN_Version;
-
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				groupId, fragmentCollectionId, name, version
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_GROUPID_2);
 
-			sb.append(
-				_FINDER_COLUMN_G_FCI_LIKEN_VERSION_FRAGMENTCOLLECTIONID_2);
+				sb.append(
+					_FINDER_COLUMN_G_FCI_LIKEN_VERSION_FRAGMENTCOLLECTIONID_2);
 
-			boolean bindName = false;
+				boolean bindName = false;
 
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_NAME_3);
-			}
-			else {
-				bindName = true;
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_NAME_3);
+				}
+				else {
+					bindName = true;
 
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_NAME_2);
-			}
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_VERSION_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(fragmentCollectionId);
-
-				if (bindName) {
-					queryPos.add(name);
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_NAME_2);
 				}
 
-				queryPos.add(version);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_VERSION_VERSION_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(fragmentCollectionId);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					queryPos.add(version);
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_FCI_LIKEN_VERSION_GROUPID_2 =
@@ -9857,111 +10707,116 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_FCI_T;
-				finderArgs = new Object[] {groupId, fragmentCollectionId, type};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByG_FCI_T;
+					finderArgs = new Object[] {
+						groupId, fragmentCollectionId, type
+					};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_FCI_T;
-			finderArgs = new Object[] {
-				groupId, fragmentCollectionId, type, start, end,
-				orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_FCI_T;
+				finderArgs = new Object[] {
+					groupId, fragmentCollectionId, type, start, end,
+					orderByComparator
+				};
+			}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						(fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId()) ||
-						(type != fragmentEntryVersion.getType())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							(fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId()) ||
+							(type != fragmentEntryVersion.getType())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						5 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(5);
+				}
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_FRAGMENTCOLLECTIONID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_TYPE_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_TYPE_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(type);
+					queryPos.add(type);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -10300,65 +11155,61 @@ public class FragmentEntryVersionPersistenceImpl
 	public int countByG_FCI_T(
 		long groupId, long fragmentCollectionId, int type) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_FCI_T;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {
+				groupId, fragmentCollectionId, type
+			};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FCI_T;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId, fragmentCollectionId, type};
+			if (count == null) {
+				StringBundler sb = new StringBundler(4);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
+				sb.append(_FINDER_COLUMN_G_FCI_T_GROUPID_2);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_FINDER_COLUMN_G_FCI_T_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_TYPE_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_FRAGMENTCOLLECTIONID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_TYPE_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(groupId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(groupId);
+					queryPos.add(type);
 
-				queryPos.add(fragmentCollectionId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(type);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_FCI_T_GROUPID_2 =
@@ -10467,118 +11318,123 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_FCI_T_Version;
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindByG_FCI_T_Version;
+					finderArgs = new Object[] {
+						groupId, fragmentCollectionId, type, version
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_FCI_T_Version;
 				finderArgs = new Object[] {
-					groupId, fragmentCollectionId, type, version
+					groupId, fragmentCollectionId, type, version, start, end,
+					orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_FCI_T_Version;
-			finderArgs = new Object[] {
-				groupId, fragmentCollectionId, type, version, start, end,
-				orderByComparator
-			};
-		}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						(fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId()) ||
-						(type != fragmentEntryVersion.getType()) ||
-						(version != fragmentEntryVersion.getVersion())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							(fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId()) ||
+							(type != fragmentEntryVersion.getType()) ||
+							(version != fragmentEntryVersion.getVersion())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					6 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(6);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						6 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(6);
+				}
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_FRAGMENTCOLLECTIONID_2);
+				sb.append(
+					_FINDER_COLUMN_G_FCI_T_VERSION_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_TYPE_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_TYPE_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_VERSION_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_VERSION_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(type);
+					queryPos.add(type);
 
-				queryPos.add(version);
+					queryPos.add(version);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -10938,71 +11794,66 @@ public class FragmentEntryVersionPersistenceImpl
 	public int countByG_FCI_T_Version(
 		long groupId, long fragmentCollectionId, int type, int version) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_FCI_T_Version;
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FCI_T_Version;
-
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				groupId, fragmentCollectionId, type, version
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_FRAGMENTCOLLECTIONID_2);
+				sb.append(
+					_FINDER_COLUMN_G_FCI_T_VERSION_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_TYPE_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_TYPE_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_VERSION_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_VERSION_VERSION_2);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(type);
+					queryPos.add(type);
 
-				queryPos.add(version);
+					queryPos.add(version);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_FCI_T_VERSION_GROUPID_2 =
@@ -11109,113 +11960,116 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_FCI_S;
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByG_FCI_S;
+					finderArgs = new Object[] {
+						groupId, fragmentCollectionId, status
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_FCI_S;
 				finderArgs = new Object[] {
-					groupId, fragmentCollectionId, status
+					groupId, fragmentCollectionId, status, start, end,
+					orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_FCI_S;
-			finderArgs = new Object[] {
-				groupId, fragmentCollectionId, status, start, end,
-				orderByComparator
-			};
-		}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						(fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId()) ||
-						(status != fragmentEntryVersion.getStatus())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							(fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId()) ||
+							(status != fragmentEntryVersion.getStatus())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						5 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(5);
+				}
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_S_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_FRAGMENTCOLLECTIONID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_S_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_STATUS_2);
+				sb.append(_FINDER_COLUMN_G_FCI_S_STATUS_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -11554,65 +12408,61 @@ public class FragmentEntryVersionPersistenceImpl
 	public int countByG_FCI_S(
 		long groupId, long fragmentCollectionId, int status) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_FCI_S;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {
+				groupId, fragmentCollectionId, status
+			};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FCI_S;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId, fragmentCollectionId, status};
+			if (count == null) {
+				StringBundler sb = new StringBundler(4);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
+				sb.append(_FINDER_COLUMN_G_FCI_S_GROUPID_2);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_FINDER_COLUMN_G_FCI_S_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_S_STATUS_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_FRAGMENTCOLLECTIONID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_STATUS_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(groupId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(groupId);
+					queryPos.add(status);
 
-				queryPos.add(fragmentCollectionId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(status);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_FCI_S_GROUPID_2 =
@@ -11721,118 +12571,123 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_FCI_S_Version;
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindByG_FCI_S_Version;
+					finderArgs = new Object[] {
+						groupId, fragmentCollectionId, status, version
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_FCI_S_Version;
 				finderArgs = new Object[] {
-					groupId, fragmentCollectionId, status, version
+					groupId, fragmentCollectionId, status, version, start, end,
+					orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_FCI_S_Version;
-			finderArgs = new Object[] {
-				groupId, fragmentCollectionId, status, version, start, end,
-				orderByComparator
-			};
-		}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						(fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId()) ||
-						(status != fragmentEntryVersion.getStatus()) ||
-						(version != fragmentEntryVersion.getVersion())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							(fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId()) ||
+							(status != fragmentEntryVersion.getStatus()) ||
+							(version != fragmentEntryVersion.getVersion())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					6 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(6);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						6 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(6);
+				}
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_FRAGMENTCOLLECTIONID_2);
+				sb.append(
+					_FINDER_COLUMN_G_FCI_S_VERSION_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_STATUS_2);
+				sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_STATUS_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_VERSION_2);
+				sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_VERSION_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				queryPos.add(version);
+					queryPos.add(version);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -12192,71 +13047,66 @@ public class FragmentEntryVersionPersistenceImpl
 	public int countByG_FCI_S_Version(
 		long groupId, long fragmentCollectionId, int status, int version) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_FCI_S_Version;
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FCI_S_Version;
-
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				groupId, fragmentCollectionId, status, version
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_FRAGMENTCOLLECTIONID_2);
+				sb.append(
+					_FINDER_COLUMN_G_FCI_S_VERSION_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_STATUS_2);
+				sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_STATUS_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_VERSION_2);
+				sb.append(_FINDER_COLUMN_G_FCI_S_VERSION_VERSION_2);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				queryPos.add(version);
+					queryPos.add(version);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_FCI_S_VERSION_GROUPID_2 =
@@ -12369,131 +13219,135 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			name = Objects.toString(name, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_FCI_LikeN_S;
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindByG_FCI_LikeN_S;
+					finderArgs = new Object[] {
+						groupId, fragmentCollectionId, name, status
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_FCI_LikeN_S;
 				finderArgs = new Object[] {
-					groupId, fragmentCollectionId, name, status
+					groupId, fragmentCollectionId, name, status, start, end,
+					orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_FCI_LikeN_S;
-			finderArgs = new Object[] {
-				groupId, fragmentCollectionId, name, status, start, end,
-				orderByComparator
-			};
-		}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						(fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId()) ||
-						!name.equals(fragmentEntryVersion.getName()) ||
-						(status != fragmentEntryVersion.getStatus())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							(fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId()) ||
+							!name.equals(fragmentEntryVersion.getName()) ||
+							(status != fragmentEntryVersion.getStatus())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					6 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(6);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_GROUPID_2);
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_FRAGMENTCOLLECTIONID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_NAME_2);
-			}
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_STATUS_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(fragmentCollectionId);
-
-				if (bindName) {
-					queryPos.add(name);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						6 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(6);
 				}
 
-				queryPos.add(status);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_GROUPID_2);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_FRAGMENTCOLLECTIONID_2);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				boolean bindName = false;
+
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_NAME_3);
+				}
+				else {
+					bindName = true;
+
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_NAME_2);
+				}
+
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_STATUS_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(fragmentCollectionId);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					queryPos.add(status);
+
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -12864,84 +13718,78 @@ public class FragmentEntryVersionPersistenceImpl
 	public int countByG_FCI_LikeN_S(
 		long groupId, long fragmentCollectionId, String name, int status) {
 
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			name = Objects.toString(name, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_FCI_LikeN_S;
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FCI_LikeN_S;
-
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				groupId, fragmentCollectionId, name, status
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_FRAGMENTCOLLECTIONID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_FRAGMENTCOLLECTIONID_2);
 
-			boolean bindName = false;
+				boolean bindName = false;
 
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_NAME_3);
-			}
-			else {
-				bindName = true;
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_NAME_3);
+				}
+				else {
+					bindName = true;
 
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_NAME_2);
-			}
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_STATUS_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(fragmentCollectionId);
-
-				if (bindName) {
-					queryPos.add(name);
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_NAME_2);
 				}
 
-				queryPos.add(status);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_STATUS_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(fragmentCollectionId);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					queryPos.add(status);
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_FCI_LIKEN_S_GROUPID_2 =
@@ -13063,138 +13911,142 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			name = Objects.toString(name, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindByG_FCI_LikeN_S_Version;
+					finderArgs = new Object[] {
+						groupId, fragmentCollectionId, name, status, version
+					};
+				}
+			}
+			else if (useFinderCache) {
 				finderPath =
-					_finderPathWithoutPaginationFindByG_FCI_LikeN_S_Version;
+					_finderPathWithPaginationFindByG_FCI_LikeN_S_Version;
 				finderArgs = new Object[] {
-					groupId, fragmentCollectionId, name, status, version
+					groupId, fragmentCollectionId, name, status, version, start,
+					end, orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_FCI_LikeN_S_Version;
-			finderArgs = new Object[] {
-				groupId, fragmentCollectionId, name, status, version, start,
-				end, orderByComparator
-			};
-		}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						(fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId()) ||
-						!name.equals(fragmentEntryVersion.getName()) ||
-						(status != fragmentEntryVersion.getStatus()) ||
-						(version != fragmentEntryVersion.getVersion())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							(fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId()) ||
+							!name.equals(fragmentEntryVersion.getName()) ||
+							(status != fragmentEntryVersion.getStatus()) ||
+							(version != fragmentEntryVersion.getVersion())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					7 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(7);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_GROUPID_2);
-
-			sb.append(
-				_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_FRAGMENTCOLLECTIONID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_NAME_2);
-			}
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_STATUS_2);
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_VERSION_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(fragmentCollectionId);
-
-				if (bindName) {
-					queryPos.add(name);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						7 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(7);
 				}
 
-				queryPos.add(status);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-				queryPos.add(version);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_GROUPID_2);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(
+					_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_FRAGMENTCOLLECTIONID_2);
 
-				cacheResult(list);
+				boolean bindName = false;
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_NAME_3);
+				}
+				else {
+					bindName = true;
+
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_NAME_2);
+				}
+
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_STATUS_2);
+
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_VERSION_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(fragmentCollectionId);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					queryPos.add(status);
+
+					queryPos.add(version);
+
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -13592,89 +14444,83 @@ public class FragmentEntryVersionPersistenceImpl
 		long groupId, long fragmentCollectionId, String name, int status,
 		int version) {
 
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+			name = Objects.toString(name, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_FCI_LikeN_S_Version;
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FCI_LikeN_S_Version;
-
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				groupId, fragmentCollectionId, name, status, version
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(6);
+			if (count == null) {
+				StringBundler sb = new StringBundler(6);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_GROUPID_2);
 
-			sb.append(
-				_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_FRAGMENTCOLLECTIONID_2);
+				sb.append(
+					_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_FRAGMENTCOLLECTIONID_2);
 
-			boolean bindName = false;
+				boolean bindName = false;
 
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_NAME_3);
-			}
-			else {
-				bindName = true;
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_NAME_3);
+				}
+				else {
+					bindName = true;
 
-				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_NAME_2);
-			}
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_STATUS_2);
-
-			sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_VERSION_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(fragmentCollectionId);
-
-				if (bindName) {
-					queryPos.add(name);
+					sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_NAME_2);
 				}
 
-				queryPos.add(status);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_STATUS_2);
 
-				queryPos.add(version);
+				sb.append(_FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_VERSION_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(fragmentCollectionId);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					queryPos.add(status);
+
+					queryPos.add(version);
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_FCI_LIKEN_S_VERSION_GROUPID_2 =
@@ -13793,118 +14639,121 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_FCI_T_S;
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByG_FCI_T_S;
+					finderArgs = new Object[] {
+						groupId, fragmentCollectionId, type, status
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_FCI_T_S;
 				finderArgs = new Object[] {
-					groupId, fragmentCollectionId, type, status
+					groupId, fragmentCollectionId, type, status, start, end,
+					orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_FCI_T_S;
-			finderArgs = new Object[] {
-				groupId, fragmentCollectionId, type, status, start, end,
-				orderByComparator
-			};
-		}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						(fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId()) ||
-						(type != fragmentEntryVersion.getType()) ||
-						(status != fragmentEntryVersion.getStatus())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							(fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId()) ||
+							(type != fragmentEntryVersion.getType()) ||
+							(status != fragmentEntryVersion.getStatus())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					6 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(6);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						6 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(6);
+				}
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_FRAGMENTCOLLECTIONID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_TYPE_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_TYPE_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_STATUS_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_STATUS_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(type);
+					queryPos.add(type);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -14262,71 +15111,65 @@ public class FragmentEntryVersionPersistenceImpl
 	public int countByG_FCI_T_S(
 		long groupId, long fragmentCollectionId, int type, int status) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_FCI_T_S;
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FCI_T_S;
-
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				groupId, fragmentCollectionId, type, status
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_FRAGMENTCOLLECTIONID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_TYPE_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_TYPE_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_STATUS_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_STATUS_2);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(type);
+					queryPos.add(type);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_FCI_T_S_GROUPID_2 =
@@ -14445,124 +15288,128 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath =
-					_finderPathWithoutPaginationFindByG_FCI_T_S_Version;
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindByG_FCI_T_S_Version;
+					finderArgs = new Object[] {
+						groupId, fragmentCollectionId, type, status, version
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_FCI_T_S_Version;
 				finderArgs = new Object[] {
-					groupId, fragmentCollectionId, type, status, version
+					groupId, fragmentCollectionId, type, status, version, start,
+					end, orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_FCI_T_S_Version;
-			finderArgs = new Object[] {
-				groupId, fragmentCollectionId, type, status, version, start,
-				end, orderByComparator
-			};
-		}
 
-		List<FragmentEntryVersion> list = null;
+			List<FragmentEntryVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentEntryVersion fragmentEntryVersion : list) {
-					if ((groupId != fragmentEntryVersion.getGroupId()) ||
-						(fragmentCollectionId !=
-							fragmentEntryVersion.getFragmentCollectionId()) ||
-						(type != fragmentEntryVersion.getType()) ||
-						(status != fragmentEntryVersion.getStatus()) ||
-						(version != fragmentEntryVersion.getVersion())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (FragmentEntryVersion fragmentEntryVersion : list) {
+						if ((groupId != fragmentEntryVersion.getGroupId()) ||
+							(fragmentCollectionId !=
+								fragmentEntryVersion.
+									getFragmentCollectionId()) ||
+							(type != fragmentEntryVersion.getType()) ||
+							(status != fragmentEntryVersion.getStatus()) ||
+							(version != fragmentEntryVersion.getVersion())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					7 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(7);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						7 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(7);
+				}
 
-			sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_FRAGMENTCOLLECTIONID_2);
+				sb.append(
+					_FINDER_COLUMN_G_FCI_T_S_VERSION_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_TYPE_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_TYPE_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_STATUS_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_STATUS_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_VERSION_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_VERSION_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(type);
+					queryPos.add(type);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				queryPos.add(version);
+					queryPos.add(version);
 
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -14947,75 +15794,70 @@ public class FragmentEntryVersionPersistenceImpl
 		long groupId, long fragmentCollectionId, int type, int status,
 		int version) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_FCI_T_S_Version;
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FCI_T_S_Version;
-
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				groupId, fragmentCollectionId, type, status, version
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(6);
+			if (count == null) {
+				StringBundler sb = new StringBundler(6);
 
-			sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
+				sb.append(_SQL_COUNT_FRAGMENTENTRYVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_FRAGMENTCOLLECTIONID_2);
+				sb.append(
+					_FINDER_COLUMN_G_FCI_T_S_VERSION_FRAGMENTCOLLECTIONID_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_TYPE_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_TYPE_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_STATUS_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_STATUS_2);
 
-			sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_VERSION_2);
+				sb.append(_FINDER_COLUMN_G_FCI_T_S_VERSION_VERSION_2);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(fragmentCollectionId);
+					queryPos.add(fragmentCollectionId);
 
-				queryPos.add(type);
+					queryPos.add(type);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				queryPos.add(version);
+					queryPos.add(version);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_FCI_T_S_VERSION_GROUPID_2 =
@@ -15057,39 +15899,40 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public void cacheResult(FragmentEntryVersion fragmentEntryVersion) {
-		if (fragmentEntryVersion.getCtCollectionId() != 0) {
-			return;
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					fragmentEntryVersion.getCtCollectionId())) {
+
+			entityCache.putResult(
+				FragmentEntryVersionImpl.class,
+				fragmentEntryVersion.getPrimaryKey(), fragmentEntryVersion);
+
+			finderCache.putResult(
+				_finderPathFetchByFragmentEntryId_Version,
+				new Object[] {
+					fragmentEntryVersion.getFragmentEntryId(),
+					fragmentEntryVersion.getVersion()
+				},
+				fragmentEntryVersion);
+
+			finderCache.putResult(
+				_finderPathFetchByUUID_G_Version,
+				new Object[] {
+					fragmentEntryVersion.getUuid(),
+					fragmentEntryVersion.getGroupId(),
+					fragmentEntryVersion.getVersion()
+				},
+				fragmentEntryVersion);
+
+			finderCache.putResult(
+				_finderPathFetchByG_FEK_Version,
+				new Object[] {
+					fragmentEntryVersion.getGroupId(),
+					fragmentEntryVersion.getFragmentEntryKey(),
+					fragmentEntryVersion.getVersion()
+				},
+				fragmentEntryVersion);
 		}
-
-		entityCache.putResult(
-			FragmentEntryVersionImpl.class,
-			fragmentEntryVersion.getPrimaryKey(), fragmentEntryVersion);
-
-		finderCache.putResult(
-			_finderPathFetchByFragmentEntryId_Version,
-			new Object[] {
-				fragmentEntryVersion.getFragmentEntryId(),
-				fragmentEntryVersion.getVersion()
-			},
-			fragmentEntryVersion);
-
-		finderCache.putResult(
-			_finderPathFetchByUUID_G_Version,
-			new Object[] {
-				fragmentEntryVersion.getUuid(),
-				fragmentEntryVersion.getGroupId(),
-				fragmentEntryVersion.getVersion()
-			},
-			fragmentEntryVersion);
-
-		finderCache.putResult(
-			_finderPathFetchByG_FEK_Version,
-			new Object[] {
-				fragmentEntryVersion.getGroupId(),
-				fragmentEntryVersion.getFragmentEntryKey(),
-				fragmentEntryVersion.getVersion()
-			},
-			fragmentEntryVersion);
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -15112,15 +15955,16 @@ public class FragmentEntryVersionPersistenceImpl
 		for (FragmentEntryVersion fragmentEntryVersion :
 				fragmentEntryVersions) {
 
-			if (fragmentEntryVersion.getCtCollectionId() != 0) {
-				continue;
-			}
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						fragmentEntryVersion.getCtCollectionId())) {
 
-			if (entityCache.getResult(
-					FragmentEntryVersionImpl.class,
-					fragmentEntryVersion.getPrimaryKey()) == null) {
+				if (entityCache.getResult(
+						FragmentEntryVersionImpl.class,
+						fragmentEntryVersion.getPrimaryKey()) == null) {
 
-				cacheResult(fragmentEntryVersion);
+					cacheResult(fragmentEntryVersion);
+				}
 			}
 		}
 	}
@@ -15175,40 +16019,39 @@ public class FragmentEntryVersionPersistenceImpl
 	protected void cacheUniqueFindersCache(
 		FragmentEntryVersionModelImpl fragmentEntryVersionModelImpl) {
 
-		Object[] args = new Object[] {
-			fragmentEntryVersionModelImpl.getFragmentEntryId(),
-			fragmentEntryVersionModelImpl.getVersion()
-		};
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					fragmentEntryVersionModelImpl.getCtCollectionId())) {
 
-		finderCache.putResult(
-			_finderPathCountByFragmentEntryId_Version, args, Long.valueOf(1));
-		finderCache.putResult(
-			_finderPathFetchByFragmentEntryId_Version, args,
-			fragmentEntryVersionModelImpl);
+			Object[] args = new Object[] {
+				fragmentEntryVersionModelImpl.getFragmentEntryId(),
+				fragmentEntryVersionModelImpl.getVersion()
+			};
 
-		args = new Object[] {
-			fragmentEntryVersionModelImpl.getUuid(),
-			fragmentEntryVersionModelImpl.getGroupId(),
-			fragmentEntryVersionModelImpl.getVersion()
-		};
+			finderCache.putResult(
+				_finderPathFetchByFragmentEntryId_Version, args,
+				fragmentEntryVersionModelImpl);
 
-		finderCache.putResult(
-			_finderPathCountByUUID_G_Version, args, Long.valueOf(1));
-		finderCache.putResult(
-			_finderPathFetchByUUID_G_Version, args,
-			fragmentEntryVersionModelImpl);
+			args = new Object[] {
+				fragmentEntryVersionModelImpl.getUuid(),
+				fragmentEntryVersionModelImpl.getGroupId(),
+				fragmentEntryVersionModelImpl.getVersion()
+			};
 
-		args = new Object[] {
-			fragmentEntryVersionModelImpl.getGroupId(),
-			fragmentEntryVersionModelImpl.getFragmentEntryKey(),
-			fragmentEntryVersionModelImpl.getVersion()
-		};
+			finderCache.putResult(
+				_finderPathFetchByUUID_G_Version, args,
+				fragmentEntryVersionModelImpl);
 
-		finderCache.putResult(
-			_finderPathCountByG_FEK_Version, args, Long.valueOf(1));
-		finderCache.putResult(
-			_finderPathFetchByG_FEK_Version, args,
-			fragmentEntryVersionModelImpl);
+			args = new Object[] {
+				fragmentEntryVersionModelImpl.getGroupId(),
+				fragmentEntryVersionModelImpl.getFragmentEntryKey(),
+				fragmentEntryVersionModelImpl.getVersion()
+			};
+
+			finderCache.putResult(
+				_finderPathFetchByG_FEK_Version, args,
+				fragmentEntryVersionModelImpl);
+		}
 	}
 
 	/**
@@ -15347,6 +16190,46 @@ public class FragmentEntryVersionPersistenceImpl
 		FragmentEntryVersionModelImpl fragmentEntryVersionModelImpl =
 			(FragmentEntryVersionModelImpl)fragmentEntryVersion;
 
+		if (Validator.isNull(fragmentEntryVersion.getExternalReferenceCode())) {
+			fragmentEntryVersion.setExternalReferenceCode(
+				String.valueOf(fragmentEntryVersion.getPrimaryKey()));
+		}
+		else {
+			if (!Objects.equals(
+					fragmentEntryVersionModelImpl.getColumnOriginalValue(
+						"externalReferenceCode"),
+					fragmentEntryVersion.getExternalReferenceCode())) {
+
+				long userId = GetterUtil.getLong(
+					PrincipalThreadLocal.getName());
+
+				if (userId > 0) {
+					long companyId = fragmentEntryVersion.getCompanyId();
+
+					long groupId = fragmentEntryVersion.getGroupId();
+
+					long classPK = 0;
+
+					if (!isNew) {
+						classPK = fragmentEntryVersion.getPrimaryKey();
+					}
+
+					try {
+						fragmentEntryVersion.setExternalReferenceCode(
+							SanitizerUtil.sanitize(
+								companyId, groupId, userId,
+								FragmentEntryVersion.class.getName(), classPK,
+								ContentTypes.TEXT_HTML, Sanitizer.MODE_ALL,
+								fragmentEntryVersion.getExternalReferenceCode(),
+								null));
+					}
+					catch (SanitizerException sanitizerException) {
+						throw new SystemException(sanitizerException);
+					}
+				}
+			}
+		}
+
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
@@ -15396,16 +16279,6 @@ public class FragmentEntryVersionPersistenceImpl
 		}
 		finally {
 			closeSession(session);
-		}
-
-		if (fragmentEntryVersion.getCtCollectionId() != 0) {
-			if (isNew) {
-				fragmentEntryVersion.setNew(false);
-			}
-
-			fragmentEntryVersion.resetOriginalValues();
-
-			return fragmentEntryVersion;
 		}
 
 		entityCache.putResult(
@@ -15471,11 +16344,24 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public FragmentEntryVersion fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(FragmentEntryVersion.class)) {
-			return super.fetchByPrimaryKey(primaryKey);
+		if (ctPersistenceHelper.isProductionMode(
+				FragmentEntryVersion.class, primaryKey)) {
+
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKey(primaryKey);
+			}
 		}
 
-		FragmentEntryVersion fragmentEntryVersion = null;
+		FragmentEntryVersion fragmentEntryVersion =
+			(FragmentEntryVersion)entityCache.getResult(
+				FragmentEntryVersionImpl.class, primaryKey);
+
+		if (fragmentEntryVersion != null) {
+			return fragmentEntryVersion;
+		}
 
 		Session session = null;
 
@@ -15515,7 +16401,12 @@ public class FragmentEntryVersionPersistenceImpl
 		Set<Serializable> primaryKeys) {
 
 		if (ctPersistenceHelper.isProductionMode(FragmentEntryVersion.class)) {
-			return super.fetchByPrimaryKeys(primaryKeys);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKeys(primaryKeys);
+			}
 		}
 
 		if (primaryKeys.isEmpty()) {
@@ -15537,6 +16428,34 @@ public class FragmentEntryVersionPersistenceImpl
 				map.put(primaryKey, fragmentEntryVersion);
 			}
 
+			return map;
+		}
+
+		Set<Serializable> uncachedPrimaryKeys = null;
+
+		for (Serializable primaryKey : primaryKeys) {
+			try (SafeCloseable safeCloseable =
+					ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+						FragmentEntryVersion.class, primaryKey)) {
+
+				FragmentEntryVersion fragmentEntryVersion =
+					(FragmentEntryVersion)entityCache.getResult(
+						FragmentEntryVersionImpl.class, primaryKey);
+
+				if (fragmentEntryVersion == null) {
+					if (uncachedPrimaryKeys == null) {
+						uncachedPrimaryKeys = new HashSet<>();
+					}
+
+					uncachedPrimaryKeys.add(primaryKey);
+				}
+				else {
+					map.put(primaryKey, fragmentEntryVersion);
+				}
+			}
+		}
+
+		if (uncachedPrimaryKeys == null) {
 			return map;
 		}
 
@@ -15671,78 +16590,81 @@ public class FragmentEntryVersionPersistenceImpl
 		OrderByComparator<FragmentEntryVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<FragmentEntryVersion> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentEntryVersion>)finderCache.getResult(
-				finderPath, finderArgs);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_FRAGMENTENTRYVERSION;
-
-				sql = sql.concat(FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<FragmentEntryVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindAll;
+					finderArgs = FINDER_ARGS_EMPTY;
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindAll;
+				finderArgs = new Object[] {start, end, orderByComparator};
 			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			List<FragmentEntryVersion> list = null;
+
+			if (useFinderCache) {
+				list = (List<FragmentEntryVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+				String sql = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						2 + (orderByComparator.getOrderByFields().length * 2));
+
+					sb.append(_SQL_SELECT_FRAGMENTENTRYVERSION);
+
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+
+					sql = sb.toString();
+				}
+				else {
+					sql = _SQL_SELECT_FRAGMENTENTRYVERSION;
+
+					sql = sql.concat(
+						FragmentEntryVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					list = (List<FragmentEntryVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
 	}
 
 	/**
@@ -15763,41 +16685,37 @@ public class FragmentEntryVersionPersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentEntryVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					FragmentEntryVersion.class)) {
 
-		Long count = null;
+			Long count = (Long)finderCache.getResult(
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
-		if (productionMode) {
-			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
-		}
+			if (count == null) {
+				Session session = null;
 
-		if (count == null) {
-			Session session = null;
+				try {
+					session = openSession();
 
-			try {
-				session = openSession();
+					Query query = session.createQuery(
+						_SQL_COUNT_FRAGMENTENTRYVERSION);
 
-				Query query = session.createQuery(
-					_SQL_COUNT_FRAGMENTENTRYVERSION);
+					count = (Long)query.uniqueResult();
 
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(
 						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	@Override
@@ -15859,40 +16777,46 @@ public class FragmentEntryVersionPersistenceImpl
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
 		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
 		ctControlColumnNames.add("ctCollectionId");
-		ctStrictColumnNames.add("version");
+		ctMergeColumnNames.add("version");
 		ctStrictColumnNames.add("uuid_");
-		ctStrictColumnNames.add("fragmentEntryId");
+		ctStrictColumnNames.add("externalReferenceCode");
+		ctMergeColumnNames.add("fragmentEntryId");
 		ctStrictColumnNames.add("groupId");
 		ctStrictColumnNames.add("companyId");
 		ctStrictColumnNames.add("userId");
 		ctStrictColumnNames.add("userName");
 		ctStrictColumnNames.add("createDate");
 		ctIgnoreColumnNames.add("modifiedDate");
-		ctStrictColumnNames.add("fragmentCollectionId");
-		ctStrictColumnNames.add("fragmentEntryKey");
-		ctStrictColumnNames.add("name");
-		ctStrictColumnNames.add("css");
-		ctStrictColumnNames.add("html");
-		ctStrictColumnNames.add("js");
-		ctStrictColumnNames.add("cacheable");
-		ctStrictColumnNames.add("configuration");
-		ctStrictColumnNames.add("previewFileEntryId");
-		ctStrictColumnNames.add("readOnly");
-		ctStrictColumnNames.add("type_");
-		ctStrictColumnNames.add("lastPublishDate");
-		ctStrictColumnNames.add("status");
-		ctStrictColumnNames.add("statusByUserId");
-		ctStrictColumnNames.add("statusByUserName");
-		ctStrictColumnNames.add("statusDate");
+		ctMergeColumnNames.add("fragmentCollectionId");
+		ctMergeColumnNames.add("fragmentEntryKey");
+		ctMergeColumnNames.add("name");
+		ctMergeColumnNames.add("css");
+		ctMergeColumnNames.add("html");
+		ctMergeColumnNames.add("js");
+		ctMergeColumnNames.add("cacheable");
+		ctMergeColumnNames.add("configuration");
+		ctMergeColumnNames.add("icon");
+		ctMergeColumnNames.add("previewFileEntryId");
+		ctMergeColumnNames.add("marketplace");
+		ctMergeColumnNames.add("readOnly");
+		ctMergeColumnNames.add("type_");
+		ctMergeColumnNames.add("typeOptions");
+		ctMergeColumnNames.add("lastPublishDate");
+		ctMergeColumnNames.add("status");
+		ctMergeColumnNames.add("statusByUserId");
+		ctMergeColumnNames.add("statusByUserName");
+		ctMergeColumnNames.add("statusDate");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK,
 			Collections.singleton("fragmentEntryVersionId"));
@@ -15951,12 +16875,6 @@ public class FragmentEntryVersionPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByFragmentEntryId_Version",
 			new String[] {Long.class.getName(), Integer.class.getName()},
 			new String[] {"fragmentEntryId", "version"}, true);
-
-		_finderPathCountByFragmentEntryId_Version = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION,
-			"countByFragmentEntryId_Version",
-			new String[] {Long.class.getName(), Integer.class.getName()},
-			new String[] {"fragmentEntryId", "version"}, false);
 
 		_finderPathWithPaginationFindByUuid = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid",
@@ -16021,14 +16939,6 @@ public class FragmentEntryVersionPersistenceImpl
 				Integer.class.getName()
 			},
 			new String[] {"uuid_", "groupId", "version"}, true);
-
-		_finderPathCountByUUID_G_Version = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUUID_G_Version",
-			new String[] {
-				String.class.getName(), Long.class.getName(),
-				Integer.class.getName()
-			},
-			new String[] {"uuid_", "groupId", "version"}, false);
 
 		_finderPathWithPaginationFindByUuid_C = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid_C",
@@ -16154,6 +17064,43 @@ public class FragmentEntryVersionPersistenceImpl
 			new String[] {Long.class.getName(), Integer.class.getName()},
 			new String[] {"fragmentCollectionId", "version"}, false);
 
+		_finderPathWithPaginationFindByType = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByType",
+			new String[] {
+				Integer.class.getName(), Integer.class.getName(),
+				Integer.class.getName(), OrderByComparator.class.getName()
+			},
+			new String[] {"type_"}, true);
+
+		_finderPathWithoutPaginationFindByType = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByType",
+			new String[] {Integer.class.getName()}, new String[] {"type_"},
+			true);
+
+		_finderPathCountByType = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByType",
+			new String[] {Integer.class.getName()}, new String[] {"type_"},
+			false);
+
+		_finderPathWithPaginationFindByType_Version = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByType_Version",
+			new String[] {
+				Integer.class.getName(), Integer.class.getName(),
+				Integer.class.getName(), Integer.class.getName(),
+				OrderByComparator.class.getName()
+			},
+			new String[] {"type_", "version"}, true);
+
+		_finderPathWithoutPaginationFindByType_Version = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByType_Version",
+			new String[] {Integer.class.getName(), Integer.class.getName()},
+			new String[] {"type_", "version"}, true);
+
+		_finderPathCountByType_Version = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByType_Version",
+			new String[] {Integer.class.getName(), Integer.class.getName()},
+			new String[] {"type_", "version"}, false);
+
 		_finderPathWithPaginationFindByG_FCI = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_FCI",
 			new String[] {
@@ -16224,14 +17171,6 @@ public class FragmentEntryVersionPersistenceImpl
 				Integer.class.getName()
 			},
 			new String[] {"groupId", "fragmentEntryKey", "version"}, true);
-
-		_finderPathCountByG_FEK_Version = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_FEK_Version",
-			new String[] {
-				Long.class.getName(), String.class.getName(),
-				Integer.class.getName()
-			},
-			new String[] {"groupId", "fragmentEntryKey", "version"}, false);
 
 		_finderPathWithPaginationFindByG_FCI_LikeN = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_FCI_LikeN",
@@ -16548,30 +17487,14 @@ public class FragmentEntryVersionPersistenceImpl
 			},
 			false);
 
-		_setFragmentEntryVersionUtilPersistence(this);
+		FragmentEntryVersionUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setFragmentEntryVersionUtilPersistence(null);
+		FragmentEntryVersionUtil.setPersistence(null);
 
 		entityCache.removeCache(FragmentEntryVersionImpl.class.getName());
-	}
-
-	private void _setFragmentEntryVersionUtilPersistence(
-		FragmentEntryVersionPersistence fragmentEntryVersionPersistence) {
-
-		try {
-			Field field = FragmentEntryVersionUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, fragmentEntryVersionPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -16640,9 +17563,5 @@ public class FragmentEntryVersionPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private FragmentEntryVersionModelArgumentsResolver
-		_fragmentEntryVersionModelArgumentsResolver;
 
 }

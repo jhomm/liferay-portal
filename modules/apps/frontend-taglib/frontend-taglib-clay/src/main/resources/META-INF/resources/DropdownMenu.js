@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
@@ -17,30 +8,63 @@ import {ClayDropDownWithItems} from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
 import ClayLink from '@clayui/link';
 import classNames from 'classnames';
-import React from 'react';
+import React, {useState} from 'react';
 
 import normalizeDropdownItems from './normalize_dropdown_items';
 
 export default function DropdownMenu({
 	actionsDropdown = false,
 	additionalProps: _additionalProps,
+	alignmentByViewport,
+	alignmentPosition,
 	componentId: _componentId,
 	cssClass,
 	icon,
 	items,
 	label,
 	locale: _locale,
+	menuProps,
 	portletId: _portletId,
 	portletNamespace: _portletNamespace,
+	searchable,
+	swapIconSide,
 	...otherProps
 }) {
+	const [filteredItems, setFilteredItems] = useState(items);
+	const [searchValue, setSearchValue] = useState('');
+
+	const searchableProps = searchable
+		? {
+				onSearchValueChange: (value) => {
+					setFilteredItems(() =>
+						value
+							? items.filter(
+									({label}) =>
+										label
+											.toLowerCase()
+											.indexOf(value.toLowerCase()) !== -1
+								)
+							: items
+					);
+
+					setSearchValue(value);
+				},
+				searchValue,
+				searchable,
+			}
+		: {};
+
 	return (
 		<>
 			<ClayDropDownWithItems
+				{...searchableProps}
+				alignmentByViewport={alignmentByViewport}
+				alignmentPosition={alignmentPosition}
 				className={classNames({
 					'dropdown-action': actionsDropdown,
 				})}
-				items={normalizeDropdownItems(items)}
+				items={normalizeDropdownItems(filteredItems) || []}
+				menuElementAttrs={menuProps}
 				trigger={
 					<ClayButton
 						className={classNames(cssClass, {
@@ -48,7 +72,7 @@ export default function DropdownMenu({
 						})}
 						{...otherProps}
 					>
-						{icon && (
+						{icon && !swapIconSide && (
 							<span
 								className={classNames('inline-item', {
 									'inline-item-before': label,
@@ -59,12 +83,22 @@ export default function DropdownMenu({
 						)}
 
 						{label}
+
+						{icon && swapIconSide && (
+							<span
+								className={classNames('inline-item', {
+									'inline-item-after': label,
+								})}
+							>
+								<ClayIcon symbol={icon} />
+							</span>
+						)}
 					</ClayButton>
 				}
 			/>
 
 			<div className="quick-action-menu">
-				{items.map(({data, href, icon, quickAction, ...rest}) =>
+				{items.map(({data, href, icon, label, quickAction, ...rest}) =>
 					data?.action && quickAction ? (
 						<ClayButtonWithIcon
 							className="component-action quick-action-item"
@@ -72,6 +106,7 @@ export default function DropdownMenu({
 							key={data.action}
 							small={true}
 							symbol={icon}
+							title={label}
 							{...rest}
 						/>
 					) : (
@@ -82,6 +117,7 @@ export default function DropdownMenu({
 								className="component-action quick-action-item"
 								href={href}
 								key={href}
+								title={label}
 								{...rest}
 							>
 								<ClayIcon symbol={icon} />

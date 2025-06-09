@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.internal.search.spi.model.permission;
@@ -22,18 +13,20 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.OrganizationConstants;
-import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.TermsFilter;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
-import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.service.permission.OrganizationPermission;
+import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.search.spi.model.permission.SearchPermissionFilterContributor;
+import com.liferay.portal.search.spi.model.permission.contributor.SearchPermissionFilterContributor;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,7 +34,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Drew Brokke
  */
-@Component(immediate = true, service = SearchPermissionFilterContributor.class)
+@Component(service = SearchPermissionFilterContributor.class)
 public class AccountEntrySearchPermissionFilterContributor
 	implements SearchPermissionFilterContributor {
 
@@ -78,20 +71,54 @@ public class AccountEntrySearchPermissionFilterContributor
 			"organizationIds");
 
 		try {
+			Set<Organization> organizations = new HashSet<>();
+
+			for (Organization organization :
+					_organizationLocalService.getUserOrganizations(userId)) {
+
+				boolean hasManageAvailableAccountsPermission =
+					OrganizationPermissionUtil.contains(
+						permissionChecker, organization.getOrganizationId(),
+						AccountActionKeys.MANAGE_AVAILABLE_ACCOUNTS);
+
+				if (hasManageAvailableAccountsPermission ||
+					OrganizationPermissionUtil.contains(
+						permissionChecker, organization,
+						AccountActionKeys.MANAGE_ACCOUNTS)) {
+
+					organizations.add(organization);
+				}
+
+				if (hasManageAvailableAccountsPermission ||
+					OrganizationPermissionUtil.contains(
+						permissionChecker, organization,
+						AccountActionKeys.MANAGE_SUBORGANIZATIONS_ACCOUNTS) ||
+					OrganizationPermissionUtil.contains(
+						permissionChecker, organization,
+						AccountActionKeys.UPDATE_SUBORGANIZATIONS_ACCOUNTS)) {
+
+					List<Organization> suborganizations =
+						_organizationLocalService.getSuborganizations(
+							organization.getCompanyId(),
+							organization.getOrganizationId());
+
+					while (!suborganizations.isEmpty()) {
+						organizations.addAll(suborganizations);
+
+						suborganizations =
+							_organizationLocalService.getSuborganizations(
+								suborganizations);
+					}
+				}
+			}
+
 			BaseModelSearchResult<Organization> baseModelSearchResult =
 				_organizationLocalService.searchOrganizations(
 					companyId, OrganizationConstants.ANY_PARENT_ORGANIZATION_ID,
 					null,
 					LinkedHashMapBuilder.<String, Object>put(
 						"accountsOrgsTree",
-						() -> {
-							User user = _userLocalService.getUser(userId);
-
-							return ListUtil.filter(
-								user.getOrganizations(true),
-								organization -> _hasManageAccountsPermission(
-									permissionChecker, organization));
-						}
+						ListUtil.fromCollection(organizations)
 					).build(),
 					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
@@ -103,7 +130,7 @@ public class AccountEntrySearchPermissionFilterContributor
 			}
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
 
 		if (!organizationIdsTermsFilter.isEmpty()) {
@@ -112,35 +139,10 @@ public class AccountEntrySearchPermissionFilterContributor
 		}
 	}
 
-	private boolean _hasManageAccountsPermission(
-		PermissionChecker permissionChecker, Organization organization) {
-
-		try {
-			_organizationPermission.check(
-				permissionChecker, organization,
-				AccountActionKeys.MANAGE_ACCOUNTS);
-		}
-		catch (PortalException portalException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
-			}
-
-			return false;
-		}
-
-		return true;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		AccountEntrySearchPermissionFilterContributor.class);
 
 	@Reference
 	private OrganizationLocalService _organizationLocalService;
-
-	@Reference
-	private OrganizationPermission _organizationPermission;
-
-	@Reference
-	private UserLocalService _userLocalService;
 
 }

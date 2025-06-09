@@ -1,0 +1,49 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`List renders 1`] = `
+<DocumentFragment>
+  <div
+    class="field-list"
+  >
+    <ul
+      class="entries-list"
+    >
+      <li
+        id="undefined_entry_fieldName_0"
+        index="0"
+        tabindex="0"
+      >
+        label1
+      </li>
+      <li
+        id="undefined_entry_fieldName_1"
+        index="1"
+        tabindex="0"
+      >
+        label2
+      </li>
+      <li
+        id="undefined_entry_fieldName_2"
+        index="2"
+        tabindex="0"
+      >
+        label3
+      </li>
+      <li
+        id="undefined_entry_fieldName_3"
+        index="3"
+        tabindex="0"
+      >
+        label4
+      </li>
+      <li
+        id="undefined_entry_fieldName_4"
+        index="4"
+        tabindex="0"
+      >
+        label5
+      </li>
+    </ul>
+  </div>
+</DocumentFragment>
+`;

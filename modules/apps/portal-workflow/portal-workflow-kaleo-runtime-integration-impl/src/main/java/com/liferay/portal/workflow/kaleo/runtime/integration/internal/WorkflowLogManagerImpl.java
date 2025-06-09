@@ -1,29 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.runtime.integration.internal;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.workflow.WorkflowException;
 import com.liferay.portal.kernel.workflow.WorkflowLog;
-import com.liferay.portal.kernel.workflow.WorkflowLogManager;
 import com.liferay.portal.workflow.kaleo.KaleoWorkflowModelConverter;
 import com.liferay.portal.workflow.kaleo.model.KaleoLog;
 import com.liferay.portal.workflow.kaleo.runtime.util.comparator.KaleoLogOrderByComparator;
 import com.liferay.portal.workflow.kaleo.service.KaleoLogLocalService;
+import com.liferay.portal.workflow.manager.WorkflowLogManager;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -32,10 +23,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Michael C. Han
  */
-@Component(
-	immediate = true, property = "proxy.bean=false",
-	service = WorkflowLogManager.class
-)
+@Component(service = WorkflowLogManager.class)
 public class WorkflowLogManagerImpl implements WorkflowLogManager {
 
 	@Override
@@ -81,7 +69,7 @@ public class WorkflowLogManagerImpl implements WorkflowLogManager {
 					KaleoLogOrderByComparator.getOrderByComparator(
 						orderByComparator, _kaleoWorkflowModelConverter));
 
-			return toWorkflowLogs(kaleoLogs);
+			return _toWorkflowLogs(kaleoLogs);
 		}
 		catch (Exception exception) {
 			throw new WorkflowException(exception);
@@ -102,24 +90,17 @@ public class WorkflowLogManagerImpl implements WorkflowLogManager {
 					KaleoLogOrderByComparator.getOrderByComparator(
 						orderByComparator, _kaleoWorkflowModelConverter));
 
-			return toWorkflowLogs(kaleoLogs);
+			return _toWorkflowLogs(kaleoLogs);
 		}
 		catch (Exception exception) {
 			throw new WorkflowException(exception);
 		}
 	}
 
-	protected List<WorkflowLog> toWorkflowLogs(List<KaleoLog> kaleoLogs) {
-		List<WorkflowLog> workflowLogs = new ArrayList<>(kaleoLogs.size());
-
-		for (KaleoLog kaleoLog : kaleoLogs) {
-			WorkflowLog workflowLog =
-				_kaleoWorkflowModelConverter.toWorkflowLog(kaleoLog);
-
-			workflowLogs.add(workflowLog);
-		}
-
-		return workflowLogs;
+	private List<WorkflowLog> _toWorkflowLogs(List<KaleoLog> kaleoLogs) {
+		return TransformUtil.transform(
+			kaleoLogs,
+			kaleoLog -> _kaleoWorkflowModelConverter.toWorkflowLog(kaleoLog));
 	}
 
 	@Reference

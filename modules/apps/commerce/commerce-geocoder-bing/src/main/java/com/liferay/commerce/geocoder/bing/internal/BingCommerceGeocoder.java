@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.geocoder.bing.internal;
@@ -27,6 +18,7 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Region;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.service.CountryLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RegionLocalService;
@@ -34,16 +26,15 @@ import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.Map;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
 
 /**
  * @author Andrea Di Giorgi
@@ -51,7 +42,7 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
  */
 @Component(
 	configurationPid = "com.liferay.commerce.geocoder.bing.internal.configuration.BingCommerceGeocoderConfiguration",
-	enabled = false, immediate = true, service = CommerceGeocoder.class
+	service = CommerceGeocoder.class
 )
 public class BingCommerceGeocoder implements CommerceGeocoder {
 
@@ -62,15 +53,22 @@ public class BingCommerceGeocoder implements CommerceGeocoder {
 		throws CommerceGeocoderException {
 
 		try {
+			RegionLocalService regionLocalService =
+				_regionLocalServiceSnapshot.get();
+
+			CountryLocalService countryLocalService =
+				_countryLocalServiceSnapshot.get();
+
 			Group group = _groupLocalService.getGroup(groupId);
 
-			Country country = _countryLocalService.getCountryByA2(
+			Country country = countryLocalService.getCountryByA2(
 				group.getCompanyId(), countryA2);
 
-			Region region = _regionLocalService.getRegion(
-				country.getCountryId(), regionCode);
-
-			return _getCoordinates(street, city, zip, region, country);
+			return _getCoordinates(
+				street, city, zip,
+				regionLocalService.getRegion(
+					country.getCountryId(), regionCode),
+				country);
 		}
 		catch (CommerceGeocoderException commerceGeocoderException) {
 			throw commerceGeocoderException;
@@ -210,10 +208,14 @@ public class BingCommerceGeocoder implements CommerceGeocoder {
 		return sb.toString();
 	}
 
-	private volatile String _apiKey;
+	private static final Snapshot<CountryLocalService>
+		_countryLocalServiceSnapshot = new Snapshot<>(
+			BingCommerceGeocoder.class, CountryLocalService.class);
+	private static final Snapshot<RegionLocalService>
+		_regionLocalServiceSnapshot = new Snapshot<>(
+			BingCommerceGeocoder.class, RegionLocalService.class);
 
-	@Reference(cardinality = ReferenceCardinality.OPTIONAL)
-	private volatile CountryLocalService _countryLocalService;
+	private volatile String _apiKey;
 
 	@Reference
 	private volatile GroupLocalService _groupLocalService;
@@ -223,8 +225,5 @@ public class BingCommerceGeocoder implements CommerceGeocoder {
 
 	@Reference
 	private JSONFactory _jsonFactory;
-
-	@Reference(cardinality = ReferenceCardinality.OPTIONAL)
-	private volatile RegionLocalService _regionLocalService;
 
 }

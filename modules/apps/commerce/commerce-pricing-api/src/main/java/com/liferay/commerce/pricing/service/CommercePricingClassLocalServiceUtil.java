@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -255,43 +247,18 @@ public class CommercePricingClassLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	public static CommercePricingClass fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return getService().fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
 	public static CommercePricingClass fetchCommercePricingClass(
 		long commercePricingClassId) {
 
 		return getService().fetchCommercePricingClass(commercePricingClassId);
 	}
 
-	/**
-	 * Returns the commerce pricing class with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce pricing class's external reference code
-	 * @return the matching commerce pricing class, or <code>null</code> if a matching commerce pricing class could not be found
-	 */
 	public static CommercePricingClass
 		fetchCommercePricingClassByExternalReferenceCode(
-			long companyId, String externalReferenceCode) {
+			String externalReferenceCode, long companyId) {
 
 		return getService().fetchCommercePricingClassByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommercePricingClassByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	public static CommercePricingClass fetchCommercePricingClassByReferenceCode(
-		long companyId, String externalReferenceCode) {
-
-		return getService().fetchCommercePricingClassByReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -336,21 +303,13 @@ public class CommercePricingClassLocalServiceUtil {
 			cpDefinitionId);
 	}
 
-	/**
-	 * Returns the commerce pricing class with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce pricing class's external reference code
-	 * @return the matching commerce pricing class
-	 * @throws PortalException if a matching commerce pricing class could not be found
-	 */
 	public static CommercePricingClass
 			getCommercePricingClassByExternalReferenceCode(
-				long companyId, String externalReferenceCode)
+				String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getCommercePricingClassByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -510,9 +469,12 @@ public class CommercePricingClassLocalServiceUtil {
 	}
 
 	public static CommercePricingClassLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CommercePricingClassLocalService _service;
+	private static final Snapshot<CommercePricingClassLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommercePricingClassLocalServiceUtil.class,
+			CommercePricingClassLocalService.class);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2023 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.model;
@@ -46,6 +37,7 @@ public class CPDefinitionVirtualSettingWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("uuid", getUuid());
 		attributes.put(
 			"CPDefinitionVirtualSettingId", getCPDefinitionVirtualSettingId());
@@ -57,14 +49,12 @@ public class CPDefinitionVirtualSettingWrapper
 		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put("classNameId", getClassNameId());
 		attributes.put("classPK", getClassPK());
-		attributes.put("fileEntryId", getFileEntryId());
-		attributes.put("url", getUrl());
 		attributes.put("activationStatus", getActivationStatus());
 		attributes.put("duration", getDuration());
 		attributes.put("maxUsages", getMaxUsages());
 		attributes.put("useSample", isUseSample());
 		attributes.put("sampleFileEntryId", getSampleFileEntryId());
-		attributes.put("sampleUrl", getSampleUrl());
+		attributes.put("sampleURL", getSampleURL());
 		attributes.put("termsOfUseRequired", isTermsOfUseRequired());
 		attributes.put("termsOfUseContent", getTermsOfUseContent());
 		attributes.put(
@@ -78,6 +68,12 @@ public class CPDefinitionVirtualSettingWrapper
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
+
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
+
 		String uuid = (String)attributes.get("uuid");
 
 		if (uuid != null) {
@@ -139,18 +135,6 @@ public class CPDefinitionVirtualSettingWrapper
 			setClassPK(classPK);
 		}
 
-		Long fileEntryId = (Long)attributes.get("fileEntryId");
-
-		if (fileEntryId != null) {
-			setFileEntryId(fileEntryId);
-		}
-
-		String url = (String)attributes.get("url");
-
-		if (url != null) {
-			setUrl(url);
-		}
-
 		Integer activationStatus = (Integer)attributes.get("activationStatus");
 
 		if (activationStatus != null) {
@@ -181,10 +165,10 @@ public class CPDefinitionVirtualSettingWrapper
 			setSampleFileEntryId(sampleFileEntryId);
 		}
 
-		String sampleUrl = (String)attributes.get("sampleUrl");
+		String sampleURL = (String)attributes.get("sampleURL");
 
-		if (sampleUrl != null) {
-			setSampleUrl(sampleUrl);
+		if (sampleURL != null) {
+			setSampleURL(sampleURL);
 		}
 
 		Boolean termsOfUseRequired = (Boolean)attributes.get(
@@ -291,6 +275,25 @@ public class CPDefinitionVirtualSettingWrapper
 		return model.getCPDefinitionVirtualSettingId();
 	}
 
+	@Override
+	public java.util.List<CPDVirtualSettingFileEntry>
+		getCPDVirtualSettingFileEntries() {
+
+		return model.getCPDVirtualSettingFileEntries();
+	}
+
+	@Override
+	public java.util.List<CPDVirtualSettingFileEntry>
+		getCPDVirtualSettingFileEntries(int start, int end) {
+
+		return model.getCPDVirtualSettingFileEntries(start, end);
+	}
+
+	@Override
+	public int getCPDVirtualSettingFileEntriesCount() {
+		return model.getCPDVirtualSettingFileEntriesCount();
+	}
+
 	/**
 	 * Returns the create date of this cp definition virtual setting.
 	 *
@@ -314,23 +317,6 @@ public class CPDefinitionVirtualSettingWrapper
 	@Override
 	public long getDuration() {
 		return model.getDuration();
-	}
-
-	@Override
-	public com.liferay.portal.kernel.repository.model.FileEntry getFileEntry()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getFileEntry();
-	}
-
-	/**
-	 * Returns the file entry ID of this cp definition virtual setting.
-	 *
-	 * @return the file entry ID of this cp definition virtual setting
-	 */
-	@Override
-	public long getFileEntryId() {
-		return model.getFileEntryId();
 	}
 
 	/**
@@ -371,6 +357,16 @@ public class CPDefinitionVirtualSettingWrapper
 	@Override
 	public Date getModifiedDate() {
 		return model.getModifiedDate();
+	}
+
+	/**
+	 * Returns the mvcc version of this cp definition virtual setting.
+	 *
+	 * @return the mvcc version of this cp definition virtual setting
+	 */
+	@Override
+	public long getMvccVersion() {
+		return model.getMvccVersion();
 	}
 
 	/**
@@ -417,8 +413,8 @@ public class CPDefinitionVirtualSettingWrapper
 	 * @return the sample url of this cp definition virtual setting
 	 */
 	@Override
-	public String getSampleUrl() {
-		return model.getSampleUrl();
+	public String getSampleURL() {
+		return model.getSampleURL();
 	}
 
 	/**
@@ -528,16 +524,6 @@ public class CPDefinitionVirtualSettingWrapper
 	}
 
 	/**
-	 * Returns the url of this cp definition virtual setting.
-	 *
-	 * @return the url of this cp definition virtual setting
-	 */
-	@Override
-	public String getUrl() {
-		return model.getUrl();
-	}
-
-	/**
 	 * Returns the user ID of this cp definition virtual setting.
 	 *
 	 * @return the user ID of this cp definition virtual setting
@@ -618,18 +604,13 @@ public class CPDefinitionVirtualSettingWrapper
 	}
 
 	@Override
-	public boolean isUseSampleUrl() {
-		return model.isUseSampleUrl();
+	public boolean isUseSampleURL() {
+		return model.isUseSampleURL();
 	}
 
 	@Override
 	public boolean isUseTermsOfUseJournal() {
 		return model.isUseTermsOfUseJournal();
-	}
-
-	@Override
-	public boolean isUseUrl() {
-		return model.isUseUrl();
 	}
 
 	@Override
@@ -730,16 +711,6 @@ public class CPDefinitionVirtualSettingWrapper
 	}
 
 	/**
-	 * Sets the file entry ID of this cp definition virtual setting.
-	 *
-	 * @param fileEntryId the file entry ID of this cp definition virtual setting
-	 */
-	@Override
-	public void setFileEntryId(long fileEntryId) {
-		model.setFileEntryId(fileEntryId);
-	}
-
-	/**
 	 * Sets the group ID of this cp definition virtual setting.
 	 *
 	 * @param groupId the group ID of this cp definition virtual setting
@@ -780,6 +751,16 @@ public class CPDefinitionVirtualSettingWrapper
 	}
 
 	/**
+	 * Sets the mvcc version of this cp definition virtual setting.
+	 *
+	 * @param mvccVersion the mvcc version of this cp definition virtual setting
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		model.setMvccVersion(mvccVersion);
+	}
+
+	/**
 	 * Sets whether this cp definition virtual setting is override.
 	 *
 	 * @param override the override of this cp definition virtual setting
@@ -812,11 +793,11 @@ public class CPDefinitionVirtualSettingWrapper
 	/**
 	 * Sets the sample url of this cp definition virtual setting.
 	 *
-	 * @param sampleUrl the sample url of this cp definition virtual setting
+	 * @param sampleURL the sample url of this cp definition virtual setting
 	 */
 	@Override
-	public void setSampleUrl(String sampleUrl) {
-		model.setSampleUrl(sampleUrl);
+	public void setSampleURL(String sampleURL) {
+		model.setSampleURL(sampleURL);
 	}
 
 	/**
@@ -912,16 +893,6 @@ public class CPDefinitionVirtualSettingWrapper
 	}
 
 	/**
-	 * Sets the url of this cp definition virtual setting.
-	 *
-	 * @param url the url of this cp definition virtual setting
-	 */
-	@Override
-	public void setUrl(String url) {
-		model.setUrl(url);
-	}
-
-	/**
 	 * Sets the user ID of this cp definition virtual setting.
 	 *
 	 * @param userId the user ID of this cp definition virtual setting
@@ -969,6 +940,11 @@ public class CPDefinitionVirtualSettingWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

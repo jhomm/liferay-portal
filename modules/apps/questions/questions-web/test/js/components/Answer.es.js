@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import React from 'react';
@@ -20,7 +11,7 @@ import '@testing-library/jest-dom/extend-expect';
 import {waitForElementToBeRemoved} from '@testing-library/dom';
 import {cleanup} from '@testing-library/react';
 
-import {markAsAnswerMessageBoardMessageQuery} from '../../../src/main/resources/META-INF/resources/js/utils/client.es';
+import {unMarkAsAnswerMessageBoardMessageQuery} from '../../../src/main/resources/META-INF/resources/js/utils/client.es';
 import {renderComponent} from '../../helpers.es';
 
 const mockAnswer = {
@@ -67,6 +58,7 @@ const mockAnswer = {
 		postsNumber: 12,
 		rank: 'Youngling',
 	},
+	dateCreated: '2020-07-30T09:44:49Z',
 	encodingFormat: 'html',
 	friendlyUrlPath: 're-new-question',
 	id: 36801,
@@ -80,10 +72,9 @@ const mockAnswer = {
 const apolloMocks = [
 	{
 		request: {
-			query: markAsAnswerMessageBoardMessageQuery,
+			query: unMarkAsAnswerMessageBoardMessageQuery,
 			variables: {
 				messageBoardMessageId: mockAnswer.id,
-				showAsAnswer: false,
 			},
 		},
 		result: {
@@ -124,7 +115,7 @@ describe('Answer', () => {
 		});
 
 		let markAsAnswerButton = getByTestId('mark-as-answer-button');
-		expect(markAsAnswerButton.textContent).toMatch('Unmark as answer');
+		expect(markAsAnswerButton.textContent).toMatch('unmark-as-answer');
 
 		let markAsAnswerStyle = getByTestId('mark-as-answer-style');
 		expect(
@@ -146,7 +137,7 @@ describe('Answer', () => {
 		);
 
 		markAsAnswerButton = getByTestId('mark-as-answer-button');
-		expect(markAsAnswerButton.textContent).toMatch('Mark as answer');
+		expect(markAsAnswerButton.textContent).toMatch('mark-as-answer');
 
 		markAsAnswerStyle = getByTestId('mark-as-answer-style');
 		expect(

@@ -1,26 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.display.context;
 
 import com.liferay.commerce.product.content.web.internal.configuration.CPContentPortletInstanceConfiguration;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.theme.PortletDisplay;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -28,18 +23,20 @@ import javax.servlet.http.HttpServletRequest;
 public class CPContentConfigurationDisplayContext {
 
 	public CPContentConfigurationDisplayContext(
+			ConfigurationProvider configurationProvider,
+			GroupLocalService groupLocalService,
 			HttpServletRequest httpServletRequest)
 		throws PortalException {
 
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
+		_configurationProvider = configurationProvider;
+		_groupLocalService = groupLocalService;
 
-		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
 		_cpContentPortletInstanceConfiguration =
-			portletDisplay.getPortletInstanceConfiguration(
-				CPContentPortletInstanceConfiguration.class);
+			configurationProvider.getPortletInstanceConfiguration(
+				CPContentPortletInstanceConfiguration.class, _themeDisplay);
 	}
 
 	public String getDisplayStyle() {
@@ -47,7 +44,57 @@ public class CPContentConfigurationDisplayContext {
 	}
 
 	public long getDisplayStyleGroupId() {
-		return _cpContentPortletInstanceConfiguration.displayStyleGroupId();
+		if (_displayStyleGroupId != null) {
+			return _displayStyleGroupId;
+		}
+
+		String displayStyleGroupExternalReferenceCode =
+			_cpContentPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode();
+
+		Group group = _themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = _groupLocalService.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				_themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupId = group.getGroupId();
+		}
+		else {
+			_displayStyleGroupId = _themeDisplay.getScopeGroupId();
+		}
+
+		return _displayStyleGroupId;
+	}
+
+	public String getDisplayStyleGroupKey() {
+		if (Validator.isNotNull(_displayStyleGroupKey)) {
+			return _displayStyleGroupKey;
+		}
+
+		String displayStyleGroupExternalReferenceCode =
+			_cpContentPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode();
+
+		Group group = _themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = _groupLocalService.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				_themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupKey = group.getGroupKey();
+		}
+		else {
+			_displayStyleGroupKey = StringPool.BLANK;
+		}
+
+		return _displayStyleGroupKey;
 	}
 
 	public String getSelectionStyle() {
@@ -57,24 +104,21 @@ public class CPContentConfigurationDisplayContext {
 	public boolean isSelectionStyleADT() {
 		String selectionStyle = getSelectionStyle();
 
-		if (selectionStyle.equals("adt")) {
-			return true;
-		}
-
-		return false;
+		return selectionStyle.equals("adt");
 	}
 
 	public boolean isSelectionStyleCustomRenderer() {
 		String selectionStyle = getSelectionStyle();
 
-		if (selectionStyle.equals("custom")) {
-			return true;
-		}
-
-		return false;
+		return selectionStyle.equals("custom");
 	}
 
+	private final ConfigurationProvider _configurationProvider;
 	private final CPContentPortletInstanceConfiguration
 		_cpContentPortletInstanceConfiguration;
+	private Long _displayStyleGroupId;
+	private String _displayStyleGroupKey;
+	private final GroupLocalService _groupLocalService;
+	private final ThemeDisplay _themeDisplay;
 
 }

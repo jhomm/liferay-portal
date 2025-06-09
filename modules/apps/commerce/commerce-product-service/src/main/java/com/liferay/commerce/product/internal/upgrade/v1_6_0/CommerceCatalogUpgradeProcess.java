@@ -1,26 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.internal.upgrade.v1_6_0;
 
 import com.liferay.commerce.product.constants.CommerceChannelConstants;
+import com.liferay.commerce.product.internal.upgrade.v1_6_0.util.CommerceCatalogTable;
+import com.liferay.commerce.product.internal.upgrade.v1_6_0.util.CommerceChannelRelTable;
+import com.liferay.commerce.product.internal.upgrade.v1_6_0.util.CommerceChannelTable;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.model.CommerceChannel;
-import com.liferay.commerce.product.model.impl.CommerceCatalogModelImpl;
-import com.liferay.commerce.product.model.impl.CommerceChannelModelImpl;
-import com.liferay.commerce.product.model.impl.CommerceChannelRelModelImpl;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -28,6 +19,7 @@ import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -49,18 +41,6 @@ public class CommerceCatalogUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		if (!hasTable(CommerceChannelModelImpl.TABLE_NAME)) {
-			runSQL(CommerceChannelModelImpl.TABLE_SQL_CREATE);
-		}
-
-		if (!hasTable(CommerceChannelRelModelImpl.TABLE_NAME)) {
-			runSQL(CommerceChannelRelModelImpl.TABLE_SQL_CREATE);
-		}
-
-		if (!hasTable(CommerceCatalogModelImpl.TABLE_NAME)) {
-			runSQL(CommerceCatalogModelImpl.TABLE_SQL_CREATE);
-		}
-
 		String insertCommerceCatalogSQL = StringBundler.concat(
 			"insert into CommerceCatalog (commerceCatalogId, companyId, ",
 			"userId, userName, createDate, modifiedDate, name, ",
@@ -114,10 +94,8 @@ public class CommerceCatalogUpgradeProcess extends UpgradeProcess {
 				preparedStatement1.setString(4, userName);
 				preparedStatement1.setDate(5, date);
 				preparedStatement1.setDate(6, date);
-
 				preparedStatement1.setString(
 					7, siteGroup.getName(defaultLanguageId));
-
 				preparedStatement1.setString(8, defaultLanguageId);
 
 				preparedStatement1.addBatch();
@@ -256,6 +234,14 @@ public class CommerceCatalogUpgradeProcess extends UpgradeProcess {
 			preparedStatement2.executeBatch();
 			preparedStatement3.executeBatch();
 		}
+	}
+
+	@Override
+	protected UpgradeStep[] getPreUpgradeSteps() {
+		return new UpgradeStep[] {
+			CommerceCatalogTable.create(), CommerceChannelRelTable.create(),
+			CommerceChannelTable.create()
+		};
 	}
 
 	private final ClassNameLocalService _classNameLocalService;

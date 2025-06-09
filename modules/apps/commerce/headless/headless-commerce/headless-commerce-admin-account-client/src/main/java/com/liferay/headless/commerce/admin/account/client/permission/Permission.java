@@ -1,24 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.account.client.permission;
 
 import com.liferay.headless.commerce.admin.account.client.json.BaseJSONParser;
 
-import java.util.Objects;
+import jakarta.annotation.Generated;
 
-import javax.annotation.Generated;
+import java.util.Objects;
 
 /**
  * @author Alessio Antonio Rendina
@@ -38,16 +29,32 @@ public class Permission {
 		return actionIds;
 	}
 
+	public String getRoleExternalReferenceCode() {
+		return roleExternalReferenceCode;
+	}
+
 	public String getRoleName() {
 		return roleName;
+	}
+
+	public String getRoleType() {
+		return roleType;
 	}
 
 	public void setActionIds(Object[] actionIds) {
 		this.actionIds = actionIds;
 	}
 
+	public void setRoleExternalReferenceCode(String roleExternalReferenceCode) {
+		this.roleExternalReferenceCode = roleExternalReferenceCode;
+	}
+
 	public void setRoleName(String roleName) {
 		this.roleName = roleName;
+	}
+
+	public void setRoleType(String roleType) {
+		this.roleType = roleType;
 	}
 
 	@Override
@@ -72,6 +79,16 @@ public class Permission {
 			sb.append("]");
 		}
 
+		if (roleExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"roleExternalReferenceCode\": \"");
+			sb.append(roleExternalReferenceCode);
+			sb.append("\"");
+		}
+
 		if (roleName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -82,13 +99,25 @@ public class Permission {
 			sb.append("\"");
 		}
 
+		if (roleType != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"roleType\": \"");
+			sb.append(roleType);
+			sb.append("\"");
+		}
+
 		sb.append("}");
 
 		return sb.toString();
 	}
 
 	protected Object[] actionIds;
+	protected String roleExternalReferenceCode;
 	protected String roleName;
+	protected String roleType;
 
 	private static class PermissionJSONParser<T>
 		extends BaseJSONParser<Permission> {
@@ -104,6 +133,28 @@ public class Permission {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actionIds")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "roleExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "roleName")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "roleType")) {
+				return false;
+			}
+			else {
+				throw new IllegalArgumentException(
+					"Unsupported field name " + jsonParserFieldName);
+			}
+		}
+
+		@Override
 		protected void setField(
 			Permission permission, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -113,9 +164,22 @@ public class Permission {
 					permission.setActionIds((Object[])jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(
+						jsonParserFieldName, "roleExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					permission.setRoleExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "roleName")) {
 				if (jsonParserFieldValue != null) {
 					permission.setRoleName((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "roleType")) {
+				if (jsonParserFieldValue != null) {
+					permission.setRoleType((String)jsonParserFieldValue);
 				}
 			}
 			else {

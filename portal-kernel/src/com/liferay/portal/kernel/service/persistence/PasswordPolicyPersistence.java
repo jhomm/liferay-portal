@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service.persistence;
@@ -678,56 +669,6 @@ public interface PasswordPolicyPersistence
 	 * @return the number of matching password policies that the user has permission to view
 	 */
 	public int filterCountByCompanyId(long companyId);
-
-	/**
-	 * Returns the password policy where companyId = &#63; and defaultPolicy = &#63; or throws a <code>NoSuchPasswordPolicyException</code> if it could not be found.
-	 *
-	 * @param companyId the company ID
-	 * @param defaultPolicy the default policy
-	 * @return the matching password policy
-	 * @throws NoSuchPasswordPolicyException if a matching password policy could not be found
-	 */
-	public PasswordPolicy findByC_DP(long companyId, boolean defaultPolicy)
-		throws NoSuchPasswordPolicyException;
-
-	/**
-	 * Returns the password policy where companyId = &#63; and defaultPolicy = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param companyId the company ID
-	 * @param defaultPolicy the default policy
-	 * @return the matching password policy, or <code>null</code> if a matching password policy could not be found
-	 */
-	public PasswordPolicy fetchByC_DP(long companyId, boolean defaultPolicy);
-
-	/**
-	 * Returns the password policy where companyId = &#63; and defaultPolicy = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
-	 *
-	 * @param companyId the company ID
-	 * @param defaultPolicy the default policy
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the matching password policy, or <code>null</code> if a matching password policy could not be found
-	 */
-	public PasswordPolicy fetchByC_DP(
-		long companyId, boolean defaultPolicy, boolean useFinderCache);
-
-	/**
-	 * Removes the password policy where companyId = &#63; and defaultPolicy = &#63; from the database.
-	 *
-	 * @param companyId the company ID
-	 * @param defaultPolicy the default policy
-	 * @return the password policy that was removed
-	 */
-	public PasswordPolicy removeByC_DP(long companyId, boolean defaultPolicy)
-		throws NoSuchPasswordPolicyException;
-
-	/**
-	 * Returns the number of password policies where companyId = &#63; and defaultPolicy = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param defaultPolicy the default policy
-	 * @return the number of matching password policies
-	 */
-	public int countByC_DP(long companyId, boolean defaultPolicy);
 
 	/**
 	 * Returns the password policy where companyId = &#63; and name = &#63; or throws a <code>NoSuchPasswordPolicyException</code> if it could not be found.

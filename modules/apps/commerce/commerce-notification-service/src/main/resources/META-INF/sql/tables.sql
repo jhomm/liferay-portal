@@ -1,4 +1,5 @@
 create table CNTemplateCAccountGroupRel (
+	mvccVersion LONG default 0 not null,
 	CNTemplateCAccountGroupRelId LONG not null primary key,
 	groupId LONG,
 	companyId LONG,
@@ -11,6 +12,7 @@ create table CNTemplateCAccountGroupRel (
 );
 
 create table CNotificationAttachment (
+	mvccVersion LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
 	CNotificationAttachmentId LONG not null primary key,
 	groupId LONG,
@@ -25,6 +27,7 @@ create table CNotificationAttachment (
 );
 
 create table CommerceNotificationQueueEntry (
+	mvccVersion LONG default 0 not null,
 	CNotificationQueueEntryId LONG not null primary key,
 	groupId LONG,
 	companyId LONG,
@@ -49,6 +52,7 @@ create table CommerceNotificationQueueEntry (
 );
 
 create table CommerceNotificationTemplate (
+	mvccVersion LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
 	commerceNotificationTemplateId LONG not null primary key,
 	groupId LONG,
@@ -59,11 +63,11 @@ create table CommerceNotificationTemplate (
 	modifiedDate DATE null,
 	name VARCHAR(75) null,
 	description STRING null,
-	from_ VARCHAR(75) null,
+	from_ TEXT null,
 	fromName STRING null,
-	to_ VARCHAR(75) null,
-	cc VARCHAR(255) null,
-	bcc VARCHAR(255) null,
+	to_ TEXT null,
+	cc TEXT null,
+	bcc TEXT null,
 	type_ VARCHAR(75) null,
 	enabled BOOLEAN,
 	subject STRING null,

@@ -10,15 +10,14 @@
 </thead>
 
 <tbody>
-<!-- AC Sites -->
 <tr>
 	<td>ACTIVITIES_CARD</td>
-	<td>//h5[contains(text(),'Activities')]/parent::div/following-sibling::div//span[contains(text(),'Unique Visitors')]</td>
+	<td>//div[contains(text(),'Activities')]/parent::div/following-sibling::div//span[contains(text(),'Unique Visitors')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>OVERVIEW_HEADER_PROPERTY_NAME</td>
-	<td>//div[contains(@class,'card-header')]//h5[contains(text(),'${propertyName}')]</td>
+	<td>//a[contains(@class,'breadcrumb') and contains(text(), '${propertyName}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -38,7 +37,7 @@
 </tr>
 <tr>
 	<td>TOP_PAGES_CARD</td>
-	<td>//div[contains(@class,'table-tabs')]//h5[text()='Top Pages']</td>
+	<td>//div[contains(@class,'table-tabs')]//div[text()='Top Pages']</td>
 	<td></td>
 </tr>
 <tr>
@@ -57,13 +56,8 @@
 	<td></td>
 </tr>
 <tr>
-	<td>TOP_VISITED_PAGES</td>
-	<td>//*[contains(text(),'${key_entryName}')]/ancestor::tr//td//h4[contains(text(),'${key_resultNumber}')]</td>
-	<td></td>
-</tr>
-<tr>
 	<td>ACQUISITIONS_CARD</td>
-	<td>//div[contains(@class,'acquisitions')]//h5[text()='Acquisitions']</td>
+	<td>//div[contains(@class,'acquisitions')]//div[text()='Acquisitions']</td>
 	<td></td>
 </tr>
 <tr>
@@ -73,42 +67,42 @@
 </tr>
 <tr>
 	<td>VISITORS_BY_DAY_AND_TIME_CARD</td>
-	<td>//div[contains(@class,'visitors-by-time')]//h5[text()='Visitors by Day and Time']</td>
+	<td>//div[contains(@class,'visitors-by-time')]//div[text()='Visitors by Day and Time']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SEARCH_TERMS_CARD</td>
-	<td>//div[contains(@class,'search-terms')]//h5[text()='Search Terms']</td>
+	<td>//div[contains(@class,'search-terms')]//div[text()='Search Terms']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>INTERESTS_CARD</td>
-	<td>//div[contains(@class,'interests')]//h5[text()='Interests']</td>
+	<td>//div[contains(@class,'interests')]//div[text()='Interests']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SESSIONS_BY_LOCATION_CARD</td>
-	<td>//div[contains(@class,'locations')]//h5[text()='Sessions by Location']</td>
+	<td>//div[contains(@class,'locations')]//div[text()='Sessions by Location']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SESSION_TECHNOLOGY_CARD</td>
-	<td>//div[contains(@class,'devices')]//h5[text()='Session Technology']</td>
+	<td>//div[contains(@class,'devices')]//div[text()='Session Technology']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>COHORT_ANALYSIS_CARD</td>
-	<td>//div[contains(@class,'cohort-analysis')]//h5[text()='Cohort Analysis']</td>
+	<td>//div[contains(@class,'cohort-analysis')]//div[text()='Cohort Analysis']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>COHORT_ANALYSIS_DAY_ZERO_PERCENTAGE</td>
-	<td>//th[text()='Day 0']/ancestor::tr/following-sibling::tr//th[3]</td>
+	<td>xpath=(//th[contains(@class, 'period table-cell-expand')]/ancestor::tr/following-sibling::tr//th[contains(., '100.00%')])[1]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>COHORT_ANALYSIS_SELECT_VISITOR_TYPE</td>
-	<td>//select[contains(@class,'visitors-type-select')]</td>
+	<td>//button[contains(@class,'visitors-type-select')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -127,13 +121,28 @@
 	<td></td>
 </tr>
 <tr>
-	<td>SITE_ACTIVITY_VALUE_CARD</td>
-	<td>//li[contains(@class,'card-tab active') and contains(.,'${key_cardName}')]//div[contains(@class,'metric-value') and contains(.,'${key_totalValue}')]</td>
+	<td>SITE_METRIC_VALUE</td>
+	<td>//span[@class='title'and text()='${metricName}']/..//div[@class='metric-value']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>VISITED_TOP_PAGES_CARD</td>
-	<td>//tr[${key_index}]//div[contains(@class,'text-truncate')]//div[contains(@class,'table-title')]</td>
+	<td>//tr[${key_index}]//div[contains(@class,'text-truncate')]//div[contains(@class,'table-title')and text()='${key_pageName}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DISPLAYED_ASSETS_CARD</td>
+	<td>//*[contains(@class,'table-hover')]//span[text()='${key_nameList}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PAGE_METRIC_VALUE</td>
+	<td>//a[text()='${key_pageName}']/ancestor::td[contains(@class, 'table-cell')]/following::td[${key_index}][text()='${key_metricValue}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>POPOVER_ACTIVITIES_DATE_AND_TIME</td>
+	<td>//thead[@class="analytics-tooltip-chart-header"]//div[contains(@class,'text-right')]</td>
 	<td></td>
 </tr>
 </tbody>

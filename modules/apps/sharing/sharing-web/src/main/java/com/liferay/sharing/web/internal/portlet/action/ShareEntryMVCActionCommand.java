@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.web.internal.portlet.action;
 
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
@@ -37,12 +28,12 @@ import com.liferay.sharing.constants.SharingPortletKeys;
 import com.liferay.sharing.service.SharingEntryService;
 import com.liferay.sharing.web.internal.display.SharingEntryPermissionDisplayAction;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Date;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,7 +43,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + SharingPortletKeys.SHARING,
+		"jakarta.portlet.name=" + SharingPortletKeys.SHARING,
 		"mvc.command.name=/sharing/share_entry"
 	},
 	service = MVCActionCommand.class
@@ -101,7 +92,7 @@ public class ShareEntryMVCActionCommand extends BaseMVCActionCommand {
 							(user.getUserId() != themeDisplay.getUserId())) {
 
 							_sharingEntryService.addOrUpdateSharingEntry(
-								user.getUserId(), classNameId, classPK,
+								null, 0, user.getUserId(), classNameId, classPK,
 								themeDisplay.getScopeGroupId(), shareable,
 								sharingEntryPermissionDisplayAction.
 									getSharingEntryActions(),
@@ -116,7 +107,7 @@ public class ShareEntryMVCActionCommand extends BaseMVCActionCommand {
 
 			JSONObject jsonObject = JSONUtil.put(
 				"successMessage",
-				LanguageUtil.get(
+				_language.get(
 					themeDisplay.getLocale(),
 					"the-item-was-shared-successfully"));
 
@@ -138,7 +129,7 @@ public class ShareEntryMVCActionCommand extends BaseMVCActionCommand {
 
 			JSONObject jsonObject = JSONUtil.put(
 				"errorMessage",
-				LanguageUtil.get(themeDisplay.getLocale(), errorMessage));
+				_language.get(themeDisplay.getLocale(), errorMessage));
 
 			JSONPortletResponseUtil.writeJSON(
 				actionRequest, actionResponse, jsonObject);
@@ -148,6 +139,9 @@ public class ShareEntryMVCActionCommand extends BaseMVCActionCommand {
 	private static final TransactionConfig _transactionConfig =
 		TransactionConfig.Factory.create(
 			Propagation.REQUIRED, new Class<?>[] {Exception.class});
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

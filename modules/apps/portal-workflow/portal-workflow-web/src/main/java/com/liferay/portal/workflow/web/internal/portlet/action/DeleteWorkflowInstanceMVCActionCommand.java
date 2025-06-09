@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.web.internal.portlet.action;
@@ -33,15 +24,15 @@ import com.liferay.portal.kernel.workflow.WorkflowInstance;
 import com.liferay.portal.kernel.workflow.WorkflowInstanceManagerUtil;
 import com.liferay.portal.workflow.constants.WorkflowPortletKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletRequestDispatcher;
+import jakarta.portlet.PortletSession;
+
 import java.io.Serializable;
 
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletRequestDispatcher;
-import javax.portlet.PortletSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -50,12 +41,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Leonardo Barros
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW,
-		"javax.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW_INSTANCE,
-		"javax.portlet.name=" + WorkflowPortletKeys.SITE_ADMINISTRATION_WORKFLOW,
-		"javax.portlet.name=" + WorkflowPortletKeys.USER_WORKFLOW,
+		"jakarta.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW,
+		"jakarta.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW_INSTANCE,
+		"jakarta.portlet.name=" + WorkflowPortletKeys.SITE_ADMINISTRATION_WORKFLOW,
+		"jakarta.portlet.name=" + WorkflowPortletKeys.USER_WORKFLOW,
 		"mvc.command.name=/portal_workflow/delete_workflow_instance"
 	},
 	service = MVCActionCommand.class
@@ -63,40 +53,23 @@ import org.osgi.service.component.annotations.Reference;
 public class DeleteWorkflowInstanceMVCActionCommand
 	extends BaseMVCActionCommand {
 
-	protected void deleteWorkflowInstance(
-			Map<String, Serializable> workflowContext)
-		throws PortalException {
-
-		long companyId = GetterUtil.getLong(
-			workflowContext.get(WorkflowConstants.CONTEXT_COMPANY_ID));
-		long groupId = GetterUtil.getLong(
-			workflowContext.get(WorkflowConstants.CONTEXT_GROUP_ID));
-		String className = GetterUtil.getString(
-			workflowContext.get(WorkflowConstants.CONTEXT_ENTRY_CLASS_NAME));
-		long classPK = GetterUtil.getLong(
-			workflowContext.get(WorkflowConstants.CONTEXT_ENTRY_CLASS_PK));
-
-		_workflowInstanceLinkLocalService.deleteWorkflowInstanceLink(
-			companyId, groupId, className, classPK);
-	}
-
 	@Override
 	protected void doProcessAction(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
 		try {
-			WorkflowInstance workflowInstance = getWorkflowInstance(
+			WorkflowInstance workflowInstance = _getWorkflowInstance(
 				actionRequest);
 
 			Map<String, Serializable> workflowContext =
 				workflowInstance.getWorkflowContext();
 
-			validateUser(workflowContext);
+			_validateUser(workflowContext);
 
-			updateEntryStatus(workflowContext);
+			_updateEntryStatus(workflowContext);
 
-			deleteWorkflowInstance(workflowContext);
+			_deleteWorkflowInstance(workflowContext);
 		}
 		catch (Exception exception) {
 			if (exception instanceof PrincipalException ||
@@ -121,7 +94,24 @@ public class DeleteWorkflowInstanceMVCActionCommand
 		}
 	}
 
-	protected WorkflowInstance getWorkflowInstance(ActionRequest actionRequest)
+	private void _deleteWorkflowInstance(
+			Map<String, Serializable> workflowContext)
+		throws PortalException {
+
+		long companyId = GetterUtil.getLong(
+			workflowContext.get(WorkflowConstants.CONTEXT_COMPANY_ID));
+		long groupId = GetterUtil.getLong(
+			workflowContext.get(WorkflowConstants.CONTEXT_GROUP_ID));
+		String className = GetterUtil.getString(
+			workflowContext.get(WorkflowConstants.CONTEXT_ENTRY_CLASS_NAME));
+		long classPK = GetterUtil.getLong(
+			workflowContext.get(WorkflowConstants.CONTEXT_ENTRY_CLASS_PK));
+
+		_workflowInstanceLinkLocalService.deleteWorkflowInstanceLink(
+			companyId, groupId, className, classPK);
+	}
+
+	private WorkflowInstance _getWorkflowInstance(ActionRequest actionRequest)
 		throws PortalException {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
@@ -134,7 +124,7 @@ public class DeleteWorkflowInstanceMVCActionCommand
 			themeDisplay.getCompanyId(), workflowInstanceId);
 	}
 
-	protected void updateEntryStatus(Map<String, Serializable> workflowContext)
+	private void _updateEntryStatus(Map<String, Serializable> workflowContext)
 		throws PortalException {
 
 		String className = GetterUtil.getString(
@@ -147,7 +137,7 @@ public class DeleteWorkflowInstanceMVCActionCommand
 			WorkflowConstants.STATUS_DRAFT, workflowContext);
 	}
 
-	protected void validateUser(Map<String, Serializable> workflowContext)
+	private void _validateUser(Map<String, Serializable> workflowContext)
 		throws PortalException {
 
 		long companyId = GetterUtil.getLong(

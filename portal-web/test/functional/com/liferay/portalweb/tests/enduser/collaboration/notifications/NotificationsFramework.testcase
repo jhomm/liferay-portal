@@ -1,10 +1,11 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
+	property ci.retries.disabled = "true";
 	property custom.properties = "default.layout.template.id=1_column${line.separator}jsonws.web.service.paths.excludes=";
+	property portal.acceptance = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Notification";
 	property testray.main.component.name = "Notifications";
 
 	setUp {
@@ -17,13 +18,13 @@ definition {
 			layoutName = "Site Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Guest",
 			layoutName = "Site Page",
 			widgetName = "Blogs");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Guest",
 			layoutName = "Site Page",
 			widgetName = "Message Boards");
@@ -45,9 +46,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -55,13 +56,13 @@ definition {
 
 			NotificationsPortlet.tearDownUserDeliveries();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 
 			JSONUser.tearDownNonAdminUsers();
 		}
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanDeleteNotifications {
 		Navigator.gotoPage(pageName = "Site Page");
@@ -77,7 +78,7 @@ definition {
 				entryContent = "Blogs Entry${entryCount} Content",
 				entryTitle = "Blogs Entry${entryCount} Title",
 				userEmailAddress = "userea@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		User.logoutAndLoginPG(
@@ -86,7 +87,7 @@ definition {
 
 		Notifications.viewBadgeCount(
 			activePanel = "Notifications",
-			notificationCount = "2");
+			notificationCount = 2);
 
 		Notifications.gotoNotifications();
 
@@ -106,7 +107,7 @@ definition {
 		Notifications.viewNoNotifications(activePanel = "Notifications");
 	}
 
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanFilterByReadAndUnread {
 		Navigator.gotoPage(pageName = "Site Page");
@@ -119,12 +120,11 @@ definition {
 
 		for (var threadCount : list "1,2") {
 			JSONMBMessage.addMessage(
-				addGuestPermissions = "true",
 				groupName = "Guest",
 				threadBody = "MB Thread Message Body${threadCount}",
 				threadSubject = "MB Thread Message Subject${threadCount}",
 				userEmailAddress = "userea@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		User.logoutAndLoginPG(
@@ -133,7 +133,7 @@ definition {
 
 		Notifications.viewBadgeCount(
 			activePanel = "Notifications",
-			notificationCount = "2");
+			notificationCount = 2);
 
 		Notifications.gotoNotifications();
 
@@ -160,12 +160,14 @@ definition {
 
 		PortletEntry.selectAll();
 
-		Click(locator1 = "Icon#MARK_AS_UNREAD");
+		Click(
+			key_text = "envelope-closed",
+			locator1 = "ManagementBar#ANY_ICON");
 
-		Notifications.viewBadgeCount(notificationCount = "2");
+		Notifications.viewBadgeCount(notificationCount = 2);
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanMarkAllNotificationsAsRead {
 		Navigator.gotoPage(pageName = "Site Page");
@@ -183,7 +185,7 @@ definition {
 				entryContent = "Blogs Entry${entryCount} Content",
 				entryTitle = "Blogs Entry${entryCount} Title",
 				userEmailAddress = "userea@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		Notifications.viewNoNotifications(activePanel = "Profile");
@@ -194,7 +196,7 @@ definition {
 
 		Notifications.viewBadgeCount(
 			activePanel = "Notifications",
-			notificationCount = "3");
+			notificationCount = 3);
 
 		Notifications.gotoNotifications();
 
@@ -203,19 +205,19 @@ definition {
 		Notifications.viewNoNotifications(activePanel = "Notifications");
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanMarkNotificationAsReadAndAcceptRequest {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
 
-		JSONGroup.addGroup(groupName = "Test Site Name");
+		HeadlessSite.addSite(siteName = "Test Site Name");
 
 		JSONLayout.addPublicLayout(
 			groupName = "Test Site Name",
 			layoutName = "Invite Members Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "2",
+			column = 2,
 			groupName = "Test Site Name",
 			layoutName = "Invite Members Page",
 			widgetName = "Invite Members");
@@ -252,7 +254,7 @@ definition {
 			userLoginEmailAddress = "userea@liferay.com",
 			userLoginFullName = "userfn userln");
 
-		Notifications.viewBadgeCount(notificationCount = "2");
+		Notifications.viewBadgeCount(notificationCount = 2);
 
 		Notifications.gotoNotifications();
 
@@ -272,13 +274,107 @@ definition {
 		Notifications.viewNoNotifications();
 	}
 
+	@description = "This ensures that a user can mark all selected notifications as read via the management bar no matter if they are all in the same state or not."
+	@priority = 4
+	test CanMarkNotificationsWithDifferentStatesAsRead {
+		Workflow.openWorkflowAdmin(siteURLKey = "guest");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Blogs Entry");
+
+		for (var num : list "1,2") {
+			JSONBlog.addEntry(
+				entryContent = "Blogs Entry Content${num}",
+				entryTitle = "Blogs Entry Title${num}");
+		}
+
+		Navigator.gotoPage(pageName = "Site Page");
+
+		Notifications.viewBadgeCount(notificationCount = 2);
+
+		Notifications.gotoNotifications();
+
+		Notifications.markAsReadViaManagementBar(notificationsTitle = "Test Test sent you a Blogs Entry for review in the workflow");
+
+		Notifications.viewBadgeCount(notificationCount = 1);
+
+		Notifications.markAsReadViaManagementBar(selectAll = "true");
+
+		Notifications.viewNoNotifications(activePanel = "Notifications");
+	}
+
+	@description = "This ensures that a user can mark all selected notifications as unread via the management bar no matter if they are all in the same state or not."
+	@priority = 4
+	test CanMarkNotificationsWithDifferentStatesAsUnread {
+		Workflow.openWorkflowAdmin(siteURLKey = "guest");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Blogs Entry");
+
+		for (var num : list "1,2") {
+			JSONBlog.addEntry(
+				entryContent = "Blogs Entry Content${num}",
+				entryTitle = "Blogs Entry Title${num}");
+		}
+
+		Navigator.gotoPage(pageName = "Site Page");
+
+		Notifications.viewBadgeCount(notificationCount = 2);
+
+		Notifications.gotoNotifications();
+
+		Notifications.markAsReadViaManagementBar(notificationsTitle = "Test Test sent you a Blogs Entry for review in the workflow");
+
+		Notifications.viewBadgeCount(notificationCount = 1);
+
+		Notifications.markAsUnreadViaManagementBar(selectAll = "true");
+
+		Notifications.viewBadgeCount(notificationCount = 2);
+	}
+
+	@description = "This ensures that an obsolete notification can not be selected."
+	@priority = 4
+	test CannotSelectObsoleteNotification {
+		Workflow.openWorkflowAdmin(siteURLKey = "guest");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Blogs Entry");
+
+		for (var num : list "1,2") {
+			JSONBlog.addEntry(
+				entryContent = "Blogs Entry Content${num}",
+				entryTitle = "Blogs Entry Title${num}");
+		}
+
+		BlogsNavigator.openBlogsAdmin(siteURLKey = "guest");
+
+		BlogsEntry.moveToRecycleBinCP(
+			entryContent = "Blogs Entry Content2",
+			entryTitle = "Blogs Entry Title2");
+
+		Notifications.gotoNotifications();
+
+		AssertElementPresent(
+			key_rowEntry = "Notification no longer applies",
+			locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_CHECKBOX_DISABLED");
+
+		PortletEntry.selectAll();
+
+		AssertNotChecked(
+			key_rowEntry = "Notification no longer applies",
+			locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_CHECKBOX");
+	}
+
 	@description = "This test covers LPS-102749. It views a notification of the edited Web Content Article when staging is turned on."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewEditedArticleNotificationInStagingEnvironment {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
 
-		JSONGroup.addGroup(groupName = "Subscribe Site");
+		HeadlessSite.addSite(siteName = "Subscribe Site");
 
 		JSONLayout.addPublicLayout(
 			groupName = "Subscribe Site",
@@ -307,7 +403,7 @@ definition {
 			webContentContent = "WC WebContent Content",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Staging.publishToLiveNowViaPortletCP();
 
@@ -327,7 +423,7 @@ definition {
 			userLoginEmailAddress = "userea@liferay.com",
 			userLoginFullName = "userfn userln");
 
-		Notifications.viewBadgeCount(notificationCount = "2");
+		Notifications.viewBadgeCount(notificationCount = 2);
 
 		Notifications.gotoNotifications();
 
@@ -346,12 +442,12 @@ definition {
 	}
 
 	@description = "This test covers LPS-104398. It views a notification of a web content article created in a folder."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewFolderArticleNotification {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
 
-		JSONGroup.addGroup(groupName = "Test Site Name");
+		HeadlessSite.addSite(siteName = "Test Site Name");
 
 		JSONLayout.addPublicLayout(
 			groupName = "Test Site Name",
@@ -382,13 +478,13 @@ definition {
 			webContentContent = "WC WebContent Content",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		User.logoutAndLoginPG(
 			userLoginEmailAddress = "userea@liferay.com",
 			userLoginFullName = "userfn userln");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -402,7 +498,7 @@ definition {
 		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewMultipleNotifications {
 		Navigator.gotoPage(pageName = "Site Page");
@@ -418,7 +514,7 @@ definition {
 				entryContent = "Blogs Entry${entryCount} Content",
 				entryTitle = "Blogs Entry${entryCount} Title",
 				userEmailAddress = "userea@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		Notifications.viewNoNotifications(activePanel = "Profile");
@@ -429,7 +525,7 @@ definition {
 
 		Notifications.viewBadgeCount(
 			activePanel = "Notifications",
-			notificationCount = "3");
+			notificationCount = 3);
 
 		Notifications.gotoNotifications();
 
@@ -441,7 +537,7 @@ definition {
 
 		Notifications.viewBadgeCount(
 			activePanel = "Notifications",
-			notificationCount = "2");
+			notificationCount = 2);
 
 		Notifications.gotoNotifications();
 
@@ -453,7 +549,7 @@ definition {
 
 		Notifications.viewBadgeCount(
 			activePanel = "Notifications",
-			notificationCount = "1");
+			notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -465,23 +561,23 @@ definition {
 
 		Notifications.viewBadgeCount(
 			activePanel = "Notifications",
-			notificationCount = "0");
+			notificationCount = 0);
 	}
 
 	@description = "This test covers LPS-126145. This ensures that the notification can be viewed after restoring the entry from recycle bin."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewNotificationAfterRestoring {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
 
-		JSONGroup.addGroup(groupName = "Test Site Name");
+		HeadlessSite.addSite(siteName = "Test Site Name");
 
 		JSONLayout.addPublicLayout(
 			groupName = "Test Site Name",
 			layoutName = "Test Site Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Test Site Name",
 			layoutName = "Test Site Page",
 			widgetName = "Web Content Display");
@@ -497,7 +593,7 @@ definition {
 
 		WebContentDisplayPortlet.selectWebContent(webContentTitle = "WC WebContent Title");
 
-		WebContentDisplayPortlet.configureSetupPG(metadataNameList = "Comments");
+		WebContentDisplayPortlet.configureSetup(metadataNameList = "Comments");
 
 		WebContentDisplayPortlet.saveConfiguration();
 
@@ -538,7 +634,7 @@ definition {
 			user = "userfn userln",
 			viewEllipsisIcon = "true");
 
-		JSONWebcontent.restoreWebContentFromTrashViaResourcePrimKey(resourcePrimKey = "${resourcePrimKey}");
+		JSONWebcontent.restoreWebContentFromTrashViaResourcePrimKey(resourcePrimKey = ${resourcePrimKey});
 
 		Notifications.gotoNotifications();
 
@@ -550,11 +646,41 @@ definition {
 			viewEllipsisIcon = "true");
 	}
 
-	@priority = "5"
+	@e2etest
+	@priority = 5
 	@refactordone
-	@uitest
 	test CanViewNotificationDefault {
 		Notifications.viewNoNotifications(activePanel = "Profile");
+
+		Notifications.viewNoRequest();
+
+		Notifications.viewNoNotificationEntry();
+	}
+
+	@description = "This ensures that the obsolete notification will be removed after refreshing the page."
+	@priority = 5
+	test RefreshingPageRemovesObsoleteNotifications {
+		Workflow.openWorkflowAdmin(siteURLKey = "guest");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Blogs Entry");
+
+		for (var num : list "1,2") {
+			JSONBlog.addEntry(
+				entryContent = "Blogs Entry Content${num}",
+				entryTitle = "Blogs Entry Title${num}");
+		}
+
+		BlogsNavigator.openBlogsAdmin(siteURLKey = "guest");
+
+		BlogsEntry.moveToRecycleBinCP(
+			entryContent = "Blogs Entry Content2",
+			entryTitle = "Blogs Entry Title2");
+
+		Notifications.gotoNotifications();
+
+		Notifications.removeNotificationsViaManagementBar(selectAll = "true");
 
 		Notifications.viewNoRequest();
 

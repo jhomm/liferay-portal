@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
-import com.liferay.portal.kernel.model.AuditedModel;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
+import com.liferay.portal.kernel.model.StagedAuditedModel;
 
 import java.util.Date;
 
@@ -37,7 +29,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface DispatchTriggerModel
-	extends AuditedModel, BaseModel<DispatchTrigger>, MVCCModel, ShardedModel {
+	extends BaseModel<DispatchTrigger>, ExternalReferenceCodeModel, MVCCModel,
+			ShardedModel, StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -74,6 +67,40 @@ public interface DispatchTriggerModel
 	 */
 	@Override
 	public void setMvccVersion(long mvccVersion);
+
+	/**
+	 * Returns the uuid of this dispatch trigger.
+	 *
+	 * @return the uuid of this dispatch trigger
+	 */
+	@AutoEscape
+	@Override
+	public String getUuid();
+
+	/**
+	 * Sets the uuid of this dispatch trigger.
+	 *
+	 * @param uuid the uuid of this dispatch trigger
+	 */
+	@Override
+	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this dispatch trigger.
+	 *
+	 * @return the external reference code of this dispatch trigger
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this dispatch trigger.
+	 *
+	 * @param externalReferenceCode the external reference code of this dispatch trigger
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the dispatch trigger ID of this dispatch trigger.
@@ -351,7 +378,26 @@ public interface DispatchTriggerModel
 	 */
 	public void setSystem(boolean system);
 
+	/**
+	 * Returns the time zone ID of this dispatch trigger.
+	 *
+	 * @return the time zone ID of this dispatch trigger
+	 */
+	@AutoEscape
+	public String getTimeZoneId();
+
+	/**
+	 * Sets the time zone ID of this dispatch trigger.
+	 *
+	 * @param timeZoneId the time zone ID of this dispatch trigger
+	 */
+	public void setTimeZoneId(String timeZoneId);
+
 	@Override
 	public DispatchTrigger cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

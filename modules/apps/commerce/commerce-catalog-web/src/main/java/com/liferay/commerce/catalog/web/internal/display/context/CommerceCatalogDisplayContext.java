@@ -1,22 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.catalog.web.internal.display.context;
 
+import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.service.AccountEntryService;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.frontend.model.HeaderActionModel;
+import com.liferay.commerce.inventory.configuration.CommerceInventoryGroupConfiguration;
+import com.liferay.commerce.inventory.method.CommerceInventoryMethod;
+import com.liferay.commerce.inventory.method.CommerceInventoryMethodRegistry;
 import com.liferay.commerce.media.CommerceCatalogDefaultImage;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.service.CommercePriceListService;
@@ -25,7 +22,7 @@ import com.liferay.commerce.pricing.constants.CommercePricingConstants;
 import com.liferay.commerce.product.configuration.AttachmentsConfiguration;
 import com.liferay.commerce.product.constants.CPActionKeys;
 import com.liferay.commerce.product.constants.CPPortletKeys;
-import com.liferay.commerce.product.display.context.util.CPRequestHelper;
+import com.liferay.commerce.product.display.context.helper.CPRequestHelper;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CommerceCatalogService;
 import com.liferay.document.library.kernel.service.DLAppService;
@@ -34,39 +31,43 @@ import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.ItemSelectorReturnType;
 import com.liferay.item.selector.criteria.FileEntryItemSelectorReturnType;
 import com.liferay.item.selector.criteria.image.criterion.ImageItemSelectorCriterion;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.settings.SystemSettingsLocator;
 import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.RenderURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-import javax.portlet.RenderURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alec Sloan
@@ -75,6 +76,7 @@ import javax.servlet.http.HttpServletRequest;
 public class CommerceCatalogDisplayContext {
 
 	public CommerceCatalogDisplayContext(
+		AccountEntryService accountEntryService,
 		AttachmentsConfiguration attachmentsConfiguration,
 		HttpServletRequest httpServletRequest,
 		CommerceCatalogDefaultImage commerceCatalogDefaultImage,
@@ -82,16 +84,19 @@ public class CommerceCatalogDisplayContext {
 		ModelResourcePermission<CommerceCatalog>
 			commerceCatalogModelResourcePermission,
 		CommerceCurrencyLocalService commerceCurrencyLocalService,
+		CommerceInventoryMethodRegistry commerceInventoryMethodRegistry,
 		CommercePriceListService commercePriceListService,
 		ConfigurationProvider configurationProvider, DLAppService dlAppService,
 		ItemSelector itemSelector, Portal portal) {
 
+		_accountEntryService = accountEntryService;
 		_attachmentsConfiguration = attachmentsConfiguration;
 		_commerceCatalogDefaultImage = commerceCatalogDefaultImage;
 		_commerceCatalogService = commerceCatalogService;
 		_commerceCatalogModelResourcePermission =
 			commerceCatalogModelResourcePermission;
 		_commerceCurrencyLocalService = commerceCurrencyLocalService;
+		_commerceInventoryMethodRegistry = commerceInventoryMethodRegistry;
 		_commercePriceListService = commercePriceListService;
 		_configurationProvider = configurationProvider;
 		_dlAppService = dlAppService;
@@ -99,6 +104,29 @@ public class CommerceCatalogDisplayContext {
 		_portal = portal;
 
 		cpRequestHelper = new CPRequestHelper(httpServletRequest);
+	}
+
+	public String getAccountEntriesAPIURL() {
+		String encodedFilter = URLCodec.encodeURL(
+			StringBundler.concat(
+				"(status/any(x:(x eq ", WorkflowConstants.STATUS_APPROVED,
+				"))) and type eq '",
+				AccountConstants.ACCOUNT_ENTRY_TYPE_SUPPLIER,
+				StringPool.APOSTROPHE),
+			true);
+
+		return "/o/headless-admin-user/v1.0/accounts?filter=" + encodedFilter;
+	}
+
+	public AccountEntry getAccountEntry() throws PortalException {
+		CommerceCatalog commerceCatalog = getCommerceCatalog();
+
+		if (commerceCatalog == null) {
+			return null;
+		}
+
+		return _accountEntryService.fetchAccountEntry(
+			commerceCatalog.getAccountEntryId());
 	}
 
 	public String getAddCommerceCatalogRenderURL() throws Exception {
@@ -133,6 +161,10 @@ public class CommerceCatalogDisplayContext {
 	}
 
 	public CommerceCatalog getCommerceCatalog() throws PortalException {
+		if (_commerceCatalog != null) {
+			return _commerceCatalog;
+		}
+
 		long commerceCatalogId = ParamUtil.getLong(
 			cpRequestHelper.getRequest(), "commerceCatalogId");
 
@@ -140,7 +172,10 @@ public class CommerceCatalogDisplayContext {
 			return null;
 		}
 
-		return _commerceCatalogService.fetchCommerceCatalog(commerceCatalogId);
+		_commerceCatalog = _commerceCatalogService.fetchCommerceCatalog(
+			commerceCatalogId);
+
+		return _commerceCatalog;
 	}
 
 	public long getCommerceCatalogId() throws PortalException {
@@ -161,10 +196,14 @@ public class CommerceCatalogDisplayContext {
 			QueryUtil.ALL_POS, null);
 	}
 
+	public List<CommerceInventoryMethod> getCommerceInventoryMethods() {
+		return _commerceInventoryMethodRegistry.getCommerceInventoryMethods();
+	}
+
 	public CreationMenu getCreationMenu() throws Exception {
 		CreationMenu creationMenu = new CreationMenu();
 
-		if (hasAddCatalogPermission()) {
+		if (_hasPortletResourcePermission(CPActionKeys.ADD_COMMERCE_CATALOG)) {
 			creationMenu.addDropdownItem(
 				dropdownItem -> {
 					dropdownItem.setHref(getAddCommerceCatalogRenderURL());
@@ -176,6 +215,28 @@ public class CommerceCatalogDisplayContext {
 		}
 
 		return creationMenu;
+	}
+
+	public AccountEntry getDefaultAccountEntry() throws PortalException {
+		BaseModelSearchResult<AccountEntry> baseModelSearchResult =
+			_accountEntryService.searchAccountEntries(
+				null,
+				LinkedHashMapBuilder.<String, Object>put(
+					"status", WorkflowConstants.STATUS_APPROVED
+				).put(
+					"types",
+					new String[] {AccountConstants.ACCOUNT_ENTRY_TYPE_SUPPLIER}
+				).build(),
+				0, 2, "name", false);
+
+		if (baseModelSearchResult.getLength() != 1) {
+			return null;
+		}
+
+		List<AccountEntry> accountEntries =
+			baseModelSearchResult.getBaseModels();
+
+		return accountEntries.get(0);
 	}
 
 	public FileEntry getDefaultFileEntry() throws PortalException {
@@ -239,7 +300,9 @@ public class CommerceCatalogDisplayContext {
 
 		headerActionModels.add(cancelHeaderActionModel);
 
-		if (hasPermission(getCommerceCatalogId(), ActionKeys.UPDATE)) {
+		if (hasModelResourcePermission(
+				getCommerceCatalogId(), ActionKeys.UPDATE)) {
+
 			headerActionModels.add(
 				new HeaderActionModel(
 					"btn-primary", renderResponse.getNamespace() + "fm",
@@ -253,7 +316,7 @@ public class CommerceCatalogDisplayContext {
 		return _attachmentsConfiguration.imageExtensions();
 	}
 
-	public String getImageItemSelectorUrl() {
+	public String getImageItemSelectorURL() {
 		RequestBackedPortletURLFactory requestBackedPortletURLFactory =
 			RequestBackedPortletURLFactoryUtil.create(
 				cpRequestHelper.getRenderRequest());
@@ -265,11 +328,10 @@ public class CommerceCatalogDisplayContext {
 			Collections.<ItemSelectorReturnType>singletonList(
 				new FileEntryItemSelectorReturnType()));
 
-		PortletURL itemSelectorURL = _itemSelector.getItemSelectorURL(
-			requestBackedPortletURLFactory, "addFileEntry",
-			imageItemSelectorCriterion);
-
-		return itemSelectorURL.toString();
+		return String.valueOf(
+			_itemSelector.getItemSelectorURL(
+				requestBackedPortletURLFactory, "addFileEntry",
+				imageItemSelectorCriterion));
 	}
 
 	public long getImageMaxSize() {
@@ -313,35 +375,55 @@ public class CommerceCatalogDisplayContext {
 		return portletURL;
 	}
 
-	public String getPriceListsApiUrl(String type) throws PortalException {
+	public String getPriceListsAPIURL(String type) throws PortalException {
 		String encodedFilter = URLCodec.encodeURL(
 			StringBundler.concat(
 				"(catalogId/any(x:(x eq ", getCommerceCatalogId(),
 				"))) and type eq '", type, StringPool.APOSTROPHE),
 			true);
 
-		return StringBundler.concat(
-			_portal.getPortalURL(cpRequestHelper.getRequest()),
-			"/o/headless-commerce-admin-pricing/v2.0/price-lists?filter=",
-			encodedFilter);
+		return "/o/headless-commerce-admin-pricing/v2.0/price-lists?filter=" +
+			encodedFilter;
 	}
 
-	public boolean hasAddCatalogPermission() {
-		PortletResourcePermission portletResourcePermission =
-			_commerceCatalogModelResourcePermission.
-				getPortletResourcePermission();
+	public boolean hasManageLinkSupplierPermission(String command) {
+		if (_hasPortletResourcePermission(
+				CPActionKeys.VIEW_COMMERCE_CATALOGS)) {
 
-		return portletResourcePermission.contains(
-			cpRequestHelper.getPermissionChecker(), null,
-			CPActionKeys.ADD_COMMERCE_CATALOG);
+			if (Constants.UPDATE.equals(command)) {
+				return true;
+			}
+		}
+		else {
+			if (Constants.ADD.equals(command)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
-	public boolean hasPermission(long commerceCatalogId, String actionId)
+	public boolean hasModelResourcePermission(
+			long commerceCatalogId, String actionId)
 		throws PortalException {
 
 		return _commerceCatalogModelResourcePermission.contains(
 			cpRequestHelper.getPermissionChecker(), commerceCatalogId,
 			actionId);
+	}
+
+	public boolean isCommerceInventoryMethodSelected(
+			long commerceCatalogGroupId, String key)
+		throws ConfigurationException {
+
+		CommerceInventoryGroupConfiguration
+			commerceInventoryGroupConfiguration =
+				_configurationProvider.getGroupConfiguration(
+					CommerceInventoryGroupConfiguration.class,
+					commerceCatalogGroupId);
+
+		return key.equals(
+			commerceInventoryGroupConfiguration.inventoryMethodKey());
 	}
 
 	public boolean showBasePriceListInputs() throws PortalException {
@@ -358,12 +440,25 @@ public class CommerceCatalogDisplayContext {
 
 	protected final CPRequestHelper cpRequestHelper;
 
+	private boolean _hasPortletResourcePermission(String actionId) {
+		PortletResourcePermission portletResourcePermission =
+			_commerceCatalogModelResourcePermission.
+				getPortletResourcePermission();
+
+		return portletResourcePermission.contains(
+			cpRequestHelper.getPermissionChecker(), null, actionId);
+	}
+
+	private final AccountEntryService _accountEntryService;
 	private final AttachmentsConfiguration _attachmentsConfiguration;
+	private CommerceCatalog _commerceCatalog;
 	private final CommerceCatalogDefaultImage _commerceCatalogDefaultImage;
 	private final ModelResourcePermission<CommerceCatalog>
 		_commerceCatalogModelResourcePermission;
 	private final CommerceCatalogService _commerceCatalogService;
 	private final CommerceCurrencyLocalService _commerceCurrencyLocalService;
+	private final CommerceInventoryMethodRegistry
+		_commerceInventoryMethodRegistry;
 	private final CommercePriceListService _commercePriceListService;
 	private final ConfigurationProvider _configurationProvider;
 	private final DLAppService _dlAppService;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -26,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -46,8 +38,75 @@ public abstract class BaseWorkspaceGitRepository
 	}
 
 	@Override
+	public void fetchGitHubDevBranch() {
+		if (_snapshot) {
+			System.out.println(
+				"Using git archive, unable to fetch from GitHub dev");
+		}
+
+		GitWorkingDirectory gitWorkingDirectory = getGitWorkingDirectory();
+
+		List<GitRemote> gitHubDevGitRemotes =
+			GitHubDevSyncUtil.getGitHubDevGitRemotes(gitWorkingDirectory);
+
+		for (int i = 0; i < 3; i++) {
+			if (gitHubDevGitRemotes.isEmpty()) {
+				break;
+			}
+
+			GitRemote randomGitRemote =
+				JenkinsResultsParserUtil.getRandomListItem(gitHubDevGitRemotes);
+
+			gitHubDevGitRemotes.remove(randomGitRemote);
+
+			String remoteGitBranchSHA = null;
+
+			try {
+				RemoteGitBranch remoteGitBranch =
+					gitWorkingDirectory.getRemoteGitBranch(
+						getGitHubDevBranchName(), randomGitRemote);
+
+				if (remoteGitBranch == null) {
+					continue;
+				}
+
+				remoteGitBranchSHA = remoteGitBranch.getSHA();
+
+				gitWorkingDirectory.fetch(remoteGitBranch);
+			}
+			catch (Exception exception) {
+				continue;
+			}
+
+			if (JenkinsResultsParserUtil.isNullOrEmpty(remoteGitBranchSHA) ||
+				!gitWorkingDirectory.localSHAExists(remoteGitBranchSHA)) {
+
+				continue;
+			}
+
+			break;
+		}
+	}
+
+	@Override
 	public String getBaseBranchSHA() {
 		return getString("base_branch_sha");
+	}
+
+	@Override
+	public String getBaseBranchSHAShort() {
+		String baseBranchSHA = getBaseBranchSHA();
+
+		if (baseBranchSHA == null) {
+			return null;
+		}
+
+		if (baseBranchSHA.length() > _MAX_BASE_BRANCH_SHA_LENGTH) {
+			baseBranchSHA = baseBranchSHA.substring(
+				0, _MAX_BASE_BRANCH_SHA_LENGTH);
+		}
+
+		return baseBranchSHA;
 	}
 
 	@Override
@@ -102,6 +161,16 @@ public abstract class BaseWorkspaceGitRepository
 	}
 
 	@Override
+	public GitWorkingDirectory getGitWorkingDirectory() {
+		if (_snapshot) {
+			throw new RuntimeException(
+				"Using Git archive, unable to get Git working directory");
+		}
+
+		return super.getGitWorkingDirectory();
+	}
+
+	@Override
 	public List<LocalGitCommit> getHistoricalLocalGitCommits() {
 		if (_historicalLocalGitCommits != null) {
 			return _historicalLocalGitCommits;
@@ -142,8 +211,27 @@ public abstract class BaseWorkspaceGitRepository
 	}
 
 	@Override
+	public String getSenderBranchSHAShort() {
+		String senderBranchSHA = getSenderBranchSHA();
+
+		if (senderBranchSHA == null) {
+			return null;
+		}
+
+		if (senderBranchSHA.length() >= 7) {
+			senderBranchSHA = senderBranchSHA.substring(0, 7);
+		}
+
+		return senderBranchSHA;
+	}
+
+	@Override
 	public String getSenderBranchUsername() {
 		return getString("sender_branch_username");
+	}
+
+	public boolean getSnapshot() {
+		return getBoolean("snapshot");
 	}
 
 	@Override
@@ -154,36 +242,39 @@ public abstract class BaseWorkspaceGitRepository
 			throw new IllegalArgumentException("Invalid count " + count);
 		}
 
-		int localGitCommitsSize = 0;
-
-		if ((localGitCommits != null) && !localGitCommits.isEmpty()) {
-			localGitCommitsSize = localGitCommits.size();
+		if ((localGitCommits == null) || localGitCommits.isEmpty()) {
+			return Collections.emptyList();
 		}
+
+		int localGitCommitsSize = localGitCommits.size();
 
 		if (count > localGitCommitsSize) {
-			throw new IllegalArgumentException(
-				JenkinsResultsParserUtil.combine(
-					String.valueOf(localGitCommitsSize),
-					" commits cannot be split into ", String.valueOf(count),
-					" lists"));
+			List<List<LocalGitCommit>> partitionedLocalGitCommits =
+				new ArrayList<>(localGitCommitsSize);
+
+			for (LocalGitCommit localGitCommit : localGitCommits) {
+				partitionedLocalGitCommits.add(
+					Lists.newArrayList(localGitCommit));
+			}
+
+			return partitionedLocalGitCommits;
 		}
 
-		List<LocalGitCommit> lastLocalGitCommitsPartition = Lists.newArrayList(
-			localGitCommits.get(localGitCommitsSize - 1));
-
-		List<List<LocalGitCommit>> localGitCommitsPartitions = new ArrayList<>(
+		List<List<LocalGitCommit>> partitionedLocalGitCommits = new ArrayList<>(
 			count);
 
-		if (localGitCommits.size() > 1) {
-			localGitCommitsPartitions.addAll(
+		LocalGitCommit lastLocalGitCommit = localGitCommits.remove(
+			localGitCommits.size() - 1);
+
+		if (!localGitCommits.isEmpty()) {
+			partitionedLocalGitCommits.addAll(
 				JenkinsResultsParserUtil.partitionByCount(
-					localGitCommits.subList(0, localGitCommitsSize - 2),
-					count - 1));
+					localGitCommits, count - 1));
 		}
 
-		localGitCommitsPartitions.add(lastLocalGitCommitsPartition);
+		partitionedLocalGitCommits.add(Lists.newArrayList(lastLocalGitCommit));
 
-		return localGitCommitsPartitions;
+		return partitionedLocalGitCommits;
 	}
 
 	@Override
@@ -201,7 +292,7 @@ public abstract class BaseWorkspaceGitRepository
 			throw new RuntimeException("GitHub URL is null");
 		}
 
-		if (gitHubURL.equals(optString("git_hub_url"))) {
+		if (gitHubURL.equals(optString("git_hub_url")) && !_rebase) {
 			return;
 		}
 
@@ -227,15 +318,24 @@ public abstract class BaseWorkspaceGitRepository
 			_setSenderBranchUsername(_senderRemoteGitRef.getUsername());
 		}
 		else if (GitUtil.isValidGitHubRefURL(gitHubURL)) {
+			_upstreamRemoteGitRef = _getUpstreamRemoteGitRef();
+
+			_setBaseBranchHeadSHA(_upstreamRemoteGitRef.getSHA());
+			setBaseBranchSHA(_upstreamRemoteGitRef.getSHA());
+			_setBaseBranchUsername(_upstreamRemoteGitRef.getUsername());
+
 			_senderRemoteGitRef = GitUtil.getRemoteGitRef(gitHubURL);
 
-			_setBaseBranchHeadSHA(_senderRemoteGitRef.getSHA());
-			setBaseBranchSHA(_senderRemoteGitRef.getSHA());
-			_setBaseBranchUsername(_senderRemoteGitRef.getUsername());
 			_setSenderBranchHeadSHA(_senderRemoteGitRef.getSHA());
 			_setSenderBranchName(_senderRemoteGitRef.getName());
 			setSenderBranchSHA(_senderRemoteGitRef.getSHA());
 			_setSenderBranchUsername(_senderRemoteGitRef.getUsername());
+
+			if (_rebase) {
+				_setBaseBranchHeadSHA(_upstreamRemoteGitRef.getSHA());
+				setBaseBranchSHA(_upstreamRemoteGitRef.getSHA());
+				_setBaseBranchUsername(_upstreamRemoteGitRef.getUsername());
+			}
 		}
 		else {
 			throw new RuntimeException("Invalid GitHub URL " + gitHubURL);
@@ -246,6 +346,16 @@ public abstract class BaseWorkspaceGitRepository
 		BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase();
 
 		buildDatabase.putWorkspaceGitRepository(getDirectoryName(), this);
+	}
+
+	@Override
+	public void setPatchSHAs(List<String> patchSHAs) {
+		_patchSHAs = patchSHAs;
+	}
+
+	@Override
+	public void setRebase(boolean rebase) {
+		_rebase = rebase;
 	}
 
 	@Override
@@ -268,26 +378,16 @@ public abstract class BaseWorkspaceGitRepository
 			return;
 		}
 
-		System.out.println(toString());
-
-		GitWorkingDirectory gitWorkingDirectory = getGitWorkingDirectory();
-
-		LocalGitBranch localGitBranch = getLocalGitBranch();
-
-		gitWorkingDirectory.checkoutLocalGitBranch(localGitBranch);
-
-		gitWorkingDirectory.reset("--hard " + localGitBranch.getSHA());
-
-		gitWorkingDirectory.clean();
-
-		gitWorkingDirectory.displayLog();
-
-		if (_isPullRequest()) {
-			gitWorkingDirectory.createLocalGitBranch(
-				getUpstreamBranchName(), true, getBaseBranchSHA());
+		if (!_snapshot) {
+			_prepareGitWorkingDirectory();
 		}
 
-		writePropertiesFiles();
+		try {
+			_prepareGitArchive();
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
 
 		_setUp = true;
 	}
@@ -353,12 +453,25 @@ public abstract class BaseWorkspaceGitRepository
 
 	@Override
 	public void synchronizeToGitHubDev() {
+		if (_snapshot) {
+			throw new RuntimeException(
+				"Using Git archive, unable to synchronize to GitHub dev");
+		}
+
 		GitHubDevSyncUtil.synchronizeToGitHubDev(getLocalGitBranch(), this);
 	}
 
 	@Override
 	public void tearDown() {
+		if (_snapshot) {
+			_deleteGitRepository();
+
+			return;
+		}
+
 		GitWorkingDirectory gitWorkingDirectory = getGitWorkingDirectory();
+
+		gitWorkingDirectory.deleteLockFiles();
 
 		LocalGitBranch upstreamLocalGitBranch =
 			gitWorkingDirectory.getUpstreamLocalGitBranch();
@@ -408,6 +521,10 @@ public abstract class BaseWorkspaceGitRepository
 		super(jsonObject);
 
 		validateKeys(_REQUIRED_KEYS);
+
+		if (JenkinsResultsParserUtil.isCloudCINode()) {
+			_snapshot = getSnapshot();
+		}
 	}
 
 	protected BaseWorkspaceGitRepository(
@@ -482,20 +599,24 @@ public abstract class BaseWorkspaceGitRepository
 
 			String propertyName = buildPropertyOptions.get(0);
 
-			List<String> propertyOptions = new ArrayList<>();
-
-			propertyOptions.add(propertyName);
-
-			propertyOptions.addAll(getPropertyOptions());
+			List<String> propertyOptions = new ArrayList<>(
+				getPropertyOptions());
 
 			propertyOptions.removeAll(Collections.singleton(null));
 
 			String propertyValue = JenkinsResultsParserUtil.getProperty(
-				buildProperties, propertyType,
+				buildProperties, propertyType + "[" + propertyName + "]",
 				propertyOptions.toArray(new String[0]));
 
 			if (propertyValue == null) {
 				continue;
+			}
+
+			if (JenkinsResultsParserUtil.isWindows() &&
+				propertyValue.startsWith("/") &&
+				!propertyValue.startsWith("/c/")) {
+
+				propertyValue = "C:" + propertyValue;
 			}
 
 			properties.put(propertyName, propertyValue);
@@ -505,13 +626,7 @@ public abstract class BaseWorkspaceGitRepository
 	}
 
 	protected Set<String> getPropertyOptions() {
-		Set<String> propertyOptions = new HashSet<>(_propertyOptions);
-
-		if (JenkinsResultsParserUtil.isWindows()) {
-			propertyOptions.add("windows");
-		}
-
-		return propertyOptions;
+		return _propertyOptions;
 	}
 
 	private LocalGitBranch _createPullRequestLocalGitBranch() {
@@ -530,24 +645,28 @@ public abstract class BaseWorkspaceGitRepository
 
 			gitHubDevGitRemotes.remove(randomGitRemote);
 
-			RemoteGitBranch remoteGitBranch =
-				gitWorkingDirectory.getRemoteGitBranch(
-					getGitHubDevBranchName(), randomGitRemote);
-
-			if (remoteGitBranch == null) {
-				continue;
-			}
-
-			String remoteGitBranchSHA = remoteGitBranch.getSHA();
+			String remoteGitBranchSHA = null;
 
 			try {
+				RemoteGitBranch remoteGitBranch =
+					gitWorkingDirectory.getRemoteGitBranch(
+						getGitHubDevBranchName(), randomGitRemote);
+
+				if (remoteGitBranch == null) {
+					continue;
+				}
+
+				remoteGitBranchSHA = remoteGitBranch.getSHA();
+
 				gitWorkingDirectory.fetch(remoteGitBranch);
 			}
 			catch (Exception exception) {
 				continue;
 			}
 
-			if (!gitWorkingDirectory.localSHAExists(remoteGitBranchSHA)) {
+			if (JenkinsResultsParserUtil.isNullOrEmpty(remoteGitBranchSHA) ||
+				!gitWorkingDirectory.localSHAExists(remoteGitBranchSHA)) {
+
 				continue;
 			}
 
@@ -567,6 +686,9 @@ public abstract class BaseWorkspaceGitRepository
 			gitWorkingDirectory.fetch(_getUpstreamRemoteGitRef());
 		}
 
+		gitWorkingDirectory.createLocalGitBranch(
+			getUpstreamBranchName(), true, baseBranchSHA);
+
 		return gitWorkingDirectory.getRebasedLocalGitBranch(
 			getBranchName(), getSenderBranchName(),
 			JenkinsResultsParserUtil.combine(
@@ -579,53 +701,109 @@ public abstract class BaseWorkspaceGitRepository
 
 		GitWorkingDirectory gitWorkingDirectory = getGitWorkingDirectory();
 
-		if (gitWorkingDirectory.localSHAExists(senderBranchSHA)) {
-			return gitWorkingDirectory.createLocalGitBranch(
-				getBranchName(), true, senderBranchSHA);
-		}
+		if (!gitWorkingDirectory.localSHAExists(senderBranchSHA)) {
+			List<GitRemote> gitHubDevGitRemotes =
+				GitHubDevSyncUtil.getGitHubDevGitRemotes(gitWorkingDirectory);
 
-		List<GitRemote> gitHubDevGitRemotes =
-			GitHubDevSyncUtil.getGitHubDevGitRemotes(gitWorkingDirectory);
+			for (int i = 0; i < 3; i++) {
+				if (gitHubDevGitRemotes.isEmpty()) {
+					break;
+				}
 
-		for (int i = 0; i < 3; i++) {
-			if (gitHubDevGitRemotes.isEmpty()) {
+				GitRemote randomGitRemote =
+					JenkinsResultsParserUtil.getRandomListItem(
+						gitHubDevGitRemotes);
+
+				gitHubDevGitRemotes.remove(randomGitRemote);
+
+				RemoteGitBranch remoteGitBranch =
+					gitWorkingDirectory.getRemoteGitBranch(
+						getGitHubDevBranchName(), randomGitRemote);
+
+				if (remoteGitBranch == null) {
+					continue;
+				}
+
+				try {
+					gitWorkingDirectory.fetch(remoteGitBranch);
+				}
+				catch (Exception exception) {
+					continue;
+				}
+
+				if (!gitWorkingDirectory.localSHAExists(senderBranchSHA)) {
+					continue;
+				}
+
 				break;
 			}
 
-			GitRemote randomGitRemote =
-				JenkinsResultsParserUtil.getRandomListItem(gitHubDevGitRemotes);
-
-			gitHubDevGitRemotes.remove(randomGitRemote);
-
-			RemoteGitBranch remoteGitBranch =
-				gitWorkingDirectory.getRemoteGitBranch(
-					getGitHubDevBranchName(), randomGitRemote);
-
-			if (remoteGitBranch == null) {
-				continue;
-			}
-
-			try {
-				gitWorkingDirectory.fetch(remoteGitBranch);
-			}
-			catch (Exception exception) {
-				continue;
-			}
-
 			if (!gitWorkingDirectory.localSHAExists(senderBranchSHA)) {
-				continue;
+				gitWorkingDirectory.fetch(_getSenderRemoteGitRef());
 			}
-
-			return gitWorkingDirectory.createLocalGitBranch(
-				getBranchName(), true, senderBranchSHA);
-		}
-
-		if (!gitWorkingDirectory.localSHAExists(senderBranchSHA)) {
-			gitWorkingDirectory.fetch(_getSenderRemoteGitRef());
 		}
 
 		return gitWorkingDirectory.createLocalGitBranch(
-			getBranchName(), true, senderBranchSHA);
+			getBranchName(), true, getSenderBranchSHA());
+	}
+
+	private void _deleteGitRepository() {
+		if (!JenkinsResultsParserUtil.isCloudCINode()) {
+			return;
+		}
+
+		try {
+			Process process = JenkinsResultsParserUtil.executeBashCommands(
+				"rm -rf " + getDirectory());
+
+			JenkinsResultsParserUtil.readInputStream(process.getInputStream());
+
+			System.out.println("Deleting Git repository " + getDirectory());
+		}
+		catch (IOException | TimeoutException exception) {
+			exception.printStackTrace();
+		}
+	}
+
+	private void _downloadGitRepository() {
+		try {
+			File baseGitRepositoryDir =
+				JenkinsResultsParserUtil.getBaseGitRepositoryDir();
+			String fileName = getDirectoryName() + ".tar.gz";
+
+			File archiveFile = new File(baseGitRepositoryDir, fileName);
+
+			CloudBucketUtil.copyS3File(
+				archiveFile.getCanonicalPath(),
+				JenkinsResultsParserUtil.combine(
+					CloudBucketUtil.S3_BUCKET_PATH_FILE_PROPAGATOR,
+					"/git-shallow-clone-archives/", fileName));
+
+			File directory = getDirectory();
+
+			if (directory.exists()) {
+				_deleteGitRepository();
+			}
+
+			Process process = JenkinsResultsParserUtil.executeBashCommands(
+				JenkinsResultsParserUtil.combine(
+					"tar -xzf ", archiveFile.getCanonicalPath(), " -C ",
+					baseGitRepositoryDir.getCanonicalPath()),
+				"rm -rf " + archiveFile.getCanonicalPath());
+
+			if (process.exitValue() != 0) {
+				String errorText = JenkinsResultsParserUtil.readInputStream(
+					process.getErrorStream());
+
+				throw new RuntimeException(
+					JenkinsResultsParserUtil.combine(
+						"Unable to expand ", archiveFile.getCanonicalPath(),
+						"\n\n", errorText));
+			}
+		}
+		catch (IOException | TimeoutException exception) {
+			throw new RuntimeException(exception);
+		}
 	}
 
 	private String _getBaseBranchHeadSHA() {
@@ -634,6 +812,18 @@ public abstract class BaseWorkspaceGitRepository
 
 	private String _getBaseBranchUsername() {
 		return getString("base_branch_username");
+	}
+
+	private String _getGitArchiveName() {
+		return getDirectoryName() + ".zip";
+	}
+
+	private String _getGitArchiveS3BucketPath() throws IOException {
+		return JenkinsResultsParserUtil.combine(
+			JenkinsResultsParserUtil.getBuildProperty(
+				"cloud.ci.s3.bucket.dist.path"),
+			"/git-archives/", getDirectoryName(), "/", getBaseBranchSHA(), "/",
+			getSenderBranchSHA(), "/", _getGitArchiveName());
 	}
 
 	private String _getSenderBranchHeadSHA() {
@@ -658,16 +848,112 @@ public abstract class BaseWorkspaceGitRepository
 			return _upstreamRemoteGitRef;
 		}
 
+		String name = getName();
+		String upstreamBranchName = getUpstreamBranchName();
+
 		_upstreamRemoteGitRef = GitUtil.getRemoteGitRef(
 			JenkinsResultsParserUtil.combine(
-				"https://github.com/liferay/", getName(), "/tree/",
-				getUpstreamBranchName()));
+				"https://github.com/",
+				JenkinsResultsParserUtil.getUpstreamUserName(
+					name, upstreamBranchName),
+				"/", name, "/tree/", upstreamBranchName));
 
 		return _upstreamRemoteGitRef;
 	}
 
 	private boolean _isPullRequest() {
 		return PullRequest.isValidGitHubPullRequestURL(getGitHubURL());
+	}
+
+	private void _prepareGitArchive() throws IOException {
+		if (!JenkinsResultsParserUtil.isCloudCINode()) {
+			return;
+		}
+
+		if (_snapshot) {
+			String baseRepositoryDir =
+				JenkinsResultsParserUtil.getBuildProperty(
+					"base.repository.dir");
+
+			File gitArchiveFile = new File(
+				baseRepositoryDir, _getGitArchiveName());
+
+			CloudBucketUtil.copyS3File(
+				gitArchiveFile.getCanonicalPath(),
+				_getGitArchiveS3BucketPath());
+
+			File directory = getDirectory();
+
+			if (directory.exists()) {
+				_deleteGitRepository();
+			}
+
+			JenkinsResultsParserUtil.unzip(gitArchiveFile, directory);
+
+			return;
+		}
+
+		GitWorkingDirectory gitWorkingDirectory = getGitWorkingDirectory();
+
+		File archiveFile = gitWorkingDirectory.archive(_getGitArchiveName());
+
+		CloudBucketUtil.copyS3File(
+			_getGitArchiveS3BucketPath(), archiveFile.getCanonicalPath());
+
+		_setSnapshot(true);
+
+		BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase();
+
+		buildDatabase.putWorkspaceGitRepository(getDirectoryName(), this);
+	}
+
+	private void _prepareGitWorkingDirectory() {
+		System.out.println(toString());
+
+		File dotGitFolder = new File(getDirectory(), ".git");
+
+		if (JenkinsResultsParserUtil.isCloudCINode() &&
+			!dotGitFolder.exists()) {
+
+			_downloadGitRepository();
+		}
+
+		GitWorkingDirectory gitWorkingDirectory = getGitWorkingDirectory();
+
+		if (_rebase) {
+			gitWorkingDirectory.createLocalGitBranch(
+				getUpstreamBranchName(), true, getBaseBranchSHA());
+		}
+
+		LocalGitBranch localGitBranch = getLocalGitBranch();
+
+		gitWorkingDirectory.checkoutLocalGitBranch(localGitBranch);
+
+		LocalGitBranch baseLocalGitBranch =
+			gitWorkingDirectory.createLocalGitBranch(
+				getUpstreamBranchName(), true, getBaseBranchSHA());
+
+		if (_rebase) {
+			gitWorkingDirectory.rebase(
+				true, baseLocalGitBranch, localGitBranch);
+		}
+
+		gitWorkingDirectory.reset("--hard " + localGitBranch.getSHA());
+
+		if ((_patchSHAs != null) && !_patchSHAs.isEmpty()) {
+			for (String patchSHA : _patchSHAs) {
+				try {
+					gitWorkingDirectory.cherryPick(patchSHA.trim());
+				}
+				catch (Exception exception) {
+					gitWorkingDirectory.reset("--hard");
+				}
+			}
+		}
+
+		gitWorkingDirectory.clean();
+
+		gitWorkingDirectory.displayLog();
 	}
 
 	private void _setBaseBranchHeadSHA(String branchSHA) {
@@ -708,6 +994,12 @@ public abstract class BaseWorkspaceGitRepository
 		put("sender_branch_username", username);
 	}
 
+	private void _setSnapshot(boolean snapshot) {
+		put("snapshot", snapshot);
+	}
+
+	private static final int _MAX_BASE_BRANCH_SHA_LENGTH = 7;
+
 	private static final String[] _REQUIRED_KEYS = {
 		"base_branch_head_sha", "base_branch_sha", "base_branch_username",
 		"git_hub_url", "sender_branch_head_sha", "sender_branch_name",
@@ -717,9 +1009,12 @@ public abstract class BaseWorkspaceGitRepository
 	private String _branchName;
 	private List<LocalGitCommit> _historicalLocalGitCommits;
 	private LocalGitBranch _localGitBranch;
+	private List<String> _patchSHAs;
 	private final Set<String> _propertyOptions = new HashSet<>();
+	private boolean _rebase;
 	private RemoteGitRef _senderRemoteGitRef;
 	private boolean _setUp;
+	private boolean _snapshot;
 	private RemoteGitRef _upstreamRemoteGitRef;
 
 }

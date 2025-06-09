@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {act, cleanup, fireEvent, render} from '@testing-library/react';
@@ -73,7 +67,8 @@ const data = {
 };
 
 describe('The InstanceDetailsModal component should', () => {
-	let getByText, renderResult;
+	let getByText;
+	let renderResult;
 
 	const renderComponent = () => {
 		cleanup();
@@ -91,6 +86,7 @@ describe('The InstanceDetailsModal component should', () => {
 		beforeAll(async () => {
 			fetch.mockResolvedValueOnce({
 				json: () => Promise.resolve(data),
+				ok: true,
 			});
 
 			renderComponent();
@@ -116,7 +112,7 @@ describe('The InstanceDetailsModal component should', () => {
 
 			expect(getByText('OPEN (1)')).toBeTruthy();
 			expect(resultStatus[0]).toHaveTextContent(
-				'Jan 24, 2020, 10:08 AM (0d 03h 43min overdue)'
+				'Jan 24, 2020, 10:08 AM (0d 3h 43min overdue)'
 			);
 			expect(resultIcons[1].children[0].classList).toContain(
 				'lexicon-icon-exclamation-circle'
@@ -175,6 +171,7 @@ describe('The InstanceDetailsModal component should', () => {
 						slaStatus: 'Untracked',
 						taskNames: ['Review'],
 					}),
+				ok: true,
 			});
 
 			renderComponent();
@@ -185,12 +182,10 @@ describe('The InstanceDetailsModal component should', () => {
 		});
 
 		it('Render details with slaStatus Untracked', () => {
-			const untrackedIcons = document.querySelectorAll(
-				'.lexicon-icon-hr'
-			);
-			const slaNotStartedElement = renderResult.getByText(
-				'NOT-STARTED (1)'
-			);
+			const untrackedIcons =
+				document.querySelectorAll('.lexicon-icon-hr');
+			const slaNotStartedElement =
+				renderResult.getByText('NOT-STARTED (1)');
 			const slaResultLabelElement = renderResult.getByText('(untracked)');
 
 			expect(untrackedIcons.length).toBe(2);

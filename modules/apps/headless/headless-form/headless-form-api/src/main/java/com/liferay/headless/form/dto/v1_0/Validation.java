@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.form.dto.v1_0;
@@ -20,11 +11,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -32,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -60,42 +51,63 @@ public class Validation implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Validation.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getErrorMessage() {
+		if (_errorMessageSupplier != null) {
+			errorMessage = _errorMessageSupplier.get();
+
+			_errorMessageSupplier = null;
+		}
+
 		return errorMessage;
 	}
 
 	public void setErrorMessage(String errorMessage) {
 		this.errorMessage = errorMessage;
+
+		_errorMessageSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setErrorMessage(
 		UnsafeSupplier<String, Exception> errorMessageUnsafeSupplier) {
 
-		try {
-			errorMessage = errorMessageUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_errorMessageSupplier = () -> {
+			try {
+				return errorMessageUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String errorMessage;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _errorMessageSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, String> getErrorMessage_i18n() {
+		if (_errorMessage_i18nSupplier != null) {
+			errorMessage_i18n = _errorMessage_i18nSupplier.get();
+
+			_errorMessage_i18nSupplier = null;
+		}
+
 		return errorMessage_i18n;
 	}
 
 	public void setErrorMessage_i18n(Map<String, String> errorMessage_i18n) {
 		this.errorMessage_i18n = errorMessage_i18n;
+
+		_errorMessage_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -103,74 +115,105 @@ public class Validation implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			errorMessage_i18nUnsafeSupplier) {
 
-		try {
-			errorMessage_i18n = errorMessage_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_errorMessage_i18nSupplier = () -> {
+			try {
+				return errorMessage_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> errorMessage_i18n;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, String>> _errorMessage_i18nSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getExpression() {
+		if (_expressionSupplier != null) {
+			expression = _expressionSupplier.get();
+
+			_expressionSupplier = null;
+		}
+
 		return expression;
 	}
 
 	public void setExpression(String expression) {
 		this.expression = expression;
+
+		_expressionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExpression(
 		UnsafeSupplier<String, Exception> expressionUnsafeSupplier) {
 
-		try {
-			expression = expressionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_expressionSupplier = () -> {
+			try {
+				return expressionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String expression;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _expressionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
+
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -199,6 +242,8 @@ public class Validation implements Serializable {
 
 		sb.append("{");
 
+		String errorMessage = getErrorMessage();
+
 		if (errorMessage != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -213,6 +258,8 @@ public class Validation implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> errorMessage_i18n = getErrorMessage_i18n();
+
 		if (errorMessage_i18n != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -222,6 +269,8 @@ public class Validation implements Serializable {
 
 			sb.append(_toJSON(errorMessage_i18n));
 		}
+
+		String expression = getExpression();
 
 		if (expression != null) {
 			if (sb.length() > 1) {
@@ -236,6 +285,8 @@ public class Validation implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -252,17 +303,17 @@ public class Validation implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.form.dto.v1_0.Validation",
 		name = "x-class-name"
 	)
 	public String xClassName;
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -288,7 +339,7 @@ public class Validation implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -299,7 +350,10 @@ public class Validation implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -320,7 +374,7 @@ public class Validation implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -336,5 +390,12 @@ public class Validation implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

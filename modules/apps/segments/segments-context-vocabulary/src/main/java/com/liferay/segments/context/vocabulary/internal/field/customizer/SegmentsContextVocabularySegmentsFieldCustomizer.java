@@ -1,30 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.context.vocabulary.internal.field.customizer;
 
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.CamelCaseUtil;
-import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.segments.context.vocabulary.internal.configuration.SegmentsContextVocabularyConfiguration;
 import com.liferay.segments.field.Field;
 import com.liferay.segments.field.customizer.SegmentsFieldCustomizer;
@@ -33,9 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
-import java.util.ResourceBundle;
-import java.util.stream.Collectors;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -59,7 +48,7 @@ import org.osgi.service.component.annotations.Reference;
 public class SegmentsContextVocabularySegmentsFieldCustomizer
 	implements SegmentsFieldCustomizer {
 
-	public static final String KEY = "assetVocabulary";
+	public static final String KEY = "assetVocabularyName";
 
 	@Override
 	public List<String> getFieldNames() {
@@ -78,11 +67,8 @@ public class SegmentsContextVocabularySegmentsFieldCustomizer
 
 	@Override
 	public String getLabel(String fieldName, Locale locale) {
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			"content.Language", locale, getClass());
-
-		return ResourceBundleUtil.getString(
-			resourceBundle, "field." + CamelCaseUtil.fromCamelCase(fieldName));
+		return _language.get(
+			locale, "field." + CamelCaseUtil.fromCamelCase(fieldName));
 	}
 
 	@Override
@@ -97,29 +83,25 @@ public class SegmentsContextVocabularySegmentsFieldCustomizer
 
 		Group group = _groupLocalService.fetchCompanyGroup(companyId);
 
-		return Optional.ofNullable(
+		AssetVocabulary groupAssetVocabulary =
 			_assetVocabularyLocalService.fetchGroupVocabulary(
-				group.getGroupId(), assetVocabulary)
-		).map(
-			AssetVocabulary::getCategories
-		).orElseGet(
-			() -> {
-				if (_log.isWarnEnabled()) {
-					_log.warn(
-						StringBundler.concat(
-							"No vocabulary was found with name ",
-							assetVocabulary, " in company ", companyId));
-				}
+				group.getGroupId(), assetVocabulary);
 
-				return Collections.emptyList();
+		if (groupAssetVocabulary == null) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					StringBundler.concat(
+						"No asset vocabulary was found with name ",
+						assetVocabulary, " in company ", companyId));
 			}
-		).stream(
-		).map(
+
+			return Collections.emptyList();
+		}
+
+		return TransformUtil.transform(
+			groupAssetVocabulary.getCategories(),
 			assetCategory -> new Field.Option(
-				assetCategory.getTitle(locale), assetCategory.getName())
-		).collect(
-			Collectors.toList()
-		);
+				assetCategory.getTitle(locale), assetCategory.getName()));
 	}
 
 	@Activate
@@ -130,10 +112,10 @@ public class SegmentsContextVocabularySegmentsFieldCustomizer
 				ConfigurableUtil.createConfigurable(
 					SegmentsContextVocabularyConfiguration.class, properties);
 
-		_entityField = segmentsContextVocabularyConfiguration.entityField();
+		_entityField = segmentsContextVocabularyConfiguration.entityFieldName();
 
 		_assetVocabulary =
-			segmentsContextVocabularyConfiguration.assetVocabulary();
+			segmentsContextVocabularyConfiguration.assetVocabularyName();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -148,5 +130,8 @@ public class SegmentsContextVocabularySegmentsFieldCustomizer
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Language _language;
 
 }

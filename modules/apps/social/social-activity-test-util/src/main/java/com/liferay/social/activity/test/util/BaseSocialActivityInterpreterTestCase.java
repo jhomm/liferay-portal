@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.social.activity.test.util;
@@ -32,15 +23,14 @@ import com.liferay.social.kernel.model.SocialActivityInterpreter;
 import com.liferay.social.kernel.service.SocialActivityLocalServiceUtil;
 import com.liferay.trash.TrashHelper;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -83,107 +73,29 @@ public abstract class BaseSocialActivityInterpreterTestCase {
 	public void testActivityInterpreter() throws Exception {
 		addActivities();
 
-		long time = System.currentTimeMillis();
+		List<SocialActivity> originalActivities = getActivities();
 
 		renameModels();
+
+		_checkRenaming(originalActivities);
 
 		if (isSupportsTrash()) {
 			moveModelsToTrash();
 
-			checkLinks();
+			_checkLinks();
 
 			restoreModelsFromTrash();
 		}
 
-		checkInterpret(time);
+		_checkInterpret();
 	}
 
 	protected abstract void addActivities() throws Exception;
 
-	protected void checkInterpret(long time) throws Exception {
-		List<SocialActivity> activities = getActivities();
-
-		Assert.assertFalse(activities.toString(), activities.isEmpty());
-
-		Map<String, String> entryTitles = new HashMap<>();
-
-		SocialActivityInterpreter activityInterpreter =
-			getActivityInterpreter();
-
-		for (SocialActivity activity : activities) {
-			String title = activity.getExtraDataValue(
-				"title", serviceContext.getLocale());
-
-			if (isSupportsRename(activity.getClassName()) &&
-				Validator.isNotNull(title)) {
-
-				if (activity.getCreateDate() < time) {
-					entryTitles.put(activity.getClassName(), title);
-				}
-				else {
-					Assert.assertNotNull(
-						entryTitles.get(activity.getClassName()));
-					Assert.assertNotEquals(
-						entryTitles.get(activity.getClassName()), title);
-				}
-			}
-
-			if (hasClassName(activityInterpreter, activity.getClassName()) &&
-				hasActivityType(activity.getType())) {
-
-				SocialActivityFeedEntry activityFeedEntry =
-					activityInterpreter.interpret(activity, serviceContext);
-
-				Assert.assertNotNull(activityFeedEntry);
-
-				title = activityFeedEntry.getTitle();
-
-				Assert.assertFalse(
-					"Title contains parameters: " + title,
-					title.matches("\\{\\d\\}"));
-			}
-		}
-	}
-
-	protected void checkLinks() throws Exception {
-		List<SocialActivity> activities = getActivities();
-
-		Assert.assertFalse(activities.toString(), activities.isEmpty());
-
-		SocialActivityInterpreter activityInterpreter =
-			getActivityInterpreter();
-
-		for (SocialActivity activity : activities) {
-			if (hasClassName(activityInterpreter, activity.getClassName()) &&
-				hasActivityType(activity.getType())) {
-
-				SocialActivityFeedEntry activityFeedEntry =
-					activityInterpreter.interpret(activity, serviceContext);
-
-				PortletURL portletURL = trashHelper.getViewContentURL(
-					serviceContext.getRequest(), activity.getClassName(),
-					activity.getClassPK());
-
-				if (Validator.isNull(activityFeedEntry.getLink()) &&
-					(portletURL == null)) {
-
-					continue;
-				}
-
-				Assert.assertEquals(
-					portletURL.toString(), activityFeedEntry.getLink());
-			}
-		}
-	}
-
 	protected List<SocialActivity> getActivities() throws Exception {
-		List<SocialActivity> activities = new ArrayList<>(
+		return new ArrayList<>(
 			SocialActivityLocalServiceUtil.getGroupActivities(
 				group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS));
-
-		Collections.reverse(activities);
-
-		return activities;
 	}
 
 	protected abstract SocialActivityInterpreter getActivityInterpreter();
@@ -199,7 +111,7 @@ public abstract class BaseSocialActivityInterpreterTestCase {
 			for (ServiceReference<SocialActivityInterpreter> serviceReference :
 					bundleContext.getServiceReferences(
 						SocialActivityInterpreter.class,
-						"(javax.portlet.name=" + portletId + ")")) {
+						"(jakarta.portlet.name=" + portletId + ")")) {
 
 				SocialActivityInterpreter socialActivityInterpreter =
 					bundleContext.getService(serviceReference);
@@ -270,5 +182,107 @@ public abstract class BaseSocialActivityInterpreterTestCase {
 
 	@Inject
 	protected TrashHelper trashHelper;
+
+	private void _checkInterpret() throws Exception {
+		List<SocialActivity> activities = getActivities();
+
+		Assert.assertFalse(activities.toString(), activities.isEmpty());
+
+		SocialActivityInterpreter activityInterpreter =
+			getActivityInterpreter();
+
+		for (SocialActivity activity : activities) {
+			if (hasClassName(activityInterpreter, activity.getClassName()) &&
+				hasActivityType(activity.getType())) {
+
+				SocialActivityFeedEntry activityFeedEntry =
+					activityInterpreter.interpret(activity, serviceContext);
+
+				Assert.assertNotNull(activityFeedEntry);
+
+				String title = activityFeedEntry.getTitle();
+
+				Assert.assertFalse(
+					"Title contains parameters: " + title,
+					title.matches("\\{\\d\\}"));
+			}
+		}
+	}
+
+	private void _checkLinks() throws Exception {
+		List<SocialActivity> activities = getActivities();
+
+		Assert.assertFalse(activities.toString(), activities.isEmpty());
+
+		SocialActivityInterpreter activityInterpreter =
+			getActivityInterpreter();
+
+		for (SocialActivity activity : activities) {
+			if (hasClassName(activityInterpreter, activity.getClassName()) &&
+				hasActivityType(activity.getType())) {
+
+				SocialActivityFeedEntry activityFeedEntry =
+					activityInterpreter.interpret(activity, serviceContext);
+
+				PortletURL portletURL = trashHelper.getViewContentURL(
+					serviceContext.getRequest(), activity.getClassName(),
+					activity.getClassPK());
+
+				if (Validator.isNull(activityFeedEntry.getLink()) &&
+					(portletURL == null)) {
+
+					continue;
+				}
+
+				Assert.assertEquals(
+					portletURL.toString(), activityFeedEntry.getLink());
+			}
+		}
+	}
+
+	private void _checkRenaming(List<SocialActivity> originalActivities)
+		throws Exception {
+
+		Assert.assertFalse(
+			originalActivities.toString(), originalActivities.isEmpty());
+
+		Set<Long> originalActivitiesIds = _getActivitiesIds(originalActivities);
+		String originalTitle = _getFirstActivityTitle(originalActivities);
+
+		List<SocialActivity> activities = getActivities();
+
+		Assert.assertFalse(activities.toString(), activities.isEmpty());
+
+		for (SocialActivity activity : activities) {
+			if (!originalActivitiesIds.contains(activity.getActivityId())) {
+				String title = activity.getExtraDataValue(
+					"title", serviceContext.getLocale());
+
+				if (isSupportsRename(activity.getClassName()) &&
+					Validator.isNotNull(title)) {
+
+					Assert.assertNotEquals(originalTitle, title);
+				}
+			}
+		}
+	}
+
+	private Set<Long> _getActivitiesIds(List<SocialActivity> activities) {
+		Set<Long> activitiesIds = new HashSet<>();
+
+		for (SocialActivity activity : activities) {
+			activitiesIds.add(activity.getActivityId());
+		}
+
+		return activitiesIds;
+	}
+
+	private String _getFirstActivityTitle(List<SocialActivity> activities)
+		throws Exception {
+
+		SocialActivity activity = activities.get(0);
+
+		return activity.getExtraDataValue("title", serviceContext.getLocale());
+	}
 
 }

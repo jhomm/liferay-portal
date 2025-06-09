@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.image.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -67,6 +57,7 @@ public class AMImageEntryModelImpl
 	public static final String TABLE_NAME = "AMImageEntry";
 
 	public static final Object[][] TABLE_COLUMNS = {
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
 		{"uuid_", Types.VARCHAR}, {"amImageEntryId", Types.BIGINT},
 		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
 		{"createDate", Types.TIMESTAMP}, {"configurationUuid", Types.VARCHAR},
@@ -79,6 +70,8 @@ public class AMImageEntryModelImpl
 		new HashMap<String, Integer>();
 
 	static {
+		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("amImageEntryId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
@@ -93,7 +86,7 @@ public class AMImageEntryModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table AMImageEntry (uuid_ VARCHAR(75) null,amImageEntryId LONG not null primary key,groupId LONG,companyId LONG,createDate DATE null,configurationUuid VARCHAR(75) null,fileVersionId LONG,mimeType VARCHAR(75) null,height INTEGER,width INTEGER,size_ LONG)";
+		"create table AMImageEntry (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,amImageEntryId LONG not null,groupId LONG,companyId LONG,createDate DATE null,configurationUuid VARCHAR(75) null,fileVersionId LONG,mimeType VARCHAR(75) null,height INTEGER,width INTEGER,size_ LONG,primary key (amImageEntryId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table AMImageEntry";
 
@@ -236,104 +229,136 @@ public class AMImageEntryModelImpl
 	public Map<String, Function<AMImageEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<AMImageEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, AMImageEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			AMImageEntry.class.getClassLoader(), AMImageEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<AMImageEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<AMImageEntry> constructor =
-				(Constructor<AMImageEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<AMImageEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap<String, Function<AMImageEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", AMImageEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", AMImageEntry::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", AMImageEntry::getUuid);
+			attributeGetterFunctions.put(
+				"amImageEntryId", AMImageEntry::getAmImageEntryId);
+			attributeGetterFunctions.put("groupId", AMImageEntry::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", AMImageEntry::getCompanyId);
+			attributeGetterFunctions.put(
+				"createDate", AMImageEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"configurationUuid", AMImageEntry::getConfigurationUuid);
+			attributeGetterFunctions.put(
+				"fileVersionId", AMImageEntry::getFileVersionId);
+			attributeGetterFunctions.put("mimeType", AMImageEntry::getMimeType);
+			attributeGetterFunctions.put("height", AMImageEntry::getHeight);
+			attributeGetterFunctions.put("width", AMImageEntry::getWidth);
+			attributeGetterFunctions.put("size", AMImageEntry::getSize);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<AMImageEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<AMImageEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<AMImageEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<AMImageEntry, Object>>();
-		Map<String, BiConsumer<AMImageEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<AMImageEntry, ?>>();
+		private static final Map<String, BiConsumer<AMImageEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("uuid", AMImageEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<AMImageEntry, String>)AMImageEntry::setUuid);
-		attributeGetterFunctions.put(
-			"amImageEntryId", AMImageEntry::getAmImageEntryId);
-		attributeSetterBiConsumers.put(
-			"amImageEntryId",
-			(BiConsumer<AMImageEntry, Long>)AMImageEntry::setAmImageEntryId);
-		attributeGetterFunctions.put("groupId", AMImageEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<AMImageEntry, Long>)AMImageEntry::setGroupId);
-		attributeGetterFunctions.put("companyId", AMImageEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<AMImageEntry, Long>)AMImageEntry::setCompanyId);
-		attributeGetterFunctions.put("createDate", AMImageEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<AMImageEntry, Date>)AMImageEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"configurationUuid", AMImageEntry::getConfigurationUuid);
-		attributeSetterBiConsumers.put(
-			"configurationUuid",
-			(BiConsumer<AMImageEntry, String>)
-				AMImageEntry::setConfigurationUuid);
-		attributeGetterFunctions.put(
-			"fileVersionId", AMImageEntry::getFileVersionId);
-		attributeSetterBiConsumers.put(
-			"fileVersionId",
-			(BiConsumer<AMImageEntry, Long>)AMImageEntry::setFileVersionId);
-		attributeGetterFunctions.put("mimeType", AMImageEntry::getMimeType);
-		attributeSetterBiConsumers.put(
-			"mimeType",
-			(BiConsumer<AMImageEntry, String>)AMImageEntry::setMimeType);
-		attributeGetterFunctions.put("height", AMImageEntry::getHeight);
-		attributeSetterBiConsumers.put(
-			"height",
-			(BiConsumer<AMImageEntry, Integer>)AMImageEntry::setHeight);
-		attributeGetterFunctions.put("width", AMImageEntry::getWidth);
-		attributeSetterBiConsumers.put(
-			"width", (BiConsumer<AMImageEntry, Integer>)AMImageEntry::setWidth);
-		attributeGetterFunctions.put("size", AMImageEntry::getSize);
-		attributeSetterBiConsumers.put(
-			"size", (BiConsumer<AMImageEntry, Long>)AMImageEntry::setSize);
+		static {
+			Map<String, BiConsumer<AMImageEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<AMImageEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<AMImageEntry, Long>)AMImageEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<AMImageEntry, Long>)
+					AMImageEntry::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<AMImageEntry, String>)AMImageEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"amImageEntryId",
+				(BiConsumer<AMImageEntry, Long>)
+					AMImageEntry::setAmImageEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<AMImageEntry, Long>)AMImageEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<AMImageEntry, Long>)AMImageEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<AMImageEntry, Date>)AMImageEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"configurationUuid",
+				(BiConsumer<AMImageEntry, String>)
+					AMImageEntry::setConfigurationUuid);
+			attributeSetterBiConsumers.put(
+				"fileVersionId",
+				(BiConsumer<AMImageEntry, Long>)AMImageEntry::setFileVersionId);
+			attributeSetterBiConsumers.put(
+				"mimeType",
+				(BiConsumer<AMImageEntry, String>)AMImageEntry::setMimeType);
+			attributeSetterBiConsumers.put(
+				"height",
+				(BiConsumer<AMImageEntry, Integer>)AMImageEntry::setHeight);
+			attributeSetterBiConsumers.put(
+				"width",
+				(BiConsumer<AMImageEntry, Integer>)AMImageEntry::setWidth);
+			attributeSetterBiConsumers.put(
+				"size", (BiConsumer<AMImageEntry, Long>)AMImageEntry::setSize);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_mvccVersion = mvccVersion;
+	}
+
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@Override
@@ -608,6 +633,8 @@ public class AMImageEntryModelImpl
 	public Object clone() {
 		AMImageEntryImpl amImageEntryImpl = new AMImageEntryImpl();
 
+		amImageEntryImpl.setMvccVersion(getMvccVersion());
+		amImageEntryImpl.setCtCollectionId(getCtCollectionId());
 		amImageEntryImpl.setUuid(getUuid());
 		amImageEntryImpl.setAmImageEntryId(getAmImageEntryId());
 		amImageEntryImpl.setGroupId(getGroupId());
@@ -629,6 +656,10 @@ public class AMImageEntryModelImpl
 	public AMImageEntry cloneWithOriginalValues() {
 		AMImageEntryImpl amImageEntryImpl = new AMImageEntryImpl();
 
+		amImageEntryImpl.setMvccVersion(
+			this.<Long>getColumnOriginalValue("mvccVersion"));
+		amImageEntryImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		amImageEntryImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
 		amImageEntryImpl.setAmImageEntryId(
 			this.<Long>getColumnOriginalValue("amImageEntryId"));
@@ -724,6 +755,10 @@ public class AMImageEntryModelImpl
 	public CacheModel<AMImageEntry> toCacheModel() {
 		AMImageEntryCacheModel amImageEntryCacheModel =
 			new AMImageEntryCacheModel();
+
+		amImageEntryCacheModel.mvccVersion = getMvccVersion();
+
+		amImageEntryCacheModel.ctCollectionId = getCtCollectionId();
 
 		amImageEntryCacheModel.uuid = getUuid();
 
@@ -824,44 +859,17 @@ public class AMImageEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<AMImageEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<AMImageEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<AMImageEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((AMImageEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, AMImageEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					AMImageEntry.class, ModelWrapper.class);
 
 	}
 
+	private long _mvccVersion;
+	private long _ctCollectionId;
 	private String _uuid;
 	private long _amImageEntryId;
 	private long _groupId;
@@ -877,8 +885,9 @@ public class AMImageEntryModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<AMImageEntry, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<AMImageEntry, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -903,6 +912,8 @@ public class AMImageEntryModelImpl
 	private void _setColumnOriginalValues() {
 		_columnOriginalValues = new HashMap<String, Object>();
 
+		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put("amImageEntryId", _amImageEntryId);
 		_columnOriginalValues.put("groupId", _groupId);
@@ -938,27 +949,31 @@ public class AMImageEntryModelImpl
 	static {
 		Map<String, Long> columnBitmasks = new HashMap<>();
 
-		columnBitmasks.put("uuid_", 1L);
+		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("amImageEntryId", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("groupId", 4L);
+		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("companyId", 8L);
+		columnBitmasks.put("amImageEntryId", 8L);
 
-		columnBitmasks.put("createDate", 16L);
+		columnBitmasks.put("groupId", 16L);
 
-		columnBitmasks.put("configurationUuid", 32L);
+		columnBitmasks.put("companyId", 32L);
 
-		columnBitmasks.put("fileVersionId", 64L);
+		columnBitmasks.put("createDate", 64L);
 
-		columnBitmasks.put("mimeType", 128L);
+		columnBitmasks.put("configurationUuid", 128L);
 
-		columnBitmasks.put("height", 256L);
+		columnBitmasks.put("fileVersionId", 256L);
 
-		columnBitmasks.put("width", 512L);
+		columnBitmasks.put("mimeType", 512L);
 
-		columnBitmasks.put("size_", 1024L);
+		columnBitmasks.put("height", 1024L);
+
+		columnBitmasks.put("width", 2048L);
+
+		columnBitmasks.put("size_", 4096L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

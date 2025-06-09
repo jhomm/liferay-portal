@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.service.impl;
 
 import com.liferay.calendar.configuration.CalendarServiceConfigurationValues;
+import com.liferay.calendar.constants.CalendarNotificationTemplateConstants;
 import com.liferay.calendar.exception.CalendarNameException;
 import com.liferay.calendar.exception.RequiredCalendarException;
 import com.liferay.calendar.exporter.CalendarDataFormat;
@@ -22,12 +14,15 @@ import com.liferay.calendar.exporter.CalendarDataHandler;
 import com.liferay.calendar.exporter.CalendarDataHandlerFactory;
 import com.liferay.calendar.internal.util.CalendarUtil;
 import com.liferay.calendar.model.Calendar;
+import com.liferay.calendar.notification.NotificationField;
+import com.liferay.calendar.notification.NotificationTemplateType;
+import com.liferay.calendar.notification.NotificationType;
+import com.liferay.calendar.notification.NotificationUtil;
 import com.liferay.calendar.service.CalendarBookingLocalService;
 import com.liferay.calendar.service.CalendarNotificationTemplateLocalService;
 import com.liferay.calendar.service.base.CalendarLocalServiceBaseImpl;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
-import com.liferay.portal.kernel.exception.NoSuchGroupException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -38,10 +33,15 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Date;
@@ -75,7 +75,7 @@ public class CalendarLocalServiceImpl extends CalendarLocalServiceBaseImpl {
 
 		// Calendar
 
-		User user = userLocalService.getUser(userId);
+		User user = _userLocalService.getUser(userId);
 
 		if (color <= 0) {
 			color = CalendarServiceConfigurationValues.CALENDAR_COLOR_DEFAULT;
@@ -83,7 +83,7 @@ public class CalendarLocalServiceImpl extends CalendarLocalServiceBaseImpl {
 
 		Date date = new Date();
 
-		validate(nameMap);
+		_validate(nameMap);
 
 		long calendarId = counterLocalService.increment();
 
@@ -109,11 +109,18 @@ public class CalendarLocalServiceImpl extends CalendarLocalServiceBaseImpl {
 
 		// Resources
 
-		resourceLocalService.addModelResources(calendar, serviceContext);
+		_resourceLocalService.addModelResources(calendar, serviceContext);
 
 		// Calendar
 
-		updateDefaultCalendar(calendar);
+		_updateDefaultCalendar(calendar);
+
+		// Calendar notification templates
+
+		_addCalendarNotificationTemplate(
+			calendar, NotificationTemplateType.INVITE, serviceContext);
+		_addCalendarNotificationTemplate(
+			calendar, NotificationTemplateType.REMINDER, serviceContext);
 
 		return calendar;
 	}
@@ -134,7 +141,7 @@ public class CalendarLocalServiceImpl extends CalendarLocalServiceBaseImpl {
 
 		// Resources
 
-		resourceLocalService.deleteResource(
+		_resourceLocalService.deleteResource(
 			calendar, ResourceConstants.SCOPE_INDIVIDUAL);
 
 		// Calendar bookings
@@ -211,35 +218,24 @@ public class CalendarLocalServiceImpl extends CalendarLocalServiceBaseImpl {
 	}
 
 	@Override
-	public boolean hasStagingCalendar(Calendar calendar)
-		throws PortalException {
-
+	public boolean hasStagingCalendar(Calendar calendar) {
 		long liveGroupId = calendar.getGroupId();
 
-		try {
-			Group stagingGroup = _groupLocalService.getStagingGroup(
-				liveGroupId);
+		Group stagingGroup = _groupLocalService.fetchStagingGroup(liveGroupId);
 
-			Calendar stagedCalendar =
-				calendarLocalService.fetchCalendarByUuidAndGroupId(
-					calendar.getUuid(), stagingGroup.getGroupId());
-
-			if (stagedCalendar == null) {
-				return false;
-			}
-
-			return true;
-		}
-		catch (NoSuchGroupException noSuchGroupException) {
-
-			// LPS-52675
-
-			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchGroupException, noSuchGroupException);
-			}
-
+		if (stagingGroup == null) {
 			return false;
 		}
+
+		Calendar stagedCalendar =
+			calendarLocalService.fetchCalendarByUuidAndGroupId(
+				calendar.getUuid(), stagingGroup.getGroupId());
+
+		if (stagedCalendar == null) {
+			return false;
+		}
+
+		return true;
 	}
 
 	@Override
@@ -311,7 +307,7 @@ public class CalendarLocalServiceImpl extends CalendarLocalServiceBaseImpl {
 
 		calendar = calendarPersistence.update(calendar);
 
-		updateDefaultCalendar(calendar);
+		_updateDefaultCalendar(calendar);
 	}
 
 	@Override
@@ -346,7 +342,7 @@ public class CalendarLocalServiceImpl extends CalendarLocalServiceBaseImpl {
 
 		Calendar calendar = calendarPersistence.findByPrimaryKey(calendarId);
 
-		validate(nameMap);
+		_validate(nameMap);
 
 		calendar.setModifiedDate(serviceContext.getModifiedDate(null));
 		calendar.setNameMap(nameMap);
@@ -361,7 +357,7 @@ public class CalendarLocalServiceImpl extends CalendarLocalServiceBaseImpl {
 
 		// Calendar
 
-		updateDefaultCalendar(calendar);
+		_updateDefaultCalendar(calendar);
 
 		return calendar;
 	}
@@ -383,7 +379,45 @@ public class CalendarLocalServiceImpl extends CalendarLocalServiceBaseImpl {
 		return calendarPersistence.update(calendar);
 	}
 
-	protected void updateDefaultCalendar(Calendar calendar)
+	private void _addCalendarNotificationTemplate(
+		Calendar calendar, NotificationTemplateType notificationTemplateType,
+		ServiceContext serviceContext) {
+
+		try {
+			_calendarNotificationTemplateLocalService.
+				addCalendarNotificationTemplate(
+					calendar.getUserId(), calendar.getCalendarId(),
+					NotificationType.EMAIL,
+					UnicodePropertiesBuilder.create(
+						true
+					).put(
+						CalendarNotificationTemplateConstants.
+							PROPERTY_FROM_ADDRESS,
+						PrefsPropsUtil.getString(
+							PropsKeys.ADMIN_EMAIL_FROM_ADDRESS)
+					).put(
+						CalendarNotificationTemplateConstants.
+							PROPERTY_FROM_NAME,
+						PrefsPropsUtil.getString(
+							PropsKeys.ADMIN_EMAIL_FROM_NAME)
+					).buildString(),
+					notificationTemplateType,
+					NotificationUtil.getDefaultTemplate(
+						NotificationType.EMAIL, notificationTemplateType,
+						NotificationField.SUBJECT),
+					NotificationUtil.getDefaultTemplate(
+						NotificationType.EMAIL, notificationTemplateType,
+						NotificationField.BODY),
+					serviceContext);
+		}
+		catch (Exception exception) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(exception);
+			}
+		}
+	}
+
+	private void _updateDefaultCalendar(Calendar calendar)
 		throws PortalException {
 
 		if (!calendar.isDefaultCalendar()) {
@@ -402,9 +436,7 @@ public class CalendarLocalServiceImpl extends CalendarLocalServiceBaseImpl {
 		}
 	}
 
-	protected void validate(Map<Locale, String> nameMap)
-		throws PortalException {
-
+	private void _validate(Map<Locale, String> nameMap) throws PortalException {
 		Locale locale = LocaleUtil.getSiteDefault();
 
 		if (nameMap.isEmpty() || Validator.isNull(nameMap.get(locale))) {
@@ -424,5 +456,11 @@ public class CalendarLocalServiceImpl extends CalendarLocalServiceBaseImpl {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private ResourceLocalService _resourceLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

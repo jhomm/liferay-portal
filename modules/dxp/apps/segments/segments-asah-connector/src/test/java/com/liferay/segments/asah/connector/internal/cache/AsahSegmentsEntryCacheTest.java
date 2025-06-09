@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.asah.connector.internal.cache;
@@ -18,22 +9,19 @@ import com.liferay.portal.kernel.cache.PortalCache;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+import com.liferay.segments.asah.connector.internal.configuration.provider.SegmentsAsahConfigurationProvider;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
 
 /**
  * @author David Arques
  */
-@RunWith(MockitoJUnitRunner.class)
 public class AsahSegmentsEntryCacheTest {
 
 	@ClassRule
@@ -45,6 +33,17 @@ public class AsahSegmentsEntryCacheTest {
 	public void setUp() {
 		ReflectionTestUtil.setFieldValue(
 			_asahSegmentsEntryCache, "_portalCache", _portalCache);
+		ReflectionTestUtil.setFieldValue(
+			_asahSegmentsEntryCache, "_segmentsAsahConfigurationProvider",
+			new SegmentsAsahConfigurationProvider() {
+
+				public int getAnonymousUserSegmentsCacheExpirationTime(
+					long companyId) {
+
+					return 0;
+				}
+
+			});
 	}
 
 	@Test
@@ -99,8 +98,7 @@ public class AsahSegmentsEntryCacheTest {
 
 	private final AsahSegmentsEntryCache _asahSegmentsEntryCache =
 		new AsahSegmentsEntryCache();
-
-	@Mock
-	private PortalCache<String, long[]> _portalCache;
+	private final PortalCache<String, long[]> _portalCache = Mockito.mock(
+		PortalCache.class);
 
 }

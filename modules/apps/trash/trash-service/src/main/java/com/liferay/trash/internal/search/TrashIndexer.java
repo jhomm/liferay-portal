@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.trash.internal.search;
 
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.BaseIndexer;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
@@ -27,25 +19,29 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.search.filter.TermsFilter;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.trash.TrashHandler;
 import com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.trash.model.TrashEntry;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Julio Camarero
  * @author Zsolt Berentey
  */
-@Component(immediate = true, service = Indexer.class)
+@Component(service = Indexer.class)
 public class TrashIndexer extends BaseIndexer<TrashEntry> {
 
 	public static final String CLASS_NAME = TrashEntry.class.getName();
@@ -141,6 +137,37 @@ public class TrashIndexer extends BaseIndexer<TrashEntry> {
 		addSearchLocalizedTerm(searchQuery, searchContext, Field.TITLE, true);
 		addSearchTerm(searchQuery, searchContext, Field.TYPE, false);
 		addSearchTerm(searchQuery, searchContext, Field.USER_NAME, true);
+
+		Group group = null;
+
+		long[] groupIds = searchContext.getGroupIds();
+
+		if ((groupIds != null) && (groupIds.length > 0)) {
+			group = _groupLocalService.fetchGroup(groupIds[0]);
+		}
+
+		if ((group == null) ||
+			Objects.equals(
+				group.getDefaultLanguageId(), searchContext.getLanguageId())) {
+
+			return;
+		}
+
+		addSearchTerm(
+			searchQuery, searchContext,
+			_localization.getLocalizedName(
+				Field.DESCRIPTION, group.getDefaultLanguageId()),
+			true);
+		addSearchTerm(
+			searchQuery, searchContext,
+			_localization.getLocalizedName(
+				Field.CONTENT, group.getDefaultLanguageId()),
+			true);
+		addSearchTerm(
+			searchQuery, searchContext,
+			_localization.getLocalizedName(
+				Field.TITLE, group.getDefaultLanguageId()),
+			true);
 	}
 
 	@Override
@@ -171,5 +198,11 @@ public class TrashIndexer extends BaseIndexer<TrashEntry> {
 	@Override
 	protected void doReindex(TrashEntry trashEntry) {
 	}
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Localization _localization;
 
 }

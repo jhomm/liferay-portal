@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.failure.message.generator;
@@ -38,12 +29,23 @@ public abstract class BaseFailureMessageGenerator
 	implements FailureMessageGenerator {
 
 	@Override
+	public String getMessage(Build build) {
+		return getMessage(build.getConsoleText());
+	}
+
+	@Override
 	public Element getMessageElement(Build build) {
 		return getMessageElement(build.getConsoleText());
 	}
 
 	@Override
 	public Element getMessageElement(String consoleText) {
+		String errorMessage = getMessage(consoleText);
+
+		if (errorMessage != null) {
+			return Dom4JUtil.toCodeSnippetElement(errorMessage);
+		}
+
 		return null;
 	}
 
@@ -123,9 +125,26 @@ public abstract class BaseFailureMessageGenerator
 	protected String getConsoleTextSnippet(
 		String consoleText, boolean truncateTop, int start, int end) {
 
-		return "<pre><code>" +
-			_getConsoleTextSnippet(consoleText, truncateTop, start, end) +
-				"</code></pre>";
+		return _getConsoleTextSnippet(consoleText, truncateTop, start, end);
+	}
+
+	protected String getConsoleTextSnippetByEnd(
+		String consoleText, boolean truncateTop, int end) {
+
+		if (end == -1) {
+			end = consoleText.length();
+		}
+
+		int start = getSnippetStart(consoleText, end);
+
+		return getConsoleTextSnippet(consoleText, truncateTop, start, end);
+	}
+
+	protected String getConsoleTextSnippetByStart(
+		String consoleText, int start) {
+
+		return _getConsoleTextSnippet(
+			consoleText, false, start, consoleText.length() - 1);
 	}
 
 	protected Element getConsoleTextSnippetElement(
@@ -243,6 +262,14 @@ public abstract class BaseFailureMessageGenerator
 
 	private String _getConsoleTextSnippet(
 		String consoleText, boolean truncateTop, int start, int end) {
+
+		if (end == -1) {
+			end = consoleText.length() - 1;
+		}
+
+		if (start == -1) {
+			start = 0;
+		}
 
 		if ((end - start) > CHARS_CONSOLE_TEXT_SNIPPET_SIZE_MAX) {
 			if (truncateTop) {

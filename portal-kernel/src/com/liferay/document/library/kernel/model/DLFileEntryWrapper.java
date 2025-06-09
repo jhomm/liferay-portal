@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.model;
@@ -77,6 +68,7 @@ public class DLFileEntryWrapper
 		attributes.put("custom1ImageId", getCustom1ImageId());
 		attributes.put("custom2ImageId", getCustom2ImageId());
 		attributes.put("manualCheckInRequired", isManualCheckInRequired());
+		attributes.put("displayDate", getDisplayDate());
 		attributes.put("expirationDate", getExpirationDate());
 		attributes.put("reviewDate", getReviewDate());
 		attributes.put("lastPublishDate", getLastPublishDate());
@@ -274,6 +266,12 @@ public class DLFileEntryWrapper
 			setManualCheckInRequired(manualCheckInRequired);
 		}
 
+		Date displayDate = (Date)attributes.get("displayDate");
+
+		if (displayDate != null) {
+			setDisplayDate(displayDate);
+		}
+
 		Date expirationDate = (Date)attributes.get("expirationDate");
 
 		if (expirationDate != null) {
@@ -422,6 +420,16 @@ public class DLFileEntryWrapper
 		return model.getDescription();
 	}
 
+	/**
+	 * Returns the display date of this document library file entry.
+	 *
+	 * @return the display date of this document library file entry
+	 */
+	@Override
+	public Date getDisplayDate() {
+		return model.getDisplayDate();
+	}
+
 	@Override
 	public DLFileEntryType getDLFileEntryType()
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -533,6 +541,13 @@ public class DLFileEntryWrapper
 	@Override
 	public java.util.List<DLFileVersion> getFileVersions(int status) {
 		return model.getFileVersions(status);
+	}
+
+	@Override
+	public java.util.List<DLFileVersion> getFileVersions(
+		int status, int start, int end) {
+
+		return model.getFileVersions(status, start, end);
 	}
 
 	@Override
@@ -744,18 +759,6 @@ public class DLFileEntryWrapper
 	}
 
 	/**
-	 * Returns the trash entry created when this document library file entry was moved to the Recycle Bin. The trash entry may belong to one of the ancestors of this document library file entry.
-	 *
-	 * @return the trash entry created when this document library file entry was moved to the Recycle Bin
-	 */
-	@Override
-	public com.liferay.trash.kernel.model.TrashEntry getTrashEntry()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getTrashEntry();
-	}
-
-	/**
 	 * Returns the class primary key of the trash entry for this document library file entry.
 	 *
 	 * @return the class primary key of the trash entry for this document library file entry
@@ -763,18 +766,6 @@ public class DLFileEntryWrapper
 	@Override
 	public long getTrashEntryClassPK() {
 		return model.getTrashEntryClassPK();
-	}
-
-	/**
-	 * Returns the trash handler for this document library file entry.
-	 *
-	 * @return the trash handler for this document library file entry
-	 * @deprecated As of Judson (7.1.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.trash.TrashHandler getTrashHandler() {
-		return model.getTrashHandler();
 	}
 
 	/**
@@ -860,26 +851,6 @@ public class DLFileEntryWrapper
 	@Override
 	public boolean isInTrash() {
 		return model.isInTrash();
-	}
-
-	/**
-	 * Returns <code>true</code> if the parent of this document library file entry is in the Recycle Bin.
-	 *
-	 * @return <code>true</code> if the parent of this document library file entry is in the Recycle Bin; <code>false</code> otherwise
-	 */
-	@Override
-	public boolean isInTrashContainer() {
-		return model.isInTrashContainer();
-	}
-
-	@Override
-	public boolean isInTrashExplicitly() {
-		return model.isInTrashExplicitly();
-	}
-
-	@Override
-	public boolean isInTrashImplicitly() {
-		return model.isInTrashImplicitly();
 	}
 
 	/**
@@ -980,6 +951,16 @@ public class DLFileEntryWrapper
 	@Override
 	public void setDescription(String description) {
 		model.setDescription(description);
+	}
+
+	/**
+	 * Sets the display date of this document library file entry.
+	 *
+	 * @param displayDate the display date of this document library file entry
+	 */
+	@Override
+	public void setDisplayDate(Date displayDate) {
+		model.setDisplayDate(displayDate);
 	}
 
 	/**
@@ -1268,6 +1249,11 @@ public class DLFileEntryWrapper
 	@Override
 	public void setVersion(String version) {
 		model.setVersion(version);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

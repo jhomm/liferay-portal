@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v3_8_1;
@@ -42,21 +33,21 @@ public class DDMFormFieldUpgradeProcess extends UpgradeProcess {
 	@Override
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				"select structureId, definition from DDMStructure where " +
-					"classNameId = ? ");
+				"select ctCollectionId, structureId, definition from " +
+					"DDMStructure where classNameId = ? ");
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMStructure set definition = ? where " +
-						"structureId = ?");
+						"ctCollectionId = ? and structureId = ?");
 			PreparedStatement preparedStatement3 = connection.prepareStatement(
-				"select structureVersionId, definition from " +
+				"select ctCollectionId, structureVersionId, definition from " +
 					"DDMStructureVersion where structureId = ?");
 			PreparedStatement preparedStatement4 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMStructureVersion set definition = ? where " +
-						"structureVersionId = ?")) {
+						"ctCollectionId = ? and structureVersionId = ?")) {
 
 			preparedStatement1.setLong(
 				1,
@@ -65,14 +56,15 @@ public class DDMFormFieldUpgradeProcess extends UpgradeProcess {
 
 			try (ResultSet resultSet = preparedStatement1.executeQuery()) {
 				while (resultSet.next()) {
-					String definition = resultSet.getString("definition");
-
 					preparedStatement2.setString(
-						1, _upgradeDefinition(definition));
+						1,
+						_upgradeDefinition(resultSet.getString("definition")));
+					preparedStatement2.setLong(
+						2, resultSet.getLong("ctCollectionId"));
 
 					long structureId = resultSet.getLong("structureId");
 
-					preparedStatement2.setLong(2, structureId);
+					preparedStatement2.setLong(3, structureId);
 
 					preparedStatement2.addBatch();
 
@@ -82,15 +74,14 @@ public class DDMFormFieldUpgradeProcess extends UpgradeProcess {
 							preparedStatement3.executeQuery()) {
 
 						while (resultSet2.next()) {
-							definition = resultSet2.getString("definition");
-
 							preparedStatement4.setString(
-								1, _upgradeDefinition(definition));
-
-							long structureVersionId = resultSet2.getLong(
-								"structureVersionId");
-
-							preparedStatement4.setLong(2, structureVersionId);
+								1,
+								_upgradeDefinition(
+									resultSet2.getString("definition")));
+							preparedStatement4.setLong(
+								2, resultSet2.getLong("ctCollectionId"));
+							preparedStatement4.setLong(
+								3, resultSet2.getLong("structureVersionId"));
 
 							preparedStatement4.addBatch();
 						}
@@ -129,7 +120,7 @@ public class DDMFormFieldUpgradeProcess extends UpgradeProcess {
 
 		_upgradeFields(jsonObject.getJSONArray("fields"));
 
-		return jsonObject.toJSONString();
+		return jsonObject.toString();
 	}
 
 	private void _upgradeFields(JSONArray fieldsJSONArray) {

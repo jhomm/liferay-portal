@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link CommerceOrderTypeRelLocalService}.
@@ -26,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class CommerceOrderTypeRelLocalServiceWrapper
 	implements CommerceOrderTypeRelLocalService,
 			   ServiceWrapper<CommerceOrderTypeRelLocalService> {
+
+	public CommerceOrderTypeRelLocalServiceWrapper() {
+		this(null);
+	}
 
 	public CommerceOrderTypeRelLocalServiceWrapper(
 		CommerceOrderTypeRelLocalService commerceOrderTypeRelLocalService) {
@@ -272,35 +268,30 @@ public class CommerceOrderTypeRelLocalServiceWrapper
 			commerceOrderTypeRelId);
 	}
 
+	@Override
+	public com.liferay.commerce.model.CommerceOrderTypeRel
+		fetchCommerceOrderTypeRelByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return _commerceOrderTypeRelLocalService.
+			fetchCommerceOrderTypeRelByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
 	/**
-	 * Returns the commerce order type rel with the matching external reference code and company.
+	 * Returns the commerce order type rel with the matching UUID and company.
 	 *
+	 * @param uuid the commerce order type rel's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce order type rel's external reference code
 	 * @return the matching commerce order type rel, or <code>null</code> if a matching commerce order type rel could not be found
 	 */
 	@Override
 	public com.liferay.commerce.model.CommerceOrderTypeRel
-		fetchCommerceOrderTypeRelByExternalReferenceCode(
-			long companyId, String externalReferenceCode) {
+		fetchCommerceOrderTypeRelByUuidAndCompanyId(
+			String uuid, long companyId) {
 
 		return _commerceOrderTypeRelLocalService.
-			fetchCommerceOrderTypeRelByExternalReferenceCode(
-				companyId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommerceOrderTypeRelByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.commerce.model.CommerceOrderTypeRel
-		fetchCommerceOrderTypeRelByReferenceCode(
-			long companyId, String externalReferenceCode) {
-
-		return _commerceOrderTypeRelLocalService.
-			fetchCommerceOrderTypeRelByReferenceCode(
-				companyId, externalReferenceCode);
+			fetchCommerceOrderTypeRelByUuidAndCompanyId(uuid, companyId);
 	}
 
 	@Override
@@ -347,23 +338,33 @@ public class CommerceOrderTypeRelLocalServiceWrapper
 			commerceOrderTypeRelId);
 	}
 
+	@Override
+	public com.liferay.commerce.model.CommerceOrderTypeRel
+			getCommerceOrderTypeRelByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceOrderTypeRelLocalService.
+			getCommerceOrderTypeRelByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
 	/**
-	 * Returns the commerce order type rel with the matching external reference code and company.
+	 * Returns the commerce order type rel with the matching UUID and company.
 	 *
+	 * @param uuid the commerce order type rel's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce order type rel's external reference code
 	 * @return the matching commerce order type rel
 	 * @throws PortalException if a matching commerce order type rel could not be found
 	 */
 	@Override
 	public com.liferay.commerce.model.CommerceOrderTypeRel
-			getCommerceOrderTypeRelByExternalReferenceCode(
-				long companyId, String externalReferenceCode)
+			getCommerceOrderTypeRelByUuidAndCompanyId(
+				String uuid, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceOrderTypeRelLocalService.
-			getCommerceOrderTypeRelByExternalReferenceCode(
-				companyId, externalReferenceCode);
+			getCommerceOrderTypeRelByUuidAndCompanyId(uuid, companyId);
 	}
 
 	/**
@@ -415,6 +416,16 @@ public class CommerceOrderTypeRelLocalServiceWrapper
 	}
 
 	@Override
+	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
+		getExportActionableDynamicQuery(
+			com.liferay.exportimport.kernel.lar.PortletDataContext
+				portletDataContext) {
+
+		return _commerceOrderTypeRelLocalService.
+			getExportActionableDynamicQuery(portletDataContext);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery
 		getIndexableActionableDynamicQuery() {
 
@@ -462,6 +473,11 @@ public class CommerceOrderTypeRelLocalServiceWrapper
 
 		return _commerceOrderTypeRelLocalService.updateCommerceOrderTypeRel(
 			commerceOrderTypeRel);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _commerceOrderTypeRelLocalService.getBasePersistence();
 	}
 
 	@Override

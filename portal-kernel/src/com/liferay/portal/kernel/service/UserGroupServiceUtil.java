@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -52,6 +43,15 @@ public class UserGroupServiceUtil {
 		getService().addGroupUserGroups(groupId, userGroupIds);
 	}
 
+	public static UserGroup addOrUpdateUserGroup(
+			String externalReferenceCode, String name, String description,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addOrUpdateUserGroup(
+			externalReferenceCode, name, description, serviceContext);
+	}
+
 	/**
 	 * Adds the user groups to the team
 	 *
@@ -72,6 +72,7 @@ public class UserGroupServiceUtil {
 	 * including its resources, metadata, and internal data structures.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the user group's external reference code
 	 * @param name the user group's name
 	 * @param description the user group's description
 	 * @param serviceContext the service context to be applied (optionally
@@ -80,10 +81,12 @@ public class UserGroupServiceUtil {
 	 * @return the user group
 	 */
 	public static UserGroup addUserGroup(
-			String name, String description, ServiceContext serviceContext)
+			String externalReferenceCode, String name, String description,
+			ServiceContext serviceContext)
 		throws PortalException {
 
-		return getService().addUserGroup(name, description, serviceContext);
+		return getService().addUserGroup(
+			externalReferenceCode, name, description, serviceContext);
 	}
 
 	/**
@@ -107,6 +110,14 @@ public class UserGroupServiceUtil {
 		throws PortalException {
 
 		return getService().fetchUserGroup(userGroupId);
+	}
+
+	public static UserGroup fetchUserGroupByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().fetchUserGroupByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	public static List<UserGroup> getGtUserGroups(
@@ -145,6 +156,14 @@ public class UserGroupServiceUtil {
 	 */
 	public static UserGroup getUserGroup(String name) throws PortalException {
 		return getService().getUserGroup(name);
+	}
+
+	public static UserGroup getUserGroupByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getUserGroupByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	public static List<UserGroup> getUserGroups(long companyId)
@@ -318,9 +337,18 @@ public class UserGroupServiceUtil {
 		getService().unsetTeamUserGroups(teamId, userGroupIds);
 	}
 
+	public static UserGroup updateExternalReferenceCode(
+			UserGroup userGroup, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			userGroup, externalReferenceCode);
+	}
+
 	/**
 	 * Updates the user group.
 	 *
+	 * @param externalReferenceCode the user group's external reference code
 	 * @param userGroupId the primary key of the user group
 	 * @param name the user group's name
 	 * @param description the the user group's description
@@ -330,16 +358,21 @@ public class UserGroupServiceUtil {
 	 * @return the user group
 	 */
 	public static UserGroup updateUserGroup(
-			long userGroupId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userGroupId, String name,
+			String description, ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateUserGroup(
-			userGroupId, name, description, serviceContext);
+			externalReferenceCode, userGroupId, name, description,
+			serviceContext);
 	}
 
 	public static UserGroupService getService() {
 		return _service;
+	}
+
+	public static void setService(UserGroupService service) {
+		_service = service;
 	}
 
 	private static volatile UserGroupService _service;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayLink from '@clayui/link';
@@ -42,15 +33,15 @@ export default withRouter(({history, location}) => {
 
 	const isActive = (value) => location.pathname === value;
 
-	const label = () => {
+	const getLabel = () => {
 		if (location.pathname.includes('tags')) {
 			return Liferay.Language.get('tags');
 		}
 		else if (location.pathname.includes('activity')) {
-			return Liferay.Language.get('my-activity');
+			return Liferay.Language.get('activity');
 		}
 		else if (location.pathname.includes('subscriptions')) {
-			return Liferay.Language.get('my-subscriptions');
+			return Liferay.Language.get('subscriptions');
 		}
 
 		return Liferay.Language.get('questions');
@@ -59,15 +50,16 @@ export default withRouter(({history, location}) => {
 	const historyPushParser = historyPushWithSlug(history.push);
 
 	return (
-		<section className="questions-section questions-section-nav">
+		<section className="border-bottom pb-0 questions-section questions-section-nav">
 			<div className="questions-container row">
 				<div className="align-items-center col d-flex justify-content-between">
 					<ClayNavigationBar
 						className="border-0 navigation-bar"
-						triggerLabel={label()}
+						triggerLabel={getLabel()}
 					>
 						<ClayNavigationBar.Item
 							active={
+								isActive(`/questions`) ||
 								isActive(`/questions/${sectionTitle}`) ||
 								isActive('/')
 							}
@@ -79,10 +71,7 @@ export default withRouter(({history, location}) => {
 								)
 							}
 						>
-							<ClayLink
-								className="nav-link"
-								displayType="unstyled"
-							>
+							<ClayLink>
 								{Liferay.Language.get('questions')}
 							</ClayLink>
 						</ClayNavigationBar.Item>
@@ -91,12 +80,7 @@ export default withRouter(({history, location}) => {
 							active={isActive(`/tags`)}
 							onClick={() => historyPushParser('/tags')}
 						>
-							<ClayLink
-								className="nav-link"
-								displayType="unstyled"
-							>
-								{Liferay.Language.get('tags')}
-							</ClayLink>
+							<ClayLink>{Liferay.Language.get('tags')}</ClayLink>
 						</ClayNavigationBar.Item>
 
 						<ClayNavigationBar.Item
@@ -120,11 +104,8 @@ export default withRouter(({history, location}) => {
 								)
 							}
 						>
-							<ClayLink
-								className="nav-link"
-								displayType="unstyled"
-							>
-								{Liferay.Language.get('my-subscriptions')}
+							<ClayLink>
+								{Liferay.Language.get('subscriptions')}
 							</ClayLink>
 						</ClayNavigationBar.Item>
 
@@ -147,11 +128,8 @@ export default withRouter(({history, location}) => {
 								)
 							}
 						>
-							<ClayLink
-								className="nav-link"
-								displayType="unstyled"
-							>
-								{Liferay.Language.get('my-activity')}
+							<ClayLink>
+								{Liferay.Language.get('activity')}
 							</ClayLink>
 						</ClayNavigationBar.Item>
 					</ClayNavigationBar>

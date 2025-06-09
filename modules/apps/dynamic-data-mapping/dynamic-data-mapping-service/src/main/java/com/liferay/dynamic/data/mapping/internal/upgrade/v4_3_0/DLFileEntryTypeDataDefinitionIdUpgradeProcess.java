@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v4_3_0;
@@ -101,18 +92,11 @@ public class DLFileEntryTypeDataDefinitionIdUpgradeProcess
 						dlFileEntryType);
 				}
 				catch (Exception exception) {
-					_log.error(exception, exception);
+					_log.error(exception);
 				}
 			});
 
 		actionableDynamicQuery.performActions();
-
-		if (!hasIndex("DLFileEntryType", "IX_B6F21286")) {
-			runSQLTemplateString(
-				"create unique index IX_B6F21286 on DLFileEntryType (" +
-					"groupId, dataDefinitionId, ctCollectionId);",
-				false);
-		}
 	}
 
 	private long _addDDMStructure(
@@ -153,7 +137,6 @@ public class DLFileEntryTypeDataDefinitionIdUpgradeProcess
 			preparedStatement.setDate(10, date);
 
 			preparedStatement.setLong(11, classNameId);
-
 			preparedStatement.setString(12, String.valueOf(ddmStructureId));
 			preparedStatement.setString(13, name);
 			preparedStatement.setString(14, _DEFINITION_DDM_STRUCTURE);
@@ -194,7 +177,6 @@ public class DLFileEntryTypeDataDefinitionIdUpgradeProcess
 			preparedStatement.setDate(8, date);
 
 			preparedStatement.setLong(9, classNameId);
-
 			preparedStatement.setString(10, String.valueOf(ddmStructureId));
 			preparedStatement.setLong(11, ddmStructureVersionId);
 			preparedStatement.setString(12, name);
@@ -236,7 +218,6 @@ public class DLFileEntryTypeDataDefinitionIdUpgradeProcess
 			preparedStatement.setLong(7, ddmStructureId);
 			preparedStatement.setString(8, name);
 			preparedStatement.setString(9, _DEFINITION_DDM_STRUCTURE);
-
 			preparedStatement.setLong(10, userId);
 			preparedStatement.setString(11, userName);
 			preparedStatement.setDate(12, date);

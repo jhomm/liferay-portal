@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.client.serdes.v1_0;
@@ -18,14 +9,13 @@ import com.liferay.headless.delivery.client.dto.v1_0.ContentStructureField;
 import com.liferay.headless.delivery.client.dto.v1_0.Option;
 import com.liferay.headless.delivery.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -410,6 +400,58 @@ public class ContentStructureFieldSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "dataType")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "inputControl")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "label")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "label_i18n")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "localizable")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "multiple")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "nestedContentStructureFields")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "options")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "predefinedValue")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "predefinedValue_i18n")) {
+
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "repeatable")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "required")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "showLabel")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			ContentStructureField contentStructureField,
 			String jsonParserFieldName, Object jsonParserFieldValue) {
@@ -435,8 +477,7 @@ public class ContentStructureFieldSerDes {
 			else if (Objects.equals(jsonParserFieldName, "label_i18n")) {
 				if (jsonParserFieldValue != null) {
 					contentStructureField.setLabel_i18n(
-						(Map)ContentStructureFieldSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "localizable")) {
@@ -460,27 +501,38 @@ public class ContentStructureFieldSerDes {
 						jsonParserFieldName, "nestedContentStructureFields")) {
 
 				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					ContentStructureField[] nestedContentStructureFieldsArray =
+						new ContentStructureField[jsonParserFieldValues.length];
+
+					for (int i = 0;
+						 i < nestedContentStructureFieldsArray.length; i++) {
+
+						nestedContentStructureFieldsArray[i] =
+							ContentStructureFieldSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
 					contentStructureField.setNestedContentStructureFields(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> ContentStructureFieldSerDes.toDTO(
-								(String)object)
-						).toArray(
-							size -> new ContentStructureField[size]
-						));
+						nestedContentStructureFieldsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "options")) {
 				if (jsonParserFieldValue != null) {
-					contentStructureField.setOptions(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> OptionSerDes.toDTO((String)object)
-						).toArray(
-							size -> new Option[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					Option[] optionsArray =
+						new Option[jsonParserFieldValues.length];
+
+					for (int i = 0; i < optionsArray.length; i++) {
+						optionsArray[i] = OptionSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					contentStructureField.setOptions(optionsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "predefinedValue")) {
@@ -494,8 +546,7 @@ public class ContentStructureFieldSerDes {
 
 				if (jsonParserFieldValue != null) {
 					contentStructureField.setPredefinedValue_i18n(
-						(Map)ContentStructureFieldSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "repeatable")) {
@@ -548,36 +599,7 @@ public class ContentStructureFieldSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -587,6 +609,42 @@ public class ContentStructureFieldSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.service.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.pricing.constants.CommercePricingClassActionKeys;
 import com.liferay.commerce.pricing.exception.NoSuchPricingClassException;
 import com.liferay.commerce.pricing.model.CommercePricingClass;
 import com.liferay.commerce.pricing.service.base.CommercePricingClassServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -28,21 +20,28 @@ import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
-import com.liferay.portal.kernel.service.CompanyService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Riccardo Alberti
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CommercePricingClass"
+	},
+	service = AopService.class
+)
 public class CommercePricingClassServiceImpl
 	extends CommercePricingClassServiceBaseImpl {
 
@@ -87,8 +86,8 @@ public class CommercePricingClassServiceImpl
 
 		if (!Validator.isBlank(externalReferenceCode)) {
 			CommercePricingClass commercePricingClass =
-				commercePricingClassPersistence.fetchByC_ERC(
-					serviceContext.getCompanyId(), externalReferenceCode);
+				commercePricingClassPersistence.fetchByERC_C(
+					externalReferenceCode, serviceContext.getCompanyId());
 
 			if (commercePricingClass != null) {
 				return commercePricingClassLocalService.
@@ -115,13 +114,13 @@ public class CommercePricingClassServiceImpl
 	}
 
 	@Override
-	public CommercePricingClass fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+	public CommercePricingClass fetchCommercePricingClass(
+			long commercePricingClassId)
 		throws PortalException {
 
 		CommercePricingClass commercePricingClass =
-			commercePricingClassLocalService.fetchByExternalReferenceCode(
-				externalReferenceCode, companyId);
+			commercePricingClassLocalService.fetchCommercePricingClass(
+				commercePricingClassId);
 
 		if (commercePricingClass != null) {
 			_commercePricingClassResourcePermission.check(
@@ -132,13 +131,15 @@ public class CommercePricingClassServiceImpl
 	}
 
 	@Override
-	public CommercePricingClass fetchCommercePricingClass(
-			long commercePricingClassId)
+	public CommercePricingClass
+			fetchCommercePricingClassByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		CommercePricingClass commercePricingClass =
-			commercePricingClassLocalService.fetchCommercePricingClass(
-				commercePricingClassId);
+			commercePricingClassLocalService.
+				fetchCommercePricingClassByExternalReferenceCode(
+					externalReferenceCode, companyId);
 
 		if (commercePricingClass != null) {
 			_commercePricingClassResourcePermission.check(
@@ -255,14 +256,10 @@ public class CommercePricingClassServiceImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommercePricingClassServiceImpl.class);
 
-	private static volatile ModelResourcePermission<CommercePricingClass>
-		_commercePricingClassResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CommercePricingClassServiceImpl.class,
-				"_commercePricingClassResourcePermission",
-				CommercePricingClass.class);
-
-	@ServiceReference(type = CompanyService.class)
-	private CompanyService _companyService;
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.pricing.model.CommercePricingClass)"
+	)
+	private ModelResourcePermission<CommercePricingClass>
+		_commercePricingClassResourcePermission;
 
 }

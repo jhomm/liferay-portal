@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.content.web.internal.model;
@@ -20,16 +11,22 @@ package com.liferay.commerce.order.content.web.internal.model;
 public class Order {
 
 	public Order(
-		long orderId, String accountName, String date, String author,
-		String orderStatus, String status, String amount) {
+		String externalReferenceCode, long orderId, String accountName,
+		String amount, String author, String date, String name,
+		String orderStatus, String orderType, String purchaseOrderNumber,
+		String status) {
 
+		_externalReferenceCode = externalReferenceCode;
 		_orderId = orderId;
 		_accountName = accountName;
-		_date = date;
-		_author = author;
-		_orderStatus = orderStatus;
-		_status = status;
 		_amount = amount;
+		_author = author;
+		_date = date;
+		_name = name;
+		_orderStatus = orderStatus;
+		_orderType = orderType;
+		_purchaseOrderNumber = purchaseOrderNumber;
+		_status = status;
 
 		_title = String.valueOf(orderId);
 	}
@@ -50,12 +47,28 @@ public class Order {
 		return _date;
 	}
 
+	public String getExternalReferenceCode() {
+		return _externalReferenceCode;
+	}
+
+	public String getName() {
+		return _name;
+	}
+
 	public long getOrderId() {
 		return _orderId;
 	}
 
 	public String getOrderStatus() {
 		return _orderStatus;
+	}
+
+	public String getOrderType() {
+		return _orderType;
+	}
+
+	public String getPurchaseOrderNumber() {
+		return _purchaseOrderNumber;
 	}
 
 	public String getStatus() {
@@ -70,8 +83,12 @@ public class Order {
 	private final String _amount;
 	private final String _author;
 	private final String _date;
+	private final String _externalReferenceCode;
+	private final String _name;
 	private final long _orderId;
 	private final String _orderStatus;
+	private final String _orderType;
+	private final String _purchaseOrderNumber;
 	private final String _status;
 	private final String _title;
 

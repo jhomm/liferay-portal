@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.analysis;
@@ -28,7 +19,7 @@ import org.osgi.service.component.annotations.Component;
 /**
  * @author Michael C. Han
  */
-@Component(immediate = true, service = KeywordTokenizer.class)
+@Component(service = KeywordTokenizer.class)
 public class SimpleKeywordTokenizer implements KeywordTokenizer {
 
 	@Override
@@ -80,7 +71,7 @@ public class SimpleKeywordTokenizer implements KeywordTokenizer {
 			keyword = keyword.trim();
 
 			if (!keyword.isEmpty()) {
-				tokenizeBySpace(keyword, tokens);
+				_tokenizeBySpace(keyword, tokens);
 			}
 
 			return;
@@ -91,7 +82,7 @@ public class SimpleKeywordTokenizer implements KeywordTokenizer {
 		token = token.trim();
 
 		if (!token.isEmpty()) {
-			tokenizeBySpace(token, tokens);
+			_tokenizeBySpace(token, tokens);
 		}
 
 		token = keyword.substring(start, end + 1);
@@ -121,7 +112,11 @@ public class SimpleKeywordTokenizer implements KeywordTokenizer {
 		tokenize(keyword, tokens, start, end);
 	}
 
-	protected void tokenizeBySpace(String keyword, List<String> tokens) {
+	private String _normalizeWhitespace(String keyword) {
+		return StringUtil.replace(keyword, _IDEOGRAPHIC_SPACE, CharPool.SPACE);
+	}
+
+	private void _tokenizeBySpace(String keyword, List<String> tokens) {
 		String[] keywordTokens = split(keyword);
 
 		for (String keywordToken : keywordTokens) {
@@ -131,10 +126,6 @@ public class SimpleKeywordTokenizer implements KeywordTokenizer {
 				tokens.add(keyword);
 			}
 		}
-	}
-
-	private String _normalizeWhitespace(String keyword) {
-		return StringUtil.replace(keyword, _IDEOGRAPHIC_SPACE, CharPool.SPACE);
 	}
 
 	private static final char _IDEOGRAPHIC_SPACE = '\u3000';

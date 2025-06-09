@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service.persistence.test;
@@ -141,6 +132,8 @@ public class ObjectLayoutBoxPersistenceTest {
 
 		newObjectLayoutBox.setPriority(RandomTestUtil.nextInt());
 
+		newObjectLayoutBox.setType(RandomTestUtil.randomString());
+
 		_objectLayoutBoxes.add(_persistence.update(newObjectLayoutBox));
 
 		ObjectLayoutBox existingObjectLayoutBox = _persistence.findByPrimaryKey(
@@ -180,6 +173,8 @@ public class ObjectLayoutBoxPersistenceTest {
 		Assert.assertEquals(
 			existingObjectLayoutBox.getPriority(),
 			newObjectLayoutBox.getPriority());
+		Assert.assertEquals(
+			existingObjectLayoutBox.getType(), newObjectLayoutBox.getType());
 	}
 
 	@Test
@@ -236,7 +231,7 @@ public class ObjectLayoutBoxPersistenceTest {
 			"objectLayoutBoxId", true, "companyId", true, "userId", true,
 			"userName", true, "createDate", true, "modifiedDate", true,
 			"objectLayoutTabId", true, "collapsable", true, "name", true,
-			"priority", true);
+			"priority", true, "type", true);
 	}
 
 	@Test
@@ -456,6 +451,8 @@ public class ObjectLayoutBoxPersistenceTest {
 		objectLayoutBox.setName(RandomTestUtil.randomString());
 
 		objectLayoutBox.setPriority(RandomTestUtil.nextInt());
+
+		objectLayoutBox.setType(RandomTestUtil.randomString());
 
 		_objectLayoutBoxes.add(_persistence.update(objectLayoutBox));
 

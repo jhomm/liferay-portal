@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.web.internal.portlet;
@@ -23,8 +14,8 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.saml.constants.SamlPortletKeys;
 
-import javax.portlet.Portlet;
-import javax.portlet.PortletRequest;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -32,24 +23,24 @@ import org.osgi.service.component.annotations.Component;
  * @author Mika Koivisto
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.css-class-wrapper=saml-portlet-admin",
 		"com.liferay.portlet.display-category=category.hidden",
 		"com.liferay.portlet.header-portlet-css=/admin/css/main.css",
 		"com.liferay.portlet.layout-cacheable=true",
-		"javax.portlet.display-name=SAML Admin",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.copy-request-parameters=true",
-		"javax.portlet.init-param.mvc-command-names-default-views=/admin/view",
-		"javax.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
-		"javax.portlet.portlet.info.keywords=SAML Admin",
-		"javax.portlet.portlet.info.short-title=SAML Admin",
-		"javax.portlet.portlet.info.title=SAML Admin",
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator,guest,power-user,user"
+		"jakarta.portlet.display-name=SAML Admin",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.copy-request-parameters=true",
+		"jakarta.portlet.init-param.mvc-command-names-default-views=/admin/view",
+		"jakarta.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
+		"jakarta.portlet.portlet.info.keywords=SAML Admin",
+		"jakarta.portlet.portlet.info.short-title=SAML Admin",
+		"jakarta.portlet.portlet.info.title=SAML Admin",
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator,guest,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
-	service = {Portlet.class, SamlAdminPortlet.class}
+	service = Portlet.class
 )
 public class SamlAdminPortlet extends MVCPortlet {
 

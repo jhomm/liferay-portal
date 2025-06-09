@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.portlet.action;
 
+import com.liferay.portal.kernel.util.JavaDetector;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
@@ -38,7 +30,7 @@ public class SaveFormInstanceMVCResourceCommandTest {
 
 	@Before
 	public void setUp() throws Exception {
-		setUpSaveFormInstanceMVCResourceCommand();
+		_setUpSaveFormInstanceMVCResourceCommand();
 	}
 
 	@Test
@@ -54,18 +46,29 @@ public class SaveFormInstanceMVCResourceCommandTest {
 
 		Date date = calendar.getTime();
 
-		Assert.assertEquals(
-			"Apr 18, 2018 2:00 PM",
-			_saveFormInstanceMVCResourceCommand.formatDate(
-				date, LocaleUtil.US, "UTC"));
-
-		Assert.assertEquals(
-			"Apr 18, 2018 11:00 AM",
-			_saveFormInstanceMVCResourceCommand.formatDate(
-				date, LocaleUtil.US, "America/Sao_Paulo"));
+		if (!JavaDetector.isJDK8()) {
+			Assert.assertEquals(
+				"Apr 18, 2018, 11:00 AM",
+				_saveFormInstanceMVCResourceCommand.formatDate(
+					date, LocaleUtil.US, "America/Sao_Paulo"));
+			Assert.assertEquals(
+				"Apr 18, 2018, 2:00 PM",
+				_saveFormInstanceMVCResourceCommand.formatDate(
+					date, LocaleUtil.US, "UTC"));
+		}
+		else {
+			Assert.assertEquals(
+				"Apr 18, 2018 11:00 AM",
+				_saveFormInstanceMVCResourceCommand.formatDate(
+					date, LocaleUtil.US, "America/Sao_Paulo"));
+			Assert.assertEquals(
+				"Apr 18, 2018 2:00 PM",
+				_saveFormInstanceMVCResourceCommand.formatDate(
+					date, LocaleUtil.US, "UTC"));
+		}
 	}
 
-	protected void setUpSaveFormInstanceMVCResourceCommand() throws Exception {
+	private void _setUpSaveFormInstanceMVCResourceCommand() throws Exception {
 		_saveFormInstanceMVCResourceCommand =
 			new SaveFormInstanceMVCResourceCommand();
 	}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.upgrade;
@@ -57,6 +48,8 @@ public class CTModelUpgradeProcess extends UpgradeProcess {
 		String normalizedTableName = dbInspector.normalizeName(
 			tableName, databaseMetaData);
 
+		ensureTableExists(databaseMetaData, dbInspector, normalizedTableName);
+
 		try (ResultSet resultSet = databaseMetaData.getColumns(
 				dbInspector.getCatalog(), dbInspector.getSchema(),
 				normalizedTableName,
@@ -68,45 +61,35 @@ public class CTModelUpgradeProcess extends UpgradeProcess {
 			}
 		}
 
-		String primaryKeyColumnName1 = null;
-		String primaryKeyColumnName2 = null;
+		String[] primaryKeyColumnNames = getPrimaryKeyColumnNames(
+			connection, tableName);
 
-		try (ResultSet resultSet = databaseMetaData.getPrimaryKeys(
-				dbInspector.getCatalog(), dbInspector.getSchema(),
-				normalizedTableName)) {
-
-			if (resultSet.next()) {
-				primaryKeyColumnName1 = resultSet.getString("COLUMN_NAME");
-
-				if (resultSet.next()) {
-					primaryKeyColumnName2 = resultSet.getString("COLUMN_NAME");
-
-					if (resultSet.next()) {
-						throw new UpgradeException(
-							"Too many primary key columns to upgrade " +
-								normalizedTableName);
-					}
-				}
-			}
-		}
-
-		if (primaryKeyColumnName1 == null) {
+		if (primaryKeyColumnNames.length == 0) {
 			throw new UpgradeException(
 				"No primary key column found for " + normalizedTableName);
 		}
+		else if (primaryKeyColumnNames.length > 2) {
+			throw new UpgradeException(
+				"Too many primary key columns to upgrade " +
+					normalizedTableName);
+		}
 
-		runSQL(
-			StringBundler.concat(
-				"alter table ", normalizedTableName,
-				" add ctCollectionId LONG default 0 not null"));
+		String primaryKeyColumnName1 = primaryKeyColumnNames[0];
+
+		String primaryKeyColumnName2 = null;
+
+		if (primaryKeyColumnNames.length == 2) {
+			primaryKeyColumnName2 = primaryKeyColumnNames[1];
+		}
+
+		alterTableAddColumn(
+			normalizedTableName, "ctCollectionId", "LONG default 0 not null");
 
 		// Assume table is a mapping table
 
 		if (primaryKeyColumnName2 != null) {
-			runSQL(
-				StringBundler.concat(
-					"alter table ", normalizedTableName,
-					" add ctChangeType BOOLEAN default null"));
+			alterTableAddColumn(
+				normalizedTableName, "ctChangeType", "BOOLEAN default null");
 		}
 
 		removePrimaryKey(tableName);

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.spring.aop;
@@ -17,7 +8,7 @@ package com.liferay.portal.spring.aop;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.dao.orm.hibernate.SessionFactoryImpl;
 import com.liferay.portal.dao.orm.hibernate.VerifySessionFactoryWrapper;
-import com.liferay.portal.kernel.aop.ChainableMethodAdvice;
+import com.liferay.portal.kernel.aop.SkipAop;
 import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
@@ -25,11 +16,11 @@ import com.liferay.portal.kernel.util.InfrastructureUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.spring.bean.BeanReferenceAnnotationBeanPostProcessor;
 import com.liferay.portal.spring.configurator.ConfigurableApplicationContextConfigurator;
+import com.liferay.portal.spring.hibernate.PortalTransactionManager;
 import com.liferay.portal.spring.hibernate.PortletHibernateConfiguration;
 import com.liferay.portal.spring.hibernate.PortletTransactionManager;
-import com.liferay.portal.spring.transaction.CounterTransactionExecutor;
 import com.liferay.portal.spring.transaction.DefaultTransactionExecutor;
-import com.liferay.portal.spring.transaction.TransactionHandler;
+import com.liferay.portal.spring.transaction.TransactionExecutor;
 import com.liferay.portal.spring.transaction.TransactionInvokerImpl;
 import com.liferay.portal.spring.transaction.TransactionManagerFactory;
 
@@ -38,17 +29,14 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import org.hibernate.engine.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.DefaultSingletonBeanRegistry;
-import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.orm.hibernate3.HibernateTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
@@ -70,12 +58,8 @@ public class AopConfigurableApplicationContextConfigurator
 
 		@Override
 		public boolean match(Class<?> beanClass, String beanName) {
-			if (_counterMatcher) {
-				return beanName.equals(_COUNTER_SERVICE_BEAN_NAME);
-			}
-
-			if (!beanName.equals(_COUNTER_SERVICE_BEAN_NAME) &&
-				beanName.endsWith(_SERVICE_SUFFIX)) {
+			if (beanName.endsWith(_SERVICE_SUFFIX) &&
+				(beanClass.getAnnotation(SkipAop.class) == null)) {
 
 				return true;
 			}
@@ -83,16 +67,7 @@ public class AopConfigurableApplicationContextConfigurator
 			return false;
 		}
 
-		private ServiceBeanMatcher(boolean counterMatcher) {
-			_counterMatcher = counterMatcher;
-		}
-
-		private static final String _COUNTER_SERVICE_BEAN_NAME =
-			"com.liferay.counter.kernel.service.CounterLocalService";
-
 		private static final String _SERVICE_SUFFIX = "Service";
-
-		private final boolean _counterMatcher;
 
 	}
 
@@ -140,17 +115,6 @@ public class AopConfigurableApplicationContextConfigurator
 
 				transactionInvokerUtil.setTransactionInvoker(
 					transactionInvokerImpl);
-
-				CounterServiceBeanAutoProxyCreator
-					counterServiceBeanAutoProxyCreator =
-						new CounterServiceBeanAutoProxyCreator(
-							_classLoader,
-							configurableListableBeanFactory.getBean(
-								"counterTransactionExecutor",
-								CounterTransactionExecutor.class));
-
-				configurableListableBeanFactory.addBeanPostProcessor(
-					counterServiceBeanAutoProxyCreator);
 			}
 
 			// Service AOP
@@ -174,17 +138,6 @@ public class AopConfigurableApplicationContextConfigurator
 		private PlatformTransactionManager _getPlatformTransactionManager(
 			ConfigurableListableBeanFactory configurableListableBeanFactory) {
 
-			BeanDefinitionRegistry beanDefinitionRegistry =
-				(BeanDefinitionRegistry)configurableListableBeanFactory;
-
-			GenericBeanDefinition genericBeanDefinition =
-				new GenericBeanDefinition();
-
-			genericBeanDefinition.setAbstract(true);
-
-			beanDefinitionRegistry.registerBeanDefinition(
-				"basePersistence", genericBeanDefinition);
-
 			DataSource liferayDataSource =
 				configurableListableBeanFactory.getBean(
 					"liferayDataSource", DataSource.class);
@@ -206,9 +159,11 @@ public class AopConfigurableApplicationContextConfigurator
 						_classLoader, liferayDataSource);
 
 				try {
+					portletHibernateConfiguration.afterPropertiesSet();
+
 					liferayHibernateSessionFactory =
 						(SessionFactoryImplementor)
-							portletHibernateConfiguration.buildSessionFactory();
+							portletHibernateConfiguration.getObject();
 				}
 				catch (Exception exception) {
 					return ReflectionUtil.throwException(exception);
@@ -244,7 +199,7 @@ public class AopConfigurableApplicationContextConfigurator
 
 			if (InfrastructureUtil.getDataSource() == liferayDataSource) {
 				return new PortletTransactionManager(
-					(HibernateTransactionManager)
+					(PortalTransactionManager)
 						InfrastructureUtil.getTransactionManager(),
 					liferayHibernateSessionFactory);
 			}
@@ -275,13 +230,8 @@ public class AopConfigurableApplicationContextConfigurator
 				BasePersistenceImpl<?> basePersistenceImpl =
 					(BasePersistenceImpl<?>)bean;
 
-				if (basePersistenceImpl.getDataSource() == null) {
-					basePersistenceImpl.setDataSource(_dataSource);
-				}
-
-				if (basePersistenceImpl.getDialect() == null) {
-					basePersistenceImpl.setSessionFactory(_sessionFactory);
-				}
+				basePersistenceImpl.setDataSource(_dataSource);
+				basePersistenceImpl.setSessionFactory(_sessionFactory);
 			}
 
 			return bean;
@@ -299,32 +249,6 @@ public class AopConfigurableApplicationContextConfigurator
 
 	}
 
-	private static class CounterServiceBeanAutoProxyCreator
-		extends BaseServiceBeanAutoProxyCreator {
-
-		@Override
-		protected AopInvocationHandler createAopInvocationHandler(Object bean) {
-			return new AopInvocationHandler(
-				bean, _emptyChainableMethodAdvices,
-				_counterTransactionExecutor);
-		}
-
-		private CounterServiceBeanAutoProxyCreator(
-			ClassLoader classLoader,
-			CounterTransactionExecutor counterTransactionExecutor) {
-
-			super(new ServiceBeanMatcher(true), classLoader);
-
-			_counterTransactionExecutor = counterTransactionExecutor;
-		}
-
-		private static final ChainableMethodAdvice[]
-			_emptyChainableMethodAdvices = new ChainableMethodAdvice[0];
-
-		private final CounterTransactionExecutor _counterTransactionExecutor;
-
-	}
-
 	private static class ServiceBeanAutoProxyCreator
 		extends BaseServiceBeanAutoProxyCreator {
 
@@ -339,7 +263,7 @@ public class AopConfigurableApplicationContextConfigurator
 		@Override
 		protected AopInvocationHandler createAopInvocationHandler(Object bean) {
 			AopInvocationHandler aopInvocationHandler = AopCacheManager.create(
-				bean, _transactionHandler);
+				bean, _transactionExecutor);
 
 			_aopInvocationHandlers.add(aopInvocationHandler);
 
@@ -347,16 +271,16 @@ public class AopConfigurableApplicationContextConfigurator
 		}
 
 		private ServiceBeanAutoProxyCreator(
-			ClassLoader classLoader, TransactionHandler transactionHandler) {
+			ClassLoader classLoader, TransactionExecutor transactionExecutor) {
 
-			super(new ServiceBeanMatcher(false), classLoader);
+			super(new ServiceBeanMatcher(), classLoader);
 
-			_transactionHandler = transactionHandler;
+			_transactionExecutor = transactionExecutor;
 		}
 
 		private final List<AopInvocationHandler> _aopInvocationHandlers =
 			new ArrayList<>();
-		private final TransactionHandler _transactionHandler;
+		private final TransactionExecutor _transactionExecutor;
 
 	}
 

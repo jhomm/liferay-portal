@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.internal.dto.v1_0.converter;
@@ -31,9 +22,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
 	property = "dto.class.name=com.liferay.commerce.price.list.model.CommercePriceList",
-	service = {DTOConverter.class, PriceListDTOConverter.class}
+	service = DTOConverter.class
 )
 public class PriceListDTOConverter
 	implements DTOConverter<CommercePriceList, PriceList> {
@@ -51,24 +41,31 @@ public class PriceListDTOConverter
 			_commercePriceListService.getCommercePriceList(
 				(Long)dtoConverterContext.getId());
 
-		CommerceCurrency commerceCurrency =
-			commercePriceList.getCommerceCurrency();
-
-		ExpandoBridge expandoBridge = commercePriceList.getExpandoBridge();
-
 		return new PriceList() {
 			{
-				active = !commercePriceList.isInactive();
-				catalogId = _getCatalogId(commercePriceList);
-				currencyCode = commerceCurrency.getCode();
-				customFields = expandoBridge.getAttributes();
-				displayDate = commercePriceList.getDisplayDate();
-				expirationDate = commercePriceList.getExpirationDate();
-				externalReferenceCode =
-					commercePriceList.getExternalReferenceCode();
-				id = commercePriceList.getCommercePriceListId();
-				name = commercePriceList.getName();
-				priority = commercePriceList.getPriority();
+				setActive(() -> !commercePriceList.isInactive());
+				setCatalogId(() -> _getCatalogId(commercePriceList));
+				setCurrencyCode(
+					() -> {
+						CommerceCurrency commerceCurrency =
+							commercePriceList.getCommerceCurrency();
+
+						return commerceCurrency.getCode();
+					});
+				setCustomFields(
+					() -> {
+						ExpandoBridge expandoBridge =
+							commercePriceList.getExpandoBridge();
+
+						return expandoBridge.getAttributes();
+					});
+				setDisplayDate(commercePriceList::getDisplayDate);
+				setExpirationDate(commercePriceList::getExpirationDate);
+				setExternalReferenceCode(
+					commercePriceList::getExternalReferenceCode);
+				setId(commercePriceList::getCommercePriceListId);
+				setName(commercePriceList::getName);
+				setPriority(commercePriceList::getPriority);
 			}
 		};
 	}

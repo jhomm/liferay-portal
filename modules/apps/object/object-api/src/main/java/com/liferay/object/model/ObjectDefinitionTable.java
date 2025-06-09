@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model;
@@ -37,6 +28,10 @@ public class ObjectDefinitionTable extends BaseTable<ObjectDefinitionTable> {
 		"mvccVersion", Long.class, Types.BIGINT, Column.FLAG_NULLITY);
 	public final Column<ObjectDefinitionTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, Long> objectDefinitionId =
 		createColumn(
 			"objectDefinitionId", Long.class, Types.BIGINT,
@@ -52,23 +47,73 @@ public class ObjectDefinitionTable extends BaseTable<ObjectDefinitionTable> {
 	public final Column<ObjectDefinitionTable, Date> modifiedDate =
 		createColumn(
 			"modifiedDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Long>
+		accountEntryRestrictedObjectFieldId = createColumn(
+			"accountERObjectFieldId", Long.class, Types.BIGINT,
+			Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, Long> descriptionObjectFieldId =
 		createColumn(
 			"descriptionObjectFieldId", Long.class, Types.BIGINT,
 			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Long> objectFolderId =
+		createColumn(
+			"objectFolderId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, Long> titleObjectFieldId =
 		createColumn(
 			"titleObjectFieldId", Long.class, Types.BIGINT,
 			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean> accountEntryRestricted =
+		createColumn(
+			"accountEntryRestricted", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, Boolean> active = createColumn(
 		"active_", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, String> className = createColumn(
+		"className", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, String> dbTableName =
 		createColumn(
 			"dbTableName", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean> enableCategorization =
+		createColumn(
+			"enableCategorization", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean> enableComments =
+		createColumn(
+			"enableComments", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean>
+		enableFriendlyURLCustomization = createColumn(
+			"enableFriendlyURLCustomization", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean> enableIndexSearch =
+		createColumn(
+			"enableIndexSearch", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean> enableLocalization =
+		createColumn(
+			"enableLocalization", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean> enableObjectEntryDraft =
+		createColumn(
+			"enableObjectEntryDraft", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean>
+		enableObjectEntryHistory = createColumn(
+			"enableObjectEntryHistory", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean>
+		enableObjectEntryVersioning = createColumn(
+			"enableObjectEntryVersioning", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, String> friendlyURLSeparator =
+		createColumn(
+			"friendlyURLSeparator", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, String> label = createColumn(
 		"label", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
-	public final Column<ObjectDefinitionTable, String> className = createColumn(
-		"className", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean> modifiable =
+		createColumn(
+			"modifiable", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, String> name = createColumn(
 		"name", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, String> panelAppOrder =
@@ -89,8 +134,13 @@ public class ObjectDefinitionTable extends BaseTable<ObjectDefinitionTable> {
 	public final Column<ObjectDefinitionTable, String> pluralLabel =
 		createColumn(
 			"pluralLabel", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, Boolean> portlet = createColumn(
+		"portlet", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, String> scope = createColumn(
 		"scope", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<ObjectDefinitionTable, String> storageType =
+		createColumn(
+			"storageType", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, Boolean> system = createColumn(
 		"system_", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
 	public final Column<ObjectDefinitionTable, Integer> version = createColumn(

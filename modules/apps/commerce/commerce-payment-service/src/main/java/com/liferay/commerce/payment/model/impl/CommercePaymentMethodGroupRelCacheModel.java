@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.model.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.payment.model.CommercePaymentMethodGroupRel;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,7 +25,8 @@ import java.util.Date;
  * @generated
  */
 public class CommercePaymentMethodGroupRelCacheModel
-	implements CacheModel<CommercePaymentMethodGroupRel>, Externalizable {
+	implements CacheModel<CommercePaymentMethodGroupRel>, Externalizable,
+			   MVCCModel {
 
 	@Override
 	public boolean equals(Object object) {
@@ -49,9 +42,11 @@ public class CommercePaymentMethodGroupRelCacheModel
 			commercePaymentMethodGroupRelCacheModel =
 				(CommercePaymentMethodGroupRelCacheModel)object;
 
-		if (commercePaymentMethodGroupRelId ==
+		if ((commercePaymentMethodGroupRelId ==
 				commercePaymentMethodGroupRelCacheModel.
-					commercePaymentMethodGroupRelId) {
+					commercePaymentMethodGroupRelId) &&
+			(mvccVersion ==
+				commercePaymentMethodGroupRelCacheModel.mvccVersion)) {
 
 			return true;
 		}
@@ -61,14 +56,28 @@ public class CommercePaymentMethodGroupRelCacheModel
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, commercePaymentMethodGroupRelId);
+		int hashCode = HashUtil.hash(0, commercePaymentMethodGroupRelId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(27);
+		StringBundler sb = new StringBundler(31);
 
-		sb.append("{commercePaymentMethodGroupRelId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", commercePaymentMethodGroupRelId=");
 		sb.append(commercePaymentMethodGroupRelId);
 		sb.append(", groupId=");
 		sb.append(groupId);
@@ -86,14 +95,16 @@ public class CommercePaymentMethodGroupRelCacheModel
 		sb.append(name);
 		sb.append(", description=");
 		sb.append(description);
-		sb.append(", imageId=");
-		sb.append(imageId);
-		sb.append(", engineKey=");
-		sb.append(engineKey);
-		sb.append(", priority=");
-		sb.append(priority);
 		sb.append(", active=");
 		sb.append(active);
+		sb.append(", imageId=");
+		sb.append(imageId);
+		sb.append(", paymentIntegrationKey=");
+		sb.append(paymentIntegrationKey);
+		sb.append(", priority=");
+		sb.append(priority);
+		sb.append(", typeSettings=");
+		sb.append(typeSettings);
 		sb.append("}");
 
 		return sb.toString();
@@ -104,6 +115,7 @@ public class CommercePaymentMethodGroupRelCacheModel
 		CommercePaymentMethodGroupRelImpl commercePaymentMethodGroupRelImpl =
 			new CommercePaymentMethodGroupRelImpl();
 
+		commercePaymentMethodGroupRelImpl.setMvccVersion(mvccVersion);
 		commercePaymentMethodGroupRelImpl.setCommercePaymentMethodGroupRelId(
 			commercePaymentMethodGroupRelId);
 		commercePaymentMethodGroupRelImpl.setGroupId(groupId);
@@ -147,17 +159,25 @@ public class CommercePaymentMethodGroupRelCacheModel
 			commercePaymentMethodGroupRelImpl.setDescription(description);
 		}
 
+		commercePaymentMethodGroupRelImpl.setActive(active);
 		commercePaymentMethodGroupRelImpl.setImageId(imageId);
 
-		if (engineKey == null) {
-			commercePaymentMethodGroupRelImpl.setEngineKey("");
+		if (paymentIntegrationKey == null) {
+			commercePaymentMethodGroupRelImpl.setPaymentIntegrationKey("");
 		}
 		else {
-			commercePaymentMethodGroupRelImpl.setEngineKey(engineKey);
+			commercePaymentMethodGroupRelImpl.setPaymentIntegrationKey(
+				paymentIntegrationKey);
 		}
 
 		commercePaymentMethodGroupRelImpl.setPriority(priority);
-		commercePaymentMethodGroupRelImpl.setActive(active);
+
+		if (typeSettings == null) {
+			commercePaymentMethodGroupRelImpl.setTypeSettings("");
+		}
+		else {
+			commercePaymentMethodGroupRelImpl.setTypeSettings(typeSettings);
+		}
 
 		commercePaymentMethodGroupRelImpl.resetOriginalValues();
 
@@ -165,7 +185,11 @@ public class CommercePaymentMethodGroupRelCacheModel
 	}
 
 	@Override
-	public void readExternal(ObjectInput objectInput) throws IOException {
+	public void readExternal(ObjectInput objectInput)
+		throws ClassNotFoundException, IOException {
+
+		mvccVersion = objectInput.readLong();
+
 		commercePaymentMethodGroupRelId = objectInput.readLong();
 
 		groupId = objectInput.readLong();
@@ -179,16 +203,19 @@ public class CommercePaymentMethodGroupRelCacheModel
 		name = objectInput.readUTF();
 		description = objectInput.readUTF();
 
+		active = objectInput.readBoolean();
+
 		imageId = objectInput.readLong();
-		engineKey = objectInput.readUTF();
+		paymentIntegrationKey = objectInput.readUTF();
 
 		priority = objectInput.readDouble();
-
-		active = objectInput.readBoolean();
+		typeSettings = (String)objectInput.readObject();
 	}
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
 		objectOutput.writeLong(commercePaymentMethodGroupRelId);
 
 		objectOutput.writeLong(groupId);
@@ -221,20 +248,28 @@ public class CommercePaymentMethodGroupRelCacheModel
 			objectOutput.writeUTF(description);
 		}
 
+		objectOutput.writeBoolean(active);
+
 		objectOutput.writeLong(imageId);
 
-		if (engineKey == null) {
+		if (paymentIntegrationKey == null) {
 			objectOutput.writeUTF("");
 		}
 		else {
-			objectOutput.writeUTF(engineKey);
+			objectOutput.writeUTF(paymentIntegrationKey);
 		}
 
 		objectOutput.writeDouble(priority);
 
-		objectOutput.writeBoolean(active);
+		if (typeSettings == null) {
+			objectOutput.writeObject("");
+		}
+		else {
+			objectOutput.writeObject(typeSettings);
+		}
 	}
 
+	public long mvccVersion;
 	public long commercePaymentMethodGroupRelId;
 	public long groupId;
 	public long companyId;
@@ -244,9 +279,10 @@ public class CommercePaymentMethodGroupRelCacheModel
 	public long modifiedDate;
 	public String name;
 	public String description;
-	public long imageId;
-	public String engineKey;
-	public double priority;
 	public boolean active;
+	public long imageId;
+	public String paymentIntegrationKey;
+	public double priority;
+	public String typeSettings;
 
 }

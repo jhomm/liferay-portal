@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
@@ -40,6 +31,8 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import java.io.Serializable;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -66,12 +59,6 @@ public interface ObjectActionLocalService
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.object.service.impl.ObjectActionLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the object action local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link ObjectActionLocalServiceUtil} if injection and service tracking are not available.
 	 */
-	@Indexable(type = IndexableType.REINDEX)
-	public ObjectAction addObjectAction(
-			long userId, long objectDefinitionId, boolean active, String name,
-			String objectActionExecutorKey, String objectActionTriggerKey,
-			UnicodeProperties parametersUnicodeProperties)
-		throws PortalException;
 
 	/**
 	 * Adds the object action to the database. Also notifies the appropriate model listeners.
@@ -85,6 +72,26 @@ public interface ObjectActionLocalService
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public ObjectAction addObjectAction(ObjectAction objectAction);
+
+	@Indexable(type = IndexableType.REINDEX)
+	public ObjectAction addObjectAction(
+			String externalReferenceCode, long userId, long objectDefinitionId,
+			boolean active, String conditionExpression, String description,
+			Map<Locale, String> errorMessageMap, Map<Locale, String> labelMap,
+			String name, String objectActionExecutorKey,
+			String objectActionTriggerKey,
+			UnicodeProperties parametersUnicodeProperties, boolean system)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public ObjectAction addOrUpdateObjectAction(
+			String externalReferenceCode, long objectActionId, long userId,
+			long objectDefinitionId, boolean active, String conditionExpression,
+			String description, Map<Locale, String> errorMessageMap,
+			Map<Locale, String> labelMap, String name,
+			String objectActionExecutorKey, String objectActionTriggerKey,
+			UnicodeProperties parametersUnicodeProperties, boolean system)
+		throws PortalException;
 
 	/**
 	 * Creates a new object action with the primary key. Does not add the object action to the database.
@@ -125,10 +132,15 @@ public interface ObjectActionLocalService
 	 *
 	 * @param objectAction the object action
 	 * @return the object action that was removed
+	 * @throws PortalException
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
-	public ObjectAction deleteObjectAction(ObjectAction objectAction);
+	public ObjectAction deleteObjectAction(ObjectAction objectAction)
+		throws PortalException;
+
+	public void deleteObjectActions(long objectDefinitionId)
+		throws PortalException;
 
 	/**
 	 * @throws PortalException
@@ -212,6 +224,10 @@ public interface ObjectActionLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ObjectAction fetchObjectAction(long objectActionId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ObjectAction fetchObjectAction(
+		String externalReferenceCode, long objectDefinitionId);
+
 	/**
 	 * Returns the object action with the matching UUID and company.
 	 *
@@ -244,6 +260,11 @@ public interface ObjectActionLocalService
 	public ObjectAction getObjectAction(long objectActionId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ObjectAction getObjectAction(
+			long objectDefinitionId, String name, String objectActionTriggerKey)
+		throws PortalException;
+
 	/**
 	 * Returns the object action with the matching UUID and company.
 	 *
@@ -256,6 +277,10 @@ public interface ObjectActionLocalService
 	public ObjectAction getObjectActionByUuidAndCompanyId(
 			String uuid, long companyId)
 		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ObjectAction> getObjectActions(
+		boolean active, String objectActionExecutorKey);
 
 	/**
 	 * Returns a range of all the object actions.
@@ -272,6 +297,9 @@ public interface ObjectActionLocalService
 	public List<ObjectAction> getObjectActions(int start, int end);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ObjectAction> getObjectActions(long objectDefinitionId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<ObjectAction> getObjectActions(
 		long objectDefinitionId, String objectActionTriggerKey);
 
@@ -282,6 +310,10 @@ public interface ObjectActionLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getObjectActionsCount();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Map<Long, List<ObjectAction>> getObjectActionsMap(
+		long companyId, boolean active, String objectActionTriggerKey);
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -298,12 +330,6 @@ public interface ObjectActionLocalService
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
 
-	@Indexable(type = IndexableType.REINDEX)
-	public ObjectAction updateObjectAction(
-			long objectActionId, boolean active, String name,
-			UnicodeProperties parametersUnicodeProperties)
-		throws PortalException;
-
 	/**
 	 * Updates the object action in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -316,5 +342,19 @@ public interface ObjectActionLocalService
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public ObjectAction updateObjectAction(ObjectAction objectAction);
+
+	@Indexable(type = IndexableType.REINDEX)
+	public ObjectAction updateObjectAction(
+			String externalReferenceCode, long objectActionId, boolean active,
+			String conditionExpression, String description,
+			Map<Locale, String> errorMessageMap, Map<Locale, String> labelMap,
+			String name, String objectActionExecutorKey,
+			String objectActionTriggerKey,
+			UnicodeProperties parametersUnicodeProperties)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public ObjectAction updateStatus(long objectActionId, int status)
+		throws PortalException;
 
 }

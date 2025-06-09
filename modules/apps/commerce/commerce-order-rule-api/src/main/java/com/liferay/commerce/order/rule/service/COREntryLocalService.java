@@ -1,23 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.service;
 
 import com.liferay.commerce.order.rule.model.COREntry;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -218,24 +211,20 @@ public interface COREntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public COREntry fetchCOREntry(long COREntryId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public COREntry fetchCOREntryByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
+
 	/**
-	 * Returns the cor entry with the matching external reference code and company.
+	 * Returns the cor entry with the matching UUID and company.
 	 *
+	 * @param uuid the cor entry's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the cor entry's external reference code
 	 * @return the matching cor entry, or <code>null</code> if a matching cor entry could not be found
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public COREntry fetchCOREntryByExternalReferenceCode(
-		long companyId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCOREntryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public COREntry fetchCOREntryByReferenceCode(
-		long companyId, String externalReferenceCode);
+	public COREntry fetchCOREntryByUuidAndCompanyId(
+		String uuid, long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<COREntry>
@@ -332,18 +321,26 @@ public interface COREntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public COREntry getCOREntry(long COREntryId) throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public COREntry getCOREntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
 	/**
-	 * Returns the cor entry with the matching external reference code and company.
+	 * Returns the cor entry with the matching UUID and company.
 	 *
+	 * @param uuid the cor entry's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the cor entry's external reference code
 	 * @return the matching cor entry
 	 * @throws PortalException if a matching cor entry could not be found
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public COREntry getCOREntryByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+	public COREntry getCOREntryByUuidAndCompanyId(String uuid, long companyId)
 		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
+		PortletDataContext portletDataContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
@@ -362,6 +359,9 @@ public interface COREntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<COREntry> getUnqualifiedCOREntries(long companyId);
 
 	/**
 	 * Updates the cor entry in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
@@ -390,6 +390,11 @@ public interface COREntryLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public COREntry updateCOREntryExternalReferenceCode(
 			String externalReferenceCode, long corEntryId)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public COREntry updateCOREntryTypeSettings(
+			long corEntryId, String typeSettings)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)

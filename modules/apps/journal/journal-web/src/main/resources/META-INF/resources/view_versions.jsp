@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -21,7 +12,8 @@ Map<String, Object> componentContext = journalDisplayContext.getComponentContext
 %>
 
 <liferay-ui:search-container
-	emptyResultsMessage="no-web-content-was-found"
+	cssClass='<%= journalDisplayContext.isSearch() ? "pt-0" : StringPool.BLANK %>'
+	emptyResultsMessage="no-version-was-found"
 	searchContainer="<%= journalDisplayContext.getSearchContainer() %>"
 >
 	<liferay-ui:search-container-row
@@ -36,7 +28,7 @@ Map<String, Object> componentContext = journalDisplayContext.getComponentContext
 		<c:choose>
 			<c:when test='<%= Objects.equals(journalDisplayContext.getDisplayStyle(), "descriptive") %>'>
 				<liferay-ui:search-container-column-text>
-					<liferay-ui:user-portrait
+					<liferay-user:user-portrait
 						userId="<%= articleVersion.getUserId() %>"
 					/>
 				</liferay-ui:search-container-column-text>
@@ -51,17 +43,25 @@ Map<String, Object> componentContext = journalDisplayContext.getComponentContext
 					String modifiedDateDescription = LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - createDate.getTime(), true);
 					%>
 
-					<h6 class="text-default">
+					<div class="h6 text-default">
 						<liferay-ui:message arguments="<%= new String[] {HtmlUtil.escape(articleVersion.getUserName()), modifiedDateDescription} %>" key="x-modified-x-ago" />
-					</h6>
+					</div>
 
-					<h5>
+					<div class="h5">
 						<%= HtmlUtil.escape(articleVersion.getTitle(locale)) %>
-					</h5>
+					</div>
 
-					<h6 class="text-default">
-						<aui:workflow-status markupView="lexicon" showHelpMessage="<%= false %>" showIcon="<%= false %>" showLabel="<%= false %>" status="<%= articleVersion.getStatus() %>" version="<%= String.valueOf(articleVersion.getVersion()) %>" />
-					</h6>
+					<div>
+						<clay:label
+							displayType="secondary"
+							label='<%= LanguageUtil.format(request, "version-x", String.valueOf(articleVersion.getVersion()), false) %>'
+						/>
+					</div>
+
+					<liferay-portal-workflow:status
+						showStatusLabel="<%= false %>"
+						status="<%= articleVersion.getStatus() %>"
+					/>
 				</liferay-ui:search-container-column-text>
 
 				<liferay-ui:search-container-column-text>
@@ -71,8 +71,9 @@ Map<String, Object> componentContext = journalDisplayContext.getComponentContext
 								"trashEnabled", componentContext.get("trashEnabled")
 							).build()
 						%>'
+						aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 						dropdownItems="<%= journalDisplayContext.getArticleVersionActionDropdownItems(articleVersion) %>"
-						propsTransformer="js/ElementsDefaultPropsTransformer"
+						propsTransformer="{ElementsDefaultPropsTransformer} from journal-web"
 					/>
 				</liferay-ui:search-container-column-text>
 			</c:when>
@@ -90,15 +91,21 @@ Map<String, Object> componentContext = journalDisplayContext.getComponentContext
 				/>
 
 				<liferay-ui:search-container-column-text
-					cssClass="table-cell-expand"
+					cssClass="font-weight-semi-bold table-cell-expand"
 					name="title"
 					value="<%= HtmlUtil.escape(articleVersion.getTitle(locale)) %>"
 				/>
 
 				<liferay-ui:search-container-column-text
+					cssClass="table-cell-minw-150"
 					name="version"
 					orderable="<%= true %>"
-				/>
+				>
+					<clay:label
+						displayType="secondary"
+						label='<%= LanguageUtil.format(request, "version-x", String.valueOf(articleVersion.getVersion()), false) %>'
+					/>
+				</liferay-ui:search-container-column-text>
 
 				<liferay-ui:search-container-column-status
 					name="status"
@@ -130,8 +137,9 @@ Map<String, Object> componentContext = journalDisplayContext.getComponentContext
 								"trashEnabled", componentContext.get("trashEnabled")
 							).build()
 						%>'
+						aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 						dropdownItems="<%= journalDisplayContext.getArticleVersionActionDropdownItems(articleVersion) %>"
-						propsTransformer="js/ElementsDefaultPropsTransformer"
+						propsTransformer="{ElementsDefaultPropsTransformer} from journal-web"
 					/>
 				</liferay-ui:search-container-column-text>
 			</c:when>
@@ -141,6 +149,7 @@ Map<String, Object> componentContext = journalDisplayContext.getComponentContext
 	<liferay-ui:search-iterator
 		displayStyle="<%= journalDisplayContext.getDisplayStyle() %>"
 		markupView="lexicon"
+		resultRowSplitter="<%= journalDisplayContext.getResultRowSplitter() %>"
 		searchContainer="<%= searchContainer %>"
 	/>
 </liferay-ui:search-container>

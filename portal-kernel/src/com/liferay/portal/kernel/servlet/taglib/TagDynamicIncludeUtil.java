@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.servlet.taglib;
@@ -24,11 +15,11 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Iterator;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -49,14 +40,8 @@ public class TagDynamicIncludeUtil {
 	public static boolean hasTagDynamicInclude(
 		String tagClassName, String tagDynamicId, String tagPoint) {
 
-		List<TagDynamicInclude> tagDynamicIncludes = getTagDynamicIncludes(
-			tagClassName, tagDynamicId, tagPoint);
-
-		if (ListUtil.isEmpty(tagDynamicIncludes)) {
-			return false;
-		}
-
-		return true;
+		return ListUtil.isNotEmpty(
+			getTagDynamicIncludes(tagClassName, tagDynamicId, tagPoint));
 	}
 
 	public static void include(
@@ -89,7 +74,7 @@ public class TagDynamicIncludeUtil {
 					tagDynamicId, tagPoint);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 	}
@@ -133,10 +118,10 @@ public class TagDynamicIncludeUtil {
 									String tagClassName, String tagDynamicId,
 									String tagPoint) {
 
-									String key = _getKey(
-										tagClassName, tagDynamicId, tagPoint);
-
-									emitter.emit(key);
+									emitter.emit(
+										_getKey(
+											tagClassName, tagDynamicId,
+											tagPoint));
 								}
 
 							});

@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 _.mixin({
 	bindKeyRight(context, key) {
-		var args = _.toArray(arguments).slice(2);
+		const args = _.toArray(arguments).slice(2);
 
 		args.unshift(_.bindKey(context, key));
 
@@ -22,7 +13,7 @@ _.mixin({
 	},
 
 	bindRight(fn, context) {
-		var args = _.toArray(arguments).slice(2);
+		const args = _.toArray(arguments).slice(2);
 
 		args.unshift(_.bind(fn, context));
 
@@ -50,8 +41,8 @@ _.mixin(
 				path = path.split('.');
 			}
 
-			for (var i = 0; i < path.length; i++) {
-				var name = path[i];
+			for (let i = 0; i < path.length; i++) {
+				const name = path[i];
 
 				object[name] = object[name] || {};
 				object = object[name];

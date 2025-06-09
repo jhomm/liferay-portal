@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v3_7_3;
@@ -53,6 +44,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -69,67 +61,75 @@ public class DDMFormInstanceReportUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		runSQL("delete from DDMFormInstanceReport;");
+		runSQL("delete from DDMFormInstanceReport");
 
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				"select formInstanceId, groupId, companyId, createDate from " +
-					"DDMFormInstance")) {
-
-			ResultSet resultSet1 = preparedStatement1.executeQuery();
+				StringBundler.concat(
+					"select DDMFormInstance.formInstanceId, ",
+					"DDMFormInstance.groupId, DDMFormInstance.companyId, ",
+					"DDMFormInstance.createDate, DDMStructure.definition from ",
+					"DDMFormInstance inner join DDMStructure on ",
+					"DDMFormInstance.structureId = DDMStructure.structureId"));
+			PreparedStatement preparedStatement2 = connection.prepareStatement(
+				StringBundler.concat(
+					"select DDMContent.data_, DDMFormInstanceRecord.",
+					"formInstanceRecordId, DDMStructureVersion.definition ",
+					"from DDMContent inner join DDMFormInstanceRecordVersion ",
+					"on DDMContent.contentId = DDMFormInstanceRecordVersion.",
+					"storageId inner join DDMFormInstanceRecord on ",
+					"DDMFormInstanceRecord.formInstanceRecordId = ",
+					"DDMFormInstanceRecordVersion.formInstanceRecordId inner ",
+					"join DDMFormInstanceVersion on DDMFormInstanceVersion.",
+					"formInstanceId = DDMFormInstanceRecordVersion.",
+					"formInstanceId and DDMFormInstanceVersion.version = ",
+					"DDMFormInstanceRecordVersion.formInstanceVersion inner ",
+					"join DDMStructureVersion on DDMStructureVersion.",
+					"structureVersionId = DDMFormInstanceVersion.",
+					"structureVersionId where DDMFormInstanceRecord.version = ",
+					"DDMFormInstanceRecordVersion.version and ",
+					"DDMFormInstanceRecord.formInstanceId = ? and ",
+					"DDMFormInstanceRecordVersion.status = ?"));
+			PreparedStatement preparedStatement3 =
+				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+					connection,
+					StringBundler.concat(
+						"insert into DDMFormInstanceReport ",
+						"(formInstanceReportId, groupId, companyId, ",
+						"createDate, modifiedDate, formInstanceId, data_) ",
+						"values (?, ?, ?, ?, ?, ?, ?)"));
+			ResultSet resultSet1 = preparedStatement1.executeQuery()) {
 
 			while (resultSet1.next()) {
-				long formInstanceId = resultSet1.getLong("formInstanceId");
-
 				JSONObject dataJSONObject = _jsonFactory.createJSONObject();
 
-				try (PreparedStatement preparedStatement2 =
-						connection.prepareStatement(
-							StringBundler.concat(
-								"select DDMContent.data_, ",
-								"DDMFormInstanceRecord.formInstanceRecordId, ",
-								"DDMStructureVersion.definition from ",
-								"DDMContent inner join ",
-								"DDMFormInstanceRecordVersion on ",
-								"DDMContent.contentId = ",
-								"DDMFormInstanceRecordVersion.storageId inner ",
-								"join DDMFormInstanceRecord on ",
-								"DDMFormInstanceRecord.formInstanceRecordId = ",
-								"DDMFormInstanceRecordVersion.",
-								"formInstanceRecordId inner join ",
-								"DDMFormInstanceVersion on ",
-								"DDMFormInstanceVersion.formInstanceId = ",
-								"DDMFormInstanceRecordVersion.formInstanceId ",
-								"and DDMFormInstanceVersion.version = ",
-								"DDMFormInstanceRecordVersion.",
-								"formInstanceVersion inner join ",
-								"DDMStructureVersion on ",
-								"DDMStructureVersion.structureVersionId = ",
-								"DDMFormInstanceVersion.structureVersionId ",
-								"where DDMFormInstanceRecord.version = ",
-								"DDMFormInstanceRecordVersion.version and ",
-								"DDMFormInstanceRecord.formInstanceId = ? and ",
-								"DDMFormInstanceRecordVersion.status = ?"))) {
+				long formInstanceId = resultSet1.getLong("formInstanceId");
 
-					preparedStatement2.setLong(1, formInstanceId);
-					preparedStatement2.setInt(
-						2, WorkflowConstants.STATUS_APPROVED);
+				preparedStatement2.setLong(1, formInstanceId);
 
-					ResultSet resultSet2 = preparedStatement2.executeQuery();
+				preparedStatement2.setInt(2, WorkflowConstants.STATUS_APPROVED);
 
-					while (resultSet2.next()) {
-						dataJSONObject = _processDDMFormValues(
-							dataJSONObject,
-							_getDDMFormValues(
-								resultSet2.getString("data_"),
-								DDMFormDeserializeUtil.deserialize(
-									_ddmFormDeserializer,
-									resultSet2.getString("definition"))),
-							resultSet2.getLong("formInstanceRecordId"));
+				ResultSet resultSet2 = preparedStatement2.executeQuery();
 
-						dataJSONObject.put(
-							"totalItems",
-							dataJSONObject.getInt("totalItems") + 1);
-					}
+				DDMForm ddmForm = DDMFormDeserializeUtil.deserialize(
+					_ddmFormDeserializer, resultSet1.getString("definition"));
+
+				while (resultSet2.next()) {
+					dataJSONObject = _processDDMFormValues(
+						dataJSONObject,
+						_getDDMFormValues(
+							resultSet2.getString("data_"),
+							DDMFormDeserializeUtil.deserialize(
+								_ddmFormDeserializer,
+								resultSet2.getString("definition")),
+							ddmForm.getDDMFormFieldsMap(true)),
+						resultSet2.getLong("formInstanceRecordId"));
+
+					dataJSONObject.put(
+						"totalItems", dataJSONObject.getInt("totalItems") + 1);
+				}
+
+				if (dataJSONObject.length() == 0) {
+					continue;
 				}
 
 				long groupId = resultSet1.getLong("groupId");
@@ -138,30 +138,50 @@ public class DDMFormInstanceReportUpgradeProcess extends UpgradeProcess {
 
 				Timestamp createDate = resultSet1.getTimestamp("createDate");
 
-				try (PreparedStatement preparedStatement3 =
-						AutoBatchPreparedStatementUtil.concurrentAutoBatch(
-							connection,
-							StringBundler.concat(
-								"insert into DDMFormInstanceReport ",
-								"(formInstanceReportId, groupId, companyId, ",
-								"createDate, modifiedDate, formInstanceId, ",
-								"data_) values (?, ?, ?, ?, ?, ?, ?)"))) {
+				preparedStatement3.setLong(1, increment());
+				preparedStatement3.setLong(2, groupId);
+				preparedStatement3.setLong(3, companyId);
+				preparedStatement3.setTimestamp(4, createDate);
+				preparedStatement3.setTimestamp(5, createDate);
+				preparedStatement3.setLong(6, formInstanceId);
+				preparedStatement3.setString(7, dataJSONObject.toString());
 
-					preparedStatement3.setLong(1, increment());
-					preparedStatement3.setLong(2, groupId);
-					preparedStatement3.setLong(3, companyId);
-					preparedStatement3.setTimestamp(4, createDate);
-					preparedStatement3.setTimestamp(5, createDate);
-					preparedStatement3.setLong(6, formInstanceId);
-					preparedStatement3.setString(7, dataJSONObject.toString());
-
-					preparedStatement3.execute();
-				}
+				preparedStatement3.execute();
 			}
 		}
 	}
 
-	private DDMFormValues _getDDMFormValues(String data, DDMForm ddmForm)
+	private DDMFormFieldTypeReportProcessor _getDDMFormFieldTypeReportProcessor(
+		DDMFormField ddmFormField, String type) {
+
+		if (StringUtil.equals(type, "checkbox_multiple") ||
+			StringUtil.equals(type, "select")) {
+
+			return new CheckboxMultipleDDMFormFieldTypeReportProcessor(
+				_jsonFactory);
+		}
+		else if (StringUtil.equals(type, "color") ||
+				 StringUtil.equals(type, "date") ||
+				 StringUtil.equals(type, "text")) {
+
+			return new TextDDMFormFieldTypeReportProcessor(_jsonFactory);
+		}
+		else if (StringUtil.equals(type, "grid")) {
+			return new UpgradeGridDDMFormFieldTypeReportProcessor(ddmFormField);
+		}
+		else if (StringUtil.equals(type, "numeric")) {
+			return new NumericDDMFormFieldTypeReportProcessor(_jsonFactory);
+		}
+		else if (StringUtil.equals(type, "radio")) {
+			return new RadioDDMFormFieldTypeReportProcessor();
+		}
+
+		return null;
+	}
+
+	private DDMFormValues _getDDMFormValues(
+			String data, DDMForm ddmForm,
+			Map<String, DDMFormField> ddmFormFieldsMap)
 		throws Exception {
 
 		DDMFormValues ddmFormValues = new DDMFormValues(ddmForm);
@@ -184,9 +204,13 @@ public class DDMFormInstanceReportUpgradeProcess extends UpgradeProcess {
 			ddmFormFieldValue.setInstanceId(jsonObject.getString("instanceId"));
 			ddmFormFieldValue.setName(jsonObject.getString("name"));
 
-			DDMFormField ddmFormField = ddmFormFieldValue.getDDMFormField();
+			DDMFormField ddmFormField = ddmFormFieldsMap.get(
+				ddmFormFieldValue.getName());
 
-			if (ddmFormField == null) {
+			if ((ddmFormField == null) ||
+				!StringUtil.equals(
+					ddmFormField.getType(), ddmFormFieldValue.getType())) {
+
 				continue;
 			}
 
@@ -232,10 +256,9 @@ public class DDMFormInstanceReportUpgradeProcess extends UpgradeProcess {
 				ddmFormValues.getDDMFormFieldValues()) {
 
 			DDMFormFieldTypeReportProcessor ddmFormFieldTypeReportProcessor =
-				_ddmFormFieldTypeReportProcessorTracker.
-					getDDMFormFieldTypeReportProcessor(
-						ddmFormFieldValue.getDDMFormField(),
-						ddmFormFieldValue.getType());
+				_getDDMFormFieldTypeReportProcessor(
+					ddmFormFieldValue.getDDMFormField(),
+					ddmFormFieldValue.getType());
 
 			if (ddmFormFieldTypeReportProcessor != null) {
 				String ddmFormFieldValueName = ddmFormFieldValue.getName();
@@ -256,7 +279,7 @@ public class DDMFormInstanceReportUpgradeProcess extends UpgradeProcess {
 						ddmFormFieldTypeReportProcessor.process(
 							ddmFormFieldValue,
 							_jsonFactory.createJSONObject(
-								fieldJSONObject.toJSONString()),
+								fieldJSONObject.toString()),
 							formInstanceRecordId,
 							DDMFormInstanceReportConstants.
 								EVENT_ADD_RECORD_VERSION);
@@ -266,7 +289,7 @@ public class DDMFormInstanceReportUpgradeProcess extends UpgradeProcess {
 				}
 				catch (JSONException jsonException) {
 					if (_log.isWarnEnabled()) {
-						_log.warn(jsonException, jsonException);
+						_log.warn(jsonException);
 					}
 				}
 			}
@@ -279,43 +302,7 @@ public class DDMFormInstanceReportUpgradeProcess extends UpgradeProcess {
 		DDMFormInstanceReportUpgradeProcess.class);
 
 	private final DDMFormDeserializer _ddmFormDeserializer;
-	private final DDMFormFieldTypeReportProcessorTracker
-		_ddmFormFieldTypeReportProcessorTracker =
-			new DDMFormFieldTypeReportProcessorTracker();
 	private final JSONFactory _jsonFactory;
-
-	private class DDMFormFieldTypeReportProcessorTracker {
-
-		public DDMFormFieldTypeReportProcessor
-			getDDMFormFieldTypeReportProcessor(
-				DDMFormField ddmFormField, String type) {
-
-			if (StringUtil.equals(type, "checkbox_multiple") ||
-				StringUtil.equals(type, "select")) {
-
-				return new CheckboxMultipleDDMFormFieldTypeReportProcessor();
-			}
-			else if (StringUtil.equals(type, "color") ||
-					 StringUtil.equals(type, "date") ||
-					 StringUtil.equals(type, "text")) {
-
-				return new TextDDMFormFieldTypeReportProcessor();
-			}
-			else if (StringUtil.equals(type, "grid")) {
-				return new UpgradeGridDDMFormFieldTypeReportProcessor(
-					ddmFormField);
-			}
-			else if (StringUtil.equals(type, "numeric")) {
-				return new NumericDDMFormFieldTypeReportProcessor();
-			}
-			else if (StringUtil.equals(type, "radio")) {
-				return new RadioDDMFormFieldTypeReportProcessor();
-			}
-
-			return null;
-		}
-
-	}
 
 	private class UpgradeGridDDMFormFieldTypeReportProcessor
 		implements DDMFormFieldTypeReportProcessor {

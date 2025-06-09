@@ -1,6 +1,7 @@
 definition {
 
-	macro _deleteAllSegments {
+	@summary = "Default summary"
+	macro _deleteAllSegments() {
 		while (IsElementPresent(locator1 = "Icon#BODY_VERTICAL_ELLIPSIS")) {
 			LexiconEntry.gotoEllipsisMenuItemNoError(menuItem = "Delete");
 
@@ -10,92 +11,165 @@ definition {
 		}
 	}
 
-	macro addProperties {
-		var key_propertyOption = "${propertyOption}";
+	@summary = "Default summary"
+	macro addProperties(propertyOption = null) {
+		var key_propertyOption = ${propertyOption};
 
 		Click(locator1 = "Segmentation#PROPERTIES_SEARCH");
 
-		DragAndDrop.javaScriptDragAndDropToObject(
-			locator1 = "Segmentation#ADD_FIELD_TYPE",
-			locator2 = "Segmentation#ADD_FIELD_POSITION",
-			value1 = "${propertyOption}");
-	}
-
-	macro assetLanguageTag {
-		Click(locator1 = "Segmentation#TRANSLATION_BUTTON");
-
-		AssertTextEquals(
-			key_locale = StringUtil.replace("${locale}", "_", "-"),
-			locator1 = "Segmentation#TRANSLATION_STATUS_TITLE",
-			value1 = "${tagName}");
-	}
-
-	macro changeCriterionConjunction {
-		Click(locator1 = "Segmentation#CRITERION_CONJUNCTION");
-
-		Click(
-			key_criterionConjunctionItem = "${criterionConjunctionItem}",
-			locator1 = "Segmentation#CRITERION_CONJUNCTION_ITEM");
-	}
-
-	macro changeCriterionInput {
-		var key_criterionInputOption = "${criterionInputOption}";
-
-		Select(
-			locator1 = "Segmentation#CRITERION_INPUT",
-			value1 = "${criterionInputOption}");
-	}
-
-	macro changeLocale {
-		Click(locator1 = "Segmentation#TRANSLATION_BUTTON");
-
-		Click(
-			key_locale = StringUtil.replace("${locale}", "_", "-"),
-			locator1 = "Segmentation#TRANSLATION_STATUS_TITLE");
-	}
-
-	macro checkModifiedDate {
-		var displayDateDay = DateUtil.getCurrentDate();
-		var displayDateMonth = DateUtil.getCurrentMonth();
-
-		if (("${displayDateMonth}" != "10") && ("${displayDateMonth}" != "11") && ("${displayDateMonth}" != "12")) {
-			var displayDateMonth= "0${displayDateMonth}";
+		if (isSet(indexNumber)) {
+			DragAndDrop.javaScriptDragAndDropToObject(
+				locator1 = "Segmentation#ADD_FIELD_TYPE_VISIBLE",
+				locator2 = "Segmentation#ADD_FIELD_POSITION_N",
+				value1 = ${propertyOption});
 		}
-
-		var displayDateYear = DateUtil.getCurrentYear();
-
-		var i = MathUtil.quotient("${displayDateDay}", "10");
-
-		if ("${i}" == "0") {
-			var displayDateDay= "0${displayDateDay}";
+		else {
+			DragAndDrop.javaScriptDragAndDropToObject(
+				locator1 = "Segmentation#ADD_FIELD_TYPE_VISIBLE",
+				locator2 = "Segmentation#ADD_FIELD_POSITION",
+				value1 = ${propertyOption});
 		}
-
-		var displayDate = "${displayDateYear}-${displayDateMonth}-${displayDateDay}";
-
-		Segmentation.viewSegment(
-			criterion = "date",
-			value = "${displayDate}");
 	}
 
-	macro clickAssignSiteRolesOption {
-		Click(locator1 = "Segmentation#SEGMENT_OPTIONS_MENU");
+	@summary = "Default summary"
+	macro addSecondProperty(propertyOption = null) {
+		var key_propertyOption = ${propertyOption};
 
-		Click(locator1 = "Segmentation#ASSIGN_SITE_ROLES_OPTION");
+		Click(locator1 = "Segmentation#PROPERTIES_SEARCH");
+
+		if (IsElementPresent(locator1 = "Segmentation#ADD_FIELD_POSITION_EMPTY")) {
+			DragAndDrop.javaScriptDragAndDropToObject(
+				locator1 = "Segmentation#ADD_FIELD_TYPE_VISIBLE",
+				locator2 = "Segmentation#ADD_FIELD_POSITION_EMPTY",
+				value1 = ${propertyOption});
+		}
+		else {
+			DragAndDrop.javaScriptDragAndDropToObject(
+				locator1 = "Segmentation#ADD_FIELD_TYPE_VISIBLE",
+				locator2 = "Segmentation#ADD_FIELD_POSITION_EDIT",
+				value1 = ${propertyOption});
+		}
+	}
+
+	@summary = "Default summary"
+	macro assignSiteRoles(roleName = null, segmentName = null) {
+		Click.waitForMenuToggleJSClick(
+			key_tableEntry = ${segmentName},
+			locator1 = "LexiconTable#TABLE_ENTRY_ELLIPSIS");
+
+		MenuItem.clickNoError(menuItem = "Assign Site Roles");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		Check(
+			key_checkboxName = ${roleName},
+			locator1 = "Checkbox#ENABLE_CHECKBOX");
 
 		SelectFrame(value1 = "relative=top");
 
-		AssertTextPresent(
-			locator1 = "Segmentation#ASSIGN_SITE_ROLES_MODAL_TITLE",
-			value1 = "Assign Site Roles");
+		Button.clickAdd();
+
+		Alert.viewSuccessMessage();
 	}
 
-	macro deleteProperties {
-		Click(locator1 = "Segmentation#DELETE_SEGMENT");
+	@summary = "Default summary"
+	macro changeCriterionConjunction(criterionConjunctionItem = null) {
+		Click(locator1 = "Segmentation#CRITERION_CONJUNCTION");
+
+		MenuItem.click(menuItem = ${criterionConjunctionItem});
 	}
 
-	macro deleteSegment {
+	@summary = "Default summary"
+	macro changeCriterionInput(criterionInputOption = null) {
+		var key_criterionInputOption = ${criterionInputOption};
+
+		Select(
+			locator1 = "Segmentation#CRITERION_OPERATOR",
+			value1 = ${criterionInputOption});
+	}
+
+	@summary = "Default summary"
+	macro changeLocale(locale = null) {
+		Click(locator1 = "Segmentation#TRANSLATION_BUTTON");
+
+		Click(
+			key_locale = StringUtil.replace(${locale}, "_", "-"),
+			locator1 = "Segmentation#TRANSLATION_STATUS_TITLE");
+	}
+
+	@summary = "Default summary"
+	macro checkSegmentationDisabledWarning() {
+		if (!(isSet(textValue))) {
+			var textValue = "Segmentation is disabled";
+		}
+
+		AssertTextEquals.assertPartialText(
+			locator1 = "Message#ERROR_3",
+			value1 = ${textValue});
+	}
+
+	@summary = "Default summary"
+	macro clickToReEnableSegmentsWarningLink() {
+		Click(locator1 = "Segmentation#ENABLE_SEGMENTS_INSTANCE_SETTINGS");
+	}
+
+	@summary = "Default summary"
+	macro closeSegmentationDisabledWarning() {
+		Click(locator1 = "Icon#CLOSE_ALERT");
+	}
+
+	@summary = "Default summary"
+	macro configureScope(site = null) {
+		Click(locator1 = "Button#SELECT");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		Navigator.gotoNavItem(navItem = "All Sites");
+
+		SiteSelector.selectSite(site = ${site});
+	}
+
+	@summary = "Default summary"
+	macro createExperienceWithSegment(newExperience = null, newSegment = null) {
+		Click(locator1 = "PageEditor#EXPERIENCE_DEFAULT_BUTTON_NAME");
+
+		Click(
+			key_text = "New Experience",
+			locator1 = "Button#ANY");
+
+		Click(locator1 = "PageEditor#EXPERIENCE_CREATE_SEGMENT");
+
+		Segmentation.fillTitle(titleField = ${newSegment});
+
+		Segmentation.addProperties(propertyOption = "Screen Name");
+
+		Segmentation.changeCriterionInput(criterionInputOption = "Contains");
+
+		Segmentation.fillProperty(propertyField = "test");
+
+		Button.clickSave();
+
+		Type.type(
+			locator1 = "PageEditor#EXPERIENCE_NAME",
+			value1 = ${newExperience});
+
+		Click(locator1 = "Button#SAVE");
+	}
+
+	@summary = "Default summary"
+	macro deleteProperty() {
+		Click(locator1 = "Icon#REMOVE");
+	}
+
+	@summary = "Default summary"
+	macro deletePropertyElementNotExisting() {
+		Click(locator1 = "Segmentation#DELETE_SEGMENT_PROPERTY_BUTTON");
+	}
+
+	@summary = "Default summary"
+	macro deleteSegment(entry = null) {
 		Click.waitForMenuToggleJSClick(
-			key_tableEntry = "${entry}",
+			key_tableEntry = ${entry},
 			locator1 = "LexiconTable#TABLE_ENTRY_ELLIPSIS");
 
 		MenuItem.clickNoError(menuItem = "Delete");
@@ -105,7 +179,8 @@ definition {
 		Alert.viewSuccessMessage();
 	}
 
-	macro disableAssingRolesBySegmentsCheckbox {
+	@summary = "Default summary"
+	macro disableAssingRolesBySegmentsCheckbox() {
 		if (IsChecked(locator1 = "Segmentation#ENABLE_ASSIGN_ROLES_SEGMENTS_CHECKBOX")) {
 			Click.javaScriptClick(locator1 = "Segmentation#ENABLE_ASSIGN_ROLES_SEGMENTS_CHECKBOX");
 		}
@@ -118,18 +193,90 @@ definition {
 			Click(locator1 = "Button#UPDATE");
 		}
 
+		Alert.viewSuccessMessage();
+
 		AssertNotChecked.assertNotCheckedNotVisible(locator1 = "Segmentation#ENABLE_ASSIGN_ROLES_SEGMENTS_CHECKBOX");
 	}
 
-	macro editSegment {
-		Click.waitForMenuToggleJSClick(
-			key_tableEntry = "${entry}",
-			locator1 = "LexiconTable#TABLE_ENTRY_ELLIPSIS");
+	@summary = "Default summary"
+	macro disableCheckbox(key_checkLabel = null) {
+		FormFields.disableCheckbox(fieldName = ${key_checkLabel});
 
-		MenuItem.clickNoError(menuItem = "Edit");
+		if (IsElementPresent(locator1 = "Button#UPDATE")) {
+			PortletEntry.update();
+		}
+		else if (IsElementPresent(locator1 = "Button#SAVE")) {
+			PortletEntry.save();
+		}
+
+		Alert.viewSuccessMessage();
+
+		Navigator.openURL();
 	}
 
-	macro enableAssingRolesBySegmentsCheckbox {
+	@summary = "Default summary"
+	macro disableConfigurationAtSystemSettings() {
+		Segmentation.gotoSegmeentsService(key_portlet = "System Settings");
+
+		if (!(isSet(checkLabel))) {
+			var checkLabel = "Enable Segmentation,Enable Assign Roles by Segment";
+		}
+
+		for (var label : list ${checkLabel}) {
+			FormFields.disableCheckbox(fieldName = ${label});
+		}
+
+		if (IsElementPresent(locator1 = "Button#UPDATE")) {
+			PortletEntry.update();
+		}
+		else if (IsElementPresent(locator1 = "Button#SAVE")) {
+			PortletEntry.save();
+		}
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro disableSegmentationAtInstanceSettings() {
+		Segmentation.gotoSegmeentsService(key_portlet = "Instance Settings");
+
+		if (!(isSet(checkLabel))) {
+			var checkLabel = "Enable Segmentation";
+		}
+
+		Segmentation.disableCheckbox(key_checkLabel = ${checkLabel});
+	}
+
+	@summary = "Default summary"
+	macro disableSegmentationAtSystemSettings() {
+		Segmentation.gotoSegmeentsService(key_portlet = "System Settings");
+
+		FormFields.disableCheckbox(fieldName = "Enable Segmentation");
+
+		if (IsElementPresent(locator1 = "Button#UPDATE")) {
+			PortletEntry.update();
+		}
+		else if (IsElementPresent(locator1 = "Button#SAVE")) {
+			PortletEntry.save();
+		}
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro duplicateCriteria() {
+		Click(locator1 = "Segmentation#DUPLICATE_BUTTON");
+	}
+
+	@summary = "Default summary"
+	macro editSegment(entry = null) {
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = ${entry});
+	}
+
+	@summary = "Default summary"
+	macro enableAssingRolesBySegmentsCheckbox() {
 		if (IsNotChecked.isNotCheckedNotVisible(locator1 = "Segmentation#ENABLE_ASSIGN_ROLES_SEGMENTS_CHECKBOX")) {
 			Click.javaScriptClick(locator1 = "Segmentation#ENABLE_ASSIGN_ROLES_SEGMENTS_CHECKBOX");
 		}
@@ -142,133 +289,196 @@ definition {
 			Click(locator1 = "Button#UPDATE");
 		}
 
+		Alert.viewSuccessMessage();
+
 		AssertChecked.assertCheckedNotVisible(locator1 = "Segmentation#ENABLE_ASSIGN_ROLES_SEGMENTS_CHECKBOX");
 	}
 
-	macro fillProperty {
+	@summary = "Default summary"
+	macro fillProperty(selectEntry = null, dateValue = null, selectCheckbox = null, optionsValue = null, selectCard = null, criterionKey = null, indexNumber = null, criterionValue = null, selectLink = null, selectCategory = null) {
 		if (isSet(criterionKey)) {
 			Type(
-				key_criterion = "key",
-				locator1 = "Segmentation#CRITERION_INPUT_FORM_CONTROL",
-				value1 = "${criterionKey}");
-
-			Type(
-				key_criterion = "value",
-				locator1 = "Segmentation#CRITERION_INPUT_FORM_CONTROL",
-				value1 = "${criterionValue}");
+				locator1 = "Segmentation#CRITERION_KEY_ANY",
+				value1 = ${criterionKey});
 		}
 
-		else if (isSet(resolutionValue)) {
-			Type(
-				key_criterion = "decimal-number",
-				locator1 = "Segmentation#CRITERION_INPUT_FORM_CONTROL",
-				value1 = "${resolutionValue}");
-		}
-
-		else if (isSet(selectCheckbox)) {
-			Click(locator1 = "Button#SELECT");
+		if (isSet(selectCheckbox)) {
+			Button.clickSelect();
 
 			SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 			Check(
-				key_checkboxName = "${selectCheckbox}",
+				key_checkboxName = ${selectCheckbox},
 				locator1 = "Checkbox#ENABLE_CHECKBOX");
 
 			SelectFrame(value1 = "relative=top");
 
 			Click(locator1 = "Modal#SELECT_BUTTON");
 		}
+		else if (isSet(selectCategory)) {
+			Button.clickSelect();
 
-		else if (isSet(chooseItem)) {
-			Click(locator1 = "Button#SELECT");
+			AssetCategorization.gotoSelectCategory();
 
-			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+			Portlet.expandTree();
 
-			AssertClick(
-				key_rowEntry = "${chooseItem}",
-				locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_CHOOSE",
-				value1 = "Choose");
+			AssertVisible(
+				key_nodeName = ${selectCategory},
+				locator1 = "Treeview#NODE_ITEM");
+
+			Click(
+				key_nodeName = ${selectCategory},
+				locator1 = "Treeview#NODE_UNSELECTED");
 
 			SelectFrame(value1 = "relative=top");
 		}
+		else if (isSet(selectCard)) {
+			Button.clickSelect();
 
+			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+			LexiconCard.clickCardTitle(card = ${selectCard});
+
+			SelectFrame(value1 = "relative=top");
+		}
 		else if (isSet(selectLink)) {
 			if (isSet(indexNumber)) {
 				Click(
-					key_indexNumber = "${indexNumber}",
+					key_indexNumber = ${indexNumber},
 					key_text = "Select",
 					locator1 = "Button#ANY_N");
 			}
 			else {
-				Click(locator1 = "Button#SELECT");
+				Button.clickSelect();
 			}
 
 			SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 			AssertClick(
-				key_rowEntry = "${selectLink}",
+				key_rowEntry = ${selectLink},
 				locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_NAME_LINK",
-				value1 = "${selectLink}");
+				value1 = ${selectLink});
 
 			SelectFrame(value1 = "relative=top");
 		}
+		else if (isSet(selectEntry)) {
+			if (isSet(indexNumber)) {
+				Click(
+					key_indexNumber = ${indexNumber},
+					key_text = "Select",
+					locator1 = "Button#ANY_N");
+			}
+			else {
+				Button.clickSelect();
+			}
 
+			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+			Click(
+				key_rowEntry = ${selectEntry},
+				locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_NAME");
+
+			SelectFrame(value1 = "relative=top");
+		}
 		else if (isSet(dateValue)) {
 			Type.sendKeys(
-				key_criterion = "date",
-				locator1 = "Segmentation#CRITERION_INPUT_FORM_CONTROL",
-				value1 = "${dateValue}");
+				locator1 = "Segmentation#CRITERION_INPUT_ANY",
+				value1 = ${dateValue});
 		}
-
 		else if (isSet(optionsValue)) {
 			Select(
-				key_criterion = "options",
-				locator1 = "Segmentation#CRITERION_INPUT_FORM_CONTROL",
-				value1 = "${optionsValue}");
+				locator1 = "Segmentation#CRITERION_INPUT_ANY",
+				value1 = ${optionsValue});
 		}
-
+		else if (isSet(indexNumber)) {
+			Type.type(
+				indexNumber = ${indexNumber},
+				locator1 = "Segmentation#CRITERION_INPUT_INDEX",
+				value1 = ${criterionValue});
+		}
 		else {
-			Type(
-				locator1 = "Segmentation#PROPERTY_FIELD",
-				value1 = "${propertyField}");
+			Type.type(
+				locator1 = "Segmentation#CRITERION_INPUT_ANY",
+				value1 = ${criterionValue});
 		}
 	}
 
-	macro fillTitle {
+	@summary = "Default summary"
+	macro fillTitle(titleField = null) {
 		Click(locator1 = "Segmentation#TITLE_FIELD");
 
-		Type(
+		Type.type(
 			locator1 = "Segmentation#TITLE_FIELD",
-			value1 = "${titleField}");
+			value1 = ${titleField});
 	}
 
-	macro getPortalInstanceDefaultLanguageId {
-		var portalURL = PropsUtil.get("portal.url");
-		var companyId = JSONCompany.getCompanyId(portalInstanceName = "${portalInstanceName}");
+	@summary = "Default summary"
+	macro getPortalInstanceDefaultLanguageId(portalInstanceName = null) {
+		var portalURL = JSONCompany.getPortalURL();
+		var companyId = JSONCompany.getCompanyId(portalInstanceName = ${portalInstanceName});
+		var userLoginInfo = JSONUtil2.formatJSONUser();
+
 		var curl = '''
 			${portalURL}/api/jsonws/country/get-company-countries \
-			-u test@liferay.com:test \
-			-d companyId=${companyId} \
-			-d start=0 \
-			-d end=1 \
-			-d -orderByComparator=
+				-u ${userLoginInfo} \
+				-d companyId=${companyId} \
+				-d start=0 \
+				-d end=1 \
+				-d -orderByComparator=
 		''';
-		var languageId = JSONCurlUtil.post("${curl}", "$..defaultLanguageId");
-		return "${languageId}";
+
+		var languageId = JSONCurlUtil.post(${curl}, "$..defaultLanguageId");
+
+		return ${languageId};
 	}
 
-	macro gotoSidebar {
-		Click(
-			key_typeName = "${fieldType}",
-			locator1 = "Segmentation#SEGMENT_FIELDS_TYPE");
+	@summary = "Default summary"
+	macro gotoRoleAssigneeSegments(roleName = null) {
+		Role.openRolesAdmin();
+
+		Role._goToRoleAssigneeType(
+			assigneeType = "Segments",
+			roleTitle = ${roleName});
 	}
 
-	macro openSegmentOptions {
+	@summary = "Default summary"
+	macro gotoSegmeentsService(key_portlet = null) {
+		if (${key_portlet} == "Instance Settings") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Configuration",
+				panel = "Control Panel",
+				portlet = "Instance Settings");
+
+			SystemSettings.gotoConfiguration(
+				configurationCategory = "Segments",
+				configurationName = "Segments Service",
+				configurationScope = "Virtual Instance Scope");
+		}
+		else if (${key_portlet} == "System Settings") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Configuration",
+				panel = "Control Panel",
+				portlet = "System Settings");
+
+			SystemSettings.gotoConfiguration(
+				configurationCategory = "Segments",
+				configurationName = "Segments Service",
+				configurationScope = "System Scope");
+		}
+	}
+
+	@summary = "Default summary"
+	macro gotoSidebar(fieldType = null) {
+		Panel.expandPanel(panel = ${fieldType});
+	}
+
+	@summary = "Default summary"
+	macro openSegmentOptions(segmentName = null) {
 		Click(locator1 = "Segmentation#SEARCH_FIELD");
 
-		Type(
+		Type.type(
 			locator1 = "Segmentation#SEARCH_FIELD",
-			value1 = "${segmentName}");
+			value1 = ${segmentName});
 
 		KeyPress(
 			locator1 = "Segmentation#SEARCH_FIELD",
@@ -279,109 +489,110 @@ definition {
 		}
 	}
 
-	macro openSegmentsAdmin {
+	@summary = "Default summary"
+	macro openSegmentsAdmin(siteURLKey = null) {
 		Navigator.openWithAppendToBaseURL(urlAppend = "group/${siteURLKey}/~/control_panel/manage?p_p_id=com_liferay_segments_web_internal_portlet_SegmentsPortlet");
 	}
 
-	macro selectTag {
-		Click(locator1 = "Segmentation#ADD_TAG_BUTTON");
+	@summary = "Default summary"
+	macro resetDefaultValues() {
+		Click(locator1 = "Icon#HISTORY_VERTICAL_ELLIPSIS");
+
+		MenuItem.clickNoError(menuItem = "Reset Default Values");
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro resetSegmentationAtInstanceSettings() {
+		Navigator.openURL();
+
+		Segmentation.gotoSegmeentsService(key_portlet = "Instance Settings");
+
+		Segmentation.resetDefaultValues();
+	}
+
+	@summary = "Default summary"
+	macro resetSegmentationAtSystemSettings() {
+		Navigator.openURL();
+
+		Segmentation.gotoSegmeentsService(key_portlet = "System Settings");
+
+		Segmentation.resetDefaultValues();
+	}
+
+	@summary = "Default summary"
+	macro setVocabularySessionProperty(propertyName = null, vocabularyName = null) {
+		PortalSettings.openInstanceSettingsAdmin();
+
+		SystemSettings.gotoConfiguration(
+			configurationCategory = "Segments",
+			configurationName = "Session Property Vocabularies",
+			configurationScope = "Virtual Instance Scope");
+
+		Button.clickAdd();
+
+		FormFields.selectSelectOption(
+			fieldName = "Session Property Name",
+			selectOption = ${propertyName});
+
+		FormFields.selectSelectOption(
+			fieldName = "Vocabulary Name",
+			selectOption = ${vocabularyName});
+
+		Button.clickSave();
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro updateSegmentsInterval(interval = null) {
+		ApplicationsMenu.gotoPortlet(
+			category = "Configuration",
+			panel = "Control Panel",
+			portlet = "System Settings");
+
+		SystemSettings.gotoConfiguration(
+			configurationCategory = "Segments",
+			configurationName = "Analytics Cloud Segments",
+			configurationScope = "System Scope");
+
+		if (isSet(interval)) {
+			Type(
+				key_text = "Update Interval",
+				locator1 = "TextInput#ANY",
+				value1 = ${interval});
+		}
+
+		SystemSettings.saveConfiguration();
+	}
+
+	@summary = "Default summary"
+	macro viewEntryNotPresent(segmentName = null) {
+		LexiconEntry.viewNoEntry(rowEntry = ${segmentName});
+	}
+
+	@summary = "Default summary"
+	macro viewMembers(memberName = null) {
+		var key_memberName = ${memberName};
+
+		Click(
+			key_text = "View Members",
+			locator1 = "Button#ANY");
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-		Click(locator1 = "Segmentation#SEARCH_TAG_FIELD");
-
-		Type(
-			locator1 = "Segmentation#SEARCH_TAG_FIELD",
-			value1 = "${tagOption}");
-
-		KeyPress(
-			locator1 = "Segmentation#SEARCH_TAG_FIELD",
-			value1 = "\ENTER");
-
-		Click(locator1 = "Segmentation#TAG_OPTION");
-
-		SelectFrameTop();
-	}
-
-	macro setVocabularySessionPropertyDropdown {
-		Click(locator1 = "Segmentation#SESSION_PROPERTY_SESSION_LINK_PROPERTY");
-
-		Click(locator1 = "Segmentation#SESSION_PROPERTY_SESSION_LINK_PROPERTY_OPTION");
-
-		Click(locator1 = "Segmentation#SESSION_PROPERTY_SESSION_LINK_VOCABULARY");
-
-		Click(locator1 = "Segmentation#SESSION_PROPERTY_SESSION_LINK_VOCABULARY_OPTION");
-
-		Button.click(button = "Save");
-	}
-
-	macro tearDown {
-		while (IsElementPresent(locator1 = "Segmentation#SEGMENT_LIST")) {
-			Segmentation._deleteAllSegments();
+		if (!(isSet(memberNameList))) {
+			var memberNameList = ${memberName};
 		}
 
-		AssertElementNotPresent(locator1 = "Segmentation#SEGMENT_LIST");
-	}
-
-	macro viewEntryNotPresent {
-		LexiconEntry.viewNoEntry(rowEntry = "${segmentName}");
-	}
-
-	macro viewMembers {
-		var key_memberName = "${memberName}";
-
-		Click(locator1 = "Segmentation#VIEW_MEMBERS_BUTTON");
-
-		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
-
-		if (isSet(memberNameList)) {
-			for (var key_memberName : list "${memberNameList}") {
-				AssertElementPresent(locator1 = "Segmentation#MEMBER_NAME_LISTED");
-			}
+		for (var key_memberName : list ${memberNameList}) {
+			AssertVisible(
+				key_tableEntry = ${key_memberName},
+				locator1 = "LexiconTable#TABLE_ENTRY");
 		}
 
-		else {
-			AssertElementPresent(locator1 = "Segmentation#MEMBER_NAME_LISTED");
-		}
-
-		SelectFrame(value1 = "relative=top");
-
-		Click(locator1 = "Segmentation#CLOSE_MODAL");
-
-		SelectFrame(value1 = "relative=top");
-	}
-
-	macro viewSegment {
-		if (isSet(criterionKey)) {
-			AssertValue(
-				key_criterion = "key",
-				locator1 = "Segmentation#CRITERION_INPUT_FORM_CONTROL",
-				value1 = "${criterionKey}");
-
-			AssertValue(
-				key_criterion = "value",
-				locator1 = "Segmentation#CRITERION_INPUT_FORM_CONTROL",
-				value1 = "${criterionValue}");
-		}
-
-		else if (isSet(criterionInputOption)) {
-			AssertValue(
-				locator1 = "Segmentation#CRITERION_INPUT",
-				value1 = "${criterionInputOption}");
-		}
-
-		else if (isSet(criterion)) {
-			AssertValue(
-				key_criterion = "${criterion}",
-				locator1 = "Segmentation#CRITERION_INPUT_FORM_CONTROL",
-				value1 = "${value}");
-		}
-
-		else {
-			AssertValue(
-				locator1 = "Segmentation#PROPERTY_FIELD",
-				value1 = "${propertyField}");
-		}
+		IFrame.closeFrame();
 	}
 
 }

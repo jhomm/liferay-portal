@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.site.setting.client.dto.v1_0;
@@ -17,12 +8,12 @@ package com.liferay.headless.commerce.admin.site.setting.client.dto.v1_0;
 import com.liferay.headless.commerce.admin.site.setting.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.admin.site.setting.client.serdes.v1_0.MeasurementUnitSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -35,26 +26,47 @@ public class MeasurementUnit implements Cloneable, Serializable {
 		return MeasurementUnitSerDes.toDTO(json);
 	}
 
-	public Long getGroupId() {
-		return groupId;
+	public Long getCompanyId() {
+		return companyId;
 	}
 
-	public void setGroupId(Long groupId) {
-		this.groupId = groupId;
+	public void setCompanyId(Long companyId) {
+		this.companyId = companyId;
 	}
 
-	public void setGroupId(
-		UnsafeSupplier<Long, Exception> groupIdUnsafeSupplier) {
+	public void setCompanyId(
+		UnsafeSupplier<Long, Exception> companyIdUnsafeSupplier) {
 
 		try {
-			groupId = groupIdUnsafeSupplier.get();
+			companyId = companyIdUnsafeSupplier.get();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	protected Long groupId;
+	protected Long companyId;
+
+	public String getExternalReferenceCode() {
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		try {
+			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String externalReferenceCode;
 
 	public Long getId() {
 		return id;
@@ -176,15 +188,15 @@ public class MeasurementUnit implements Cloneable, Serializable {
 
 	protected Double rate;
 
-	public Integer getType() {
+	public String getType() {
 		return type;
 	}
 
-	public void setType(Integer type) {
+	public void setType(String type) {
 		this.type = type;
 	}
 
-	public void setType(UnsafeSupplier<Integer, Exception> typeUnsafeSupplier) {
+	public void setType(UnsafeSupplier<String, Exception> typeUnsafeSupplier) {
 		try {
 			type = typeUnsafeSupplier.get();
 		}
@@ -193,7 +205,7 @@ public class MeasurementUnit implements Cloneable, Serializable {
 		}
 	}
 
-	protected Integer type;
+	protected String type;
 
 	@Override
 	public MeasurementUnit clone() throws CloneNotSupportedException {

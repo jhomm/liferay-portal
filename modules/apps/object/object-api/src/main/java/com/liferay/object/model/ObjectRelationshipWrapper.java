@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model;
@@ -45,6 +36,7 @@ public class ObjectRelationshipWrapper
 
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("objectRelationshipId", getObjectRelationshipId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -54,11 +46,14 @@ public class ObjectRelationshipWrapper
 		attributes.put("objectDefinitionId1", getObjectDefinitionId1());
 		attributes.put("objectDefinitionId2", getObjectDefinitionId2());
 		attributes.put("objectFieldId2", getObjectFieldId2());
+		attributes.put("parameterObjectFieldId", getParameterObjectFieldId());
 		attributes.put("deletionType", getDeletionType());
 		attributes.put("dbTableName", getDBTableName());
+		attributes.put("edge", isEdge());
 		attributes.put("label", getLabel());
 		attributes.put("name", getName());
 		attributes.put("reverse", isReverse());
+		attributes.put("system", isSystem());
 		attributes.put("type", getType());
 
 		return attributes;
@@ -76,6 +71,13 @@ public class ObjectRelationshipWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long objectRelationshipId = (Long)attributes.get(
@@ -133,6 +135,13 @@ public class ObjectRelationshipWrapper
 			setObjectFieldId2(objectFieldId2);
 		}
 
+		Long parameterObjectFieldId = (Long)attributes.get(
+			"parameterObjectFieldId");
+
+		if (parameterObjectFieldId != null) {
+			setParameterObjectFieldId(parameterObjectFieldId);
+		}
+
 		String deletionType = (String)attributes.get("deletionType");
 
 		if (deletionType != null) {
@@ -143,6 +152,12 @@ public class ObjectRelationshipWrapper
 
 		if (dbTableName != null) {
 			setDBTableName(dbTableName);
+		}
+
+		Boolean edge = (Boolean)attributes.get("edge");
+
+		if (edge != null) {
+			setEdge(edge);
 		}
 
 		String label = (String)attributes.get("label");
@@ -163,6 +178,12 @@ public class ObjectRelationshipWrapper
 			setReverse(reverse);
 		}
 
+		Boolean system = (Boolean)attributes.get("system");
+
+		if (system != null) {
+			setSystem(system);
+		}
+
 		String type = (String)attributes.get("type");
 
 		if (type != null) {
@@ -173,6 +194,11 @@ public class ObjectRelationshipWrapper
 	@Override
 	public ObjectRelationship cloneWithOriginalValues() {
 		return wrap(model.cloneWithOriginalValues());
+	}
+
+	@Override
+	public boolean compareType(String type) {
+		return model.compareType(type);
 	}
 
 	@Override
@@ -223,6 +249,26 @@ public class ObjectRelationshipWrapper
 	@Override
 	public String getDeletionType() {
 		return model.getDeletionType();
+	}
+
+	/**
+	 * Returns the edge of this object relationship.
+	 *
+	 * @return the edge of this object relationship
+	 */
+	@Override
+	public boolean getEdge() {
+		return model.getEdge();
+	}
+
+	/**
+	 * Returns the external reference code of this object relationship.
+	 *
+	 * @return the external reference code of this object relationship
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -372,6 +418,16 @@ public class ObjectRelationshipWrapper
 	}
 
 	/**
+	 * Returns the parameter object field ID of this object relationship.
+	 *
+	 * @return the parameter object field ID of this object relationship
+	 */
+	@Override
+	public long getParameterObjectFieldId() {
+		return model.getParameterObjectFieldId();
+	}
+
+	/**
 	 * Returns the primary key of this object relationship.
 	 *
 	 * @return the primary key of this object relationship
@@ -389,6 +445,16 @@ public class ObjectRelationshipWrapper
 	@Override
 	public boolean getReverse() {
 		return model.getReverse();
+	}
+
+	/**
+	 * Returns the system of this object relationship.
+	 *
+	 * @return the system of this object relationship
+	 */
+	@Override
+	public boolean getSystem() {
+		return model.getSystem();
 	}
 
 	/**
@@ -441,6 +507,28 @@ public class ObjectRelationshipWrapper
 		return model.getUuid();
 	}
 
+	@Override
+	public boolean isAllowedObjectRelationshipType(String type) {
+		return model.isAllowedObjectRelationshipType(type);
+	}
+
+	/**
+	 * Returns <code>true</code> if this object relationship is edge.
+	 *
+	 * @return <code>true</code> if this object relationship is edge; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEdge() {
+		return model.isEdge();
+	}
+
+	@Override
+	public boolean isEdgeCandidate()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.isEdgeCandidate();
+	}
+
 	/**
 	 * Returns <code>true</code> if this object relationship is reverse.
 	 *
@@ -449,6 +537,21 @@ public class ObjectRelationshipWrapper
 	@Override
 	public boolean isReverse() {
 		return model.isReverse();
+	}
+
+	@Override
+	public boolean isSelf() {
+		return model.isSelf();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object relationship is system.
+	 *
+	 * @return <code>true</code> if this object relationship is system; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isSystem() {
+		return model.isSystem();
 	}
 
 	@Override
@@ -509,6 +612,26 @@ public class ObjectRelationshipWrapper
 	@Override
 	public void setDeletionType(String deletionType) {
 		model.setDeletionType(deletionType);
+	}
+
+	/**
+	 * Sets whether this object relationship is edge.
+	 *
+	 * @param edge the edge of this object relationship
+	 */
+	@Override
+	public void setEdge(boolean edge) {
+		model.setEdge(edge);
+	}
+
+	/**
+	 * Sets the external reference code of this object relationship.
+	 *
+	 * @param externalReferenceCode the external reference code of this object relationship
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
 	}
 
 	/**
@@ -646,6 +769,16 @@ public class ObjectRelationshipWrapper
 	}
 
 	/**
+	 * Sets the parameter object field ID of this object relationship.
+	 *
+	 * @param parameterObjectFieldId the parameter object field ID of this object relationship
+	 */
+	@Override
+	public void setParameterObjectFieldId(long parameterObjectFieldId) {
+		model.setParameterObjectFieldId(parameterObjectFieldId);
+	}
+
+	/**
 	 * Sets the primary key of this object relationship.
 	 *
 	 * @param primaryKey the primary key of this object relationship
@@ -663,6 +796,16 @@ public class ObjectRelationshipWrapper
 	@Override
 	public void setReverse(boolean reverse) {
 		model.setReverse(reverse);
+	}
+
+	/**
+	 * Sets whether this object relationship is system.
+	 *
+	 * @param system the system of this object relationship
+	 */
+	@Override
+	public void setSystem(boolean system) {
+		model.setSystem(system);
 	}
 
 	/**
@@ -713,6 +856,11 @@ public class ObjectRelationshipWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.form.navigator.internal.osgi.commands;
@@ -18,6 +9,7 @@ import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.osgi.util.osgi.commands.OSGiCommands;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.servlet.taglib.ui.FormNavigatorCategoryUtil;
@@ -27,26 +19,23 @@ import com.liferay.portal.kernel.util.Validator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 
 /**
  * @author Alejandro Tardín
  */
 @Component(
-	immediate = true,
 	property = {
 		"osgi.command.function=getPossibleConfigurations",
 		"osgi.command.scope=formNavigator"
 	},
-	service = FormNavigatorOSGiCommands.class
+	service = OSGiCommands.class
 )
-public class FormNavigatorOSGiCommands {
+public class FormNavigatorOSGiCommands implements OSGiCommands {
 
 	public void getPossibleConfigurations() {
 		for (String formNavigatorId : _getAllFormNavigatorIds()) {
@@ -80,7 +69,7 @@ public class FormNavigatorOSGiCommands {
 		_formNavigatorEntries = ServiceTrackerListFactory.open(
 			bundleContext,
 			(Class<FormNavigatorEntry<?>>)(Class<?>)FormNavigatorEntry.class);
-		_formNavigatorEntriesMap = ServiceTrackerMapFactory.openMultiValueMap(
+		_serviceTrackerMap = ServiceTrackerMapFactory.openMultiValueMap(
 			bundleContext,
 			(Class<FormNavigatorEntry<?>>)(Class<?>)FormNavigatorEntry.class,
 			null,
@@ -88,14 +77,19 @@ public class FormNavigatorOSGiCommands {
 				FormNavigatorEntry<?> formNavigatorEntry =
 					bundleContext.getService(serviceReference);
 
-				String key = _getKey(
-					formNavigatorEntry.getFormNavigatorId(),
-					formNavigatorEntry.getCategoryKey());
-
-				emitter.emit(key);
+				emitter.emit(
+					_getKey(
+						formNavigatorEntry.getFormNavigatorId(),
+						formNavigatorEntry.getCategoryKey()));
 
 				bundleContext.ungetService(serviceReference);
 			});
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_formNavigatorEntries.close();
+		_serviceTrackerMap.close();
 	}
 
 	private Set<String> _getAllFormNavigatorIds() {
@@ -112,30 +106,28 @@ public class FormNavigatorOSGiCommands {
 		String formNavigatorId, String formNavigatorCategoryKey) {
 
 		List<FormNavigatorEntry<?>> formNavigatorEntries =
-			_formNavigatorEntriesMap.getService(
+			_serviceTrackerMap.getService(
 				_getKey(formNavigatorId, formNavigatorCategoryKey));
 
 		if (formNavigatorEntries == null) {
 			return StringPool.BLANK;
 		}
 
-		Stream<FormNavigatorEntry<?>> formNavigatorEntriesStream =
-			formNavigatorEntries.stream();
-
-		Stream<String> formNavigatorKeysStream = formNavigatorEntriesStream.map(
-			FormNavigatorEntry::getKey);
-
-		String formNavigatorEntryKeysCSV = formNavigatorKeysStream.collect(
-			_collectorCSV);
-
-		StringBundler sb = new StringBundler(4);
+		StringBundler sb = new StringBundler(
+			(formNavigatorEntries.size() * 2) + 2);
 
 		if (Validator.isNotNull(formNavigatorCategoryKey)) {
 			sb.append(formNavigatorCategoryKey);
 			sb.append(StringPool.EQUAL);
 		}
 
-		sb.append(formNavigatorEntryKeysCSV);
+		for (FormNavigatorEntry<?> formNavigatorEntry : formNavigatorEntries) {
+			sb.append(formNavigatorEntry.getKey());
+			sb.append(StringPool.COMMA);
+		}
+
+		sb.setIndex(sb.index() - 1);
+
 		sb.append(StringPool.NEW_LINE);
 
 		return sb.toString();
@@ -147,10 +139,8 @@ public class FormNavigatorOSGiCommands {
 		return formNavigatorId + formNavigatorCategoryId;
 	}
 
-	private final Collector<CharSequence, ?, String> _collectorCSV =
-		Collectors.joining(StringPool.COMMA);
 	private ServiceTrackerList<FormNavigatorEntry<?>> _formNavigatorEntries;
 	private ServiceTrackerMap<String, List<FormNavigatorEntry<?>>>
-		_formNavigatorEntriesMap;
+		_serviceTrackerMap;
 
 }

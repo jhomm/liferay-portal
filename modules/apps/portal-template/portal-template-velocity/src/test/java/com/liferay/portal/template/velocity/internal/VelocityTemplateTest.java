@@ -1,33 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.template.velocity.internal;
 
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.template.StringTemplateResource;
 import com.liferay.portal.kernel.template.Template;
+import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.template.TemplateException;
 import com.liferay.portal.kernel.template.TemplateResource;
 import com.liferay.portal.kernel.template.TemplateResourceCache;
-import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.template.TemplateResourceLoader;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.JavaDetector;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.template.ClassLoaderResourceParser;
-import com.liferay.portal.template.TemplateContextHelper;
+import com.liferay.portal.template.TemplateResourceParser;
+import com.liferay.portal.template.engine.TemplateContextHelper;
 import com.liferay.portal.template.velocity.configuration.VelocityEngineConfiguration;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -39,18 +38,20 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.apache.commons.collections.ExtendedProperties;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.exception.ParseErrorException;
 import org.apache.velocity.runtime.RuntimeConstants;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Tina Tian
@@ -63,26 +64,41 @@ public class VelocityTemplateTest {
 		LiferayUnitTestRule.INSTANCE;
 
 	@BeforeClass
-	public static void setUpClass() throws Exception {
-		_templateResourceCache = new VelocityTemplateResourceCache() {
+	public static void setUpClass() {
+		VelocityManager velocityManager = new VelocityManager();
 
-			@Override
-			public boolean isEnabled() {
-				return false;
-			}
+		_templateResourceCache =
+			velocityManager.new VelocityTemplateResourceCache() {
 
-		};
+				@Override
+				public boolean isEnabled() {
+					return false;
+				}
 
-		_velocityTemplateResourceLoader = new VelocityTemplateResourceLoader();
+			};
 
-		ReflectionTestUtil.setFieldValue(
-			_velocityTemplateResourceLoader, "_velocityTemplateResourceCache",
-			_templateResourceCache);
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
 
-		_velocityTemplateResourceLoader.setTemplateResourceParser(
-			new ClassLoaderResourceParser());
+		_templateResourceLoader =
+			velocityManager.new VelocityTemplateResourceLoader(
+				bundleContext, _templateResourceCache);
 
-		_velocityTemplateResourceLoader.activate(Collections.emptyMap());
+		_templateResourceParserServiceRegistration =
+			bundleContext.registerService(
+				TemplateResourceParser.class, new ClassLoaderResourceParser(),
+				MapUtil.singletonDictionary(
+					"lang.type", TemplateConstants.LANG_TYPE_VM));
+	}
+
+	@AfterClass
+	public static void tearDownClass() {
+		if (_templateResourceParserServiceRegistration != null) {
+			_templateResourceParserServiceRegistration.unregister();
+		}
+
+		if (_templateResourceLoader != null) {
+			_templateResourceLoader.destroy();
+		}
 	}
 
 	@Before
@@ -91,14 +107,19 @@ public class VelocityTemplateTest {
 			ConfigurableUtil.createConfigurable(
 				VelocityEngineConfiguration.class, Collections.emptyMap());
 
-		_templateContextHelper = new MockTemplateContextHelper();
-
-		_velocityEngine = new VelocityEngine();
-
-		boolean cacheEnabled = false;
-
 		ExtendedProperties extendedProperties = new FastExtendedProperties();
 
+		extendedProperties.setProperty(
+			RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,
+			StringUtil.merge(
+				_filterRestrictedClasses(
+					velocityEngineConfiguration.restrictedClasses())));
+		extendedProperties.setProperty(
+			RuntimeConstants.INTROSPECTOR_RESTRICT_PACKAGES,
+			StringUtil.merge(velocityEngineConfiguration.restrictedPackages()));
+		extendedProperties.setProperty(
+			RuntimeConstants.UBERSPECT_CLASSNAME,
+			LiferaySecureUberspector.class.getName());
 		extendedProperties.setProperty(
 			VelocityEngine.DIRECTIVE_IF_TOSTRING_NULLCHECK,
 			String.valueOf(
@@ -107,34 +128,10 @@ public class VelocityTemplateTest {
 			VelocityEngine.EVENTHANDLER_METHODEXCEPTION,
 			LiferayMethodExceptionEventHandler.class.getName());
 		extendedProperties.setProperty(
-			RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,
-			StringUtil.merge(velocityEngineConfiguration.restrictedClasses()));
-		extendedProperties.setProperty(
-			"liferay." + RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES +
-				".methods",
-			velocityEngineConfiguration.restrictedMethods());
-		extendedProperties.setProperty(
-			RuntimeConstants.INTROSPECTOR_RESTRICT_PACKAGES,
-			StringUtil.merge(velocityEngineConfiguration.restrictedPackages()));
-		extendedProperties.setProperty(
 			VelocityEngine.RESOURCE_LOADER, "liferay");
-		extendedProperties.setProperty(
-			"liferay." + VelocityEngine.RESOURCE_LOADER + ".cache",
-			String.valueOf(cacheEnabled));
-		extendedProperties.setProperty(
-			"liferay." + VelocityEngine.RESOURCE_LOADER + ".class",
-			LiferayResourceLoader.class.getName());
 		extendedProperties.setProperty(
 			VelocityEngine.RESOURCE_MANAGER_CLASS,
 			LiferayResourceManager.class.getName());
-		extendedProperties.setProperty(
-			"liferay." + VelocityEngine.RESOURCE_MANAGER_CLASS +
-				".resourceModificationCheckInterval",
-			velocityEngineConfiguration.resourceModificationCheckInterval() +
-				"");
-		extendedProperties.setProperty(
-			VelocityTemplateResourceLoader.class.getName(),
-			_velocityTemplateResourceLoader);
 		extendedProperties.setProperty(
 			VelocityEngine.RUNTIME_LOG_LOGSYSTEM_CLASS,
 			velocityEngineConfiguration.logger());
@@ -142,17 +139,26 @@ public class VelocityTemplateTest {
 			VelocityEngine.RUNTIME_LOG_LOGSYSTEM + ".log4j.category",
 			velocityEngineConfiguration.loggerCategory());
 		extendedProperties.setProperty(
-			RuntimeConstants.UBERSPECT_CLASSNAME,
-			LiferaySecureUberspector.class.getName());
-		extendedProperties.setProperty(
 			VelocityEngine.VM_LIBRARY,
 			StringUtil.merge(velocityEngineConfiguration.velocimacroLibrary()));
 		extendedProperties.setProperty(
-			VelocityEngine.VM_LIBRARY_AUTORELOAD,
-			String.valueOf(!cacheEnabled));
+			VelocityEngine.VM_LIBRARY_AUTORELOAD, Boolean.TRUE.toString());
 		extendedProperties.setProperty(
 			VelocityEngine.VM_PERM_ALLOW_INLINE_REPLACE_GLOBAL,
-			String.valueOf(!cacheEnabled));
+			Boolean.TRUE.toString());
+		extendedProperties.setProperty(
+			VelocityManager.VelocityTemplateResourceLoader.class.getName(),
+			_templateResourceLoader);
+		extendedProperties.setProperty(
+			"liferay." + RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES +
+				".methods",
+			velocityEngineConfiguration.restrictedMethods());
+		extendedProperties.setProperty(
+			"liferay." + VelocityEngine.RESOURCE_LOADER + ".cache",
+			Boolean.FALSE.toString());
+		extendedProperties.setProperty(
+			"liferay." + VelocityEngine.RESOURCE_LOADER + ".class",
+			LiferayResourceLoader.class.getName());
 
 		_velocityEngine.setExtendedProperties(extendedProperties);
 
@@ -363,6 +369,19 @@ public class VelocityTemplateTest {
 		Assert.assertEquals(_TEST_VALUE, result);
 	}
 
+	private String[] _filterRestrictedClasses(String[] restrictedClasses) {
+		if (JavaDetector.isJDK21()) {
+
+			// TODO: remove java.lang.Compiler from
+			// VelocityEngineConfiguration.restrictedClasses() and this method
+			// once fully upgraded to JDK21
+
+			return ArrayUtil.remove(restrictedClasses, "java.lang.Compiler");
+		}
+
+		return restrictedClasses;
+	}
+
 	private static final String _TEMPLATE_FILE_NAME = "test.vm";
 
 	private static final String _TEST_KEY = "TEST_KEY";
@@ -377,19 +396,19 @@ public class VelocityTemplateTest {
 	private static final String _WRONG_TEMPLATE_ID = "WRONG_TEMPLATE_ID";
 
 	private static TemplateResourceCache _templateResourceCache;
-	private static VelocityTemplateResourceLoader
-		_velocityTemplateResourceLoader;
+	private static TemplateResourceLoader _templateResourceLoader;
+	private static ServiceRegistration<TemplateResourceParser>
+		_templateResourceParserServiceRegistration;
 
-	private TemplateContextHelper _templateContextHelper;
-	private VelocityEngine _velocityEngine;
+	private final TemplateContextHelper _templateContextHelper =
+		new MockTemplateContextHelper();
+	private final VelocityEngine _velocityEngine = new VelocityEngine();
 
 	private static class MockTemplateContextHelper
 		extends TemplateContextHelper {
 
 		@Override
-		public Map<String, Object> getHelperUtilities(
-			ClassLoader classLoader, boolean restricted) {
-
+		public Map<String, Object> getHelperUtilities(boolean restricted) {
 			return Collections.emptyMap();
 		}
 

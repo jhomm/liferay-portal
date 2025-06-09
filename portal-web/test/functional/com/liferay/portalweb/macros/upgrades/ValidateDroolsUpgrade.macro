@@ -1,0 +1,13 @@
+definition {
+
+	@summary = "Default summary"
+	macro viewDroolsAppManager() {
+		AppManager.openAppManagerAdmin();
+
+		AppManager.viewApp(
+			appName = "Liferay Portal Rules Engine Drools",
+			appStatus = "Active",
+			searchTerm = "Drools");
+	}
+
+}

@@ -1,31 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.facet.display.context;
 
-import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.search.facet.Facet;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.facet.collector.DefaultTermCollector;
-import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
 import com.liferay.portal.kernel.search.facet.collector.TermCollector;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
-import com.liferay.portal.kernel.theme.PortletDisplay;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.search.web.internal.facet.display.builder.FolderSearchFacetDisplayBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.search.web.internal.BaseFacetDisplayContextTestCase;
+import com.liferay.portal.search.web.internal.facet.display.context.builder.FolderSearchFacetDisplayContextBuilder;
 import com.liferay.portal.search.web.internal.folder.facet.configuration.FolderFacetPortletInstanceConfiguration;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
@@ -34,61 +21,62 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import javax.portlet.RenderRequest;
-
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author Lino Alves
  */
-public class FolderSearchFacetDisplayContextTest {
+public class FolderSearchFacetDisplayContextTest
+	extends BaseFacetDisplayContextTestCase {
 
 	@ClassRule
 	@Rule
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Before
-	public void setUp() {
-		MockitoAnnotations.initMocks(this);
+	@Override
+	public FacetDisplayContext createFacetDisplayContext(String parameterValue)
+		throws Exception {
 
-		Mockito.doReturn(
-			_facetCollector
-		).when(
-			_facet
-		).getFacetCollector();
+		return createFacetDisplayContext(parameterValue, "count:desc");
 	}
 
-	@Test
-	public void testEmptySearchResults() throws Exception {
-		String facetParam = null;
+	@Override
+	public FacetDisplayContext createFacetDisplayContext(
+			String parameterValue, String order)
+		throws Exception {
 
-		FolderSearchFacetDisplayContext folderSearchFacetDisplayContext =
-			createDisplayContext(facetParam);
+		configurationProviderUtilMockedStatic.when(
+			() -> ConfigurationProviderUtil.getPortletInstanceConfiguration(
+				Mockito.any(), Mockito.any())
+		).thenReturn(
+			Mockito.mock(FolderFacetPortletInstanceConfiguration.class)
+		);
 
-		List<FolderSearchFacetTermDisplayContext>
-			folderSearchFacetTermDisplayContexts =
-				folderSearchFacetDisplayContext.
-					getFolderSearchFacetTermDisplayContexts();
+		FolderSearchFacetDisplayContextBuilder
+			folderSearchFacetDisplayContextBuilder =
+				new FolderSearchFacetDisplayContextBuilder(getRenderRequest());
 
-		Assert.assertEquals(
-			folderSearchFacetTermDisplayContexts.toString(), 0,
-			folderSearchFacetTermDisplayContexts.size());
+		folderSearchFacetDisplayContextBuilder.setFacet(facet);
+		folderSearchFacetDisplayContextBuilder.setFolderTitleLookup(
+			_folderTitleLookup);
+		folderSearchFacetDisplayContextBuilder.setFrequenciesVisible(true);
+		folderSearchFacetDisplayContextBuilder.setFrequencyThreshold(0);
+		folderSearchFacetDisplayContextBuilder.setLocale(
+			LocaleUtil.getDefault());
+		folderSearchFacetDisplayContextBuilder.setMaxTerms(0);
+		folderSearchFacetDisplayContextBuilder.setOrder(order);
+		folderSearchFacetDisplayContextBuilder.setParameterName(
+			facet.getFieldId());
+		folderSearchFacetDisplayContextBuilder.setParameterValue(
+			parameterValue);
 
-		Assert.assertEquals(
-			StringPool.BLANK,
-			folderSearchFacetDisplayContext.getParameterValue());
-		Assert.assertTrue(folderSearchFacetDisplayContext.isNothingSelected());
-		Assert.assertTrue(folderSearchFacetDisplayContext.isRenderNothing());
+		return folderSearchFacetDisplayContextBuilder.build();
 	}
 
 	@Test
@@ -96,56 +84,15 @@ public class FolderSearchFacetDisplayContextTest {
 		throws Exception {
 
 		Mockito.when(
-			_facetCollector.getTermCollectors()
+			facetCollector.getTermCollectors()
 		).thenReturn(
 			Collections.emptyList()
 		);
 
-		FolderSearchFacetDisplayContext folderSearchFacetDisplayContext =
-			createDisplayContext(null);
+		FacetDisplayContext facetDisplayContext = createFacetDisplayContext(
+			null);
 
-		Assert.assertTrue(folderSearchFacetDisplayContext.isRenderNothing());
-	}
-
-	@Test
-	public void testEmptySearchResultsWithPreviousSelection() throws Exception {
-		long folderId = RandomTestUtil.randomLong();
-		String title = RandomTestUtil.randomString();
-
-		addFolder(folderId, title);
-
-		String facetParam = String.valueOf(folderId);
-
-		FolderSearchFacetDisplayContext folderSearchFacetDisplayContext =
-			createDisplayContext(facetParam);
-
-		List<FolderSearchFacetTermDisplayContext>
-			folderSearchFacetTermDisplayContexts =
-				folderSearchFacetDisplayContext.
-					getFolderSearchFacetTermDisplayContexts();
-
-		Assert.assertEquals(
-			folderSearchFacetTermDisplayContexts.toString(), 1,
-			folderSearchFacetTermDisplayContexts.size());
-
-		FolderSearchFacetTermDisplayContext
-			folderSearchFacetTermDisplayContext =
-				folderSearchFacetTermDisplayContexts.get(0);
-
-		Assert.assertEquals(
-			0, folderSearchFacetTermDisplayContext.getFrequency());
-		Assert.assertEquals(
-			title, folderSearchFacetTermDisplayContext.getDisplayName());
-		Assert.assertEquals(
-			folderId, folderSearchFacetTermDisplayContext.getFolderId());
-		Assert.assertTrue(folderSearchFacetTermDisplayContext.isSelected());
-		Assert.assertTrue(
-			folderSearchFacetTermDisplayContext.isFrequencyVisible());
-
-		Assert.assertEquals(
-			facetParam, folderSearchFacetDisplayContext.getParameterValue());
-		Assert.assertFalse(folderSearchFacetDisplayContext.isNothingSelected());
-		Assert.assertFalse(folderSearchFacetDisplayContext.isRenderNothing());
+		Assert.assertTrue(facetDisplayContext.isRenderNothing());
 	}
 
 	@Test
@@ -153,142 +100,114 @@ public class FolderSearchFacetDisplayContextTest {
 		throws Exception {
 
 		Mockito.when(
-			_facetCollector.getTermCollectors()
+			facetCollector.getTermCollectors()
 		).thenReturn(
 			Arrays.asList(new DefaultTermCollector("0", 200))
 		);
 
-		FolderSearchFacetDisplayContext folderSearchFacetDisplayContext =
-			createDisplayContext(null);
+		FacetDisplayContext facetDisplayContext = createFacetDisplayContext(
+			null);
 
-		Assert.assertTrue(folderSearchFacetDisplayContext.isRenderNothing());
-	}
-
-	@Test
-	public void testOneTerm() throws Exception {
-		long folderId = RandomTestUtil.randomLong();
-		String title = RandomTestUtil.randomString();
-
-		addFolder(folderId, title);
-
-		int count = RandomTestUtil.randomInt();
-
-		setUpOneTermCollector(folderId, count);
-
-		String facetParam = "";
-
-		FolderSearchFacetDisplayContext folderSearchFacetDisplayContext =
-			createDisplayContext(facetParam);
-
-		List<FolderSearchFacetTermDisplayContext>
-			folderSearchFacetTermDisplayContexts =
-				folderSearchFacetDisplayContext.
-					getFolderSearchFacetTermDisplayContexts();
-
-		Assert.assertEquals(
-			folderSearchFacetTermDisplayContexts.toString(), 1,
-			folderSearchFacetTermDisplayContexts.size());
-
-		FolderSearchFacetTermDisplayContext
-			folderSearchFacetTermDisplayContext =
-				folderSearchFacetTermDisplayContexts.get(0);
-
-		Assert.assertEquals(
-			count, folderSearchFacetTermDisplayContext.getFrequency());
-		Assert.assertEquals(
-			title, folderSearchFacetTermDisplayContext.getDisplayName());
-		Assert.assertEquals(
-			folderId, folderSearchFacetTermDisplayContext.getFolderId());
-		Assert.assertFalse(folderSearchFacetTermDisplayContext.isSelected());
-		Assert.assertTrue(
-			folderSearchFacetTermDisplayContext.isFrequencyVisible());
-
-		Assert.assertEquals(
-			facetParam, folderSearchFacetDisplayContext.getParameterValue());
-		Assert.assertTrue(folderSearchFacetDisplayContext.isNothingSelected());
-		Assert.assertFalse(folderSearchFacetDisplayContext.isRenderNothing());
-	}
-
-	@Test
-	public void testOneTermWithPreviousSelection() throws Exception {
-		long folderId = RandomTestUtil.randomLong();
-		String title = RandomTestUtil.randomString();
-
-		addFolder(folderId, title);
-
-		int count = RandomTestUtil.randomInt();
-
-		setUpOneTermCollector(folderId, count);
-
-		String facetParam = String.valueOf(folderId);
-
-		FolderSearchFacetDisplayContext folderSearchFacetDisplayContext =
-			createDisplayContext(facetParam);
-
-		List<FolderSearchFacetTermDisplayContext>
-			folderSearchFacetTermDisplayContexts =
-				folderSearchFacetDisplayContext.
-					getFolderSearchFacetTermDisplayContexts();
-
-		Assert.assertEquals(
-			folderSearchFacetTermDisplayContexts.toString(), 1,
-			folderSearchFacetTermDisplayContexts.size());
-
-		FolderSearchFacetTermDisplayContext
-			folderSearchFacetTermDisplayContext =
-				folderSearchFacetTermDisplayContexts.get(0);
-
-		Assert.assertEquals(
-			count, folderSearchFacetTermDisplayContext.getFrequency());
-		Assert.assertEquals(
-			title, folderSearchFacetTermDisplayContext.getDisplayName());
-		Assert.assertEquals(
-			folderId, folderSearchFacetTermDisplayContext.getFolderId());
-		Assert.assertTrue(folderSearchFacetTermDisplayContext.isSelected());
-		Assert.assertTrue(
-			folderSearchFacetTermDisplayContext.isFrequencyVisible());
-
-		Assert.assertEquals(
-			facetParam, folderSearchFacetDisplayContext.getParameterValue());
-		Assert.assertFalse(folderSearchFacetDisplayContext.isNothingSelected());
-		Assert.assertFalse(folderSearchFacetDisplayContext.isRenderNothing());
+		Assert.assertTrue(facetDisplayContext.isRenderNothing());
 	}
 
 	@Test
 	public void testViewPermissionGrantedForSearchResultButDeniedForParentFolder()
 		throws Exception {
 
-		List<TermCollector> termCollectors = addFoldersAndCreateTermCollectors(
+		List<TermCollector> termCollectors = _addFoldersAndCreateTermCollectors(
 			"zeroFolderId", null, "null", "", "   ", "assert", "volatile",
 			"alpha");
 
-		setUpMultipleTermCollectors(termCollectors);
+		setUpTermCollectors(facetCollector, termCollectors);
 
-		FolderSearchFacetDisplayContext folderSearchFacetDisplayContext =
-			createDisplayContext(null);
+		FacetDisplayContext facetDisplayContext = createFacetDisplayContext(
+			null);
 
-		List<FolderSearchFacetTermDisplayContext>
-			folderSearchFacetTermDisplayContexts =
-				folderSearchFacetDisplayContext.
-					getFolderSearchFacetTermDisplayContexts();
+		List<BucketDisplayContext> bucketDisplayContexts =
+			facetDisplayContext.getBucketDisplayContexts();
 
 		String nameFrequencyString = buildNameFrequencyString(
-			folderSearchFacetTermDisplayContexts);
+			bucketDisplayContexts);
 
 		Assert.assertEquals(
-			folderSearchFacetTermDisplayContexts.toString(),
-			"assert:6|volatile:7|alpha:8", nameFrequencyString);
+			bucketDisplayContexts.toString(), "alpha:8|volatile:7|assert:6",
+			nameFrequencyString);
 
 		Assert.assertEquals(
 			termCollectors.toString(), 36,
-			getTotalTermCollectorFrequencyCount(termCollectors));
+			_getTotalTermCollectorFrequencyCount(termCollectors));
 		Assert.assertEquals(
-			folderSearchFacetTermDisplayContexts.toString(), 21,
-			getTotalFolderSearchFacetTermDisplayContextFrequencyCount(
-				folderSearchFacetTermDisplayContexts));
+			bucketDisplayContexts.toString(), 21,
+			_getTotalBucketDisplayContextFrequencyCount(bucketDisplayContexts));
 	}
 
-	protected void addFolder(long folderId, String title) throws Exception {
+	@Override
+	protected FacetDisplayContext getFacetDisplayContext(Group group)
+		throws Exception {
+
+		FolderSearchFacetDisplayContextBuilder
+			folderSearchFacetDisplayContextBuilder =
+				new FolderSearchFacetDisplayContextBuilder(
+					getRenderRequest(group));
+
+		return folderSearchFacetDisplayContextBuilder.build();
+	}
+
+	@Override
+	protected String getFilterValue(String term) {
+		return String.valueOf(_folderId);
+	}
+
+	@Override
+	protected void setUpAsset(String term) throws Exception {
+		_folderId = RandomTestUtil.randomLong();
+
+		_addFolder(_folderId, term);
+	}
+
+	@Override
+	protected void setUpPortletDisplayStyleGroupExternalReferenceCode(
+		String externalReferenceCode) {
+
+		FolderFacetPortletInstanceConfiguration
+			folderFacetPortletInstanceConfiguration = Mockito.mock(
+				FolderFacetPortletInstanceConfiguration.class);
+
+		Mockito.when(
+			folderFacetPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode()
+		).thenReturn(
+			externalReferenceCode
+		);
+
+		configurationProviderUtilMockedStatic.when(
+			() -> ConfigurationProviderUtil.getPortletInstanceConfiguration(
+				Mockito.any(), Mockito.any())
+		).thenReturn(
+			folderFacetPortletInstanceConfiguration
+		);
+	}
+
+	@Override
+	protected void testOrderBy(
+			int[] expectedFrequencies, String[] expectedTerms,
+			int[] frequencies, String order, String[] terms)
+		throws Exception {
+
+		setUpTermCollectors(
+			facetCollector,
+			_addFoldersAndCreateTermCollectors(terms, frequencies));
+
+		FacetDisplayContext facetDisplayContext = createFacetDisplayContext(
+			null, order);
+
+		assertFacetOrder(
+			facetDisplayContext.getBucketDisplayContexts(), expectedTerms,
+			expectedFrequencies);
+	}
+
+	private void _addFolder(long folderId, String title) throws Exception {
 		Mockito.doReturn(
 			title
 		).when(
@@ -298,7 +217,7 @@ public class FolderSearchFacetDisplayContextTest {
 		);
 	}
 
-	protected List<TermCollector> addFoldersAndCreateTermCollectors(
+	private List<TermCollector> _addFoldersAndCreateTermCollectors(
 			String... folderNames)
 		throws Exception {
 
@@ -307,11 +226,12 @@ public class FolderSearchFacetDisplayContextTest {
 		int folderId = 0;
 
 		for (String folderName : folderNames) {
-			addFolder(folderId, folderName);
+			_addFolder(folderId, folderName);
 
 			int frequency = folderId + 1;
 
-			termCollectors.add(createTermCollector(folderId, frequency));
+			termCollectors.add(
+				createTermCollector(String.valueOf(folderId), frequency));
 
 			folderId++;
 		}
@@ -319,123 +239,37 @@ public class FolderSearchFacetDisplayContextTest {
 		return termCollectors;
 	}
 
-	protected String buildNameFrequencyString(
-			List<FolderSearchFacetTermDisplayContext>
-				folderSearchFacetTermDisplayContexts)
+	private List<TermCollector> _addFoldersAndCreateTermCollectors(
+			String[] folderNames, int[] frequencies)
 		throws Exception {
 
-		StringBundler sb = new StringBundler(
-			folderSearchFacetTermDisplayContexts.size() * 4);
+		List<TermCollector> termCollectors = new ArrayList<>();
 
-		for (FolderSearchFacetTermDisplayContext
-				folderSearchFacetTermDisplayContext :
-					folderSearchFacetTermDisplayContexts) {
+		for (int i = 1; i <= folderNames.length; i++) {
+			_addFolder(i, folderNames[i - 1]);
 
-			sb.append(folderSearchFacetTermDisplayContext.getDisplayName());
-			sb.append(StringPool.COLON);
-			sb.append(folderSearchFacetTermDisplayContext.getFrequency());
-			sb.append(StringPool.PIPE);
+			termCollectors.add(
+				createTermCollector(String.valueOf(i), frequencies[i - 1]));
 		}
 
-		sb.setIndex(sb.index() - 1);
-
-		return sb.toString();
+		return termCollectors;
 	}
 
-	protected FolderSearchFacetDisplayContext createDisplayContext(
-			String facetParam)
-		throws Exception {
-
-		FolderSearchFacetDisplayBuilder folderSearchFacetDisplayBuilder =
-			new FolderSearchFacetDisplayBuilder(getRenderRequest());
-
-		folderSearchFacetDisplayBuilder.setFacet(_facet);
-		folderSearchFacetDisplayBuilder.setFolderTitleLookup(
-			_folderTitleLookup);
-		folderSearchFacetDisplayBuilder.setFrequenciesVisible(true);
-		folderSearchFacetDisplayBuilder.setFrequencyThreshold(0);
-		folderSearchFacetDisplayBuilder.setMaxTerms(0);
-		folderSearchFacetDisplayBuilder.setParameterName(_facet.getFieldId());
-		folderSearchFacetDisplayBuilder.setParameterValue(facetParam);
-
-		return folderSearchFacetDisplayBuilder.build();
-	}
-
-	protected TermCollector createTermCollector(long folderId, int count) {
-		TermCollector termCollector = Mockito.mock(TermCollector.class);
-
-		Mockito.doReturn(
-			count
-		).when(
-			termCollector
-		).getFrequency();
-
-		Mockito.doReturn(
-			String.valueOf(folderId)
-		).when(
-			termCollector
-		).getTerm();
-
-		return termCollector;
-	}
-
-	protected PortletDisplay getPortletDisplay() throws ConfigurationException {
-		PortletDisplay portletDisplay = Mockito.mock(PortletDisplay.class);
-
-		Mockito.doReturn(
-			Mockito.mock(FolderFacetPortletInstanceConfiguration.class)
-		).when(
-			portletDisplay
-		).getPortletInstanceConfiguration(
-			Matchers.any()
-		);
-
-		return portletDisplay;
-	}
-
-	protected RenderRequest getRenderRequest() throws ConfigurationException {
-		RenderRequest renderRequest = Mockito.mock(RenderRequest.class);
-
-		Mockito.doReturn(
-			getThemeDisplay()
-		).when(
-			renderRequest
-		).getAttribute(
-			WebKeys.THEME_DISPLAY
-		);
-
-		return renderRequest;
-	}
-
-	protected ThemeDisplay getThemeDisplay() throws ConfigurationException {
-		ThemeDisplay themeDisplay = Mockito.mock(ThemeDisplay.class);
-
-		Mockito.doReturn(
-			getPortletDisplay()
-		).when(
-			themeDisplay
-		).getPortletDisplay();
-
-		return themeDisplay;
-	}
-
-	protected int getTotalFolderSearchFacetTermDisplayContextFrequencyCount(
-		List<FolderSearchFacetTermDisplayContext>
-			folderSearchFacetTermDisplayContexts) {
+	private int _getTotalBucketDisplayContextFrequencyCount(
+		List<BucketDisplayContext> bucketDisplayContexts) {
 
 		int total = 0;
 
-		for (FolderSearchFacetTermDisplayContext
-				folderSearchFacetTermDisplayContext :
-					folderSearchFacetTermDisplayContexts) {
+		for (BucketDisplayContext bucketDisplayContext :
+				bucketDisplayContexts) {
 
-			total += folderSearchFacetTermDisplayContext.getFrequency();
+			total += bucketDisplayContext.getFrequency();
 		}
 
 		return total;
 	}
 
-	protected int getTotalTermCollectorFrequencyCount(
+	private int _getTotalTermCollectorFrequencyCount(
 		List<TermCollector> termCollectors) {
 
 		int total = 0;
@@ -447,31 +281,8 @@ public class FolderSearchFacetDisplayContextTest {
 		return total;
 	}
 
-	protected void setUpMultipleTermCollectors(
-		List<TermCollector> termCollectors) {
-
-		Mockito.doReturn(
-			termCollectors
-		).when(
-			_facetCollector
-		).getTermCollectors();
-	}
-
-	protected void setUpOneTermCollector(long folderId, int count) {
-		Mockito.doReturn(
-			Collections.singletonList(createTermCollector(folderId, count))
-		).when(
-			_facetCollector
-		).getTermCollectors();
-	}
-
-	@Mock
-	private Facet _facet;
-
-	@Mock
-	private FacetCollector _facetCollector;
-
-	@Mock
-	private FolderTitleLookup _folderTitleLookup;
+	private long _folderId;
+	private final FolderTitleLookup _folderTitleLookup = Mockito.mock(
+		FolderTitleLookup.class);
 
 }

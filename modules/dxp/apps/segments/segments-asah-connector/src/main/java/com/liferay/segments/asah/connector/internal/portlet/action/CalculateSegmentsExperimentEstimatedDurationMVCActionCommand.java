@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.asah.connector.internal.portlet.action;
 
+import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
@@ -26,28 +18,27 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.asah.connector.internal.client.AsahFaroBackendClient;
 import com.liferay.segments.asah.connector.internal.client.AsahFaroBackendClientImpl;
-import com.liferay.segments.asah.connector.internal.client.JSONWebServiceClient;
 import com.liferay.segments.asah.connector.internal.client.model.util.ExperimentSettingsUtil;
-import com.liferay.segments.asah.connector.internal.util.AsahUtil;
 import com.liferay.segments.constants.SegmentsPortletKeys;
 import com.liferay.segments.model.SegmentsExperiment;
 import com.liferay.segments.model.SegmentsExperimentRel;
 import com.liferay.segments.service.SegmentsExperimentLocalService;
 import com.liferay.segments.service.SegmentsExperimentRelLocalService;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -58,9 +49,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author David Arques
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + SegmentsPortletKeys.SEGMENTS_EXPERIMENT,
+		"jakarta.portlet.name=" + SegmentsPortletKeys.SEGMENTS_EXPERIMENT,
 		"mvc.command.name=/calculate_segments_experiment_estimated_duration"
 	},
 	service = MVCActionCommand.class
@@ -71,7 +61,7 @@ public class CalculateSegmentsExperimentEstimatedDurationMVCActionCommand
 	@Activate
 	protected void activate() {
 		_asahFaroBackendClient = new AsahFaroBackendClientImpl(
-			_jsonWebServiceClient);
+			_analyticsSettingsManager, _http);
 	}
 
 	@Deactivate
@@ -104,21 +94,24 @@ public class CalculateSegmentsExperimentEstimatedDurationMVCActionCommand
 
 			jsonObject = JSONUtil.put(
 				"error",
-				LanguageUtil.get(
+				_language.get(
 					themeDisplay.getRequest(), "an-unexpected-error-occurred"));
 		}
 
-		hideDefaultSuccessMessage(actionRequest);
-
 		JSONPortletResponseUtil.writeJSON(
 			actionRequest, actionResponse, jsonObject);
+
+		hideDefaultSuccessMessage(actionRequest);
 	}
 
 	private Long _calculateSegmentsExperimentEstimatedDaysDuration(
-		double confidenceLevel, SegmentsExperiment segmentsExperiment,
-		Map<String, Double> segmentsExperienceKeySplitMap) {
+			double confidenceLevel, SegmentsExperiment segmentsExperiment,
+			Map<String, Double> segmentsExperienceKeySplitMap)
+		throws Exception {
 
-		if (!AsahUtil.isAnalyticsEnabled(segmentsExperiment.getCompanyId())) {
+		if (!_analyticsSettingsManager.isAnalyticsEnabled(
+				segmentsExperiment.getCompanyId())) {
+
 			return null;
 		}
 
@@ -149,7 +142,7 @@ public class CalculateSegmentsExperimentEstimatedDurationMVCActionCommand
 					actionRequest, "segmentsExperimentRels");
 
 				JSONObject segmentsExperimentRelsJSONObject =
-					JSONFactoryUtil.createJSONObject(segmentsExperimentRels);
+					_jsonFactory.createJSONObject(segmentsExperimentRels);
 
 				Iterator<String> iterator =
 					segmentsExperimentRelsJSONObject.keys();
@@ -178,10 +171,19 @@ public class CalculateSegmentsExperimentEstimatedDurationMVCActionCommand
 	private static final Log _log = LogFactoryUtil.getLog(
 		CalculateSegmentsExperimentEstimatedDurationMVCActionCommand.class);
 
+	@Reference
+	private AnalyticsSettingsManager _analyticsSettingsManager;
+
 	private AsahFaroBackendClient _asahFaroBackendClient;
 
 	@Reference
-	private JSONWebServiceClient _jsonWebServiceClient;
+	private Http _http;
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

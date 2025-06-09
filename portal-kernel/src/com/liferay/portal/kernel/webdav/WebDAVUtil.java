@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.webdav;
@@ -31,8 +22,9 @@ import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Time;
@@ -41,14 +33,14 @@ import com.liferay.portal.kernel.util.comparator.GroupFriendlyURLComparator;
 import com.liferay.portal.kernel.xml.Namespace;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -110,7 +102,7 @@ public class WebDAVUtil {
 
 		String destination = pathSegments[pathSegments.length - 1];
 
-		destination = HttpUtil.decodePath(destination);
+		destination = HttpComponentsUtil.decodePath(destination);
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("Destination " + destination);
@@ -166,15 +158,10 @@ public class WebDAVUtil {
 
 		// Guest
 
-		if (user.isDefaultUser()) {
-			List<Group> groups = new ArrayList<>();
-
-			Group group = GroupLocalServiceUtil.getGroup(
-				user.getCompanyId(), GroupConstants.GUEST);
-
-			groups.add(group);
-
-			return groups;
+		if (user.isGuestUser()) {
+			return ListUtil.fromArray(
+				GroupLocalServiceUtil.getGroup(
+					user.getCompanyId(), GroupConstants.GUEST));
 		}
 
 		// Communities
@@ -182,7 +169,7 @@ public class WebDAVUtil {
 		Set<Group> groups = new HashSet<>();
 
 		OrderByComparator<Group> orderByComparator =
-			new GroupFriendlyURLComparator(true);
+			GroupFriendlyURLComparator.getInstance(true);
 
 		groups.addAll(
 			GroupLocalServiceUtil.search(
@@ -200,7 +187,7 @@ public class WebDAVUtil {
 
 		// User
 
-		if (!user.isDefaultUser()) {
+		if (!user.isGuestUser()) {
 			groups.add(user.getGroup());
 		}
 
@@ -250,7 +237,7 @@ public class WebDAVUtil {
 	}
 
 	public static String[] getPathArray(String path, boolean fixTrailing) {
-		path = HttpUtil.fixPath(path, true, fixTrailing);
+		path = HttpComponentsUtil.fixPath(path, true, fixTrailing);
 
 		return StringUtil.split(path, CharPool.SLASH);
 	}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.web.internal.portlet.route;
@@ -35,7 +26,7 @@ import org.osgi.service.component.annotations.Component;
 @Component(
 	property = {
 		"com.liferay.portlet.friendly-url-routes=META-INF/friendly-url-routes/routes.xml",
-		"javax.portlet.name=" + WikiPortletKeys.WIKI
+		"jakarta.portlet.name=" + WikiPortletKeys.WIKI
 	},
 	service = FriendlyURLMapper.class
 )
@@ -47,8 +38,8 @@ public class WikiFriendlyURLMapper extends DefaultFriendlyURLMapper {
 
 		buildRouteParameters(liferayPortletURL, routeParameters);
 
-		addParameter(routeParameters, "nodeName", true);
-		addParameter(routeParameters, "title", true);
+		_addParameter(routeParameters, "nodeName", true);
+		_addParameter(routeParameters, "title", true);
 
 		String friendlyURLPath = router.parametersToUrl(routeParameters);
 
@@ -67,7 +58,18 @@ public class WikiFriendlyURLMapper extends DefaultFriendlyURLMapper {
 		return _MAPPING;
 	}
 
-	protected void addParameter(
+	@Override
+	protected void populateParams(
+		Map<String, String[]> parameterMap, String namespace,
+		Map<String, String> routeParameters) {
+
+		_addParameter(routeParameters, "nodeName", false);
+		_addParameter(routeParameters, "title", false);
+
+		super.populateParams(parameterMap, namespace, routeParameters);
+	}
+
+	private void _addParameter(
 		Map<String, String> routeParameters, String name, boolean escape) {
 
 		if (!routeParameters.containsKey(name)) {
@@ -84,17 +86,6 @@ public class WikiFriendlyURLMapper extends DefaultFriendlyURLMapper {
 		}
 
 		routeParameters.put(name, value);
-	}
-
-	@Override
-	protected void populateParams(
-		Map<String, String[]> parameterMap, String namespace,
-		Map<String, String> routeParameters) {
-
-		addParameter(routeParameters, "nodeName", false);
-		addParameter(routeParameters, "title", false);
-
-		super.populateParams(parameterMap, namespace, routeParameters);
 	}
 
 	private static final String _MAPPING = "wiki";

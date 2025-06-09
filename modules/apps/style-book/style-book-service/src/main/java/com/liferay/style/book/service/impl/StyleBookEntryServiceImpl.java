@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.service.impl;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
@@ -41,7 +33,36 @@ public class StyleBookEntryServiceImpl extends StyleBookEntryServiceBaseImpl {
 
 	@Override
 	public StyleBookEntry addStyleBookEntry(
-			long groupId, String name, String styleBookEntryKey,
+			String externalReferenceCode, long groupId, String name,
+			String styleBookEntryKey, String themeId,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		return addStyleBookEntry(
+			externalReferenceCode, groupId, StringPool.BLANK, name,
+			styleBookEntryKey, themeId, serviceContext);
+	}
+
+	@Override
+	public StyleBookEntry addStyleBookEntry(
+			String externalReferenceCode, long groupId,
+			String frontendTokensValues, String name, String styleBookEntryKey,
+			String themeId, ServiceContext serviceContext)
+		throws PortalException {
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), groupId,
+			StyleBookActionKeys.MANAGE_STYLE_BOOK_ENTRIES);
+
+		return styleBookEntryLocalService.addStyleBookEntry(
+			externalReferenceCode, getUserId(), groupId, false,
+			frontendTokensValues, name, styleBookEntryKey, themeId,
+			serviceContext);
+	}
+
+	@Override
+	public StyleBookEntry copyStyleBookEntry(
+			long groupId, long sourceStyleBookEntryId,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -49,36 +70,8 @@ public class StyleBookEntryServiceImpl extends StyleBookEntryServiceBaseImpl {
 			getPermissionChecker(), groupId,
 			StyleBookActionKeys.MANAGE_STYLE_BOOK_ENTRIES);
 
-		return styleBookEntryLocalService.addStyleBookEntry(
-			getUserId(), groupId, name, styleBookEntryKey, serviceContext);
-	}
-
-	@Override
-	public StyleBookEntry addStyleBookEntry(
-			long groupId, String frontendTokensValues, String name,
-			String styleBookEntryKey, ServiceContext serviceContext)
-		throws PortalException {
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), groupId,
-			StyleBookActionKeys.MANAGE_STYLE_BOOK_ENTRIES);
-
-		return styleBookEntryLocalService.addStyleBookEntry(
-			getUserId(), groupId, frontendTokensValues, name, styleBookEntryKey,
-			serviceContext);
-	}
-
-	@Override
-	public StyleBookEntry copyStyleBookEntry(
-			long groupId, long styleBookEntryId, ServiceContext serviceContext)
-		throws PortalException {
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), groupId,
-			StyleBookActionKeys.MANAGE_STYLE_BOOK_ENTRIES);
-
 		return styleBookEntryLocalService.copyStyleBookEntry(
-			getUserId(), groupId, styleBookEntryId, serviceContext);
+			getUserId(), groupId, sourceStyleBookEntryId, serviceContext);
 	}
 
 	@Override
@@ -87,6 +80,18 @@ public class StyleBookEntryServiceImpl extends StyleBookEntryServiceBaseImpl {
 
 		StyleBookEntry styleBookEntry =
 			styleBookEntryPersistence.findByPrimaryKey(styleBookEntryId);
+
+		return deleteStyleBookEntry(styleBookEntry);
+	}
+
+	@Override
+	public StyleBookEntry deleteStyleBookEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		StyleBookEntry styleBookEntry =
+			styleBookEntryPersistence.fetchByERC_G_Head(
+				externalReferenceCode, groupId, true);
 
 		return deleteStyleBookEntry(styleBookEntry);
 	}
@@ -114,6 +119,19 @@ public class StyleBookEntryServiceImpl extends StyleBookEntryServiceBaseImpl {
 			StyleBookActionKeys.MANAGE_STYLE_BOOK_ENTRIES);
 
 		return styleBookEntryLocalService.deleteDraft(styleBookEntry);
+	}
+
+	@Override
+	public StyleBookEntry getStyleBookEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), groupId,
+			StyleBookActionKeys.MANAGE_STYLE_BOOK_ENTRIES);
+
+		return styleBookEntryPersistence.findByERC_G_Head(
+			externalReferenceCode, groupId, true);
 	}
 
 	@Override

@@ -1,16 +1,17 @@
-@component-name = "portal-document-management"
+@component-name = "portal-content-management"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Depot";
+	property testray.main.component.name = "Asset Libraries";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
 
-		JSONGroup.addGroup(groupName = "Site Name");
+		HeadlessSite.addSite(siteName = "Site Name");
 
 		JSONDepot.addDepot(
 			depotDescription = "This is the description of a depot",
@@ -18,9 +19,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -33,7 +34,7 @@ definition {
 	}
 
 	@description = "This ensures that a user can select depot web content from different repositories through WCD on a connected site."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanChangeWCDSelection {
 		JSONLayout.addPublicLayout(
@@ -63,7 +64,7 @@ definition {
 
 		for (var depotName : list "Test Depot Name,Test Depot Name 2") {
 			JSONDepot.connectSite(
-				depotName = "${depotName}",
+				depotName = ${depotName},
 				groupName = "Site Name");
 		}
 
@@ -79,7 +80,7 @@ definition {
 			pageName = "Test New Page Name",
 			siteName = "Site Name");
 
-		WebContentDisplayPortlet.changeWebContent(
+		WebContentDisplayPortlet.selectWebContent(
 			depotName = "Test Depot Name 2",
 			webContentTitle = "WC WebContent Title 2");
 
@@ -87,11 +88,13 @@ definition {
 			pageName = "Test New Page Name",
 			siteName = "Site Name");
 
-		WebContent.viewPGViaWCD(webContentContent = "WC WebContent Depot 2");
+		WebContentDisplayPortlet.viewContent(
+			webContentContent = "WC WebContent Depot 2",
+			webContentTitle = "WC WebContent Title 2");
 	}
 
 	@description = "This ensures that web content using a structure stored in AL can be removed on a connected site."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanRemoveCustomizedWC {
 		DepotNavigator.openDepotWebContentStructuresAdmin(depotName = "Test Depot Name");
@@ -152,7 +155,7 @@ definition {
 	}
 
 	@description = "This test covers LPS-117063 and LPS-117068. It ensures that web content using a structure stored in AL can be selected without NPE throwing and removed from the disconnected site."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanRemoveCustomizedWCFromDisconnectedSite {
 		JSONDepot.addDepot(
@@ -204,13 +207,13 @@ definition {
 			webContentText = "Text",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		DepotNavigator.openDepotAdmin();
 
 		Depot.configureDDMStructures(
 			depotName = "Test Remove Customized WC Depot Name",
-			makeWCUnavailable = "true",
+			makeWcUnavailable = "true",
 			siteName = "Site Name",
 			tableEntryText = "No");
 
@@ -237,7 +240,7 @@ definition {
 	}
 
 	@description = "This test covers LPS-118395. It ensures that a web content in a depot can be selected through the page template."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanSelectDepotContentViaPageTemplate {
 		JSONWebcontent.addWebContent(
@@ -267,15 +270,19 @@ definition {
 
 		PageTemplatesAdmin.gotoPageTemplate(pageTemplateName = "Page Template Name");
 
+		Refresh();
+
+		WaitForPageLoad();
+
 		Portlet.addPG(portletName = "Web Content Display");
 
 		WebContentDisplayPortlet.selectWebContent(
 			depotName = "Test Depot Name",
 			webContentTitle = "WC Depot WebContent");
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name");
 
-		SitePages.addPublicPage(
+		PagesAdmin.addPage(
 			collectionName = "Page Template Collection",
 			pageName = "Page Name",
 			pageTemplateName = "Page Template Name");
@@ -284,11 +291,13 @@ definition {
 			pageName = "Page Name",
 			siteName = "Site Name");
 
-		WebContent.viewPGViaWCD(webContentContent = "WC WebContent Content");
+		WebContentDisplayPortlet.viewContent(
+			webContentContent = "WC WebContent Content",
+			webContentTitle = "WC Depot WebContent");
 	}
 
 	@description = "This test covers LPS-105119. It ensures that a web content in a depot can be selected through the field."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanSelectDepotContentViaWebContentField {
 		JSONLayout.addPublicLayout(
@@ -327,7 +336,7 @@ definition {
 			templateFieldNames = "Web Content",
 			templateName = "WC Template Name");
 
-		DDLDataDefinition.save();
+		PortletEntry.save();
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
 
@@ -341,7 +350,7 @@ definition {
 			webContentTitle = "WC WebContent Title",
 			webContentWebContent = "WC Depot WebContent");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		JSONLayout.addWidgetToPublicLayout(
 			groupName = "Site Name",
@@ -358,11 +367,13 @@ definition {
 			pageName = "Page Name",
 			siteName = "Site Name");
 
-		WebContent.viewPGViaWCD(webContentContent = "WC Depot WebContent");
+		WebContentDisplayPortlet.viewContent(
+			webContentContent = "WC Depot WebContent",
+			webContentTitle = "WC WebContent Title");
 	}
 
 	@description = "This ensures that a depot web content can be selected through the fragment in a content page on a connected site."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanSelectFromFragmentInContentPage {
 		JSONDepot.addDepot(
@@ -379,7 +390,7 @@ definition {
 			depotName = "Test Fragment Depot Name",
 			groupName = "Site Name");
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name");
 
 		ContentPages.addPage(pageName = "Test Content Page Name");
 
@@ -394,7 +405,7 @@ definition {
 			webContentContent = "WC WebContent Depot",
 			webContentTitle = "WC WebContent Title");
 
-		PageEditor.clickPublish();
+		PageEditor.publish();
 
 		Navigator.openWithAppendToBaseURL(urlAppend = "web/site-name/test-content-page-name");
 
@@ -404,7 +415,7 @@ definition {
 	}
 
 	@description = "This ensures that a depot web content can be selected through the fragment in a display page template on a connected site."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanSelectFromFragmentInDisplayPageTemplate {
 		JSONWebcontent.addWebContent(
@@ -435,7 +446,7 @@ definition {
 			webContentContent = "WC WebContent Depot",
 			webContentTitle = "WC WebContent Title");
 
-		PageEditor.clickPublish();
+		PageEditor.publish();
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
 
@@ -449,7 +460,7 @@ definition {
 			pageName = "Display Page Name",
 			pageType = "Display Page Templates");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Navigator.openWithAppendToBaseURL(urlAppend = "web/site-name/w/webcontent-title");
 
@@ -459,7 +470,7 @@ definition {
 	}
 
 	@description = "This ensures that a depot web content can be selected through WCD on a connected site."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanSelectFromWCD {
 		JSONWebcontent.addWebContent(
@@ -493,11 +504,13 @@ definition {
 			pageName = "Test Page",
 			siteName = "Site Name");
 
-		WebContent.viewPGViaWCD(webContentContent = "WC WebContent Depot");
+		WebContentDisplayPortlet.viewContent(
+			webContentContent = "WC WebContent Depot",
+			webContentTitle = "WC WebContent Title");
 	}
 
 	@description = "This ensures that a depot web content can be selected through WCD in a content page on a connected site."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanSelectFromWidgetInContentPage {
 		JSONWebcontent.addWebContent(
@@ -510,26 +523,27 @@ definition {
 			depotName = "Test Depot Name",
 			groupName = "Site Name");
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name");
 
 		ContentPages.addPage(pageName = "Test Content Page Name");
 
 		PageEditor.addWidget(portletName = "Web Content Display");
 
 		WebContentDisplayPortlet.selectWebContent(
-			contentPage = "true",
 			depotName = "Test Depot Name",
 			webContentTitle = "WC WebContent Title");
 
-		PageEditor.clickPublish();
+		IFrame.closeFrame();
+
+		PageEditor.publish();
 
 		Navigator.openWithAppendToBaseURL(urlAppend = "web/site-name/test-content-page-name");
 
-		WebContent.viewPGViaWCD(webContentContent = "WC WebContent Depot");
+		WebContentDisplayPortlet.viewContent(webContentContent = "WC WebContent Depot");
 	}
 
 	@description = "This ensures that a depot web content can be selected through WCD in a display page template on a connected site."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanSelectFromWidgetInDisplayPageTemplate {
 		JSONWebcontent.addWebContent(
@@ -552,17 +566,16 @@ definition {
 		PageEditor.addWidget(portletName = "Web Content Display");
 
 		WebContentDisplayPortlet.selectWebContent(
-			contentPage = "true",
 			depotName = "Test Depot Name",
 			webContentTitle = "WC WebContent Title");
 
-		Refresh();
+		IFrame.closeFrame();
 
-		WebContent.viewPGViaWCD(webContentContent = "WC WebContent Depot");
+		WebContentDisplayPortlet.viewContent(webContentContent = "WC WebContent Depot");
 	}
 
 	@description = "This ensures that a user can use a structure stored in AL to create a template on a connected site."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanSelectStructureInDepotViaTemplateOnSite {
 		JSONDepot.connectSite(
@@ -597,9 +610,16 @@ definition {
 	}
 
 	@description = "This ensures that a user can use structures stored in AL to create articles and display them in AP on a connected site."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanViewCustomizedWCInAP {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
+
 		JSONLayout.addPublicLayout(
 			groupName = "Site Name",
 			layoutName = "Page Name");
@@ -658,7 +678,7 @@ definition {
 				webContentText = "Text${count}",
 				webContentTitle = "Web Content Title${count}");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		JSONLayout.addWidgetToPublicLayout(
@@ -676,9 +696,12 @@ definition {
 	}
 
 	@description = "This ensures that a user can use a structure stored in AL to create an article and display it in WCD on a connected site."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanViewCustomizedWCInWCD {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
 		JSONLayout.addPublicLayout(
 			groupName = "Site Name",
 			layoutName = "Page Name");
@@ -730,7 +753,7 @@ definition {
 			webContentText = "Web Content Text",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		JSONLayout.addWidgetToPublicLayout(
 			groupName = "Site Name",
@@ -747,11 +770,11 @@ definition {
 			pageName = "Page Name",
 			siteName = "Site Name");
 
-		WebContent.viewPGViaWCD(webContentContent = "Web Content Text");
+		WebContentDisplayPortlet.viewContent(webContentContent = "Web Content Text");
 	}
 
 	@description = "This ensures that a user can see information of WC structure from more iframe about which AL owns it."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewStructuresScopeList {
 		for (var i : list "1,2,3") {

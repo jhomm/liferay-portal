@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import addItem from '../../actions/addItem';
@@ -17,21 +8,28 @@ import LayoutService from '../../services/LayoutService';
 import getFragmentEntryLinkIdsFromItemId from '../../utils/getFragmentEntryLinkIdsFromItemId';
 
 function undoAction({action, store}) {
-	const {itemId, portletIds} = action;
+	const {itemIds, portletIds} = action;
 
 	return (dispatch) => {
-		return LayoutService.unmarkItemForDeletion({
-			itemId,
+		return LayoutService.unmarkItemsForDeletion({
+			itemIds,
 			onNetworkStatus: dispatch,
 			segmentsExperienceId: store.segmentsExperienceId,
 		}).then(({layoutData}) => {
-			const fragmentEntryLinkIds = getFragmentEntryLinkIdsFromItemId({
-				itemId,
-				layoutData,
-			});
+			const fragmentEntryLinkIds = itemIds.flatMap((itemId) =>
+				getFragmentEntryLinkIdsFromItemId({
+					itemId,
+					layoutData,
+				})
+			);
 
 			dispatch(
-				addItem({fragmentEntryLinkIds, itemId, layoutData, portletIds})
+				addItem({
+					fragmentEntryLinkIds,
+					itemIds,
+					layoutData,
+					portletIds,
+				})
 			);
 		});
 	};
@@ -39,7 +37,7 @@ function undoAction({action, store}) {
 
 function getDerivedStateForUndo({action}) {
 	return {
-		itemId: action.itemId,
+		itemIds: action.itemIds,
 		portletIds: action.portletIds,
 	};
 }

@@ -1,28 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {
-	cleanup,
-	fireEvent,
-	render,
-	waitForElement,
-} from '@testing-library/react';
+import {fireEvent, render} from '@testing-library/react';
 import React from 'react';
 import {act} from 'react-dom/test-utils';
 
-import Flags from '../../../src/main/resources/META-INF/resources/flags/js/components/Flags.es';
+import Flags from '../../../src/main/resources/META-INF/resources/flags/js/components/Flags';
 
 const formDataToObject = (formData) =>
 	Array.from(formData).reduce(
@@ -63,13 +49,11 @@ function _renderFlagsComponent({
 }
 
 describe('Flags', () => {
-	afterEach(cleanup);
-
 	it('renders', () => {
 		const {getByRole, getByText} = _renderFlagsComponent();
 
-		expect(getByText('report'));
-		expect(getByRole('button'));
+		expect(getByText('report')).toBeTruthy();
+		expect(getByRole('button')).toBeTruthy();
 	});
 
 	it('renders with only icon visible (text visually hidden)', () => {
@@ -85,24 +69,25 @@ describe('Flags', () => {
 	});
 
 	it('submits a report successfully with baseData', async () => {
-		const {getByRole} = _renderFlagsComponent({
+		const {findByRole, getByRole} = _renderFlagsComponent({
 			baseData: {
 				testingField: 'testingValue',
 			},
 		});
+
 		fetch.mockResponse('');
 
 		await act(async () => {
 			fireEvent.click(getByRole('button'));
-
-			const form = await waitForElement(() => getByRole('form'));
-
-			[...form.elements].forEach((element) => {
-				element.value = 'someValue';
-			});
-
-			fireEvent.submit(form);
 		});
+
+		const form = await findByRole('form');
+
+		[...form.elements].forEach((element) => {
+			element.value = 'someValue';
+		});
+
+		fireEvent.submit(form);
 
 		expect(fetch).toHaveBeenCalledTimes(1);
 

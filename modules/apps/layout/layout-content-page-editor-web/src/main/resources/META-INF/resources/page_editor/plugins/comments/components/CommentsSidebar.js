@@ -1,96 +1,62 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {useSessionState} from 'frontend-js-components-web';
 import React from 'react';
 
 import {HIGHLIGHTED_COMMENT_ID_KEY} from '../../../app/config/constants/highlightedCommentIdKey';
 import {LAYOUT_DATA_ITEM_TYPES} from '../../../app/config/constants/layoutDataItemTypes';
-import {
-	useActiveItemId,
-	useSelectItem,
-} from '../../../app/contexts/ControlsContext';
-import {useSelector} from '../../../app/contexts/StoreContext';
+import {useActiveItemIds} from '../../../app/contexts/ControlsContext';
+import {useSelectorCallback} from '../../../app/contexts/StoreContext';
+import MultiSelectMessage from '../../../common/components/MultiSelectMessage';
 import FragmentComments from './FragmentComments';
 import FragmentEntryLinksWithComments from './FragmentEntryLinksWithComments';
 
-function getActiveFragmentEntryLink({
-	fragmentEntryLinks,
-	highlightMessageId,
-	itemId,
-	layoutData,
-}) {
-	if (highlightMessageId) {
-		return Object.values(fragmentEntryLinks).find((fragmentEntryLink) =>
-			fragmentEntryLink.comments.some(
-				(comment) =>
-					comment.commentId === highlightMessageId ||
-					comment.children?.some(
-						(childComment) =>
-							childComment.commentId === highlightMessageId
-					)
-			)
-		);
+export default function CommentsSidebar() {
+	const activeItemIds = useActiveItemIds();
+
+	if (activeItemIds.length > 1) {
+		return <MultiSelectMessage />;
 	}
 	else {
-		const item = layoutData.items[itemId];
-
-		if (item) {
-			if (item.type === LAYOUT_DATA_ITEM_TYPES.fragment) {
-				return fragmentEntryLinks[item.config.fragmentEntryLinkId];
-			}
-			else if (item.parentId) {
-				return getActiveFragmentEntryLink({
-					fragmentEntryLinks,
-					itemId: item.parentId,
-					layoutData,
-				});
-			}
-		}
+		return <CommentsSidebarContent activeItemId={activeItemIds[0]} />;
 	}
-
-	return null;
 }
 
-export default function CommentsSidebar() {
-	const fragmentEntryLinks = useSelector((state) => state.fragmentEntryLinks);
-	const layoutData = useSelector((state) => state.layoutData);
+function CommentsSidebarContent({activeItemId}) {
+	const [highlightedMessageId] = useSessionState(HIGHLIGHTED_COMMENT_ID_KEY);
 
-	const activeItemId = useActiveItemId();
-	const selectItem = useSelectItem();
+	const activeFragmentEntryLink = useSelectorCallback(
+		(state) => {
+			const getActiveFragmentEntryLink = (itemId) => {
+				const item = state.layoutData.items[itemId];
 
-	const highlightMessageId = window.sessionStorage.getItem(
-		HIGHLIGHTED_COMMENT_ID_KEY
+				if (item) {
+					if (item.type === LAYOUT_DATA_ITEM_TYPES.fragment) {
+						return (
+							state.fragmentEntryLinks[
+								item.config.fragmentEntryLinkId
+							] || null
+						);
+					}
+					else if (item.parentId) {
+						return getActiveFragmentEntryLink(item.parentId);
+					}
+				}
+
+				return null;
+			};
+
+			return getActiveFragmentEntryLink(activeItemId);
+		},
+		[activeItemId, highlightedMessageId]
 	);
-
-	const activeFragmentEntryLink = getActiveFragmentEntryLink({
-		fragmentEntryLinks,
-		highlightMessageId,
-		itemId: activeItemId,
-		layoutData,
-	});
-
-	if (highlightMessageId && activeFragmentEntryLink) {
-		const activeItem = Object.values(layoutData.items).find(
-			(item) =>
-				item.config.fragmentEntryLinkId ===
-				activeFragmentEntryLink.fragmentEntryLinkId
-		);
-		selectItem(activeItem.itemId);
-	}
 
 	return (
 		<div
+			className="d-flex flex-column"
 			onMouseDown={(event) =>
 				event.nativeEvent.stopImmediatePropagation()
 			}

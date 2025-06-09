@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.auth;
 
+import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
@@ -35,11 +27,11 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.SecurityPortletContainerWrapper;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * @author Amos Fong
@@ -76,7 +68,24 @@ public class SessionAuthToken implements AuthToken {
 			return;
 		}
 
+		long plid = liferayPortletURL.getPlid();
 		String portletId = liferayPortletURL.getPortletId();
+
+		String key = PortletPermissionUtil.getPrimaryKey(plid, portletId);
+
+		Object sessionAuthenticationToken = _getSessionAuthenticationToken(
+			httpServletRequest, key, false);
+
+		if (sessionAuthenticationToken == _NULL_TOKEN) {
+			return;
+		}
+
+		if (sessionAuthenticationToken instanceof String) {
+			liferayPortletURL.setParameter(
+				"p_p_auth", (String)sessionAuthenticationToken);
+
+			return;
+		}
 
 		Portlet portlet = PortletLocalServiceUtil.getPortletById(
 			PortalUtil.getCompanyId(httpServletRequest), portletId);
@@ -85,25 +94,34 @@ public class SessionAuthToken implements AuthToken {
 			AuthTokenWhitelistUtil.isPortletURLPortletInvocationWhitelisted(
 				liferayPortletURL)) {
 
+			_setNullSessionAuthenticationToken(httpServletRequest, key);
+
 			return;
 		}
 
-		long plid = liferayPortletURL.getPlid();
+		boolean skipMerge = MergeLayoutPrototypesThreadLocal.isSkipMerge();
 
 		try {
+			MergeLayoutPrototypesThreadLocal.setSkipMerge(true);
+
 			Layout layout = LayoutLocalServiceUtil.getLayout(plid);
 
 			LayoutTypePortlet layoutTypePortlet =
 				(LayoutTypePortlet)layout.getLayoutType();
 
 			if (layoutTypePortlet.hasPortletId(portletId)) {
+				_setNullSessionAuthenticationToken(httpServletRequest, key);
+
 				return;
 			}
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception.getMessage(), exception);
+				_log.debug(exception);
 			}
+		}
+		finally {
+			MergeLayoutPrototypesThreadLocal.setSkipMerge(skipMerge);
 		}
 
 		liferayPortletURL.setParameter(
@@ -222,19 +240,34 @@ public class SessionAuthToken implements AuthToken {
 		HttpServletRequest httpServletRequest, String key,
 		boolean createToken) {
 
-		String sessionAuthenticationToken = null;
+		Object sessionAuthenticationToken = _getSessionAuthenticationToken(
+			httpServletRequest, key, createToken);
 
+		if (sessionAuthenticationToken instanceof String) {
+			return (String)sessionAuthenticationToken;
+		}
+
+		return null;
+	}
+
+	private Object _getSessionAuthenticationToken(
+		HttpServletRequest httpServletRequest, String key,
+		boolean createToken) {
+
+		Object sessionAuthenticationToken = null;
+
+		String authenticationTokenKey = WebKeys.AUTHENTICATION_TOKEN.concat(
+			key);
 		HttpServletRequest currentHttpServletRequest = httpServletRequest;
 		HttpSession httpSession = null;
-		String tokenKey = WebKeys.AUTHENTICATION_TOKEN.concat(key);
 
 		while (currentHttpServletRequest instanceof HttpServletRequestWrapper) {
 			httpSession = currentHttpServletRequest.getSession();
 
-			sessionAuthenticationToken = (String)httpSession.getAttribute(
-				tokenKey);
+			sessionAuthenticationToken = httpSession.getAttribute(
+				authenticationTokenKey);
 
-			if (Validator.isNotNull(sessionAuthenticationToken)) {
+			if (sessionAuthenticationToken != null) {
 				break;
 			}
 
@@ -245,24 +278,44 @@ public class SessionAuthToken implements AuthToken {
 				(HttpServletRequest)httpServletRequestWrapper.getRequest();
 		}
 
-		if (Validator.isNull(sessionAuthenticationToken)) {
+		if (sessionAuthenticationToken == null) {
 			httpSession = currentHttpServletRequest.getSession();
 
-			sessionAuthenticationToken = (String)httpSession.getAttribute(
-				tokenKey);
+			sessionAuthenticationToken = httpSession.getAttribute(
+				authenticationTokenKey);
 		}
 
-		if (createToken && Validator.isNull(sessionAuthenticationToken)) {
+		if (createToken &&
+			((sessionAuthenticationToken == null) ||
+			 (sessionAuthenticationToken == _NULL_TOKEN))) {
+
 			sessionAuthenticationToken = PwdGenerator.getPassword(
 				PropsValues.AUTH_TOKEN_LENGTH);
 
-			httpSession.setAttribute(tokenKey, sessionAuthenticationToken);
+			httpSession.setAttribute(
+				authenticationTokenKey, sessionAuthenticationToken);
 		}
 
 		return sessionAuthenticationToken;
 	}
 
+	private void _setNullSessionAuthenticationToken(
+		HttpServletRequest httpServletRequest, String key) {
+
+		HttpServletRequest originalHttpServletRequest =
+			PortalUtil.getOriginalServletRequest(httpServletRequest);
+
+		HttpSession httpSession = originalHttpServletRequest.getSession();
+
+		String authenticationTokenKey = WebKeys.AUTHENTICATION_TOKEN.concat(
+			key);
+
+		httpSession.setAttribute(authenticationTokenKey, _NULL_TOKEN);
+	}
+
 	private static final String _CSRF = "#CSRF";
+
+	private static final byte[] _NULL_TOKEN = new byte[0];
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SessionAuthToken.class);

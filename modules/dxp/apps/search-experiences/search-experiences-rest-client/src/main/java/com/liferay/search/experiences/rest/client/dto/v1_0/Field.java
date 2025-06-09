@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.client.dto.v1_0;
@@ -17,11 +8,11 @@ package com.liferay.search.experiences.rest.client.dto.v1_0;
 import com.liferay.search.experiences.rest.client.function.UnsafeSupplier;
 import com.liferay.search.experiences.rest.client.serdes.v1_0.FieldSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Brian Wing Shun Chan
@@ -34,26 +25,47 @@ public class Field implements Cloneable, Serializable {
 		return FieldSerDes.toDTO(json);
 	}
 
-	public Boolean getBoost() {
-		return boost;
+	public Object getDefaultValue() {
+		return defaultValue;
 	}
 
-	public void setBoost(Boolean boost) {
-		this.boost = boost;
+	public void setDefaultValue(Object defaultValue) {
+		this.defaultValue = defaultValue;
 	}
 
-	public void setBoost(
-		UnsafeSupplier<Boolean, Exception> boostUnsafeSupplier) {
+	public void setDefaultValue(
+		UnsafeSupplier<Object, Exception> defaultValueUnsafeSupplier) {
 
 		try {
-			boost = boostUnsafeSupplier.get();
+			defaultValue = defaultValueUnsafeSupplier.get();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	protected Boolean boost;
+	protected Object defaultValue;
+
+	public FieldMapping[] getFieldMappings() {
+		return fieldMappings;
+	}
+
+	public void setFieldMappings(FieldMapping[] fieldMappings) {
+		this.fieldMappings = fieldMappings;
+	}
+
+	public void setFieldMappings(
+		UnsafeSupplier<FieldMapping[], Exception> fieldMappingsUnsafeSupplier) {
+
+		try {
+			fieldMappings = fieldMappingsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected FieldMapping[] fieldMappings;
 
 	public String getHelpText() {
 		return helpText;
@@ -76,6 +88,27 @@ public class Field implements Cloneable, Serializable {
 
 	protected String helpText;
 
+	public String getHelpTextLocalized() {
+		return helpTextLocalized;
+	}
+
+	public void setHelpTextLocalized(String helpTextLocalized) {
+		this.helpTextLocalized = helpTextLocalized;
+	}
+
+	public void setHelpTextLocalized(
+		UnsafeSupplier<String, Exception> helpTextLocalizedUnsafeSupplier) {
+
+		try {
+			helpTextLocalized = helpTextLocalizedUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String helpTextLocalized;
+
 	public String getLabel() {
 		return label;
 	}
@@ -97,6 +130,27 @@ public class Field implements Cloneable, Serializable {
 
 	protected String label;
 
+	public String getLabelLocalized() {
+		return labelLocalized;
+	}
+
+	public void setLabelLocalized(String labelLocalized) {
+		this.labelLocalized = labelLocalized;
+	}
+
+	public void setLabelLocalized(
+		UnsafeSupplier<String, Exception> labelLocalizedUnsafeSupplier) {
+
+		try {
+			labelLocalized = labelLocalizedUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String labelLocalized;
+
 	public String getName() {
 		return name;
 	}
@@ -116,151 +170,45 @@ public class Field implements Cloneable, Serializable {
 
 	protected String name;
 
-	public Boolean getNullable() {
-		return nullable;
+	public String getType() {
+		return type;
 	}
 
-	public void setNullable(Boolean nullable) {
-		this.nullable = nullable;
+	public void setType(String type) {
+		this.type = type;
 	}
 
-	public void setNullable(
-		UnsafeSupplier<Boolean, Exception> nullableUnsafeSupplier) {
-
+	public void setType(UnsafeSupplier<String, Exception> typeUnsafeSupplier) {
 		try {
-			nullable = nullableUnsafeSupplier.get();
+			type = typeUnsafeSupplier.get();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	protected Boolean nullable;
+	protected String type;
 
-	public Option[] getOptions() {
-		return options;
+	public TypeOptions getTypeOptions() {
+		return typeOptions;
 	}
 
-	public void setOptions(Option[] options) {
-		this.options = options;
+	public void setTypeOptions(TypeOptions typeOptions) {
+		this.typeOptions = typeOptions;
 	}
 
-	public void setOptions(
-		UnsafeSupplier<Option[], Exception> optionsUnsafeSupplier) {
+	public void setTypeOptions(
+		UnsafeSupplier<TypeOptions, Exception> typeOptionsUnsafeSupplier) {
 
 		try {
-			options = optionsUnsafeSupplier.get();
+			typeOptions = typeOptionsUnsafeSupplier.get();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	protected Option[] options;
-
-	public Boolean getRequired() {
-		return required;
-	}
-
-	public void setRequired(Boolean required) {
-		this.required = required;
-	}
-
-	public void setRequired(
-		UnsafeSupplier<Boolean, Exception> requiredUnsafeSupplier) {
-
-		try {
-			required = requiredUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected Boolean required;
-
-	public String getUiType() {
-		return uiType;
-	}
-
-	public void setUiType(String uiType) {
-		this.uiType = uiType;
-	}
-
-	public void setUiType(
-		UnsafeSupplier<String, Exception> uiTypeUnsafeSupplier) {
-
-		try {
-			uiType = uiTypeUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected String uiType;
-
-	public String getUnit() {
-		return unit;
-	}
-
-	public void setUnit(String unit) {
-		this.unit = unit;
-	}
-
-	public void setUnit(UnsafeSupplier<String, Exception> unitUnsafeSupplier) {
-		try {
-			unit = unitUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected String unit;
-
-	public String getUnitSuffix() {
-		return unitSuffix;
-	}
-
-	public void setUnitSuffix(String unitSuffix) {
-		this.unitSuffix = unitSuffix;
-	}
-
-	public void setUnitSuffix(
-		UnsafeSupplier<String, Exception> unitSuffixUnsafeSupplier) {
-
-		try {
-			unitSuffix = unitSuffixUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected String unitSuffix;
-
-	public ValueDefinition getValueDefinition() {
-		return valueDefinition;
-	}
-
-	public void setValueDefinition(ValueDefinition valueDefinition) {
-		this.valueDefinition = valueDefinition;
-	}
-
-	public void setValueDefinition(
-		UnsafeSupplier<ValueDefinition, Exception>
-			valueDefinitionUnsafeSupplier) {
-
-		try {
-			valueDefinition = valueDefinitionUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected ValueDefinition valueDefinition;
+	protected TypeOptions typeOptions;
 
 	@Override
 	public Field clone() throws CloneNotSupportedException {

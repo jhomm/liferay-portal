@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayLoadingIndicator from '@clayui/loading-indicator';
+import {FDS_EVENT} from '@liferay/frontend-data-set-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useState} from 'react';
 
 import AJAX from '../../utilities/AJAX/index';
-import {DATASET_DISPLAY_UPDATED} from '../../utilities/eventsDefinitions';
 
+import './summary.scss';
 function SummaryItemDividerVariant() {
 	return (
 		<div className="col-12">
@@ -51,10 +43,14 @@ function SummaryItemBigVariant(props) {
 	return (
 		<>
 			<div className="col-6 col-md-9">
-				<h4 className="my-2 summary-table-item-big">{props.label}</h4>
+				<div className="h4 my-2 summary-table-item-big">
+					{props.label}
+				</div>
 			</div>
 			<div className="col-6 col-md-3">
-				<h4 className="my-2 summary-table-item-big">{props.value}</h4>
+				<div className="h4 my-2 summary-table-item-big">
+					{props.value}
+				</div>
 			</div>
 		</>
 	);
@@ -80,21 +76,16 @@ SummaryItemDangerVariant.propTypes = baseItemDefaultProps;
 function SummaryItem(props) {
 	const {style, ...itemProps} = props;
 
-	let ItemVariant;
+	let ItemVariant = SummaryItemBase;
 
-	switch (style) {
-		case 'big':
-			ItemVariant = SummaryItemBigVariant;
-			break;
-		case 'divider':
-			ItemVariant = SummaryItemDividerVariant;
-			break;
-		case 'danger':
-			ItemVariant = SummaryItemDangerVariant;
-			break;
-		default:
-			ItemVariant = SummaryItemBase;
-			break;
+	if (style === 'big') {
+		ItemVariant = SummaryItemBigVariant;
+	}
+	else if (style === 'danger') {
+		ItemVariant = SummaryItemDangerVariant;
+	}
+	else if (style === 'divider') {
+		ItemVariant = SummaryItemDividerVariant;
 	}
 
 	return <ItemVariant {...itemProps} />;
@@ -107,12 +98,12 @@ SummaryItem.propTypes = {
 function Summary({
 	apiUrl,
 	dataMapper,
-	datasetDisplayId,
+	dataSetDisplayId,
 	isLoading,
 	items = [],
 	summaryData,
 }) {
-	const [summaryItems, updateSummaryItems] = useState(items);
+	const [summaryItems, setSummaryItems] = useState(items);
 
 	const mapDataToLayout = useCallback(
 		(data) => (typeof dataMapper === 'function' ? dataMapper(data) : data),
@@ -121,30 +112,30 @@ function Summary({
 
 	const refreshData = useCallback(
 		({id = null}) => {
-			if (!id || datasetDisplayId !== id) {
+			if (!id || dataSetDisplayId !== id) {
 				return AJAX.GET(apiUrl).then((data) =>
-					updateSummaryItems(mapDataToLayout(data))
+					setSummaryItems(mapDataToLayout(data))
 				);
 			}
 		},
-		[apiUrl, datasetDisplayId, mapDataToLayout]
+		[apiUrl, dataSetDisplayId, mapDataToLayout]
 	);
 
 	useEffect(() => {
-		if (!!apiUrl && !!datasetDisplayId) {
-			Liferay.on(DATASET_DISPLAY_UPDATED, refreshData);
+		if (!!apiUrl && !!dataSetDisplayId) {
+			Liferay.on(FDS_EVENT.DISPLAY_UPDATED, refreshData);
 
 			refreshData({});
 
-			return () => Liferay.detach(DATASET_DISPLAY_UPDATED, refreshData);
+			return () => Liferay.detach(FDS_EVENT.DISPLAY_UPDATED, refreshData);
 		}
 
 		return () => {};
-	}, [apiUrl, datasetDisplayId, refreshData]);
+	}, [apiUrl, dataSetDisplayId, refreshData]);
 
 	useEffect(() => {
-		if (!!summaryData && Object.keys(summaryData).length > 0) {
-			updateSummaryItems(mapDataToLayout(summaryData));
+		if (!!summaryData && !!Object.keys(summaryData).length) {
+			setSummaryItems(mapDataToLayout(summaryData));
 		}
 
 		return () => {};
@@ -212,7 +203,7 @@ Summary.defaultProps = {
 Summary.propTypes = {
 	apiUrl: PropTypes.string,
 	dataMapper: PropTypes.func,
-	datasetDisplayId: PropTypes.string,
+	dataSetDisplayId: PropTypes.string,
 	isLoading: PropTypes.bool,
 	items: PropTypes.array,
 	summaryData: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),

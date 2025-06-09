@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.defaults.internal;
 
 import com.liferay.gradle.plugins.defaults.internal.util.FileUtil;
 import com.liferay.gradle.plugins.defaults.internal.util.GradleUtil;
-import com.liferay.gradle.plugins.defaults.tasks.WriteFindBugsProjectTask;
+import com.liferay.gradle.plugins.defaults.task.WriteFindBugsProjectTask;
 import com.liferay.gradle.plugins.jasper.jspc.CompileJSPTask;
 import com.liferay.gradle.plugins.jasper.jspc.JspCPlugin;
 
@@ -42,6 +33,7 @@ import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.JavaBasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.provider.Property;
 import org.gradle.api.reporting.ReportingExtension;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.JavaExec;
@@ -154,7 +146,7 @@ public class FindSecurityBugsPlugin implements Plugin<Project> {
 				public void execute(DependencySet dependencySet) {
 					GradleUtil.addDependency(
 						project, FIND_SECURITY_BUGS_CONFIGURATION_NAME,
-						"com.google.code.findbugs", "findbugs", "3.0.1");
+						"com.github.spotbugs", "spotbugs", "4.9.3");
 				}
 
 			});
@@ -342,6 +334,11 @@ public class FindSecurityBugsPlugin implements Plugin<Project> {
 
 						});
 
+					Property<String> mainClass =
+						findSecurityBugsJavaExec.getMainClass();
+
+					mainClass.set("edu.umd.cs.findbugs.FindBugs2");
+
 					findSecurityBugsJavaExec.setClasspath(
 						findSecurityBugsConfiguration);
 					findSecurityBugsJavaExec.setDebug(
@@ -351,8 +348,6 @@ public class FindSecurityBugsPlugin implements Plugin<Project> {
 					findSecurityBugsJavaExec.setGroup(
 						JavaBasePlugin.VERIFICATION_GROUP);
 					findSecurityBugsJavaExec.setIgnoreExitValue(true);
-					findSecurityBugsJavaExec.setMain(
-						"edu.umd.cs.findbugs.FindBugs2");
 
 					findSecurityBugsJavaExec.systemProperty(
 						"findsecbugs.injection.customconfigfile." +
@@ -456,7 +451,7 @@ public class FindSecurityBugsPlugin implements Plugin<Project> {
 	private void _configureTaskWriteFindBugsProjectProvider(
 		final Project project, final JavaPluginConvention javaPluginConvention,
 		final TaskProvider<Task> classesTaskProvider,
-		final TaskProvider<JavaCompile> compileJSPTaskProivder,
+		final TaskProvider<JavaCompile> compileJSPTaskProvider,
 		final TaskProvider<CompileJSPTask> generateJSPJavaTaskProvider,
 		TaskProvider<WriteFindBugsProjectTask>
 			writeFindBugsProjectTaskProvider) {
@@ -471,45 +466,44 @@ public class FindSecurityBugsPlugin implements Plugin<Project> {
 					writeFindBugsProjectTask.dependsOn(classesTaskProvider);
 					writeFindBugsProjectTask.dependsOn(
 						generateJSPJavaTaskProvider);
+					writeFindBugsProjectTask.dependsOn(compileJSPTaskProvider);
 
 					SourceSet mainSourceSet = _getSourceSet(
 						javaPluginConvention, SourceSet.MAIN_SOURCE_SET_NAME);
 
-					final SourceDirectorySet javaSourceDirectorySet =
+					SourceDirectorySet javaSourceDirectorySet =
 						mainSourceSet.getJava();
 
 					final JavaCompile compileJSPJavaCompile =
-						compileJSPTaskProivder.get();
+						compileJSPTaskProvider.get();
 
 					writeFindBugsProjectTask.setAuxClasspath(
 						project.files(
 							mainSourceSet.getCompileClasspath(),
 							compileJSPJavaCompile.getClasspath()));
+					writeFindBugsProjectTask.setClasspath(
+						project.files(
+							new Callable<File>() {
 
-					FileCollection classpath = project.files(
-						new Callable<File>() {
+								@Override
+								public File call() throws Exception {
+									return compileJSPJavaCompile.
+										getDestinationDir();
+								}
 
-							@Override
-							public File call() throws Exception {
-								return compileJSPJavaCompile.
-									getDestinationDir();
-							}
+							},
+							new Callable<File>() {
 
-						},
-						new Callable<File>() {
+								@Override
+								public File call() throws Exception {
+									return FileUtil.getJavaClassesDir(
+										mainSourceSet);
+								}
 
-							@Override
-							public File call() throws Exception {
-								return javaSourceDirectorySet.getOutputDir();
-							}
-
-						});
-
-					writeFindBugsProjectTask.setClasspath(classpath);
+							}));
 
 					writeFindBugsProjectTask.setDescription(
 						"Writes the FindBugs project file.");
-
 					writeFindBugsProjectTask.setOutputFile(
 						new Callable<File>() {
 
@@ -520,7 +514,6 @@ public class FindSecurityBugsPlugin implements Plugin<Project> {
 							}
 
 						});
-
 					writeFindBugsProjectTask.setProjectName(project.getName());
 
 					CompileJSPTask generateJSPJavaCompileJSPTask =
@@ -550,7 +543,7 @@ public class FindSecurityBugsPlugin implements Plugin<Project> {
 	private static final String _FIND_SECURITY_BUGS_INCLUDE_FILE_NAME =
 		"fsb-include.xml";
 
-	private static final String _VERSION = "1.10.1.LIFERAY-PATCHED-2";
+	private static final String _VERSION = "1.13.0.LIFERAY-PATCHED-1";
 
 	private static final Transformer<File, Task> _reportsFileGetter =
 		new Transformer<File, Task>() {

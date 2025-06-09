@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -21,10 +12,10 @@ import com.liferay.portal.kernel.model.PortletApp;
 import com.liferay.portal.kernel.model.PortletFilter;
 import com.liferay.portal.kernel.model.PortletURLListener;
 import com.liferay.portal.kernel.model.PublicRenderParameter;
-import com.liferay.portal.kernel.model.SpriteImage;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.QName;
+
+import jakarta.servlet.ServletContext;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,10 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
-
-import javax.servlet.ServletContext;
 
 import javax.xml.XMLConstants;
 
@@ -47,7 +35,7 @@ public class PortletAppImpl implements PortletApp {
 	public PortletAppImpl(String servletContextName) {
 		_servletContextName = servletContextName;
 
-		if (Validator.isNotNull(_servletContextName)) {
+		if (Validator.isNotNull(servletContextName)) {
 			_contextPath = StringPool.SLASH.concat(_servletContextName);
 			_warFile = true;
 		}
@@ -181,11 +169,6 @@ public class PortletAppImpl implements PortletApp {
 	}
 
 	@Override
-	public SpriteImage getSpriteImage(String fileName) {
-		return _spriteImagesMap.get(fileName);
-	}
-
-	@Override
 	public Set<String> getUserAttributes() {
 		return _userAttributes;
 	}
@@ -223,26 +206,6 @@ public class PortletAppImpl implements PortletApp {
 	}
 
 	@Override
-	public void setSpriteImages(String spriteFileName, Properties properties) {
-		for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-			String key = (String)entry.getKey();
-
-			String value = (String)entry.getValue();
-
-			int[] values = StringUtil.split(value, 0);
-
-			int offset = values[0];
-			int height = values[1];
-			int width = values[2];
-
-			SpriteImage spriteImage = new SpriteImage(
-				spriteFileName, key, offset, height, width);
-
-			_spriteImagesMap.put(key, spriteImage);
-		}
-	}
-
-	@Override
 	public void setWARFile(boolean warFile) {
 		_warFile = warFile;
 	}
@@ -270,7 +233,6 @@ public class PortletAppImpl implements PortletApp {
 	private final Set<String> _servletURLPatterns = new LinkedHashSet<>();
 	private int _specMajorVersion = 2;
 	private int _specMinorVersion;
-	private final Map<String, SpriteImage> _spriteImagesMap = new HashMap<>();
 	private final Set<String> _userAttributes = new LinkedHashSet<>();
 	private boolean _warFile;
 

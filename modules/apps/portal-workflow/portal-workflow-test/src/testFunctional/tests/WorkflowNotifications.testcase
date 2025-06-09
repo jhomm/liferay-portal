@@ -1,4 +1,4 @@
-@component-name = "portal-workflow"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -15,7 +15,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Web Content");
 
@@ -23,9 +23,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -38,30 +38,182 @@ definition {
 	}
 
 	@description = "LPS-135888 - Verify that the user with Account role type receives the notification for review"
-	@ignore = "Test Stub"
-	@priority = "4"
+	@priority = 4
 	test AccountUserReceivesNotification {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		// TODO LRQA-69117 AccountUserReceivesNotification pending implementation
+		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
+		CommerceEntry.addAccountEntryUser(
+			accountName = "Commerce Account",
+			accountType = "Business",
+			agreeToTermsAndAnswerReminderQuery = "true",
+			createNewAccount = "true",
+			requireReset = "false",
+			userEmailAddress = "buyer@liferay.com",
+			userFirstName = "Buyer",
+			userLastName = "User",
+			userRole = "Buyer",
+			userScreenName = "buyeruser",
+			userSiteMembership = "Minium");
+
+		Account.openAccountsAdmin();
+
+		LexiconEntry.gotoEntry(rowEntry = "Commerce Account");
+
+		Account.addAssigneeToRoleViaRolesTab(
+			accountRoleTitle = "Account Administrator",
+			assigneeName = "Buyer");
+
+		User.openUsersAdmin();
+
+		CommerceLogin.editPasswordCP(
+			newPassword = "password",
+			requirePasswordReset = "false",
+			userScreenName = "buyeruser");
+
+		CommerceChannels.openChannelsAdmin();
+
+		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+		Workflow.setWorkflowToMiniumChannel(workflowDefinition = "Single Approver (Version 1)");
+
+		ApplicationsMenu.gotoSite(site = "Minium");
+
+		FrontStore.addInitializerProductToCart(
+			productName = "U-Joint",
+			productQuantity = 1);
+
+		FrontStore.addInitializerProductToCart(
+			productName = "Transmission Cooler Line Assembly",
+			productQuantity = 1);
+
+		CommerceNavigator.gotoMiniCart();
+
+		Button.click(button = "View Details");
+
+		Button.click(button = "Submit");
+
+		Workflow.viewWorkflowStatus(status = "Pending");
+
+		User.logoutPG();
+
+		CommerceLogin.miniumLogin(
+			password = "password",
+			urlAppend = "web/minium",
+			userEmailAddress = "buyer@liferay.com");
+
+		Workflow.openNotifications();
+
+		Notifications.viewSuccessfulPublication(
+			contentBody = "for review in the workflow.",
+			portletName = "Test Test",
+			publicationType = "sent you a Order");
 	}
 
 	@description = "Verify that the user can open new user details by notifications"
-	@ignore = "Test Stub"
-	@priority = "3"
+	@priority = 3
 	test CanOpenNewUserDetailsByNotifications {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		// TODO LRQA-70881 CanOpenNewUserDetailsByNotifications pending implementation
+		task ("Given Workflow is configured to Single Approver for User") {
+			Workflow.openWorkflowListView();
 
+			Navigator.gotoNavItem(navItem = "Configuration");
+
+			Workflow.configureWorkflow(
+				workflowDefinition = "Single Approver",
+				workflowResourceValue = "User");
+		}
+
+		task ("When a new user is created") {
+			WorkflowUser.disableCaptchaToCreateNewUserAndSendPassword();
+
+			User.logoutPG();
+
+			WorkflowAsset.createNewUserAccount(
+				newPassword = "password",
+				userEmailAddress = "user@liferay.com",
+				userFirstName = "userfn",
+				userLastName = "userln",
+				userScreenName = "usersn");
+		}
+
+		task ("Then a notification is sent to the Admin User containing the new user's details") {
+			User.loginUserPG(
+				password = PropsUtil.get("default.admin.password"),
+				userEmailAddress = "test@liferay.com");
+
+			WorkflowAsset.gotoViaNotification(assetType = "User");
+
+			WorkflowAsset.viewUserDetails(userEmailAddress = "user@liferay.com");
+		}
 	}
 
 	@description = "LPS-135888 - Verify that when the user delete the order, the notifications are not displayed"
-	@ignore = "Test Stub"
-	@priority = "4"
+	@priority = 4
 	test NotificationIsNotAvailableWhenOrderIsDeleted {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		// TODO LRQA-69118 NotificationIsNotAvailableWhenOrderIsDeleted pending implementation
+		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
+		CommerceEntry.addAccountEntryUser(
+			accountName = "Commerce Account",
+			accountType = "Business",
+			agreeToTermsAndAnswerReminderQuery = "true",
+			createNewAccount = "true",
+			requireReset = "false",
+			userEmailAddress = "buyer@liferay.com",
+			userFirstName = "Buyer",
+			userLastName = "User",
+			userRole = "Buyer",
+			userScreenName = "buyeruser",
+			userSiteMembership = "Minium");
+
+		Account.openAccountsAdmin();
+
+		LexiconEntry.gotoEntry(rowEntry = "Commerce Account");
+
+		Account.addAssigneeToRoleViaRolesTab(
+			accountRoleTitle = "Account Administrator",
+			assigneeName = "Buyer");
+
+		CommerceChannels.openChannelsAdmin();
+
+		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+		Workflow.setWorkflowToMiniumChannel(workflowDefinition = "Single Approver (Version 1)");
+
+		ApplicationsMenu.gotoSite(site = "Minium");
+
+		FrontStore.addInitializerProductToCart(
+			productName = "U-Joint",
+			productQuantity = 1);
+
+		FrontStore.addInitializerProductToCart(
+			productName = "Transmission Cooler Line Assembly",
+			productQuantity = 1);
+
+		CommerceNavigator.gotoMiniCart();
+
+		Button.click(button = "View Details");
+
+		Button.click(button = "Submit");
+
+		ApplicationsMenu.gotoSite(site = "Minium");
+
+		CommerceJSONOrdersAPI._deleteAllCommerceOrders();
+
+		Navigator.openURL();
+
+		UserBar.gotoDropdownItem(dropdownItem = "Notifications");
+
+		AssertTextEquals(
+			locator1 = "Sharing#NOTIFICATIONS_DELETE_ENTRY_TITLE",
+			value1 = "Notification no longer applies.");
 	}
 
 }

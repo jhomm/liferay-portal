@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.ldap.internal.model.listener;
 
 import com.liferay.portal.kernel.exception.ModelListenerException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.MembershipRequest;
 import com.liferay.portal.kernel.model.MembershipRequestConstants;
@@ -43,7 +34,7 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
  * @author Raymond Augé
  * @author Vilmos Papp
  */
-@Component(immediate = true, service = ModelListener.class)
+@Component(service = ModelListener.class)
 public class UserModelListener extends BaseLDAPExportModelListener<User> {
 
 	@Override
@@ -57,7 +48,7 @@ public class UserModelListener extends BaseLDAPExportModelListener<User> {
 				Long userId = (Long)classPK;
 				Long groupId = (Long)associationClassPK;
 
-				updateMembershipRequestStatus(
+				_updateMembershipRequestStatus(
 					userId.longValue(), groupId.longValue());
 			}
 		}
@@ -104,7 +95,7 @@ public class UserModelListener extends BaseLDAPExportModelListener<User> {
 		exportToLDAP(user, _userExporter, _ldapSettings);
 	}
 
-	protected void updateMembershipRequestStatus(long userId, long groupId)
+	private void _updateMembershipRequestStatus(long userId, long groupId)
 		throws Exception {
 
 		long principalUserId = GetterUtil.getLong(
@@ -119,12 +110,15 @@ public class UserModelListener extends BaseLDAPExportModelListener<User> {
 		for (MembershipRequest membershipRequest : membershipRequests) {
 			_membershipRequestLocalService.updateStatus(
 				principalUserId, membershipRequest.getMembershipRequestId(),
-				LanguageUtil.get(
+				_language.get(
 					user.getLocale(), "your-membership-has-been-approved"),
 				MembershipRequestConstants.STATUS_APPROVED, false,
 				new ServiceContext());
 		}
 	}
+
+	@Reference
+	private Language _language;
 
 	@Reference(
 		policy = ReferencePolicy.DYNAMIC,

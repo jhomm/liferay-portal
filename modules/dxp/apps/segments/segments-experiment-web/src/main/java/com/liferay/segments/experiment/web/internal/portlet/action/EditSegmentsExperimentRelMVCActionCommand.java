@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.experiment.web.internal.portlet.action;
@@ -17,7 +8,7 @@ package com.liferay.segments.experiment.web.internal.portlet.action;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
@@ -33,10 +24,10 @@ import com.liferay.segments.experiment.web.internal.util.SegmentsExperimentUtil;
 import com.liferay.segments.model.SegmentsExperimentRel;
 import com.liferay.segments.service.SegmentsExperimentRelService;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,9 +36,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author David Arques
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + SegmentsPortletKeys.SEGMENTS_EXPERIMENT,
+		"jakarta.portlet.name=" + SegmentsPortletKeys.SEGMENTS_EXPERIMENT,
 		"mvc.command.name=/segments_experiment/edit_segments_experiment_rel"
 	},
 	service = MVCActionCommand.class
@@ -78,7 +68,7 @@ public class EditSegmentsExperimentRelMVCActionCommand
 					themeDisplay.getLocale(), segmentsExperimentRel));
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			HttpServletResponse httpServletResponse =
 				_portal.getHttpServletResponse(actionResponse);
@@ -87,18 +77,21 @@ public class EditSegmentsExperimentRelMVCActionCommand
 
 			jsonObject = JSONUtil.put(
 				"error",
-				LanguageUtil.get(
+				_language.get(
 					themeDisplay.getRequest(), "an-unexpected-error-occurred"));
 		}
 
-		hideDefaultSuccessMessage(actionRequest);
-
 		JSONPortletResponseUtil.writeJSON(
 			actionRequest, actionResponse, jsonObject);
+
+		hideDefaultSuccessMessage(actionRequest);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		EditSegmentsExperimentRelMVCActionCommand.class);
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

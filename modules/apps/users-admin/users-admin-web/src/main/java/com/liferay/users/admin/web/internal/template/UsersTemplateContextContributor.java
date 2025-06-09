@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.web.internal.template;
 
+import com.liferay.petra.function.UnsafeSupplierValue;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -27,9 +19,9 @@ import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,7 +30,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Julio Camarero
  */
 @Component(
-	immediate = true,
 	property = "type=" + TemplateContextContributor.TYPE_THEME,
 	service = TemplateContextContributor.class
 )
@@ -57,21 +48,74 @@ public class UsersTemplateContextContributor
 		User user1 = themeDisplay.getUser();
 
 		contextObjects.put("is_default_user", user1.isDefaultUser());
+		contextObjects.put(
+			"is_female",
+			new UnsafeSupplierValue<>(
+				() -> {
+					try {
+						Contact contact = user1.getContact();
 
-		try {
-			Contact contact = user1.getContact();
+						return !contact.isMale();
+					}
+					catch (PortalException portalException) {
+						_log.error(portalException);
+					}
 
-			contextObjects.put("is_female", !contact.isMale());
-			contextObjects.put("is_male", contact.isMale());
-			contextObjects.put("user_birthday", contact.getBirthday());
-		}
-		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
-		}
+					return null;
+				}));
+		contextObjects.put("is_guest_user", user1.isGuestUser());
+		contextObjects.put(
+			"is_male",
+			new UnsafeSupplierValue<>(
+				() -> {
+					try {
+						Contact contact = user1.getContact();
 
+						return contact.isMale();
+					}
+					catch (PortalException portalException) {
+						_log.error(portalException);
+					}
+
+					return null;
+				}));
 		contextObjects.put("is_setup_complete", user1.isSetupComplete());
+
 		contextObjects.put("language", themeDisplay.getLanguageId());
 		contextObjects.put("language_id", user1.getLanguageId());
+		contextObjects.put(
+			"user2",
+			new UnsafeSupplierValue<>(
+				() -> {
+					Group group = themeDisplay.getSiteGroup();
+
+					if (group.isUser()) {
+						try {
+							return _userLocalService.getUserById(
+								group.getClassPK());
+						}
+						catch (PortalException portalException) {
+							_log.error(portalException);
+						}
+					}
+
+					return null;
+				}));
+		contextObjects.put(
+			"user_birthday",
+			new UnsafeSupplierValue<>(
+				() -> {
+					try {
+						Contact contact = user1.getContact();
+
+						return contact.getBirthday();
+					}
+					catch (PortalException portalException) {
+						_log.error(portalException);
+					}
+
+					return null;
+				}));
 		contextObjects.put("user_comments", user1.getComments());
 		contextObjects.put("user_email_address", user1.getEmailAddress());
 		contextObjects.put("user_first_name", user1.getFirstName());
@@ -84,33 +128,15 @@ public class UsersTemplateContextContributor
 		contextObjects.put("user_login_ip", user1.getLoginIP());
 		contextObjects.put("user_middle_name", user1.getMiddleName());
 		contextObjects.put("user_name", user1.getFullName());
-
-		Group group = themeDisplay.getSiteGroup();
-
-		if (group.isUser()) {
-			try {
-				User user2 = _userLocalService.getUserById(group.getClassPK());
-
-				contextObjects.put("user2", user2);
-			}
-			catch (PortalException portalException) {
-				_log.error(portalException, portalException);
-			}
-		}
-
 		contextObjects.put(
 			"w3c_language_id",
 			LocaleUtil.toW3cLanguageId(themeDisplay.getLanguageId()));
 	}
 
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		UsersTemplateContextContributor.class);
 
+	@Reference
 	private UserLocalService _userLocalService;
 
 }

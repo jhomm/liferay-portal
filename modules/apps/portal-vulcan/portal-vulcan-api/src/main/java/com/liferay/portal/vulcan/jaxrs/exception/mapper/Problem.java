@@ -1,22 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.jaxrs.exception.mapper;
 
-import javax.ws.rs.core.Response;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import javax.xml.bind.annotation.XmlRootElement;
+import com.liferay.petra.string.StringBundler;
+
+import jakarta.ws.rs.core.Response;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 /**
  * @author Javier Gamarra
@@ -25,6 +20,16 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class Problem {
 
 	public Problem() {
+	}
+
+	public Problem(Exception exception) {
+		_status = Response.Status.BAD_REQUEST;
+		_throwable = exception;
+		_title = exception.getMessage();
+
+		Class<?> clazz = exception.getClass();
+
+		_type = clazz.getName();
 	}
 
 	public Problem(Response.Status status, String title) {
@@ -49,6 +54,11 @@ public class Problem {
 		return _status;
 	}
 
+	@JsonIgnore
+	public Throwable getThrowable() {
+		return _throwable;
+	}
+
 	public String getTitle() {
 		return _title;
 	}
@@ -65,6 +75,10 @@ public class Problem {
 		_status = status;
 	}
 
+	public void setThrowable(Throwable throwable) {
+		_throwable = throwable;
+	}
+
 	public void setTitle(String title) {
 		_title = title;
 	}
@@ -73,8 +87,16 @@ public class Problem {
 		_type = type;
 	}
 
+	@Override
+	public String toString() {
+		return StringBundler.concat(
+			"{detail=", _detail, ", status=", _status, ", title=", _title,
+			", type=", _type, "}");
+	}
+
 	private String _detail;
 	private Response.Status _status;
+	private Throwable _throwable;
 	private String _title;
 	private String _type;
 

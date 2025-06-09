@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.admin.web.internal.display;
@@ -21,9 +12,11 @@ import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.ListType;
 import com.liferay.portal.kernel.model.ListTypeConstants;
 import com.liferay.portal.kernel.model.Region;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.AddressLocalServiceUtil;
 import com.liferay.portal.kernel.service.ListTypeLocalServiceUtil;
 import com.liferay.portal.kernel.util.AggregateResourceBundle;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 
@@ -55,16 +48,32 @@ public class AddressDisplay {
 		return _city;
 	}
 
+	public long getListTypeId() {
+		return _listTypeId;
+	}
+
+	public String getListTypeName() {
+		return _listTypeName;
+	}
+
 	public String getName() {
 		return _name;
 	}
 
 	public String getRegionName() {
-		return _region.getName();
+		return HtmlUtil.escape(_region.getName());
+	}
+
+	public int getStatus() {
+		return _status;
 	}
 
 	public String getStreet() {
 		return _street;
+	}
+
+	public String getSubtype() {
+		return _subtype;
 	}
 
 	public String getType(Locale locale) {
@@ -74,11 +83,7 @@ public class AddressDisplay {
 		return LanguageUtil.get(
 			new AggregateResourceBundle(
 				resourceBundle, PortalUtil.getResourceBundle(locale)),
-			_type);
-	}
-
-	public long getTypeId() {
-		return _typeId;
+			_listTypeName);
 	}
 
 	public String getZip() {
@@ -88,33 +93,33 @@ public class AddressDisplay {
 	private AddressDisplay() {
 		_addressId = 0;
 		_city = StringPool.BLANK;
+		_listTypeId = ListTypeLocalServiceUtil.getListTypeId(
+			CompanyThreadLocal.getCompanyId(), "billing-and-shipping",
+			AccountEntry.class.getName() + ListTypeConstants.ADDRESS);
+		_listTypeName = StringPool.BLANK;
 		_name = StringPool.BLANK;
 		_region = null;
+		_status = 0;
 		_street = StringPool.BLANK;
-		_type = StringPool.BLANK;
-
-		ListType listType = ListTypeLocalServiceUtil.getListType(
-			"billing-and-shipping",
-			AccountEntry.class.getName() + ListTypeConstants.ADDRESS);
-
-		_typeId = listType.getListTypeId();
-
+		_subtype = StringPool.BLANK;
 		_zip = StringPool.BLANK;
 	}
 
 	private AddressDisplay(Address address) {
 		_addressId = address.getAddressId();
-		_city = address.getCity();
-		_name = address.getName();
+		_city = HtmlUtil.escape(address.getCity());
+		_listTypeId = address.getListTypeId();
+		_listTypeName = _getListTypeName(address);
+		_name = HtmlUtil.escape(address.getName());
 		_region = address.getRegion();
-		_street = address.getStreet1();
-		_type = _getType(address);
-		_typeId = address.getTypeId();
-		_zip = address.getZip();
+		_status = address.getStatus();
+		_street = HtmlUtil.escape(address.getStreet1());
+		_subtype = address.getSubtype();
+		_zip = HtmlUtil.escape(address.getZip());
 	}
 
-	private String _getType(Address address) {
-		ListType listType = address.getType();
+	private String _getListTypeName(Address address) {
+		ListType listType = address.getListType();
 
 		return listType.getName();
 	}
@@ -123,11 +128,13 @@ public class AddressDisplay {
 
 	private final long _addressId;
 	private final String _city;
+	private final long _listTypeId;
+	private final String _listTypeName;
 	private final String _name;
 	private final Region _region;
+	private final int _status;
 	private final String _street;
-	private final String _type;
-	private final long _typeId;
+	private final String _subtype;
 	private final String _zip;
 
 }

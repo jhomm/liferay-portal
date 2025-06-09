@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.asset.service.impl;
@@ -21,6 +12,8 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
@@ -33,6 +26,7 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.asset.service.base.AssetCategoryServiceBaseImpl;
+import com.liferay.portlet.asset.service.permission.AssetCategoriesPermission;
 import com.liferay.portlet.asset.service.permission.AssetCategoryPermission;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
@@ -133,6 +127,38 @@ public class AssetCategoryServiceImpl extends AssetCategoryServiceBaseImpl {
 		return category;
 	}
 
+	@Override
+	public AssetCategory fetchCategoryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		AssetCategory category =
+			assetCategoryLocalService.fetchAssetCategoryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+
+		if (category != null) {
+			AssetCategoryPermission.check(
+				getPermissionChecker(), category, ActionKeys.VIEW);
+		}
+
+		return category;
+	}
+
+	@Override
+	public AssetCategory getAssetCategoryByExternalReferenceCode(
+			long groupId, String externalReferenceCode)
+		throws PortalException {
+
+		AssetCategory category =
+			assetCategoryLocalService.getAssetCategoryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+
+		AssetCategoryPermission.check(
+			getPermissionChecker(), category.getCategoryId(), ActionKeys.VIEW);
+
+		return category;
+	}
+
 	/**
 	 * Returns a range of assetCategories related to an AssetEntry with the
 	 * given "classNameId-classPK".
@@ -147,7 +173,7 @@ public class AssetCategoryServiceImpl extends AssetCategoryServiceBaseImpl {
 	public List<AssetCategory> getCategories(
 		long classNameId, long classPK, int start, int end) {
 
-		return assetCategoryFinder.filterFindByC_C(
+		return assetCategoryLocalService.getCategories(
 			classNameId, classPK, start, end);
 	}
 
@@ -169,7 +195,8 @@ public class AssetCategoryServiceImpl extends AssetCategoryServiceBaseImpl {
 	 */
 	@Override
 	public int getCategoriesCount(long classNameId, long classPK) {
-		return assetCategoryFinder.filterCountByC_C(classNameId, classPK);
+		return assetCategoryLocalService.getCategoriesCount(
+			classNameId, classPK);
 	}
 
 	@Override
@@ -253,6 +280,26 @@ public class AssetCategoryServiceImpl extends AssetCategoryServiceBaseImpl {
 
 		return assetCategoryPersistence.countByParentCategoryId(
 			parentCategoryId);
+	}
+
+	@Override
+	public AssetCategory getOrAddIncompleteCategory(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		AssetCategory category =
+			assetCategoryService.fetchCategoryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+
+		if (category != null) {
+			return category;
+		}
+
+		AssetCategoriesPermission.check(
+			getPermissionChecker(), groupId, ActionKeys.ADD_CATEGORY);
+
+		return assetCategoryLocalService.getOrAddIncompleteCategory(
+			externalReferenceCode, getUserId(), groupId);
 	}
 
 	@Override
@@ -585,13 +632,23 @@ public class AssetCategoryServiceImpl extends AssetCategoryServiceBaseImpl {
 			JSONObject categoryJSONObject = JSONFactoryUtil.createJSONObject(
 				categoryJSON);
 
-			categoryJSONObject.put(
-				"path", getCategoryPath(category.getCategoryId()));
+			try {
+				categoryJSONObject.put(
+					"path", getCategoryPath(category.getCategoryId()));
 
-			jsonArray.put(categoryJSONObject);
+				jsonArray.put(categoryJSONObject);
+			}
+			catch (PortalException portalException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(portalException);
+				}
+			}
 		}
 
 		return jsonArray;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		AssetCategoryServiceImpl.class);
 
 }

@@ -1,24 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
 
+import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ColorScheme;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutBranch;
 import com.liferay.portal.kernel.model.LayoutConstants;
@@ -27,13 +22,13 @@ import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.model.LayoutTypePortletConstants;
 import com.liferay.portal.kernel.model.Theme;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutBranchLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutRevisionLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetLocalServiceUtil;
 import com.liferay.portal.kernel.service.ThemeLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.CookieKeys;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -43,16 +38,45 @@ import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 /**
  * @author Brian Wing Shun Chan
  */
 public class LayoutRevisionImpl extends LayoutRevisionBaseImpl {
+
+	@Override
+	public String getBreadcrumb(Locale locale) throws PortalException {
+		List<Layout> layouts = _getAncestors();
+
+		StringBundler sb = new StringBundler((4 * layouts.size()) + 5);
+
+		Group group = getGroup();
+
+		sb.append(group.getLayoutRootNodeName(isPrivateLayout(), locale));
+
+		sb.append(StringPool.SPACE);
+		sb.append(StringPool.GREATER_THAN);
+		sb.append(StringPool.SPACE);
+
+		Collections.reverse(layouts);
+
+		for (Layout layout : layouts) {
+			sb.append(HtmlUtil.escape(_getLayoutName(layout, locale)));
+			sb.append(StringPool.SPACE);
+			sb.append(StringPool.GREATER_THAN);
+			sb.append(StringPool.SPACE);
+		}
+
+		sb.append(HtmlUtil.escape(getName(locale)));
+
+		return sb.toString();
+	}
 
 	@Override
 	public List<LayoutRevision> getChildren() {
@@ -77,6 +101,16 @@ public class LayoutRevisionImpl extends LayoutRevisionBaseImpl {
 		}
 
 		return getCss();
+	}
+
+	@Override
+	public Group getGroup() {
+		try {
+			return GroupLocalServiceUtil.getGroup(getGroupId());
+		}
+		catch (PortalException portalException) {
+			return ReflectionUtil.throwException(portalException);
+		}
 	}
 
 	@Override
@@ -129,7 +163,7 @@ public class LayoutRevisionImpl extends LayoutRevisionBaseImpl {
 		String url = PortalUtil.getLayoutURL(
 			LayoutLocalServiceUtil.getLayout(getPlid()), themeDisplay);
 
-		if (!CookieKeys.hasSessionId(httpServletRequest) &&
+		if (!CookiesManagerUtil.hasSessionId(httpServletRequest) &&
 			(url.startsWith(PortalUtil.getPortalURL(httpServletRequest)) ||
 			 url.startsWith(StringPool.SLASH))) {
 
@@ -181,7 +215,7 @@ public class LayoutRevisionImpl extends LayoutRevisionBaseImpl {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -193,7 +227,7 @@ public class LayoutRevisionImpl extends LayoutRevisionBaseImpl {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -240,11 +274,7 @@ public class LayoutRevisionImpl extends LayoutRevisionBaseImpl {
 
 	@Override
 	public boolean hasChildren() {
-		if (!getChildren().isEmpty()) {
-			return true;
-		}
-
-		return false;
+		return !getChildren().isEmpty();
 	}
 
 	@Override
@@ -256,11 +286,7 @@ public class LayoutRevisionImpl extends LayoutRevisionBaseImpl {
 			typeSettingsUnicodeProperties.getProperty(
 				LayoutTypePortletConstants.DEFAULT_ASSET_PUBLISHER_PORTLET_ID);
 
-		if (Validator.isNotNull(defaultAssetPublisherPortletId)) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(defaultAssetPublisherPortletId);
 	}
 
 	@Override
@@ -280,11 +306,7 @@ public class LayoutRevisionImpl extends LayoutRevisionBaseImpl {
 		LayoutTypePortlet layoutTypePortlet =
 			(LayoutTypePortlet)layout.getLayoutType();
 
-		if (layoutTypePortlet.isCustomizable()) {
-			return true;
-		}
-
-		return false;
+		return layoutTypePortlet.isCustomizable();
 	}
 
 	@Override
@@ -317,6 +339,24 @@ public class LayoutRevisionImpl extends LayoutRevisionBaseImpl {
 		_typeSettingsUnicodeProperties = typeSettingsUnicodeProperties;
 
 		super.setTypeSettings(_typeSettingsUnicodeProperties.toString());
+	}
+
+	private List<Layout> _getAncestors() throws PortalException {
+		Layout layout = LayoutLocalServiceUtil.getLayout(getPlid());
+
+		return layout.getAncestors();
+	}
+
+	private String _getLayoutName(Layout layout, Locale locale) {
+		LayoutRevision layoutRevision =
+			LayoutRevisionLocalServiceUtil.fetchLatestLayoutRevision(
+				getLayoutSetBranchId(), layout.getPlid());
+
+		if (layoutRevision == null) {
+			return layout.getName(locale);
+		}
+
+		return layoutRevision.getName(locale);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

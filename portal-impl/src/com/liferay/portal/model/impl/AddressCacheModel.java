@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -76,10 +67,12 @@ public class AddressCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(55);
+		StringBundler sb = new StringBundler(61);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
 		sb.append(", externalReferenceCode=");
@@ -102,10 +95,10 @@ public class AddressCacheModel
 		sb.append(classPK);
 		sb.append(", countryId=");
 		sb.append(countryId);
+		sb.append(", listTypeId=");
+		sb.append(listTypeId);
 		sb.append(", regionId=");
 		sb.append(regionId);
-		sb.append(", typeId=");
-		sb.append(typeId);
 		sb.append(", city=");
 		sb.append(city);
 		sb.append(", description=");
@@ -126,12 +119,16 @@ public class AddressCacheModel
 		sb.append(street2);
 		sb.append(", street3=");
 		sb.append(street3);
+		sb.append(", subtype=");
+		sb.append(subtype);
 		sb.append(", validationDate=");
 		sb.append(validationDate);
 		sb.append(", validationStatus=");
 		sb.append(validationStatus);
 		sb.append(", zip=");
 		sb.append(zip);
+		sb.append(", status=");
+		sb.append(status);
 		sb.append("}");
 
 		return sb.toString();
@@ -142,6 +139,7 @@ public class AddressCacheModel
 		AddressImpl addressImpl = new AddressImpl();
 
 		addressImpl.setMvccVersion(mvccVersion);
+		addressImpl.setCtCollectionId(ctCollectionId);
 
 		if (uuid == null) {
 			addressImpl.setUuid("");
@@ -185,8 +183,8 @@ public class AddressCacheModel
 		addressImpl.setClassNameId(classNameId);
 		addressImpl.setClassPK(classPK);
 		addressImpl.setCountryId(countryId);
+		addressImpl.setListTypeId(listTypeId);
 		addressImpl.setRegionId(regionId);
-		addressImpl.setTypeId(typeId);
 
 		if (city == null) {
 			addressImpl.setCity("");
@@ -236,6 +234,13 @@ public class AddressCacheModel
 			addressImpl.setStreet3(street3);
 		}
 
+		if (subtype == null) {
+			addressImpl.setSubtype("");
+		}
+		else {
+			addressImpl.setSubtype(subtype);
+		}
+
 		if (validationDate == Long.MIN_VALUE) {
 			addressImpl.setValidationDate(null);
 		}
@@ -252,6 +257,8 @@ public class AddressCacheModel
 			addressImpl.setZip(zip);
 		}
 
+		addressImpl.setStatus(status);
+
 		addressImpl.resetOriginalValues();
 
 		return addressImpl;
@@ -260,6 +267,8 @@ public class AddressCacheModel
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
 		externalReferenceCode = objectInput.readUTF();
 
@@ -278,9 +287,9 @@ public class AddressCacheModel
 
 		countryId = objectInput.readLong();
 
-		regionId = objectInput.readLong();
+		listTypeId = objectInput.readLong();
 
-		typeId = objectInput.readLong();
+		regionId = objectInput.readLong();
 		city = objectInput.readUTF();
 		description = objectInput.readUTF();
 
@@ -295,15 +304,20 @@ public class AddressCacheModel
 		street1 = objectInput.readUTF();
 		street2 = objectInput.readUTF();
 		street3 = objectInput.readUTF();
+		subtype = objectInput.readUTF();
 		validationDate = objectInput.readLong();
 
 		validationStatus = objectInput.readInt();
 		zip = objectInput.readUTF();
+
+		status = objectInput.readInt();
 	}
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
 
 		if (uuid == null) {
 			objectOutput.writeUTF("");
@@ -341,9 +355,9 @@ public class AddressCacheModel
 
 		objectOutput.writeLong(countryId);
 
-		objectOutput.writeLong(regionId);
+		objectOutput.writeLong(listTypeId);
 
-		objectOutput.writeLong(typeId);
+		objectOutput.writeLong(regionId);
 
 		if (city == null) {
 			objectOutput.writeUTF("");
@@ -395,6 +409,13 @@ public class AddressCacheModel
 			objectOutput.writeUTF(street3);
 		}
 
+		if (subtype == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(subtype);
+		}
+
 		objectOutput.writeLong(validationDate);
 
 		objectOutput.writeInt(validationStatus);
@@ -405,9 +426,12 @@ public class AddressCacheModel
 		else {
 			objectOutput.writeUTF(zip);
 		}
+
+		objectOutput.writeInt(status);
 	}
 
 	public long mvccVersion;
+	public long ctCollectionId;
 	public String uuid;
 	public String externalReferenceCode;
 	public long addressId;
@@ -419,8 +443,8 @@ public class AddressCacheModel
 	public long classNameId;
 	public long classPK;
 	public long countryId;
+	public long listTypeId;
 	public long regionId;
-	public long typeId;
 	public String city;
 	public String description;
 	public double latitude;
@@ -431,8 +455,10 @@ public class AddressCacheModel
 	public String street1;
 	public String street2;
 	public String street3;
+	public String subtype;
 	public long validationDate;
 	public int validationStatus;
 	public String zip;
+	public int status;
 
 }

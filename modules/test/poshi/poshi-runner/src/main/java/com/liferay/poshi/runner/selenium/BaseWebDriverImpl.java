@@ -1,29 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.runner.selenium;
 
-import com.deque.axe.AXE;
+import com.deque.html.axecore.results.Results;
+import com.deque.html.axecore.results.Rule;
+import com.deque.html.axecore.selenium.AxeBuilder;
+import com.deque.html.axecore.selenium.AxeReporter;
 
-import com.liferay.poshi.core.PoshiContext;
 import com.liferay.poshi.core.PoshiGetterUtil;
+import com.liferay.poshi.core.PoshiProperties;
 import com.liferay.poshi.core.selenium.LiferaySelenium;
 import com.liferay.poshi.core.util.CharPool;
 import com.liferay.poshi.core.util.FileUtil;
 import com.liferay.poshi.core.util.GetterUtil;
 import com.liferay.poshi.core.util.OSDetector;
-import com.liferay.poshi.core.util.PropsValues;
 import com.liferay.poshi.core.util.StringPool;
 import com.liferay.poshi.core.util.StringUtil;
 import com.liferay.poshi.core.util.Validator;
@@ -33,6 +26,8 @@ import com.liferay.poshi.runner.util.AntCommands;
 import com.liferay.poshi.runner.util.ArchiveUtil;
 import com.liferay.poshi.runner.util.EmailCommands;
 import com.liferay.poshi.runner.util.HtmlUtil;
+import com.liferay.poshi.runner.var.type.DefaultTable;
+import com.liferay.poshi.runner.var.type.Table;
 
 import com.testautomationguru.ocular.Ocular;
 import com.testautomationguru.ocular.OcularConfiguration;
@@ -46,10 +41,9 @@ import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.StringReader;
 
-import java.net.URI;
-import java.net.URL;
-
 import java.nio.file.Paths;
+
+import java.time.Duration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,11 +76,6 @@ import javax.xml.xpath.XPathFactory;
 
 import junit.framework.TestCase;
 
-import net.jsourcerer.webdriver.jserrorcollector.JavaScriptError;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
@@ -107,8 +96,10 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.WrapsDriver;
+import org.openqa.selenium.chromium.HasCdp;
 import org.openqa.selenium.interactions.Action;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.remote.Augmenter;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -141,17 +132,41 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public BaseWebDriverImpl(String browserURL, WebDriver webDriver) {
 		System.setProperty("java.awt.headless", "false");
 
+		poshiProperties = PoshiProperties.getPoshiProperties();
+
 		_webDriver = webDriver;
 
 		setDefaultWindowHandle(webDriver.getWindowHandle());
 
 		WebDriver.Options options = webDriver.manage();
 
-		WebDriver.Window window = options.window();
+		options.deleteAllCookies();
 
-		window.setSize(new Dimension(1280, 1040));
+		String browserResolution = poshiProperties.browserResolution;
 
-		webDriver.get(browserURL);
+		if (Validator.isNotNull(browserResolution)) {
+			WebDriver.Window window = options.window();
+
+			if (browserResolution.equals("maximize")) {
+				window.maximize();
+			}
+			else {
+				window.setSize(_getDimension(browserResolution));
+			}
+		}
+
+		try {
+			webDriver.get(browserURL);
+		}
+		catch (WebDriverException webDriverException) {
+			String message = webDriverException.getMessage();
+
+			if (!message.contains("ERR_CONNECTION_REFUSED")) {
+				throw webDriverException;
+			}
+
+			System.out.println(browserURL + " is unavailable");
+		}
 
 		ocularConfig();
 	}
@@ -203,30 +218,10 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public void assertAccessible() throws Exception {
-		WebDriver webDriver = WebDriverUtil.getWebDriver();
+	public void assertAccessible(List<String> ignorableImpacts)
+		throws Exception {
 
-		String sourceDirFilePath = LiferaySeleniumUtil.getSourceDirFilePath(
-			getTestDependenciesDirName());
-
-		File file = new File(sourceDirFilePath + "/axe.min.js");
-
-		URI uri = file.toURI();
-
-		URL url = uri.toURL();
-
-		AXE.Builder axeBuilder = new AXE.Builder(webDriver, url);
-
-		axeBuilder = axeBuilder.options(
-			PropsValues.ACCESSIBILITY_STANDARDS_JSON);
-
-		JSONObject jsonObject = axeBuilder.analyze();
-
-		JSONArray jsonArray = jsonObject.getJSONArray("violations");
-
-		if (jsonArray.length() != 0) {
-			throw new Exception(AXE.report(jsonArray));
-		}
+		assertElementAccessible(null, ignorableImpacts);
 	}
 
 	@Override
@@ -257,20 +252,20 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public void assertAttributeNotPresent(String attribute, String locator)
+	public void assertAttributeNotPresent(String locator, String attribute)
 		throws Exception {
 
-		if (isAttributePresent(attribute, locator)) {
+		if (isAttributePresent(locator, attribute)) {
 			throw new Exception(
 				"Unexpected attribute \"" + attribute + "\" is present");
 		}
 	}
 
 	@Override
-	public void assertAttributePresent(String attribute, String locator)
+	public void assertAttributePresent(String locator, String attribute)
 		throws Exception {
 
-		if (!isAttributePresent(attribute, locator)) {
+		if (!isAttributePresent(locator, attribute)) {
 			throw new Exception(
 				"Expected attribute \"" + attribute + "\" is not present");
 		}
@@ -278,7 +273,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	@Override
 	public void assertAttributeValue(
-			String attribute, String locator, String pattern)
+			String locator, String attribute, String pattern)
 		throws Exception {
 
 		WebElement webElement = getWebElement(locator);
@@ -354,6 +349,75 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
+	public void assertElementAccessible(
+			String locator, List<String> ignorableImpacts)
+		throws Exception {
+
+		AxeBuilder axeBuilder = new AxeBuilder();
+
+		axeBuilder.withTags(
+			Arrays.asList(
+				poshiProperties.accessibilityStandardsTags.split(",")));
+
+		Results results = null;
+
+		if (Validator.isNotNull(locator)) {
+			results = axeBuilder.analyze(_webDriver, getWebElement(locator));
+		}
+		else {
+			results = axeBuilder.analyze(_webDriver);
+		}
+
+		List<Rule> violations = results.getViolations();
+
+		if (violations.isEmpty()) {
+			System.out.println("No accessiblity violations were found");
+
+			return;
+		}
+
+		List<Rule> rules = new ArrayList<>();
+
+		if (ignorableImpacts == null) {
+			rules.addAll(violations);
+		}
+		else {
+			for (Rule violation : violations) {
+				if (ignorableImpacts.contains(violation.getImpact())) {
+					continue;
+				}
+
+				rules.add(violation);
+			}
+		}
+
+		if (rules.isEmpty()) {
+			System.out.println("No accessiblity violations were found");
+
+			return;
+		}
+
+		AxeReporter.getReadableAxeResults("analyze", this, rules);
+
+		throw new Exception(AxeReporter.getAxeResultString());
+	}
+
+	@Override
+	public void assertElementFocused(String locator) throws Exception {
+		Condition elementFocusedCondition = getElementFocusedCondition(locator);
+
+		elementFocusedCondition.assertTrue();
+	}
+
+	@Override
+	public void assertElementNotFocused(String locator) throws Exception {
+		Condition elementNotFocusedCondition = getElementNotFocusedCondition(
+			locator);
+
+		elementNotFocusedCondition.assertTrue();
+	}
+
+	@Override
 	public void assertElementNotPresent(String locator) throws Exception {
 		Condition elementNotPresentCondition = getElementNotPresentCondition(
 			locator);
@@ -384,7 +448,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public void assertHTMLSourceTextNotPresent(String value) throws Exception {
 		if (isHTMLSourceTextPresent(value)) {
 			throw new Exception(
-				"Pattern \"" + value + "\" does exists in the HTML source");
+				"Pattern \"" + value + "\" exists in the HTML source");
 		}
 	}
 
@@ -392,7 +456,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public void assertHTMLSourceTextPresent(String value) throws Exception {
 		if (!isHTMLSourceTextPresent(value)) {
 			throw new Exception(
-				"Pattern \"" + value + "\" does not exists in the HTML source");
+				"Pattern \"" + value + "\" does not exist in the HTML source");
 		}
 	}
 
@@ -410,76 +474,6 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	@Override
 	public void assertJavaScriptErrors(String ignoreJavaScriptError)
 		throws Exception {
-
-		if (!PropsValues.TEST_ASSERT_JAVASCRIPT_ERRORS) {
-			return;
-		}
-
-		String pageSource = null;
-
-		try {
-			pageSource = getPageSource();
-		}
-		catch (Exception exception) {
-			WebDriver.TargetLocator targetLocator = switchTo();
-
-			targetLocator.window(_defaultWindowHandle);
-
-			pageSource = getPageSource();
-		}
-
-		if (pageSource == null) {
-			System.out.println("Unable to obtain HTML source");
-		}
-		else if (pageSource.contains(
-					"html id=\"feedHandler\" xmlns=" +
-						"\"http://www.w3.org/1999/xhtml\"")) {
-
-			return;
-		}
-
-		List<JavaScriptError> javaScriptErrors = new ArrayList<>();
-
-		try {
-			WebElement webElement = getWebElement("//body");
-
-			WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-			WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
-			javaScriptErrors.addAll(
-				JavaScriptError.readErrors(wrappedWebDriver));
-		}
-		catch (Exception exception) {
-		}
-
-		List<Exception> exceptions = new ArrayList<>();
-
-		if (!javaScriptErrors.isEmpty()) {
-			for (JavaScriptError javaScriptError : javaScriptErrors) {
-				String javaScriptErrorValue = javaScriptError.toString();
-
-				if ((Validator.isNotNull(ignoreJavaScriptError) &&
-					 javaScriptErrorValue.contains(ignoreJavaScriptError)) ||
-					LiferaySeleniumUtil.isInIgnoreErrorsFile(
-						javaScriptErrorValue, "javascript")) {
-
-					continue;
-				}
-
-				String message = "JAVA_SCRIPT_ERROR: " + javaScriptErrorValue;
-
-				System.out.println(message);
-
-				exceptions.add(new PoshiRunnerWarningException(message));
-			}
-		}
-
-		if (!exceptions.isEmpty()) {
-			LiferaySeleniumUtil.addToJavaScriptExceptions(exceptions);
-
-			throw exceptions.get(0);
-		}
 	}
 
 	@Override
@@ -697,6 +691,46 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
+	public void assertTable(String locator, String tableString)
+		throws Exception {
+
+		Table htmlTable = getHTMLTable(locator);
+
+		Table table = new DefaultTable(tableString);
+
+		if (htmlTable.getTableSize() != table.getTableSize()) {
+			throw new Exception(
+				"Expected " + table.getTableSize() + " rows but found " +
+					htmlTable.getTableSize() + " rows");
+		}
+
+		for (int i = 0; i < htmlTable.getTableSize(); i++) {
+			List<String> htmlCellValues = htmlTable.getRowByIndex(i);
+
+			List<String> cellValues = table.getRowByIndex(i);
+
+			if (htmlCellValues.size() != cellValues.size()) {
+				throw new Exception(
+					"Expected " + cellValues.size() + " columns but found " +
+						htmlCellValues.size() + " columns");
+			}
+
+			for (int j = 0; j < htmlCellValues.size(); j++) {
+				String htmlCellValue = htmlCellValues.get(j);
+
+				String cellValue = cellValues.get(j);
+
+				if (!htmlCellValue.equals(cellValue)) {
+					throw new Exception(
+						"Expected text \"" + cellValue +
+							"\" does not match actual text \"" + htmlCellValue +
+								"\"");
+				}
+			}
+		}
+	}
+
+	@Override
 	public void assertText(String locator, String pattern) throws Exception {
 		assertElementPresent(locator);
 
@@ -713,6 +747,18 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 			getTextCaseInsensitiveCondition(locator, pattern);
 
 		textCaseInsensitiveCondition.assertTrue();
+	}
+
+	@Override
+	public void assertTextMatches(String locator, String regex)
+		throws Exception {
+
+		assertElementPresent(locator);
+
+		Condition textMatchedCondition = getTextMatchesCondition(
+			locator, regex);
+
+		textMatchedCondition.assertTrue();
 	}
 
 	@Override
@@ -736,6 +782,17 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		Condition valueCondition = getValueCondition(locator, pattern);
 
 		valueCondition.assertTrue();
+	}
+
+	@Override
+	public void assertValueMatches(String locator, String regex)
+		throws Exception {
+
+		assertElementPresent(locator);
+
+		Condition valueMatchCondition = getValueMatchCondition(locator, regex);
+
+		valueMatchCondition.assertTrue();
 	}
 
 	@Override
@@ -783,46 +840,20 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 			open(url);
 		}
 		else {
-			WebElement webElement = getWebElement(locator);
-
-			try {
-				webElement.click();
-			}
-			catch (Exception exception) {
-				scrollWebElementIntoView(webElement);
-
-				webElement.click();
-			}
+			clickAt(locator, null);
 		}
 	}
 
 	@Override
-	public void clickAt(String locator, String coordString) {
-		int offsetX = 0;
-		int offsetY = 0;
+	public void clickAt(String locator, String offset) {
+		WebElement webElement = getWebElement(locator);
 
-		if (Validator.isNotNull(coordString) && coordString.contains(",")) {
-			String[] coords = coordString.split(",");
-
-			offsetX = GetterUtil.getInteger(coords[0]);
-			offsetY = GetterUtil.getInteger(coords[1]);
-		}
-
-		if ((offsetX == 0) && (offsetY == 0)) {
-			click(locator);
-		}
-		else {
-			WebElement webElement = getWebElement(locator);
-
+		if (Validator.isNotNull(offset) && offset.contains(",")) {
 			scrollWebElementIntoView(webElement);
 
-			WrapsDriver wrapsDriver = (WrapsDriver)webElement;
+			Actions actions = new Actions(getWrappedWebDriver(webElement));
 
-			WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-			Actions actions = new Actions(webDriver);
-
-			actions.moveToElement(webElement, offsetX, offsetY);
+			moveToElement(actions, webElement, offset);
 
 			actions.pause(1500);
 
@@ -831,6 +862,16 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 			Action action = actions.build();
 
 			action.perform();
+		}
+		else {
+			try {
+				webElement.click();
+			}
+			catch (Exception exception) {
+				scrollWebElementIntoView(webElement);
+
+				webElement.click();
+			}
 		}
 	}
 
@@ -872,38 +913,17 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	@Override
 	public void doubleClick(String locator) {
-		WebElement webElement = getWebElement(locator);
-
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
-
-		actions.doubleClick(webElement);
-
-		Action action = actions.build();
-
-		action.perform();
+		doubleClickAt(locator, null);
 	}
 
 	@Override
-	public void doubleClickAt(String locator, String coordString) {
+	public void doubleClickAt(String locator, String offset) {
 		WebElement webElement = getWebElement(locator);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
+		Actions actions = new Actions(getWrappedWebDriver(webElement));
 
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
-
-		if (Validator.isNotNull(coordString) && coordString.contains(",")) {
-			String[] coords = coordString.split(",");
-
-			int x = GetterUtil.getInteger(coords[0]);
-			int y = GetterUtil.getInteger(coords[1]);
-
-			actions.moveToElement(webElement, x, y);
+		if (Validator.isNotNull(offset) && offset.contains(",")) {
+			moveToElement(actions, webElement, offset);
 
 			actions.doubleClick();
 		}
@@ -918,46 +938,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	@Override
 	public void dragAndDrop(String locator, String coordinatePairs) {
-		try {
-			Matcher matcher = _coordinatePairsPattern.matcher(coordinatePairs);
-
-			if (!matcher.matches()) {
-				throw new Exception(
-					"Coordinate pairs \"" + coordinatePairs +
-						"\" do not match pattern \"" +
-							_coordinatePairsPattern.pattern() + "\"");
-			}
-
-			WebElement webElement = getWebElement(locator);
-
-			WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-			WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-			Actions actions = new Actions(webDriver);
-
-			actions.clickAndHold(webElement);
-
-			actions.pause(1500);
-
-			for (String coordinatePair : coordinatePairs.split("\\|")) {
-				String[] coordinates = coordinatePair.split(",");
-
-				actions.moveByOffset(
-					GetterUtil.getInteger(coordinates[0]),
-					GetterUtil.getInteger(coordinates[1]));
-			}
-
-			actions.pause(1500);
-
-			actions.release();
-
-			Action action = actions.build();
-
-			action.perform();
-		}
-		catch (Exception exception) {
-		}
+		dragAtAndDrop(locator, null, coordinatePairs);
 	}
 
 	@Override
@@ -968,11 +949,10 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		WebElement objectToBeDraggedWebElement = getWebElement(
 			locatorOfObjectToBeDragged);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)objectToBeDraggedWebElement;
+		WebDriver wrappedWebDriver = getWrappedWebDriver(
+			objectToBeDraggedWebElement);
 
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
+		Actions actions = new Actions(wrappedWebDriver);
 
 		WebElement dragDestinationObjectWebElement = getWebElement(
 			locatorOfDragDestinationObject);
@@ -986,45 +966,74 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
+	public void dragAtAndDrop(
+		String locator, String offset, String destinationOffsets) {
+
+		Matcher matcher = _coordinatePairsPattern.matcher(destinationOffsets);
+
+		if (!matcher.matches()) {
+			throw new IllegalArgumentException(
+				"Coordinate pairs \"" + destinationOffsets +
+					"\" do not match pattern \"" +
+						_coordinatePairsPattern.pattern() + "\"");
+		}
+
+		WebElement webElement = getWebElement(locator);
+
+		Actions actions = new Actions(getWrappedWebDriver(webElement));
+
+		if (Validator.isNotNull(offset)) {
+			moveToElement(actions, webElement, offset);
+
+			actions.clickAndHold();
+		}
+		else {
+			actions.clickAndHold(webElement);
+		}
+
+		actions.pause(1500);
+
+		for (String destinationOffset : destinationOffsets.split("\\|")) {
+			String[] destinationOffsetCoordinates = destinationOffset.split(
+				",");
+
+			actions.moveByOffset(
+				GetterUtil.getInteger(destinationOffsetCoordinates[0]),
+				GetterUtil.getInteger(destinationOffsetCoordinates[1]));
+		}
+
+		actions.pause(1500);
+
+		actions.release();
+
+		Action action = actions.build();
+
+		action.perform();
+	}
+
+	@Override
 	public void echo(String message) {
 		LiferaySeleniumUtil.echo(message);
+	}
+
+	@Override
+	public void executeCDPCommand(
+		String commandName, Map<String, Object> commandParameters) {
+
+		Augmenter augmenter = new Augmenter();
+
+		WebDriver webDriver = augmenter.augment(getWebDriver());
+
+		HasCdp hasCdp = (HasCdp)webDriver;
+
+		hasCdp.executeCdpCommand(commandName, commandParameters);
 	}
 
 	@Override
 	public void executeJavaScript(
 		String javaScript, String argument1, String argument2) {
 
-		WebElement webElement = getWebElement("//body");
-
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
-		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
-
-		Object object1 = null;
-		Object object2 = null;
-
-		try {
-			object1 = getWebElement(argument1);
-		}
-		catch (ElementNotFoundPoshiRunnerException | InvalidSelectorException
-					exception) {
-
-			object1 = argument1;
-		}
-
-		try {
-			object2 = getWebElement(argument2);
-		}
-		catch (ElementNotFoundPoshiRunnerException | InvalidSelectorException
-					exception) {
-
-			object2 = argument2;
-		}
-
-		javascriptExecutor.executeScript(javaScript, object1, object2);
+		getJavaScriptResult(javaScript, argument1, argument2);
 	}
 
 	@Override
@@ -1044,7 +1053,13 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	@Override
 	public void get(String url) {
-		_webDriver.get(url);
+		try {
+			_webDriver.get(url);
+		}
+		catch (Throwable throwable) {
+			throw new WebDriverException(
+				"Invalid URL: " + url, throwable.getCause());
+		}
 	}
 
 	@Override
@@ -1071,7 +1086,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public String getConfirmation(String value) {
 		switchTo();
 
-		WebDriverWait webDriverWait = new WebDriverWait(this, 1);
+		WebDriverWait webDriverWait = new WebDriverWait(
+			this, Duration.ofSeconds(1));
 
 		try {
 			Alert alert = webDriverWait.until(
@@ -1098,12 +1114,12 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public int getElementHeight(String locator) {
+	public long getElementHeight(String locator) {
 		WebElement webElement = getWebElement(locator);
 
 		Dimension dimension = webElement.getSize();
 
-		return dimension.getHeight();
+		return GetterUtil.getLong(dimension.getHeight());
 	}
 
 	@Override
@@ -1120,12 +1136,12 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public int getElementWidth(String locator) {
+	public long getElementWidth(String locator) {
 		WebElement webElement = getWebElement(locator);
 
 		Dimension dimension = webElement.getSize();
 
-		return dimension.getWidth();
+		return GetterUtil.getLong(dimension.getWidth());
 	}
 
 	@Override
@@ -1140,14 +1156,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	@Override
 	public String getEval(String script) {
-		WebElement webElement = getWebElement("//body");
-
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
+			(JavascriptExecutor)getWrappedWebDriver("//body");
 
 		return (String)javascriptExecutor.executeScript(script);
 	}
@@ -1243,6 +1253,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		return attributeNode.getTextContent();
 	}
 
+	@Override
 	public String getHtmlNodeText(String locator) throws Exception {
 		Node node = getHtmlNode(locator);
 
@@ -1262,20 +1273,16 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public String getJavaScriptResult(
 		String javaScript, String argument1, String argument2) {
 
-		WebElement webElement = getWebElement("//body");
-
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
+			(JavascriptExecutor)getWrappedWebDriver("//body");
 
 		Object object1 = null;
 		Object object2 = null;
 
 		try {
-			object1 = getWebElement(argument1);
+			if (Validator.isNotNull(argument1)) {
+				object1 = getWebElement(argument1);
+			}
 		}
 		catch (ElementNotFoundPoshiRunnerException | InvalidSelectorException
 					exception) {
@@ -1284,7 +1291,9 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		}
 
 		try {
-			object2 = getWebElement(argument2);
+			if (Validator.isNotNull(argument2)) {
+				object2 = getWebElement(argument2);
+			}
 		}
 		catch (ElementNotFoundPoshiRunnerException | InvalidSelectorException
 					exception) {
@@ -1302,7 +1311,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 		LocationCallable callable = new LocationCallable();
 
-		for (int i = 0; i < PropsValues.GET_LOCATION_MAX_RETRIES; i++) {
+		for (int i = 0; i < poshiProperties.getLocationMaxRetries; i++) {
 			FutureTask<String> futureTask = new FutureTask<>(
 				callable._init(this));
 
@@ -1312,7 +1321,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 			try {
 				return futureTask.get(
-					PropsValues.GET_LOCATION_TIMEOUT, TimeUnit.SECONDS);
+					poshiProperties.getLocationTimeout, TimeUnit.SECONDS);
 			}
 			catch (CancellationException cancellationException) {
 				exceptions.add(cancellationException);
@@ -1358,13 +1367,13 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public String getOcularResultImageDirName() {
-		return _OCULAR_RESULT_IMAGE_DIR_NAME;
+	public String getOcularBaselineImageDirName() {
+		return _OCULAR_BASELINE_IMAGE_DIR_NAME;
 	}
 
 	@Override
-	public String getOcularSnapImageDirName() {
-		return _OCULAR_SNAP_IMAGE_DIR_NAME;
+	public String getOcularResultImageDirName() {
+		return _OCULAR_RESULT_IMAGE_DIR_NAME;
 	}
 
 	@Override
@@ -1439,7 +1448,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	@Override
 	public String getTestName() {
-		return PoshiContext.getTestCaseNamespacedClassCommandName();
+		return _testName;
 	}
 
 	@Override
@@ -1485,6 +1494,13 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
+	public String getWebElementAttribute(String locator, String attributeName) {
+		WebElement webElement = getWebElement(locator);
+
+		return webElement.getAttribute(attributeName);
+	}
+
+	@Override
 	public String getWindowHandle() {
 		return _webDriver.getWindowHandle();
 	}
@@ -1492,10 +1508,6 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	@Override
 	public Set<String> getWindowHandles() {
 		return _webDriver.getWindowHandles();
-	}
-
-	public WebDriver getWrappedWebDriver() {
-		return _webDriver;
 	}
 
 	@Override
@@ -1512,7 +1524,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		switchTo();
 
 		try {
-			WebDriverWait webDriverWait = new WebDriverWait(this, 1);
+			WebDriverWait webDriverWait = new WebDriverWait(
+				this, Duration.ofSeconds(1));
 
 			webDriverWait.until(ExpectedConditions.alertIsPresent());
 
@@ -1526,20 +1539,16 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public boolean isAttributeNotPresent(String attribute, String locator) {
-		return !isAttributePresent(attribute, locator);
+	public boolean isAttributeNotPresent(String locator, String attribute) {
+		return !isAttributePresent(locator, attribute);
 	}
 
 	@Override
-	public boolean isAttributePresent(String attribute, String locator) {
+	public boolean isAttributePresent(String locator, String attribute) {
 		WebElement webElement = getWebElement(locator);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
+			(JavascriptExecutor)getWrappedWebDriver(webElement);
 
 		StringBuilder sb = new StringBuilder();
 
@@ -1598,6 +1607,13 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
+	public boolean isElementFocused(String locator) throws Exception {
+		Condition elementFocusedCondition = getElementFocusedCondition(locator);
+
+		return elementFocusedCondition.evaluate();
+	}
+
+	@Override
 	public boolean isElementNotPresent(String locator) throws Exception {
 		Condition elementNotPresentCondition = getElementNotPresentCondition(
 			locator);
@@ -1615,7 +1631,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	@Override
 	public boolean isElementPresentAfterWait(String locator) throws Exception {
 		for (int second = 0;; second++) {
-			if (second >= PropsValues.TIMEOUT_EXPLICIT_WAIT) {
+			if (second >= poshiProperties.timeoutExplicitWait) {
 				return isElementPresent(locator);
 			}
 
@@ -1633,11 +1649,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public boolean isHTMLSourceTextPresent(String value) throws Exception {
 		String pageSource = getPageSource();
 
-		if (pageSource.contains(value)) {
-			return true;
-		}
-
-		return false;
+		return pageSource.contains(value);
 	}
 
 	@Override
@@ -1752,23 +1764,16 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	@Override
 	public boolean isTCatEnabled() {
-		return PropsValues.TCAT_ENABLED;
+		return poshiProperties.tcatEnabled;
 	}
 
 	@Override
 	public boolean isTestName(String testName) {
-		String classCommandName =
-			PoshiContext.getTestCaseNamespacedClassCommandName();
-
-		classCommandName =
+		String expectedTestName =
 			PoshiGetterUtil.getClassCommandNameFromNamespacedClassCommandName(
-				classCommandName);
+				getTestName());
 
-		if (testName.equals(classCommandName)) {
-			return true;
-		}
-
-		return false;
+		return testName.equals(expectedTestName);
 	}
 
 	@Override
@@ -1846,12 +1851,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 		WebElement webElement = getWebElement(locator, timeout);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
+			(JavascriptExecutor)getWrappedWebDriver(webElement);
 
 		StringBuilder sb = new StringBuilder(2);
 
@@ -1872,6 +1873,11 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
+	public void javaScriptMouseOver(String locator) {
+		executeJavaScriptEvent(locator, "MouseEvent", "mouseover");
+	}
+
+	@Override
 	public void javaScriptMouseUp(String locator) {
 		executeJavaScriptEvent(locator, "MouseEvent", "mouseup");
 	}
@@ -1880,11 +1886,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public void keyDown(String locator, String keySequence) {
 		WebElement webElement = getWebElement(locator);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
+		Actions actions = new Actions(getWrappedWebDriver(webElement));
 
 		String keycode = keySequence.substring(1);
 
@@ -1907,13 +1909,11 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 			if (isValidKeycode(keycode)) {
 				Keys keys = Keys.valueOf(keycode);
 
-				WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
 				if (keycode.equals("ALT") || keycode.equals("COMMAND") ||
 					keycode.equals("CONTROL") || keycode.equals("SHIFT")) {
 
 					Actions actions = new Actions(
-						wrapsDriver.getWrappedDriver());
+						getWrappedWebDriver(webElement));
 
 					actions.keyDown(webElement, keys);
 					actions.keyUp(webElement, keys);
@@ -1936,11 +1936,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public void keyUp(String locator, String keySequence) {
 		WebElement webElement = getWebElement(locator);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
+		Actions actions = new Actions(getWrappedWebDriver(webElement));
 
 		String keycode = keySequence.substring(1);
 
@@ -1955,14 +1951,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	@Override
 	public void makeVisible(String locator) {
-		WebElement bodyWebElement = getWebElement("//body");
-
-		WrapsDriver wrapsDriver = (WrapsDriver)bodyWebElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
+			(JavascriptExecutor)getWrappedWebDriver("//body");
 
 		StringBuilder sb = new StringBuilder();
 
@@ -1985,45 +1975,29 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public void mouseDown(String locator) {
-		WebElement webElement = getWebElement(locator);
+	public void maximizeWindow() {
+		Options option = _webDriver.manage();
 
-		scrollWebElementIntoView(webElement);
+		Window window = option.window();
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
-
-		actions.moveToElement(webElement);
-
-		actions.clickAndHold(webElement);
-
-		Action action = actions.build();
-
-		action.perform();
+		window.maximize();
 	}
 
 	@Override
-	public void mouseDownAt(String locator, String coordString) {
+	public void mouseDown(String locator) {
+		mouseDownAt(locator, null);
+	}
+
+	@Override
+	public void mouseDownAt(String locator, String offset) {
 		WebElement webElement = getWebElement(locator);
 
 		scrollWebElementIntoView(webElement);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
+		Actions actions = new Actions(getWrappedWebDriver(webElement));
 
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
-
-		if (Validator.isNotNull(coordString) && coordString.contains(",")) {
-			String[] coords = coordString.split(",");
-
-			int x = GetterUtil.getInteger(coords[0]);
-			int y = GetterUtil.getInteger(coords[1]);
-
-			actions.moveToElement(webElement, x, y);
+		if (Validator.isNotNull(offset) && offset.contains(",")) {
+			moveToElement(actions, webElement, offset);
 
 			actions.clickAndHold();
 		}
@@ -2040,42 +2014,19 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	@Override
 	public void mouseMove(String locator) {
-		WebElement webElement = getWebElement(locator);
-
-		scrollWebElementIntoView(webElement);
-
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
-
-		actions.moveToElement(webElement);
-
-		Action action = actions.build();
-
-		action.perform();
+		mouseMoveAt(locator, null);
 	}
 
 	@Override
-	public void mouseMoveAt(String locator, String coordString) {
+	public void mouseMoveAt(String locator, String offset) {
 		WebElement webElement = getWebElement(locator);
 
 		scrollWebElementIntoView(webElement);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
+		Actions actions = new Actions(getWrappedWebDriver(webElement));
 
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
-
-		if (Validator.isNotNull(coordString) && coordString.contains(",")) {
-			String[] coords = coordString.split(",");
-
-			int x = GetterUtil.getInteger(coords[0]);
-			int y = GetterUtil.getInteger(coords[1]);
-
-			actions.moveToElement(webElement, x, y);
+		if (Validator.isNotNull(offset) && offset.contains(",")) {
+			moveToElement(actions, webElement, offset);
 		}
 		else {
 			actions.moveToElement(webElement);
@@ -2092,11 +2043,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 		scrollWebElementIntoView(webElement);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
+		Actions actions = new Actions(getWrappedWebDriver(webElement));
 
 		actions.moveToElement(webElement);
 		actions.moveByOffset(10, 10);
@@ -2112,11 +2059,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 		scrollWebElementIntoView(webElement);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
+		Actions actions = new Actions(getWrappedWebDriver(webElement));
 
 		actions.moveToElement(webElement);
 
@@ -2127,13 +2070,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	@Override
 	public void mouseRelease() {
-		WebElement bodyWebElement = getWebElement("//body");
-
-		WrapsDriver wrapsDriver = (WrapsDriver)bodyWebElement;
-
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
+		Actions actions = new Actions(getWrappedWebDriver("//body"));
 
 		actions.release();
 
@@ -2144,42 +2081,19 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	@Override
 	public void mouseUp(String locator) {
-		WebElement webElement = getWebElement(locator);
-
-		scrollWebElementIntoView(webElement);
-
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
-
-		actions.release(webElement);
-
-		Action action = actions.build();
-
-		action.perform();
+		mouseUpAt(locator, null);
 	}
 
 	@Override
-	public void mouseUpAt(String locator, String coordString) {
+	public void mouseUpAt(String locator, String offset) {
 		WebElement webElement = getWebElement(locator);
 
 		scrollWebElementIntoView(webElement);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
+		Actions actions = new Actions(getWrappedWebDriver(webElement));
 
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
-
-		if (Validator.isNotNull(coordString) && coordString.contains(",")) {
-			String[] coords = coordString.split(",");
-
-			int x = GetterUtil.getInteger(coords[0]);
-			int y = GetterUtil.getInteger(coords[1]);
-
-			actions.moveToElement(webElement, x, y);
+		if (Validator.isNotNull(offset) && offset.contains(",")) {
+			moveToElement(actions, webElement, offset);
 
 			actions.release();
 		}
@@ -2199,26 +2113,33 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public void ocularAssertElementImage(String locator, String fileName)
+	public void ocularAssertElementImage(
+			String locator, String fileName, String match)
 		throws Exception {
 
-		File snapFile = new File(
-			PropsValues.TEST_BASE_DIR_NAME + getOcularSnapImageDirName() + "/" +
-				fileName);
+		File baselineFile = new File(
+			poshiProperties.testBaseDirName + getOcularBaselineImageDirName() +
+				"/" + fileName);
 
-		if (!snapFile.exists()) {
-			snapFile.mkdirs();
+		if (!baselineFile.exists()) {
+			File snapParentFile = baselineFile.getParentFile();
+
+			snapParentFile.mkdirs();
 		}
 
 		File resultFile = new File(
-			PropsValues.TEST_BASE_DIR_NAME + getOcularResultImageDirName() +
+			poshiProperties.testBaseDirName + getOcularResultImageDirName() +
 				"/" + fileName);
 
-		resultFile.mkdirs();
+		File resultParentFile = resultFile.getParentFile();
+
+		resultParentFile.mkdirs();
 
 		OcularConfiguration ocularConfiguration = Ocular.config();
 
-		ocularConfiguration.resultPath(Paths.get(resultFile.getParent()));
+		ocularConfiguration.resultPath(Paths.get(resultParentFile.getPath()));
+
+		ocularConfiguration.globalSimilarity(GetterUtil.getInteger(match));
 
 		WebElement webElement = getWebElement(locator);
 
@@ -2245,7 +2166,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		String targetURL = url.trim();
 
 		if (targetURL.startsWith("/")) {
-			targetURL = PropsValues.PORTAL_URL + targetURL;
+			targetURL = poshiProperties.portalURL + targetURL;
 		}
 
 		get(targetURL);
@@ -2301,14 +2222,24 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		pause("3000");
 	}
 
+	@Override
+	public Map<String, Object> returnCDPCommand(
+		String commandName, Map<String, Object> commandParameters) {
+
+		Augmenter augmenter = new Augmenter();
+
+		WebDriver webDriver = augmenter.augment(getWebDriver());
+
+		HasCdp hasCdp = (HasCdp)webDriver;
+
+		return hasCdp.executeCdpCommand(commandName, commandParameters);
+	}
+
+	@Override
 	public void rightClick(String locator) {
 		WebElement webElement = getWebElement(locator);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
+		Actions actions = new Actions(getWrappedWebDriver(webElement));
 
 		actions.contextClick(webElement);
 
@@ -2361,7 +2292,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	@Override
 	public void saveScreenshot(String fileName) throws Exception {
-		if (!PropsValues.SAVE_SCREENSHOT) {
+		if (!poshiProperties.saveScreenshot) {
 			return;
 		}
 
@@ -2378,32 +2309,16 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 			saveScreenshot(fileName);
 		}
 		catch (UnhandledAlertException unhandledAlertException) {
-			LiferaySeleniumUtil.captureScreen(fileName);
+			System.out.println("Unable to save screenshot due to alert");
 		}
 	}
 
 	@Override
-	public void saveScreenshotAndSource() throws Exception {
-	}
-
-	@Override
-	public void saveScreenshotBeforeAction(boolean actionFailed)
-		throws Exception {
-	}
-
-	@Override
-	public void scrollBy(String coordString) {
-		WebElement webElement = getWebElement("//html");
-
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
+	public void scrollBy(String offset) {
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
+			(JavascriptExecutor)getWrappedWebDriver("//html");
 
-		javascriptExecutor.executeScript(
-			"window.scrollBy(" + coordString + ");");
+		javascriptExecutor.executeScript("window.scrollBy(" + offset + ");");
 	}
 
 	@Override
@@ -2475,20 +2390,16 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		WebDriver.TargetLocator targetLocator = switchTo();
 
 		if (locator.equals("relative=parent")) {
-			targetLocator.window(_defaultWindowHandle);
-
 			if (!_frameWebElements.isEmpty()) {
 				_frameWebElements.pop();
-
-				if (!_frameWebElements.isEmpty()) {
-					targetLocator.frame(_frameWebElements.peek());
-				}
 			}
+
+			targetLocator.parentFrame();
 		}
 		else if (locator.equals("relative=top")) {
-			_frameWebElements = new Stack<>();
+			_frameWebElements.clear();
 
-			targetLocator.window(_defaultWindowHandle);
+			targetLocator.defaultContent();
 		}
 		else {
 			_frameWebElements.push(getWebElement(locator));
@@ -2565,15 +2476,6 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public void sendActionDescriptionLogger(String description) {
-	}
-
-	@Override
-	public boolean sendActionLogger(String command, String[] params) {
-		return true;
-	}
-
-	@Override
 	public void sendEmail(String to, String subject, String body)
 		throws Exception {
 
@@ -2627,28 +2529,12 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public void sendLogger(String id, String status) {
-	}
-
-	@Override
-	public void sendMacroDescriptionLogger(String description) {
-	}
-
-	@Override
-	public void sendTestCaseCommandLogger(String command) {
-	}
-
-	@Override
-	public void sendTestCaseHeaderLogger(String command) {
-	}
-
-	@Override
 	public void setDefaultTimeout() {
 	}
 
 	@Override
 	public void setDefaultTimeoutImplicit() {
-		int timeout = PropsValues.TIMEOUT_IMPLICIT_WAIT * 1000;
+		int timeout = poshiProperties.timeoutImplicitWait * 1000;
 
 		setTimeoutImplicit(String.valueOf(timeout));
 	}
@@ -2659,6 +2545,11 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
+	public void setTestName(String testName) {
+		_testName = testName;
+	}
+
+	@Override
 	public void setTimeout(String timeout) {
 	}
 
@@ -2666,7 +2557,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public void setTimeoutImplicit(String timeout) {
 		WebDriver.Options options = manage();
 
-		if (!PropsValues.BROWSER_TYPE.equals("safari")) {
+		if (!poshiProperties.browserType.equals("safari")) {
 			WebDriver.Timeouts timeouts = options.timeouts();
 
 			timeouts.implicitlyWait(
@@ -2675,23 +2566,14 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public void setWindowSize(String coordString) {
-		WebElement bodyWebElement = getWebElement("//body");
+	public void setWindowSize(String size) {
+		WebDriver wrappedWebDriver = getWrappedWebDriver("//body");
 
-		WrapsDriver wrapsDriver = (WrapsDriver)bodyWebElement;
-
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		WebDriver.Options options = webDriver.manage();
+		WebDriver.Options options = wrappedWebDriver.manage();
 
 		WebDriver.Window window = options.window();
 
-		String[] screenResolution = StringUtil.split(coordString, ",");
-
-		int x = GetterUtil.getInteger(screenResolution[0]);
-		int y = GetterUtil.getInteger(screenResolution[1]);
-
-		window.setSize(new Dimension(x, y));
+		window.setSize(_getDimension(size));
 	}
 
 	@Override
@@ -2758,7 +2640,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public void sikuliDragAndDrop(String image, String coordString)
+	public void sikuliDragAndDrop(String image, String offset)
 		throws Exception {
 
 		ScreenRegion screenRegion = new DesktopScreenRegion();
@@ -2777,12 +2659,12 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 		robot.delay(2000);
 
-		String[] coords = coordString.split(",");
+		String[] offsetCoordinates = offset.split(",");
 
 		Location location = screenRegion.getCenter();
 
-		int x = location.getX() + GetterUtil.getInteger(coords[0]);
-		int y = location.getY() + GetterUtil.getInteger(coords[1]);
+		int x = location.getX() + GetterUtil.getInteger(offsetCoordinates[0]);
+		int y = location.getY() + GetterUtil.getInteger(offsetCoordinates[1]);
 
 		robot.mouseMove(x, y);
 
@@ -2914,7 +2796,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public void sikuliUploadTCatFile(String image, String value)
 		throws Exception {
 
-		String fileName = PropsValues.TCAT_ADMIN_REPOSITORY + "/" + value;
+		String fileName = poshiProperties.tcatAdminRepository + "/" + value;
 
 		fileName = FileUtil.fixFilePath(fileName);
 
@@ -2953,32 +2835,13 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public void startLogger() {
-	}
-
-	@Override
-	public void stop() {
-		quit();
-	}
-
-	@Override
-	public void stopLogger() {
-	}
-
-	@Override
 	public TargetLocator switchTo() {
 		return _webDriver.switchTo();
 	}
 
 	@Override
 	public void tripleClick(String locator) {
-		WebElement webElement = getWebElement(locator);
-
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver webDriver = wrapsDriver.getWrappedDriver();
-
-		Actions actions = new Actions(webDriver);
+		Actions actions = new Actions(getWrappedWebDriver(locator));
 
 		int count = 3;
 
@@ -3095,12 +2958,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 			return;
 		}
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
+			(JavascriptExecutor)getWrappedWebDriver(webElement);
 
 		StringBuilder sb = new StringBuilder();
 
@@ -3118,40 +2977,6 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		Alert alert = getAlert();
 
 		alert.sendKeys(value);
-	}
-
-	@Override
-	public void typeAlloyEditor(String locator, String value) {
-		WebElement webElement = getWebElement(locator);
-
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
-		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
-
-		StringBuilder sb = new StringBuilder();
-
-		sb.append("CKEDITOR.instances[\"");
-
-		String titleAttribute = getAttribute(locator + "@title");
-
-		int x = titleAttribute.indexOf(",");
-
-		int y = titleAttribute.indexOf(",", x + 1);
-
-		if (y == -1) {
-			y = titleAttribute.length();
-		}
-
-		sb.append(titleAttribute.substring(x + 2, y));
-
-		sb.append("\"].setData(\"");
-		sb.append(HtmlUtil.escapeJS(StringUtil.replace(value, "\\", "\\\\")));
-		sb.append("\");");
-
-		javascriptExecutor.executeScript(sb.toString());
 	}
 
 	@Override
@@ -3183,12 +3008,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 		WebElement webElement = getWebElement(locator);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
+			(JavascriptExecutor)getWrappedWebDriver(webElement);
 
 		javascriptExecutor.executeScript(
 			"arguments[0].CodeMirror.setValue(arguments[1]);", webElement,
@@ -3197,10 +3018,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	@Override
 	public void typeEditor(String locator, String value) {
-		WrapsDriver wrapsDriver = (WrapsDriver)getWebElement(locator);
-
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrapsDriver.getWrappedDriver();
+			(JavascriptExecutor)getWrappedWebDriver(locator);
 
 		StringBuilder sb = new StringBuilder();
 
@@ -3218,6 +3037,26 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		WebElement webElement = getWebElement(locator);
 
 		if (!webElement.isEnabled()) {
+			return;
+		}
+
+		if (value.startsWith("keys=")) {
+			value = value.substring(5);
+
+			List<CharSequence> charSequences = new ArrayList<>();
+
+			for (String key : value.split(",")) {
+				CharSequence charSequence = key;
+
+				if (_keysMap.containsKey(key)) {
+					charSequence = _keysMap.get(key);
+				}
+
+				charSequences.add(charSequence);
+			}
+
+			webElement.sendKeys(charSequences.toArray(new CharSequence[0]));
+
 			return;
 		}
 
@@ -3256,19 +3095,30 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
-	public void uploadCommonFile(String location, String value)
+	public void uploadCommonFile(String locator, String commonFilePath)
 		throws Exception {
 
-		String fileName =
+		String filePath =
 			FileUtil.getSeparator() + getTestDependenciesDirName() +
-				FileUtil.getSeparator() + value;
+				FileUtil.getSeparator() + commonFilePath;
 
-		fileName = LiferaySeleniumUtil.getSourceDirFilePath(fileName);
+		filePath = LiferaySeleniumUtil.getSourceDirFilePath(filePath);
 
-		if (value.endsWith(".jar") || value.endsWith(".lar") ||
-			value.endsWith(".war") || value.endsWith(".zip")) {
+		uploadFile(locator, FileUtil.fixFilePath(filePath));
+	}
 
-			File file = new File(fileName);
+	@Override
+	public void uploadFile(String locator, String filePath) {
+		makeVisible(locator);
+
+		WebElement webElement = getWebElement(locator);
+
+		filePath = FileUtil.getCanonicalPath(filePath);
+
+		if (filePath.endsWith(".jar") || filePath.endsWith(".lar") ||
+			filePath.endsWith(".war") || filePath.endsWith(".zip")) {
+
+			File file = new File(filePath);
 
 			if (file.isDirectory()) {
 				String archiveFilePath =
@@ -3277,24 +3127,15 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 				archiveFilePath = FileUtil.getCanonicalPath(archiveFilePath);
 
-				ArchiveUtil.archive(fileName, archiveFilePath);
+				ArchiveUtil.archive(filePath, archiveFilePath);
 
-				fileName = archiveFilePath;
+				filePath = archiveFilePath;
 			}
 		}
 
-		fileName = FileUtil.fixFilePath(fileName);
+		filePath = FileUtil.fixFilePath(filePath);
 
-		uploadFile(location, fileName);
-	}
-
-	@Override
-	public void uploadFile(String location, String value) {
-		makeVisible(location);
-
-		WebElement webElement = getWebElement(location);
-
-		webElement.sendKeys(FileUtil.getCanonicalPath(value));
+		webElement.sendKeys(filePath);
 	}
 
 	@Override
@@ -3518,7 +3359,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	public void waitForPopUp(String windowID, String timeout) {
 		int wait = 0;
 
-		if (timeout.equals("")) {
+		if (timeout.equals("") || timeout.equals("null")) {
 			wait = 30;
 		}
 		else {
@@ -3599,6 +3440,16 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	@Override
+	public void waitForTextMatches(String locator, String regex)
+		throws Exception {
+
+		Condition textMatchesCondition = getTextMatchesCondition(
+			locator, regex);
+
+		textMatchesCondition.waitFor();
+	}
+
+	@Override
 	public void waitForTextNotPresent(String value) throws Exception {
 		Condition textNotPresentCondition = getTextNotPresentCondition(value);
 
@@ -3656,12 +3507,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 		WebElement webElement = getWebElement(locator);
 
-		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
+			(JavascriptExecutor)getWrappedWebDriver(webElement);
 
 		if (!webElement.isDisplayed()) {
 			scrollWebElementIntoView(webElement);
@@ -3683,7 +3530,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		if (_alert == null) {
 			switchTo();
 
-			WebDriverWait webDriverWait = new WebDriverWait(this, 1);
+			WebDriverWait webDriverWait = new WebDriverWait(
+				this, Duration.ofSeconds(1));
 
 			_alert = webDriverWait.until(ExpectedConditions.alertIsPresent());
 		}
@@ -3694,7 +3542,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	protected String getAlertText() {
 		switchTo();
 
-		WebDriverWait webDriverWait = new WebDriverWait(this, 1);
+		WebDriverWait webDriverWait = new WebDriverWait(
+			this, Duration.ofSeconds(1));
 
 		Alert alert = webDriverWait.until(ExpectedConditions.alertIsPresent());
 
@@ -3764,8 +3613,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		for (Element element : elements) {
 			String href = element.attr("href");
 
-			if (!href.contains(PropsValues.PORTAL_URL)) {
-				href = PropsValues.PORTAL_URL + href;
+			if (!href.contains(poshiProperties.portalURL)) {
+				href = poshiProperties.portalURL + href;
 			}
 
 			Connection connection = Jsoup.connect(href);
@@ -3802,7 +3651,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	protected String getEditorName(String locator) {
 		String titleAttribute = getAttribute(locator + "@title");
 
-		if (titleAttribute.contains("Rich Text Editor,")) {
+		if (titleAttribute.contains("Rich Text Editor")) {
 			int x = titleAttribute.indexOf(",");
 
 			int y = titleAttribute.indexOf(",", x + 1);
@@ -3831,6 +3680,40 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		return idAttribute;
 	}
 
+	protected Condition getElementFocusedCondition(String locator) {
+		String message = "Element from locator " + locator + " is not focused";
+
+		return new Condition(message) {
+
+			@Override
+			public boolean evaluate() throws Exception {
+				WebElement webElement = getWebElement(locator);
+
+				WebDriver webDriver = getWebDriver();
+
+				TargetLocator targetLocator = webDriver.switchTo();
+
+				WebElement activeWebElement = targetLocator.activeElement();
+
+				return webElement.equals(activeWebElement);
+			}
+
+		};
+	}
+
+	protected Condition getElementNotFocusedCondition(String locator) {
+		String message = "Element from locator " + locator + " is not focused";
+
+		return new Condition(message) {
+
+			@Override
+			public boolean evaluate() throws Exception {
+				return !isElementFocused(locator);
+			}
+
+		};
+	}
+
 	protected Condition getElementNotPresentCondition(String locator) {
 		String message = "Element is present at \"" + locator + "\"";
 
@@ -3844,15 +3727,15 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		};
 	}
 
-	protected int getElementPositionBottom(String locator) {
+	protected long getElementPositionBottom(String locator) {
 		return getElementPositionTop(locator) + getElementHeight(locator);
 	}
 
-	protected int getElementPositionCenterX(String locator) {
+	protected long getElementPositionCenterX(String locator) {
 		return getElementPositionLeft(locator) + (getElementWidth(locator) / 2);
 	}
 
-	protected int getElementPositionCenterY(String locator) {
+	protected long getElementPositionCenterY(String locator) {
 		return getElementPositionTop(locator) + (getElementHeight(locator) / 2);
 	}
 
@@ -3864,7 +3747,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		return point.getX();
 	}
 
-	protected int getElementPositionRight(String locator) {
+	protected long getElementPositionRight(String locator) {
 		return getElementPositionLeft(locator) + getElementWidth(locator);
 	}
 
@@ -3895,11 +3778,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		int x = 0;
 		int y = 0;
 
-		WebElement bodyWebElement = getWebElement("//body");
-
-		WrapsDriver wrapsDriver = (WrapsDriver)bodyWebElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
+		WebDriver wrappedWebDriver = getWrappedWebDriver("//body");
 
 		WebDriver.TargetLocator targetLocator = wrappedWebDriver.switchTo();
 
@@ -3933,6 +3812,31 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		return _frameWebElements;
 	}
 
+	protected Table getHTMLTable(String locator) {
+		List<List<String>> table = new ArrayList<>();
+
+		List<WebElement> rowWebElements = findElements(
+			By.xpath(locator + "//tr"));
+
+		for (int i = 2; i <= rowWebElements.size(); i++) {
+			List<String> webElementTexts = new ArrayList<>();
+
+			List<WebElement> columnWebElements = findElements(
+				By.xpath(locator + "//tr[" + i + "]//td"));
+
+			for (int j = 1; j <= columnWebElements.size(); j++) {
+				WebElement webElement = findElement(
+					By.xpath(locator + "//tr[" + i + "]//td[" + j + "]"));
+
+				webElementTexts.add(webElement.getText());
+			}
+
+			table.add(webElementTexts);
+		}
+
+		return new DefaultTable(table);
+	}
+
 	protected ImageTarget getImageTarget(String image) throws Exception {
 		String fileName =
 			FileUtil.getSeparator() + getSikuliImagesDirName() + image;
@@ -3950,22 +3854,19 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 			@Override
 			public boolean evaluate() {
-				WebElement bodyWebElement = getWebElement("//body");
-
-				WrapsDriver wrapsDriver = (WrapsDriver)bodyWebElement;
-
-				WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
 				JavascriptExecutor javascriptExecutor =
-					(JavascriptExecutor)wrappedWebDriver;
+					(JavascriptExecutor)getWrappedWebDriver("//body");
 
 				Object object = null;
 
 				try {
-					object = getWebElement(argument);
+					if (Validator.isNotNull(argument)) {
+						object = getWebElement(argument);
+					}
 				}
 				catch (ElementNotFoundPoshiRunnerException |
-					   InvalidSelectorException exception) {
+					   InvalidSelectorException | NullPointerException
+						   exception) {
 
 					object = argument;
 				}
@@ -4227,14 +4128,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	protected int getScrollOffsetX() {
-		WebElement bodyWebElement = getWebElement("//body");
-
-		WrapsDriver wrapsDriver = (WrapsDriver)bodyWebElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
+			(JavascriptExecutor)getWrappedWebDriver("//body");
 
 		Object pageXOffset = javascriptExecutor.executeScript(
 			"return window.pageXOffset;");
@@ -4243,14 +4138,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	protected int getScrollOffsetY() {
-		WebElement bodyWebElement = getWebElement("//body");
-
-		WrapsDriver wrapsDriver = (WrapsDriver)bodyWebElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
+			(JavascriptExecutor)getWrappedWebDriver("//body");
 
 		Object pageYOffset = javascriptExecutor.executeScript(
 			"return window.pageYOffset;");
@@ -4338,6 +4227,31 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		};
 	}
 
+	protected Condition getTextMatchesCondition(String locator, String regex) {
+		return new Condition() {
+
+			@Override
+			public void assertTrue() throws Exception {
+				if (!evaluate()) {
+					String message = StringUtil.combine(
+						"Actual text \"", getText(locator),
+						"\" does not match pattern \"", regex, "\" at \"",
+						locator, "\"");
+
+					throw new Exception(message);
+				}
+			}
+
+			@Override
+			public boolean evaluate() throws Exception {
+				String text = getText(locator);
+
+				return text.matches(regex);
+			}
+
+		};
+	}
+
 	protected Condition getTextNotPresentCondition(String pattern) {
 		String message = "\"" + pattern + "\" is present";
 
@@ -4391,15 +4305,33 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		};
 	}
 
+	protected Condition getValueMatchCondition(String locator, String regex) {
+		return new Condition() {
+
+			@Override
+			public void assertTrue() throws Exception {
+				if (!evaluate()) {
+					String message = StringUtil.combine(
+						"Actual value \"", getElementValue(locator), "\" at \"",
+						locator, "\"", "\" does not match pattern\"", regex);
+
+					throw new Exception(message);
+				}
+			}
+
+			@Override
+			public boolean evaluate() throws Exception {
+				String value = getElementValue(locator);
+
+				return value.matches(regex);
+			}
+
+		};
+	}
+
 	protected int getViewportHeight() {
-		WebElement bodyWebElement = getWebElement("//body");
-
-		WrapsDriver wrapsDriver = (WrapsDriver)bodyWebElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrappedWebDriver;
+			(JavascriptExecutor)getWrappedWebDriver("//body");
 
 		return GetterUtil.getInteger(
 			javascriptExecutor.executeScript("return window.innerHeight;"));
@@ -4456,6 +4388,10 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		};
 	}
 
+	protected WebDriver getWebDriver() {
+		return _webDriver;
+	}
+
 	protected WebElement getWebElement(String locator) {
 		return getWebElement(locator, null);
 	}
@@ -4497,11 +4433,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	}
 
 	protected Point getWindowPoint() {
-		WebElement bodyWebElement = getWebElement("//body");
-
-		WrapsDriver wrapsDriver = (WrapsDriver)bodyWebElement;
-
-		WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
+		WebDriver wrappedWebDriver = getWrappedWebDriver("//body");
 
 		WebDriver.Options options = wrappedWebDriver.manage();
 
@@ -4522,11 +4454,25 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		return point.getY();
 	}
 
-	protected boolean isObscured(WebElement webElement) {
+	protected WebDriver getWrappedWebDriver(String locator) {
+		WebDriverWait webDriverWait = new WebDriverWait(
+			this, Duration.ofSeconds(5));
+
+		webDriverWait.until(
+			ExpectedConditions.presenceOfElementLocated(getBy(locator)));
+
+		return getWrappedWebDriver(getWebElement(locator));
+	}
+
+	protected WebDriver getWrappedWebDriver(WebElement webElement) {
 		WrapsDriver wrapsDriver = (WrapsDriver)webElement;
 
+		return wrapsDriver.getWrappedDriver();
+	}
+
+	protected boolean isObscured(WebElement webElement) {
 		JavascriptExecutor javascriptExecutor =
-			(JavascriptExecutor)wrapsDriver.getWrappedDriver();
+			(JavascriptExecutor)getWrappedWebDriver(webElement);
 
 		StringBuilder sb = new StringBuilder();
 
@@ -4559,13 +4505,27 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		return false;
 	}
 
+	protected void moveToElement(
+		Actions actions, WebElement webElement, String offset) {
+
+		String[] offsetCoordinates = offset.split(",");
+
+		int x = GetterUtil.getInteger(offsetCoordinates[0]);
+		int y = GetterUtil.getInteger(offsetCoordinates[1]);
+
+		actions.moveToElement(webElement, x, y);
+	}
+
 	protected void ocularConfig() {
-		String testBaseDirName = PropsValues.TEST_BASE_DIR_NAME;
+		String testBaseDirName = poshiProperties.testBaseDirName;
 
 		OcularConfiguration ocularConfiguration = Ocular.config();
 
 		ocularConfiguration = ocularConfiguration.snapshotPath(
-			Paths.get(testBaseDirName, getOcularSnapImageDirName()));
+			Paths.get(testBaseDirName, getOcularBaselineImageDirName()));
+
+		FileUtil.delete(
+			new File(testBaseDirName, getOcularResultImageDirName()));
 
 		ocularConfiguration.resultPath(
 			Paths.get(testBaseDirName, getOcularResultImageDirName()));
@@ -4578,7 +4538,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	protected void saveWebPage(String fileName, String htmlSource)
 		throws Exception {
 
-		if (!PropsValues.SAVE_WEB_PAGE) {
+		if (!poshiProperties.saveWebPage) {
 			return;
 		}
 
@@ -4595,12 +4555,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	protected void scrollWebElementIntoView(WebElement webElement) {
 		if (!webElement.isDisplayed() || isObscured(webElement)) {
-			WrapsDriver wrapsDriver = (WrapsDriver)webElement;
-
-			WebDriver wrappedWebDriver = wrapsDriver.getWrappedDriver();
-
 			JavascriptExecutor javascriptExecutor =
-				(JavascriptExecutor)wrappedWebDriver;
+				(JavascriptExecutor)getWrappedWebDriver(webElement);
 
 			javascriptExecutor.executeScript(
 				"arguments[0].scrollIntoView(false);", webElement);
@@ -4668,6 +4624,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		_navigationBarHeight = navigationBarHeight;
 	}
 
+	protected PoshiProperties poshiProperties;
+
 	protected abstract class Condition {
 
 		public Condition() {
@@ -4698,8 +4656,11 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		}
 
 		public void waitFor(String throwException) throws Exception {
-			for (int second = 0; second < PropsValues.TIMEOUT_EXPLICIT_WAIT;
-				 second++) {
+			int timeout = poshiProperties.timeoutExplicitWait * 1000;
+			int wait = 500;
+
+			for (int millisecond = 0; millisecond < timeout;
+				 millisecond += wait) {
 
 				try {
 					if (evaluate()) {
@@ -4709,7 +4670,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 				catch (Exception exception) {
 				}
 
-				Thread.sleep(1000);
+				Thread.sleep(wait);
 			}
 
 			if ((throwException == null) ||
@@ -4723,9 +4684,18 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 	}
 
-	private static final String _OCULAR_RESULT_IMAGE_DIR_NAME;
+	private Dimension _getDimension(String size) {
+		String[] sizeParts = StringUtil.split(size, "[\\D]+");
 
-	private static final String _OCULAR_SNAP_IMAGE_DIR_NAME;
+		int x = GetterUtil.getInteger(sizeParts[0]);
+		int y = GetterUtil.getInteger(sizeParts[1]);
+
+		return new Dimension(x, y);
+	}
+
+	private static final String _OCULAR_BASELINE_IMAGE_DIR_NAME;
+
+	private static final String _OCULAR_RESULT_IMAGE_DIR_NAME;
 
 	private static final String _OUTPUT_DIR_NAME;
 
@@ -4747,20 +4717,35 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 				put("SHIFT", Integer.valueOf(KeyEvent.VK_SHIFT));
 			}
 		};
+
+	private static final Map<String, Keys> _keysMap =
+		new Hashtable<String, Keys>() {
+			{
+				for (Keys keys : Keys.class.getEnumConstants()) {
+					put(keys.name(), keys);
+				}
+
+				put("CTRL", Keys.CONTROL);
+			}
+		};
+
 	private static final Pattern _tabPattern = Pattern.compile(
 		".*?(\\t).*?", Pattern.DOTALL);
 
 	static {
-		String testDependenciesDirName = PropsValues.TEST_DEPENDENCIES_DIR_NAME;
+		PoshiProperties poshiProperties = PoshiProperties.getPoshiProperties();
+
+		String testDependenciesDirName =
+			poshiProperties.testDependenciesDirName;
 
 		String ocularResultImageDirName =
 			testDependenciesDirName + "//ocular//result";
-		String ocularSnapImageDirName =
-			testDependenciesDirName + "//ocular//snap";
+		String ocularBaselineImageDirName =
+			testDependenciesDirName + "//ocular//baseline";
 		String sikuliImagesDirName =
 			testDependenciesDirName + "//sikuli//linux//";
 
-		String outputDirName = PropsValues.OUTPUT_DIR_NAME;
+		String outputDirName = poshiProperties.outputDirName;
 
 		if (OSDetector.isApple()) {
 			sikuliImagesDirName = StringUtil.replace(
@@ -4769,8 +4754,8 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 		else if (OSDetector.isWindows()) {
 			ocularResultImageDirName = StringUtil.replace(
 				ocularResultImageDirName, "//", "\\");
-			ocularSnapImageDirName = StringUtil.replace(
-				ocularSnapImageDirName, "//", "\\");
+			ocularBaselineImageDirName = StringUtil.replace(
+				ocularBaselineImageDirName, "//", "\\");
 			outputDirName = StringUtil.replace(outputDirName, "//", "\\");
 			sikuliImagesDirName = StringUtil.replace(
 				sikuliImagesDirName, "//", "\\");
@@ -4783,7 +4768,7 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 
 		_OUTPUT_DIR_NAME = outputDirName;
 		_OCULAR_RESULT_IMAGE_DIR_NAME = ocularResultImageDirName;
-		_OCULAR_SNAP_IMAGE_DIR_NAME = ocularSnapImageDirName;
+		_OCULAR_BASELINE_IMAGE_DIR_NAME = ocularBaselineImageDirName;
 		_SIKULI_IMAGES_DIR_NAME = sikuliImagesDirName;
 		_TEST_DEPENDENCIES_DIR_NAME = testDependenciesDirName;
 	}
@@ -4791,9 +4776,10 @@ public abstract class BaseWebDriverImpl implements LiferaySelenium, WebDriver {
 	private Alert _alert;
 	private String _clipBoard = "";
 	private String _defaultWindowHandle;
-	private Stack<WebElement> _frameWebElements = new Stack<>();
+	private final Stack<WebElement> _frameWebElements = new Stack<>();
 	private int _navigationBarHeight = 120;
 	private String _primaryTestSuiteName;
+	private String _testName;
 	private int _totalPauseDuration;
 	private final WebDriver _webDriver;
 

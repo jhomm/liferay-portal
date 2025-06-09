@@ -1,28 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.internal.search.index;
 
+import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.util.PortalRunMode;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.document.DocumentBuilder;
 import com.liferay.portal.search.engine.adapter.document.BulkDocumentRequest;
 import com.liferay.portal.search.engine.adapter.document.IndexDocumentRequest;
+import com.liferay.portal.search.index.IndexNameBuilder;
+import com.liferay.portal.workflow.metrics.internal.search.constants.WorkflowMetricsIndexTypeConstants;
 import com.liferay.portal.workflow.metrics.internal.search.index.util.WorkflowMetricsIndexerUtil;
+import com.liferay.portal.workflow.metrics.model.AddNodeRequest;
+import com.liferay.portal.workflow.metrics.model.DeleteNodeRequest;
 import com.liferay.portal.workflow.metrics.search.index.NodeWorkflowMetricsIndexer;
+import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 
-import java.util.Date;
 import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
@@ -31,49 +28,43 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Inácio Nery
  */
-@Component(immediate = true, service = NodeWorkflowMetricsIndexer.class)
+@Component(service = NodeWorkflowMetricsIndexer.class)
 public class NodeWorkflowMetricsIndexerImpl
 	extends BaseWorkflowMetricsIndexer implements NodeWorkflowMetricsIndexer {
 
 	@Override
-	public Document addNode(
-		long companyId, Date createDate, boolean initial, Date modifiedDate,
-		String name, long nodeId, long processId, String processVersion,
-		boolean terminal, String type) {
-
-		if (searchEngineAdapter == null) {
-			return null;
-		}
-
+	public Document addNode(AddNodeRequest addNodeRequest) {
 		DocumentBuilder documentBuilder = documentBuilderFactory.builder();
 
-		documentBuilder.setLong(
-			"companyId", companyId
+		Document document = documentBuilder.setLong(
+			"companyId", addNodeRequest.getCompanyId()
 		).setDate(
-			"createDate", getDate(createDate)
+			"createDate", getDate(addNodeRequest.getCreateDate())
 		).setValue(
 			"deleted", false
 		).setValue(
-			"initial", initial
+			"initial", addNodeRequest.getInitial()
 		).setDate(
-			"modifiedDate", getDate(modifiedDate)
+			"modifiedDate", getDate(addNodeRequest.getModifiedDate())
 		).setString(
-			"name", name
+			"name", addNodeRequest.getName()
+		).setString(
+			Field.getSortableFieldName("name"),
+			StringUtil.toLowerCase(addNodeRequest.getName())
 		).setLong(
-			"nodeId", nodeId
+			"nodeId", addNodeRequest.getNodeId()
 		).setLong(
-			"processId", processId
+			"processId", addNodeRequest.getProcessId()
 		).setValue(
-			"terminal", terminal
+			"terminal", addNodeRequest.getTerminal()
 		).setString(
-			"type", type
+			"type", addNodeRequest.getType()
 		).setString(
-			"uid", digest(companyId, nodeId)
+			"uid",
+			digest(addNodeRequest.getCompanyId(), addNodeRequest.getNodeId())
 		).setString(
-			"version", processVersion
-		);
-
-		Document document = documentBuilder.build();
+			"version", addNodeRequest.getProcessVersion()
+		).build();
 
 		workflowMetricsPortalExecutor.execute(() -> addDocument(document));
 
@@ -81,15 +72,17 @@ public class NodeWorkflowMetricsIndexerImpl
 	}
 
 	@Override
-	public void deleteNode(long companyId, long nodeId) {
+	public void deleteNode(DeleteNodeRequest deleteNodeRequest) {
 		DocumentBuilder documentBuilder = documentBuilderFactory.builder();
 
 		documentBuilder.setLong(
-			"companyId", companyId
+			"companyId", deleteNodeRequest.getCompanyId()
 		).setLong(
-			"nodeId", nodeId
+			"nodeId", deleteNodeRequest.getNodeId()
 		).setString(
-			"uid", digest(companyId, nodeId)
+			"uid",
+			digest(
+				deleteNodeRequest.getCompanyId(), deleteNodeRequest.getNodeId())
 		);
 
 		workflowMetricsPortalExecutor.execute(
@@ -98,16 +91,22 @@ public class NodeWorkflowMetricsIndexerImpl
 
 	@Override
 	public String getIndexName(long companyId) {
-		return _nodeWorkflowMetricsIndex.getIndexName(companyId);
+		return WorkflowMetricsIndex.getIndexName(
+			_indexNameBuilder, WorkflowMetricsIndexNameConstants.SUFFIX_NODE,
+			companyId);
 	}
 
 	@Override
 	public String getIndexType() {
-		return _nodeWorkflowMetricsIndex.getIndexType();
+		return WorkflowMetricsIndexTypeConstants.NODE_TYPE;
 	}
 
 	@Override
 	protected void addDocument(Document document) {
+		if (!searchCapabilities.isWorkflowMetricsSupported()) {
+			return;
+		}
+
 		super.addDocument(document);
 
 		BulkDocumentRequest bulkDocumentRequest = new BulkDocumentRequest();
@@ -121,41 +120,28 @@ public class NodeWorkflowMetricsIndexerImpl
 						document.getLong("companyId"),
 						document.getLong("nodeId"),
 						document.getLong("processId"),
-						document.getString("name"))) {
-
-					{
-						setType(
-							_slaTaskResultWorkflowMetricsIndexer.
-								getIndexType());
-					}
-				});
+						document.getString("name"))));
 
 			bulkDocumentRequest.addBulkableDocumentRequest(
 				new IndexDocumentRequest(
-					_taskWorkflowMetricsIndex.getIndexName(
+					WorkflowMetricsIndex.getIndexName(
+						_indexNameBuilder,
+						WorkflowMetricsIndexNameConstants.SUFFIX_TASK,
 						document.getLong("companyId")),
 					_createWorkflowMetricsTaskDocument(
 						document.getLong("companyId"),
 						document.getLong("processId"),
 						document.getLong("nodeId"), document.getString("name"),
-						document.getString("version"))) {
-
-					{
-						setType(_taskWorkflowMetricsIndex.getIndexType());
-					}
-				});
+						document.getString("version"))));
 		}
 
 		bulkDocumentRequest.addBulkableDocumentRequest(
 			new IndexDocumentRequest(
-				_nodeWorkflowMetricsIndex.getIndexName(
+				WorkflowMetricsIndex.getIndexName(
+					_indexNameBuilder,
+					WorkflowMetricsIndexNameConstants.SUFFIX_NODE,
 					document.getLong("companyId")),
-				document) {
-
-				{
-					setType(_nodeWorkflowMetricsIndex.getIndexType());
-				}
-			});
+				document));
 
 		if (PortalRunMode.isTestMode()) {
 			bulkDocumentRequest.setRefresh(true);
@@ -182,6 +168,8 @@ public class NodeWorkflowMetricsIndexerImpl
 			"instanceId", 0L
 		).setString(
 			"name", name
+		).setString(
+			Field.getSortableFieldName("name"), StringUtil.toLowerCase(name)
 		).setLong(
 			"nodeId", nodeId
 		).setLong(
@@ -191,8 +179,8 @@ public class NodeWorkflowMetricsIndexerImpl
 		).setString(
 			"uid",
 			WorkflowMetricsIndexerUtil.digest(
-				_taskWorkflowMetricsIndex.getIndexType(), companyId, processId,
-				processVersion, nodeId)
+				WorkflowMetricsIndexTypeConstants.TASK_TYPE, companyId,
+				processId, processVersion, nodeId)
 		).setString(
 			"version", processVersion
 		);
@@ -200,14 +188,11 @@ public class NodeWorkflowMetricsIndexerImpl
 		return documentBuilder.build();
 	}
 
-	@Reference(target = "(workflow.metrics.index.entity.name=node)")
-	private WorkflowMetricsIndex _nodeWorkflowMetricsIndex;
+	@Reference
+	private IndexNameBuilder _indexNameBuilder;
 
 	@Reference
 	private SLATaskResultWorkflowMetricsIndexer
 		_slaTaskResultWorkflowMetricsIndexer;
-
-	@Reference(target = "(workflow.metrics.index.entity.name=task)")
-	private WorkflowMetricsIndex _taskWorkflowMetricsIndex;
 
 }

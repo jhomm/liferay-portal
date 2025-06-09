@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.template;
@@ -83,10 +74,9 @@ public interface TemplateHandler {
 	 * context.
 	 *
 	 * @param  language the template's scripting language. Acceptable values for
-	 *         the FreeMarker, Velocity, or XSL languages are {@link
-	 *         TemplateConstants#LANG_TYPE_FTL}, {@link
-	 *         TemplateConstants#LANG_TYPE_VM}, or {@link
-	 *         TemplateConstants#LANG_TYPE_XSL}, respectively.
+	 *         the FreeMarker or Velocity languages are {@link
+	 *         TemplateConstants#LANG_TYPE_FTL}, or {@link
+	 *         TemplateConstants#LANG_TYPE_VM}, respectively.
 	 * @return the restricted variables that are excluded from the template's
 	 *         context
 	 */
@@ -97,10 +87,9 @@ public interface TemplateHandler {
 	 * template.
 	 *
 	 * @param  language the template's scripting language. Acceptable values for
-	 *         the FreeMarker, Velocity, or XSL languages are {@link
-	 *         TemplateConstants#LANG_TYPE_FTL}, {@link
-	 *         TemplateConstants#LANG_TYPE_VM}, or {@link
-	 *         TemplateConstants#LANG_TYPE_XSL}, respectively.
+	 *         the FreeMarker or Velocity languages are {@link
+	 *         TemplateConstants#LANG_TYPE_FTL}, or {@link
+	 *         TemplateConstants#LANG_TYPE_VM}, respectively.
 	 * @return initial template content for helping the user create a new
 	 *         template
 	 */
@@ -110,10 +99,9 @@ public interface TemplateHandler {
 	 * Returns the path to the template's help content.
 	 *
 	 * @param  language the template's scripting language. Acceptable values for
-	 *         the FreeMarker, Velocity, or XSL languages are {@link
-	 *         TemplateConstants#LANG_TYPE_FTL}, {@link
-	 *         TemplateConstants#LANG_TYPE_VM}, or {@link
-	 *         TemplateConstants#LANG_TYPE_XSL}, respectively.
+	 *         the FreeMarker or Velocity languages are {@link
+	 *         TemplateConstants#LANG_TYPE_FTL}, or {@link
+	 *         TemplateConstants#LANG_TYPE_VM}, respectively.
 	 * @return the path to the template's help content
 	 */
 	public String getTemplatesHelpPath(String language);
@@ -142,10 +130,9 @@ public interface TemplateHandler {
 	 *         groups for the template. For example, consider specifying the
 	 *         primary key of the structure associated to the template.
 	 * @param  language the template's scripting language. Acceptable values for
-	 *         the FreeMarker, Velocity, or XSL languages are {@link
-	 *         TemplateConstants#LANG_TYPE_FTL}, {@link
-	 *         TemplateConstants#LANG_TYPE_VM}, or {@link
-	 *         TemplateConstants#LANG_TYPE_XSL}, respectively.
+	 *         the FreeMarker or Velocity languages are {@link
+	 *         TemplateConstants#LANG_TYPE_FTL}, or {@link
+	 *         TemplateConstants#LANG_TYPE_VM}, respectively.
 	 * @param  locale the locale of the variable groups to get
 	 * @return the template's map of script variable groups for which hints are
 	 *         displayed in the template editor palette
@@ -163,5 +150,9 @@ public interface TemplateHandler {
 	 *         <code>false</code> otherwise
 	 */
 	public boolean isDisplayTemplateHandler();
+
+	public default boolean isEnabled(long companyId) {
+		return true;
+	}
 
 }

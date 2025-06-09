@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.model;
@@ -17,6 +8,7 @@ package com.liferay.search.experiences.model;
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.LocalizedModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
@@ -41,8 +33,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface SXPElementModel
-	extends BaseModel<SXPElement>, LocalizedModel, MVCCModel, ShardedModel,
-			StagedAuditedModel {
+	extends BaseModel<SXPElement>, ExternalReferenceCodeModel, LocalizedModel,
+			MVCCModel, ShardedModel, StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -96,6 +88,23 @@ public interface SXPElementModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this sxp element.
+	 *
+	 * @return the external reference code of this sxp element
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this sxp element.
+	 *
+	 * @param externalReferenceCode the external reference code of this sxp element
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the sxp element ID of this sxp element.
@@ -325,6 +334,36 @@ public interface SXPElementModel
 	public void setElementDefinitionJSON(String elementDefinitionJSON);
 
 	/**
+	 * Returns the fallback description of this sxp element.
+	 *
+	 * @return the fallback description of this sxp element
+	 */
+	@AutoEscape
+	public String getFallbackDescription();
+
+	/**
+	 * Sets the fallback description of this sxp element.
+	 *
+	 * @param fallbackDescription the fallback description of this sxp element
+	 */
+	public void setFallbackDescription(String fallbackDescription);
+
+	/**
+	 * Returns the fallback title of this sxp element.
+	 *
+	 * @return the fallback title of this sxp element
+	 */
+	@AutoEscape
+	public String getFallbackTitle();
+
+	/**
+	 * Sets the fallback title of this sxp element.
+	 *
+	 * @param fallbackTitle the fallback title of this sxp element
+	 */
+	public void setFallbackTitle(String fallbackTitle);
+
+	/**
 	 * Returns the hidden of this sxp element.
 	 *
 	 * @return the hidden of this sxp element
@@ -365,6 +404,21 @@ public interface SXPElementModel
 	 * @param readOnly the read only of this sxp element
 	 */
 	public void setReadOnly(boolean readOnly);
+
+	/**
+	 * Returns the schema version of this sxp element.
+	 *
+	 * @return the schema version of this sxp element
+	 */
+	@AutoEscape
+	public String getSchemaVersion();
+
+	/**
+	 * Sets the schema version of this sxp element.
+	 *
+	 * @param schemaVersion the schema version of this sxp element
+	 */
+	public void setSchemaVersion(String schemaVersion);
 
 	/**
 	 * Returns the title of this sxp element.
@@ -480,6 +534,21 @@ public interface SXPElementModel
 	public void setType(int type);
 
 	/**
+	 * Returns the version of this sxp element.
+	 *
+	 * @return the version of this sxp element
+	 */
+	@AutoEscape
+	public String getVersion();
+
+	/**
+	 * Sets the version of this sxp element.
+	 *
+	 * @param version the version of this sxp element
+	 */
+	public void setVersion(String version);
+
+	/**
 	 * Returns the status of this sxp element.
 	 *
 	 * @return the status of this sxp element
@@ -508,5 +577,9 @@ public interface SXPElementModel
 
 	@Override
 	public SXPElement cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

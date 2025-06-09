@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.model;
@@ -48,6 +39,7 @@ public class AssetListEntryWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("assetListEntryId", getAssetListEntryId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -83,6 +75,13 @@ public class AssetListEntryWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long assetListEntryId = (Long)attributes.get("assetListEntryId");
@@ -170,106 +169,6 @@ public class AssetListEntryWrapper
 	}
 
 	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 AssetListAssetEntryProvider#getAssetEntries(AssetListEntry,
-	 long)}
-	 */
-	@Deprecated
-	@Override
-	public java.util.List<com.liferay.asset.kernel.model.AssetEntry>
-		getAssetEntries(long segmentsEntryId) {
-
-		return model.getAssetEntries(segmentsEntryId);
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 AssetListAssetEntryProvider#getAssetEntries(AssetListEntry,
-	 long, int, int)}
-	 */
-	@Deprecated
-	@Override
-	public java.util.List<com.liferay.asset.kernel.model.AssetEntry>
-		getAssetEntries(long segmentsEntryId, int start, int end) {
-
-		return model.getAssetEntries(segmentsEntryId, start, end);
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 AssetListAssetEntryProvider#getAssetEntries(AssetListEntry,
-	 long[])}
-	 */
-	@Deprecated
-	@Override
-	public java.util.List<com.liferay.asset.kernel.model.AssetEntry>
-		getAssetEntries(long[] segmentsEntryIds) {
-
-		return model.getAssetEntries(segmentsEntryIds);
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 AssetListAssetEntryProvider#getAssetEntries(AssetListEntry,
-	 long[], int, int)}
-	 */
-	@Deprecated
-	@Override
-	public java.util.List<com.liferay.asset.kernel.model.AssetEntry>
-		getAssetEntries(long[] segmentsEntryIds, int start, int end) {
-
-		return model.getAssetEntries(segmentsEntryIds, start, end);
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 AssetListAssetEntryProvider#getAssetEntriesCount(
-	 AssetListEntry, long)}
-	 */
-	@Deprecated
-	@Override
-	public int getAssetEntriesCount(long segmentsEntryId) {
-		return model.getAssetEntriesCount(segmentsEntryId);
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 AssetListAssetEntryProvider#getAssetEntriesCount(
-	 AssetListEntry, long[])}
-	 */
-	@Deprecated
-	@Override
-	public int getAssetEntriesCount(long[] segmentsEntryIds) {
-		return model.getAssetEntriesCount(segmentsEntryIds);
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 AssetListAssetEntryProvider#getAssetEntryQuery(
-	 AssetListEntry, long)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.asset.kernel.service.persistence.AssetEntryQuery
-		getAssetEntryQuery(long segmentsEntryId) {
-
-		return model.getAssetEntryQuery(segmentsEntryId);
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 AssetListAssetEntryProvider#getAssetEntryQuery(
-	 AssetListEntry, long[])}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.asset.kernel.service.persistence.AssetEntryQuery
-		getAssetEntryQuery(long[] segmentsEntryIds) {
-
-		return model.getAssetEntryQuery(segmentsEntryIds);
-	}
-
-	/**
 	 * Returns the asset entry subtype of this asset list entry.
 	 *
 	 * @return the asset entry subtype of this asset list entry
@@ -337,6 +236,16 @@ public class AssetListEntryWrapper
 	@Override
 	public long getCtCollectionId() {
 		return model.getCtCollectionId();
+	}
+
+	/**
+	 * Returns the external reference code of this asset list entry.
+	 *
+	 * @return the external reference code of this asset list entry
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -542,6 +451,16 @@ public class AssetListEntryWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this asset list entry.
+	 *
+	 * @param externalReferenceCode the external reference code of this asset list entry
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the group ID of this asset list entry.
 	 *
 	 * @param groupId the group ID of this asset list entry
@@ -649,6 +568,11 @@ public class AssetListEntryWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

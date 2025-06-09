@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.template.service.persistence.test;
@@ -33,6 +24,7 @@ import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
+import com.liferay.template.exception.DuplicateTemplateEntryExternalReferenceCodeException;
 import com.liferay.template.exception.NoSuchTemplateEntryException;
 import com.liferay.template.model.TemplateEntry;
 import com.liferay.template.service.TemplateEntryLocalServiceUtil;
@@ -130,6 +122,9 @@ public class TemplateEntryPersistenceTest {
 
 		newTemplateEntry.setUuid(RandomTestUtil.randomString());
 
+		newTemplateEntry.setExternalReferenceCode(
+			RandomTestUtil.randomString());
+
 		newTemplateEntry.setGroupId(RandomTestUtil.nextLong());
 
 		newTemplateEntry.setCompanyId(RandomTestUtil.nextLong());
@@ -165,6 +160,9 @@ public class TemplateEntryPersistenceTest {
 		Assert.assertEquals(
 			existingTemplateEntry.getUuid(), newTemplateEntry.getUuid());
 		Assert.assertEquals(
+			existingTemplateEntry.getExternalReferenceCode(),
+			newTemplateEntry.getExternalReferenceCode());
+		Assert.assertEquals(
 			existingTemplateEntry.getTemplateEntryId(),
 			newTemplateEntry.getTemplateEntryId());
 		Assert.assertEquals(
@@ -195,6 +193,26 @@ public class TemplateEntryPersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingTemplateEntry.getLastPublishDate()),
 			Time.getShortTimestamp(newTemplateEntry.getLastPublishDate()));
+	}
+
+	@Test(expected = DuplicateTemplateEntryExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		TemplateEntry templateEntry = addTemplateEntry();
+
+		TemplateEntry newTemplateEntry = addTemplateEntry();
+
+		newTemplateEntry.setGroupId(templateEntry.getGroupId());
+
+		newTemplateEntry = _persistence.update(newTemplateEntry);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newTemplateEntry);
+
+		newTemplateEntry.setExternalReferenceCode(
+			templateEntry.getExternalReferenceCode());
+
+		_persistence.update(newTemplateEntry);
 	}
 
 	@Test
@@ -262,6 +280,22 @@ public class TemplateEntryPersistenceTest {
 	}
 
 	@Test
+	public void testCountByG_IICN_IIFVKArrayable() throws Exception {
+		_persistence.countByG_IICN_IIFVK(
+			new long[] {RandomTestUtil.nextLong(), 0L},
+			RandomTestUtil.randomString(), RandomTestUtil.randomString());
+	}
+
+	@Test
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_G("null", 0L);
+
+		_persistence.countByERC_G((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		TemplateEntry newTemplateEntry = addTemplateEntry();
 
@@ -287,10 +321,11 @@ public class TemplateEntryPersistenceTest {
 	protected OrderByComparator<TemplateEntry> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"TemplateEntry", "mvccVersion", true, "ctCollectionId", true,
-			"uuid", true, "templateEntryId", true, "groupId", true, "companyId",
-			true, "userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "ddmTemplateId", true, "infoItemClassName",
-			true, "infoItemFormVariationKey", true, "lastPublishDate", true);
+			"uuid", true, "externalReferenceCode", true, "templateEntryId",
+			true, "groupId", true, "companyId", true, "userId", true,
+			"userName", true, "createDate", true, "modifiedDate", true,
+			"ddmTemplateId", true, "infoItemClassName", true,
+			"infoItemFormVariationKey", true, "lastPublishDate", true);
 	}
 
 	@Test
@@ -573,6 +608,17 @@ public class TemplateEntryPersistenceTest {
 			ReflectionTestUtil.<Long>invoke(
 				templateEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "ddmTemplateId"));
+
+		Assert.assertEquals(
+			templateEntry.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				templateEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(templateEntry.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				templateEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected TemplateEntry addTemplateEntry() throws Exception {
@@ -585,6 +631,8 @@ public class TemplateEntryPersistenceTest {
 		templateEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		templateEntry.setUuid(RandomTestUtil.randomString());
+
+		templateEntry.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		templateEntry.setGroupId(RandomTestUtil.nextLong());
 

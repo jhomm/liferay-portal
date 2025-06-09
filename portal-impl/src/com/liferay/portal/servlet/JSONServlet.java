@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.servlet;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.portal.action.JSONServiceAction;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -22,14 +15,14 @@ import com.liferay.portal.kernel.servlet.PluginContextListener;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.struts.JSONAction;
 
-import java.io.IOException;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * @author Brian Wing Shun Chan
@@ -64,19 +57,11 @@ public class JSONServlet extends HttpServlet {
 					null, httpServletRequest, httpServletResponse);
 			}
 			else {
-				Thread currentThread = Thread.currentThread();
-
-				ClassLoader contextClassLoader =
-					currentThread.getContextClassLoader();
-
-				try {
-					currentThread.setContextClassLoader(_pluginClassLoader);
+				try (SafeCloseable safeCloseable =
+						ThreadContextClassLoaderUtil.swap(_pluginClassLoader)) {
 
 					_jsonAction.execute(
 						null, httpServletRequest, httpServletResponse);
-				}
-				finally {
-					currentThread.setContextClassLoader(contextClassLoader);
 				}
 			}
 		}
@@ -89,7 +74,7 @@ public class JSONServlet extends HttpServlet {
 			throw new ServletException(securityException);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 		finally {
 			AccessControlThreadLocal.setRemoteAccess(remoteAccess);

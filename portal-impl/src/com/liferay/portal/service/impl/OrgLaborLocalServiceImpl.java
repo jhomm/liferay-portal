@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -30,20 +21,20 @@ public class OrgLaborLocalServiceImpl extends OrgLaborLocalServiceBaseImpl {
 
 	@Override
 	public OrgLabor addOrgLabor(
-			long organizationId, long typeId, int sunOpen, int sunClose,
+			long organizationId, long listTypeId, int sunOpen, int sunClose,
 			int monOpen, int monClose, int tueOpen, int tueClose, int wedOpen,
 			int wedClose, int thuOpen, int thuClose, int friOpen, int friClose,
 			int satOpen, int satClose)
 		throws PortalException {
 
-		validate(typeId);
+		validate(listTypeId);
 
 		long orgLaborId = counterLocalService.increment();
 
 		OrgLabor orgLabor = orgLaborPersistence.create(orgLaborId);
 
 		orgLabor.setOrganizationId(organizationId);
-		orgLabor.setTypeId(typeId);
+		orgLabor.setListTypeId(listTypeId);
 		orgLabor.setSunOpen(sunOpen);
 		orgLabor.setSunClose(sunClose);
 		orgLabor.setMonOpen(monOpen);
@@ -69,17 +60,17 @@ public class OrgLaborLocalServiceImpl extends OrgLaborLocalServiceBaseImpl {
 
 	@Override
 	public OrgLabor updateOrgLabor(
-			long orgLaborId, long typeId, int sunOpen, int sunClose,
+			long orgLaborId, long listTypeId, int sunOpen, int sunClose,
 			int monOpen, int monClose, int tueOpen, int tueClose, int wedOpen,
 			int wedClose, int thuOpen, int thuClose, int friOpen, int friClose,
 			int satOpen, int satClose)
 		throws PortalException {
 
-		validate(typeId);
+		validate(listTypeId);
 
 		OrgLabor orgLabor = orgLaborPersistence.findByPrimaryKey(orgLaborId);
 
-		orgLabor.setTypeId(typeId);
+		orgLabor.setListTypeId(listTypeId);
 		orgLabor.setSunOpen(sunOpen);
 		orgLabor.setSunClose(sunClose);
 		orgLabor.setMonOpen(monOpen);
@@ -98,9 +89,9 @@ public class OrgLaborLocalServiceImpl extends OrgLaborLocalServiceBaseImpl {
 		return orgLaborPersistence.update(orgLabor);
 	}
 
-	protected void validate(long typeId) throws PortalException {
+	protected void validate(long listTypeId) throws PortalException {
 		_listTypeLocalService.validate(
-			typeId, ListTypeConstants.ORGANIZATION_SERVICE);
+			listTypeId, ListTypeConstants.ORGANIZATION_SERVICE);
 	}
 
 	@BeanReference(type = ListTypeLocalService.class)

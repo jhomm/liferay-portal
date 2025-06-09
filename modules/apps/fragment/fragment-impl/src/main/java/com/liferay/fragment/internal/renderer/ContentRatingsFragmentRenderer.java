@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.renderer;
@@ -17,19 +8,20 @@ package com.liferay.fragment.internal.renderer;
 import com.liferay.fragment.renderer.FragmentRenderer;
 import com.liferay.fragment.renderer.FragmentRendererContext;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Tuple;
 import com.liferay.ratings.taglib.servlet.taglib.RatingsTag;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Pavel Savinov
@@ -59,7 +51,13 @@ public class ContentRatingsFragmentRenderer
 							"name", "itemSelector"
 						).put(
 							"type", "itemSelector"
-						))))
+						))
+				).put(
+					"label",
+					_language.format(
+						fragmentRendererContext.getLocale(), "x-options",
+						"content-ratings", true)
+				))
 		).toString();
 	}
 
@@ -70,7 +68,7 @@ public class ContentRatingsFragmentRenderer
 
 	@Override
 	public String getLabel(Locale locale) {
-		return LanguageUtil.get(locale, "content-ratings");
+		return _language.get(locale, "content-ratings");
 	}
 
 	@Override
@@ -81,12 +79,13 @@ public class ContentRatingsFragmentRenderer
 
 		RatingsTag ratingsTag = new RatingsTag();
 
-		Tuple displayObject = getDisplayObject(
+		Tuple displayObjectTuple = getDisplayObjectTuple(
 			fragmentRendererContext, httpServletRequest);
 
 		ratingsTag.setClassName(
-			GetterUtil.getString(displayObject.getObject(0)));
-		ratingsTag.setClassPK(GetterUtil.getLong(displayObject.getObject(1)));
+			GetterUtil.getString(displayObjectTuple.getObject(0)));
+		ratingsTag.setClassPK(
+			GetterUtil.getLong(displayObjectTuple.getObject(1)));
 
 		ratingsTag.setInTrash(false);
 
@@ -100,5 +99,8 @@ public class ContentRatingsFragmentRenderer
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ContentRatingsFragmentRenderer.class);
+
+	@Reference
+	private Language _language;
 
 }

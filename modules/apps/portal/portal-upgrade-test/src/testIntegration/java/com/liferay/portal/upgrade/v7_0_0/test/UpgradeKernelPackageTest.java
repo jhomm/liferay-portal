@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.v7_0_0.test;
@@ -57,7 +48,7 @@ public class UpgradeKernelPackageTest extends UpgradeKernelPackage {
 		_db.runSQL(
 			"create table UpgradeKernelPackageTest (" +
 				"id LONG not null primary key, data VARCHAR(40) null, " +
-					"textData TEXT null)");
+					"textData VARCHAR(255) null)");
 	}
 
 	@AfterClass
@@ -78,7 +69,7 @@ public class UpgradeKernelPackageTest extends UpgradeKernelPackage {
 	}
 
 	@Test
-	public void testDoUpgrade() throws Exception {
+	public void testUpgrade() throws Exception {
 
 		// For code coverage
 
@@ -97,85 +88,6 @@ public class UpgradeKernelPackageTest extends UpgradeKernelPackage {
 		_assertTableAndColumn(
 			dbInspector, "UserNotificationEvent", "payload",
 			"userNotificationEventId");
-	}
-
-	@Test
-	public void testUpgradeLongTextTable() throws Exception {
-		try {
-
-			// Test WildcardMode.LEADING
-
-			_insertData(1, "", _PREFIX_CLASS_NAME_OLD);
-			_insertData(2, "", _POSTFIX_CLASS_NAME_OLD);
-			_insertData(3, "", _PREFIX_POSTFIX_CLASS_NAME_OLD);
-
-			upgradeLongTextTable(
-				"UpgradeKernelPackageTest", "textData", "id", _TEST_CLASS_NAMES,
-				WildcardMode.LEADING);
-
-			_assertData(1, "textData", _PREFIX_CLASS_NAME_NEW);
-			_assertData(2, "textData", _POSTFIX_CLASS_NAME_OLD);
-			_assertData(3, "textData", _PREFIX_POSTFIX_CLASS_NAME_OLD);
-
-			// Test WildcardMode.TRAILING
-
-			_insertData(4, "", _PREFIX_CLASS_NAME_OLD);
-			_insertData(5, "", _POSTFIX_CLASS_NAME_OLD);
-			_insertData(6, "", _PREFIX_POSTFIX_CLASS_NAME_OLD);
-
-			upgradeLongTextTable(
-				"UpgradeKernelPackageTest", "textData", "id", _TEST_CLASS_NAMES,
-				WildcardMode.TRAILING);
-
-			_assertData(4, "textData", _PREFIX_CLASS_NAME_OLD);
-			_assertData(5, "textData", _POSTFIX_CLASS_NAME_NEW);
-			_assertData(6, "textData", _PREFIX_POSTFIX_CLASS_NAME_OLD);
-
-			// Test WildcardMode.SURROUND
-
-			_insertData(7, "", _PREFIX_CLASS_NAME_OLD);
-			_insertData(8, "", _POSTFIX_CLASS_NAME_OLD);
-			_insertData(9, "", _PREFIX_POSTFIX_CLASS_NAME_OLD);
-
-			upgradeLongTextTable(
-				"UpgradeKernelPackageTest", "textData", "id", _TEST_CLASS_NAMES,
-				WildcardMode.SURROUND);
-
-			_assertData(7, "textData", _PREFIX_CLASS_NAME_NEW);
-			_assertData(8, "textData", _POSTFIX_CLASS_NAME_NEW);
-			_assertData(9, "textData", _PREFIX_POSTFIX_CLASS_NAME_NEW);
-		}
-		finally {
-			runSQL("delete from UpgradeKernelPackageTest");
-		}
-	}
-
-	@Test
-	public void testUpgradeLongTextTableWithSelectAndUpdateSQL()
-		throws Exception {
-
-		try {
-			_insertData(1, "", _PREFIX_CLASS_NAME_OLD);
-			_insertData(2, "", _POSTFIX_CLASS_NAME_OLD);
-			_insertData(3, "", _PREFIX_POSTFIX_CLASS_NAME_OLD);
-			_insertData(4, "", "NOT_CLASS_NAME_OLD");
-
-			upgradeLongTextTable(
-				"textData", "id",
-				StringBundler.concat(
-					"select textData, id from UpgradeKernelPackageTest where ",
-					"textData like '%", _CLASS_NAME_OLD, "%'"),
-				"update UpgradeKernelPackageTest set textData = ? where id = ?",
-				_TEST_CLASS_NAMES[0]);
-
-			_assertData(1, "textData", _PREFIX_CLASS_NAME_NEW);
-			_assertData(2, "textData", _POSTFIX_CLASS_NAME_NEW);
-			_assertData(3, "textData", _PREFIX_POSTFIX_CLASS_NAME_NEW);
-			_assertData(4, "textData", "NOT_CLASS_NAME_OLD");
-		}
-		finally {
-			runSQL("delete from UpgradeKernelPackageTest");
-		}
 	}
 
 	@Test
@@ -226,15 +138,41 @@ public class UpgradeKernelPackageTest extends UpgradeKernelPackage {
 
 			// Test preventDuplicates
 
+			runSQL("delete from UpgradeKernelPackageTest");
+
 			_insertData(10, _PREFIX_POSTFIX_CLASS_NAME_OLD, "");
 			_insertData(11, _PREFIX_POSTFIX_CLASS_NAME_NEW, "");
+			_insertData(12, _PREFIX_POSTFIX_CLASS_NAME_NEW, "uniqueTextData");
 
-			upgradeTable(
-				"UpgradeKernelPackageTest", "data", _TEST_CLASS_NAMES,
-				WildcardMode.SURROUND, true);
+			try {
+				upgradeTable(
+					"UpgradeKernelPackageTest", "data", _TEST_CLASS_NAMES,
+					WildcardMode.SURROUND, true);
+			}
+			catch (Exception exception) {
+				Assert.assertEquals(
+					"UpgradeKernelPackageTest has no unique index including " +
+						"data column",
+					exception.getMessage());
+			}
 
-			_assertData(10, "data", _PREFIX_POSTFIX_CLASS_NAME_NEW);
-			_assertData(11, "data", null);
+			_db.runSQL(
+				"create unique index IX_TEMP on UpgradeKernelPackageTest " +
+					"(data, textData)");
+
+			try {
+				upgradeTable(
+					"UpgradeKernelPackageTest", "data", _TEST_CLASS_NAMES,
+					WildcardMode.SURROUND, true);
+
+				_assertData(10, "data", _PREFIX_POSTFIX_CLASS_NAME_NEW);
+				_assertData(11, "data", null);
+				_assertData(12, "data", _PREFIX_POSTFIX_CLASS_NAME_NEW);
+				_assertData(12, "textData", "uniqueTextData");
+			}
+			finally {
+				_db.runSQL("drop index IX_TEMP on UpgradeKernelPackageTest");
+			}
 		}
 		finally {
 			runSQL("delete from UpgradeKernelPackageTest");

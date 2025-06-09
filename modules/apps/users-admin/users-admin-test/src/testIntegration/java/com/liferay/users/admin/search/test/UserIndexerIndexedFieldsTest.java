@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.search.test;
@@ -22,12 +13,15 @@ import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.Region;
+import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -39,10 +33,10 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.document.DocumentBuilderFactory;
 import com.liferay.portal.search.model.uid.UIDFactory;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
 import com.liferay.portal.search.test.util.IndexedFieldsFixture;
 import com.liferay.portal.search.test.util.IndexerFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -109,7 +103,11 @@ public class UserIndexerIndexedFieldsTest {
 
 		_populateAddressFieldValues(user2, map);
 
-		FieldValuesAssert.assertFieldValues(map, document, searchTerm);
+		FieldValuesAssert.assertFieldValues(
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Test
@@ -132,7 +130,11 @@ public class UserIndexerIndexedFieldsTest {
 		map.put(
 			"jobTitle_sortable", StringUtil.toLowerCase(user2.getJobTitle()));
 
-		FieldValuesAssert.assertFieldValues(map, document, searchTerm);
+		FieldValuesAssert.assertFieldValues(
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Test
@@ -154,7 +156,11 @@ public class UserIndexerIndexedFieldsTest {
 
 		map.put("organizationIds", _getStringValue(user.getOrganizationIds()));
 
-		FieldValuesAssert.assertFieldValues(map, document, searchTerm);
+		FieldValuesAssert.assertFieldValues(
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Test
@@ -178,7 +184,11 @@ public class UserIndexerIndexedFieldsTest {
 
 		map.put("userGroupIds", _getStringValue(user.getUserGroupIds()));
 
-		FieldValuesAssert.assertFieldValues(map, document, searchTerm);
+		FieldValuesAssert.assertFieldValues(
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Rule
@@ -199,7 +209,8 @@ public class UserIndexerIndexedFieldsTest {
 
 	protected void setUpIndexedFieldsFixture() {
 		indexedFieldsFixture = new IndexedFieldsFixture(
-			resourcePermissionLocalService, uidFactory, documentBuilderFactory);
+			resourcePermissionLocalService, searchEngineHelper, uidFactory,
+			documentBuilderFactory);
 	}
 
 	protected void setUpIndexerFixture() {
@@ -250,6 +261,12 @@ public class UserIndexerIndexedFieldsTest {
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
 
 	@Inject
+	protected RoleLocalService roleLocalService;
+
+	@Inject
+	protected SearchEngineHelper searchEngineHelper;
+
+	@Inject
 	protected UIDFactory uidFactory;
 
 	@Inject
@@ -284,6 +301,8 @@ public class UserIndexerIndexedFieldsTest {
 		).put(
 			Field.STATUS, String.valueOf(user.getStatus())
 		).put(
+			Field.TYPE, String.valueOf(user.getType())
+		).put(
 			Field.USER_ID, String.valueOf(user.getUserId())
 		).put(
 			Field.USER_NAME, StringUtil.toLowerCase(user.getFullName())
@@ -294,6 +313,8 @@ public class UserIndexerIndexedFieldsTest {
 		).put(
 			"emailAddressDomain", _getEmailAddressDomain(user.getEmailAddress())
 		).put(
+			"externalReferenceCode", user.getExternalReferenceCode()
+		).put(
 			"firstName", user.getFirstName()
 		).put(
 			"firstName_sortable", StringUtil.toLowerCase(user.getFirstName())
@@ -301,6 +322,17 @@ public class UserIndexerIndexedFieldsTest {
 			"fullName", user.getFullName()
 		).put(
 			"groupIds", groupId
+		).put(
+			"hasLoginDate",
+			() -> {
+				boolean hasLoginDate = false;
+
+				if (user.getLastLoginDate() != null) {
+					hasLoginDate = true;
+				}
+
+				return String.valueOf(hasLoginDate);
+			}
 		).put(
 			"lastName", user.getLastName()
 		).put(
@@ -315,6 +347,17 @@ public class UserIndexerIndexedFieldsTest {
 		).put(
 			"roleIds", _getStringValue(user.getRoleIds())
 		).put(
+			"roleNames",
+			() -> {
+				List<String> roleNames = new ArrayList<>();
+
+				for (Role role : roleLocalService.getRoles(user.getRoleIds())) {
+					roleNames.add(StringUtil.toLowerCase(role.getName()));
+				}
+
+				return _getStringValue(roleNames);
+			}
+		).put(
 			"screenName", user.getScreenName()
 		).put(
 			"screenName_sortable", StringUtil.toLowerCase(user.getScreenName())
@@ -322,6 +365,8 @@ public class UserIndexerIndexedFieldsTest {
 
 		indexedFieldsFixture.populateUID(user, map);
 
+		indexedFieldsFixture.populateDate(
+			Field.CREATE_DATE, user.getCreateDate(), map);
 		indexedFieldsFixture.populateDate(
 			Field.MODIFIED_DATE, user.getModifiedDate(), map);
 

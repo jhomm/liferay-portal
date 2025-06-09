@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.mentions.web.internal.portlet;
@@ -19,35 +10,43 @@ import com.liferay.mentions.strategy.MentionsStrategy;
 import com.liferay.mentions.util.MentionsUtil;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
+import com.liferay.portal.kernel.service.permission.LayoutPermission;
+import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.taglib.ui.UserPortraitTag;
+import com.liferay.user.taglib.servlet.taglib.UserPortraitTag;
+
+import jakarta.portlet.Portlet;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
-
-import javax.portlet.Portlet;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -60,16 +59,16 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.display-category=category.hidden",
 		"com.liferay.portlet.icon=/icons/mentions.png",
-		"javax.portlet.display-name=Mentions",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.name=" + MentionsPortletKeys.MENTIONS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator"
+		"jakarta.portlet.display-name=Mentions",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.name=" + MentionsPortletKeys.MENTIONS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -94,7 +93,9 @@ public class MentionsPortlet extends MVCPortlet {
 				_getSupplier(
 					themeDisplay,
 					ParamUtil.getString(resourceRequest, "strategy"),
-					ParamUtil.getString(resourceRequest, "query")),
+					ParamUtil.getString(resourceRequest, "query"),
+					ParamUtil.getString(
+						resourceRequest, "discussionPortletId")),
 				themeDisplay);
 
 			HttpServletResponse httpServletResponse =
@@ -106,7 +107,7 @@ public class MentionsPortlet extends MVCPortlet {
 				httpServletResponse, jsonArray.toString());
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
@@ -125,28 +126,28 @@ public class MentionsPortlet extends MVCPortlet {
 			Supplier<List<User>> usersSupplier, ThemeDisplay themeDisplay)
 		throws PortalException {
 
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
 
 		for (User user : usersSupplier.get()) {
-			if (user.isDefaultUser() ||
+			if (user.isGuestUser() ||
 				(themeDisplay.getUserId() == user.getUserId())) {
 
 				continue;
 			}
 
-			String mention = "@" + user.getScreenName();
+			String mention = "@" + HtmlUtil.escape(user.getScreenName());
 
 			String profileURL = user.getDisplayURL(themeDisplay);
 
 			if (Validator.isNotNull(profileURL)) {
 				mention = StringBundler.concat(
-					"<a href=\"", profileURL, "\">@", user.getScreenName(),
-					"</a>");
+					"<a href=\"", profileURL, "\">@",
+					HtmlUtil.escape(user.getScreenName()), "</a>");
 			}
 
 			jsonArray.put(
 				JSONUtil.put(
-					"fullName", user.getFullName()
+					"fullName", HtmlUtil.escape(user.getFullName())
 				).put(
 					"mention", mention
 				).put(
@@ -154,7 +155,7 @@ public class MentionsPortlet extends MVCPortlet {
 					UserPortraitTag.getUserPortraitHTML(
 						StringPool.BLANK, user, themeDisplay)
 				).put(
-					"screenName", user.getScreenName()
+					"screenName", HtmlUtil.escape(user.getScreenName())
 				));
 		}
 
@@ -168,8 +169,7 @@ public class MentionsPortlet extends MVCPortlet {
 			return JSONUtil.put("strategy", "default");
 		}
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
-			strategyString);
+		JSONObject jsonObject = _jsonFactory.createJSONObject(strategyString);
 
 		if (jsonObject.isNull("strategy")) {
 			throw new PortalException(
@@ -180,7 +180,8 @@ public class MentionsPortlet extends MVCPortlet {
 	}
 
 	private Supplier<List<User>> _getSupplier(
-			ThemeDisplay themeDisplay, String strategyString, String query)
+			ThemeDisplay themeDisplay, String strategyString, String query,
+			String discussionPortletId)
 		throws PortalException {
 
 		JSONObject jsonObject = _getJSONObject(strategyString);
@@ -197,12 +198,33 @@ public class MentionsPortlet extends MVCPortlet {
 
 		return () -> {
 			try {
-				return mentionsStrategy.getUsers(
-					themeDisplay.getCompanyId(), themeDisplay.getUserId(),
-					query, jsonObject);
+				return TransformUtil.transform(
+					mentionsStrategy.getUsers(
+						themeDisplay.getCompanyId(),
+						themeDisplay.getSiteGroupId(), themeDisplay.getUserId(),
+						query, jsonObject),
+					user -> {
+						PermissionChecker permissionChecker =
+							PermissionCheckerFactoryUtil.create(user);
+
+						Layout layout = themeDisplay.getLayout();
+
+						if ((layout != null) &&
+							_layoutPermission.contains(
+								permissionChecker, layout, true,
+								ActionKeys.VIEW) &&
+							PortletPermissionUtil.contains(
+								permissionChecker, layout, discussionPortletId,
+								ActionKeys.VIEW)) {
+
+							return user;
+						}
+
+						return null;
+					});
 			}
 			catch (PortalException portalException) {
-				_log.error(portalException, portalException);
+				_log.error(portalException);
 
 				return Collections.emptyList();
 			}
@@ -211,6 +233,12 @@ public class MentionsPortlet extends MVCPortlet {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		MentionsPortlet.class);
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private LayoutPermission _layoutPermission;
 
 	@Reference
 	private Portal _portal;

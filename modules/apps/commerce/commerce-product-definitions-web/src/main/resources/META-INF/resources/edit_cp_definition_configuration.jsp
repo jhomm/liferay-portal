@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -36,6 +27,7 @@ boolean shippable = BeanParamUtil.getBoolean(cpDefinition, request, "shippable",
 	<aui:input name="cpDefinitionInventoryId" type="hidden" value="<%= (cpDefinitionInventory == null) ? StringPool.BLANK : cpDefinitionInventory.getCPDefinitionInventoryId() %>" />
 	<aui:input name="cpdAvailabilityEstimateId" type="hidden" value="<%= (cpdAvailabilityEstimate == null) ? StringPool.BLANK : cpdAvailabilityEstimate.getCPDAvailabilityEstimateId() %>" />
 	<aui:input name="cpDefinitionId" type="hidden" value="<%= cpDefinitionId %>" />
+	<aui:input name="workflowAction" type="hidden" value="<%= WorkflowConstants.ACTION_SAVE_DRAFT %>" />
 
 	<aui:model-context bean="<%= cpDefinition %>" model="<%= CPDefinition.class %>" />
 
@@ -73,6 +65,9 @@ boolean shippable = BeanParamUtil.getBoolean(cpDefinition, request, "shippable",
 				<div class="row">
 					<aui:model-context bean="<%= cpDefinitionInventory %>" model="<%= CPDefinitionInventory.class %>" />
 
+					<liferay-ui:error exception="<%= CPConfigurationEntryQuantityException.class %>" message="please-enter-a-valid-quantity" />
+					<liferay-ui:error exception="<%= CPDefinitionInventoryQuantityException.class %>" message="please-enter-a-valid-quantity" />
+
 					<div class="col-6">
 						<aui:select label="inventory-engine" name="CPDefinitionInventoryEngine">
 
@@ -107,12 +102,28 @@ boolean shippable = BeanParamUtil.getBoolean(cpDefinition, request, "shippable",
 
 						<aui:input checked="<%= (cpDefinitionInventory == null) ? false : cpDefinitionInventory.isDisplayStockQuantity() %>" inlineField="<%= true %>" name="displayStockQuantity" type="toggle-switch" />
 
-						<aui:input name="minOrderQuantity" value="<%= (cpDefinitionInventory == null) ? String.valueOf(CPDefinitionInventoryConstants.DEFAULT_MIN_ORDER_QUANTITY) : String.valueOf(cpDefinitionInventory.getMinOrderQuantity()) %>">
-							<aui:validator name="digits" />
-							<aui:validator name="min">1</aui:validator>
+						<%
+						BigDecimal minOrderQuantity = CPDefinitionInventoryConstants.DEFAULT_MIN_ORDER_QUANTITY;
+
+						if (cpDefinitionInventory != null) {
+							minOrderQuantity = cpDefinitionInventory.getMinOrderQuantity();
+						}
+						%>
+
+						<aui:input ignoreRequestValue="<%= true %>" min="0.0000001" name="minOrderQuantity" required="<%= true %>" step="0.0000001" type="number" value="<%= minOrderQuantity.doubleValue() %>">
+							<aui:validator name="min">0.0000001</aui:validator>
+							<aui:validator name="number" />
 						</aui:input>
 
-						<aui:input helpMessage="separate-values-with-a-comma-period-or-space" name="allowedOrderQuantities" />
+						<aui:input helpMessage="separate-values-with-a-comma-period-or-space" name="allowedOrderQuantities">
+							<aui:validator errorMessage="separate-values-with-a-comma-period-or-space" name="custom">
+								function(val) {
+									const pattern = /^[0-9]+([.,][0-9]+)?([,\s*][0-9]+([.,\s*][0-9]+)?)*$/;
+
+									return pattern.test(val);
+								}
+							</aui:validator>
+						</aui:input>
 					</div>
 
 					<div class="col-6">
@@ -134,20 +145,45 @@ boolean shippable = BeanParamUtil.getBoolean(cpDefinition, request, "shippable",
 
 						<liferay-ui:error exception="<%= NumberFormatException.class %>" message="there-was-an-error-processing-one-or-more-of-the-quantities-entered" />
 
-						<aui:input label="low-stock-threshold" name="minStockQuantity">
-							<aui:validator name="digits" />
+						<%
+						BigDecimal minStockQuantity = BigDecimal.ZERO;
+
+						if (cpDefinitionInventory != null) {
+							minStockQuantity = cpDefinitionInventory.getMinStockQuantity();
+						}
+						%>
+
+						<aui:input data-qa-id="minStockQuantityInput" ignoreRequestValue="<%= true %>" label="low-stock-threshold" min="0" name="minStockQuantity" type="number" value="<%= minStockQuantity.doubleValue() %>">
+							<aui:validator name="min">0</aui:validator>
+							<aui:validator name="number" />
 						</aui:input>
 
 						<aui:input checked="<%= (cpDefinitionInventory == null) ? false : cpDefinitionInventory.getBackOrders() %>" label="allow-back-orders" name="backOrders" type="toggle-switch" />
 
-						<aui:input name="maxOrderQuantity" value="<%= (cpDefinitionInventory == null) ? String.valueOf(CPDefinitionInventoryConstants.DEFAULT_MAX_ORDER_QUANTITY) : String.valueOf(cpDefinitionInventory.getMaxOrderQuantity()) %>">
-							<aui:validator name="digits" />
-							<aui:validator name="min">1</aui:validator>
+						<%
+						BigDecimal maxOrderQuantity = CPDefinitionInventoryConstants.DEFAULT_MAX_ORDER_QUANTITY;
+
+						if (cpDefinitionInventory != null) {
+							maxOrderQuantity = cpDefinitionInventory.getMaxOrderQuantity();
+						}
+						%>
+
+						<aui:input ignoreRequestValue="<%= true %>" min="0.0000001" name="maxOrderQuantity" required="<%= true %>" type="number" value="<%= maxOrderQuantity.doubleValue() %>">
+							<aui:validator name="min">0.0000001</aui:validator>
+							<aui:validator name="number" />
 						</aui:input>
 
-						<aui:input name="multipleOrderQuantity" value="<%= (cpDefinitionInventory == null) ? String.valueOf(CPDefinitionInventoryConstants.DEFAULT_MULTIPLE_ORDER_QUANTITY) : String.valueOf(cpDefinitionInventory.getMultipleOrderQuantity()) %>">
-							<aui:validator name="digits" />
-							<aui:validator name="min">1</aui:validator>
+						<%
+						BigDecimal multipleOrderQuantity = CPDefinitionInventoryConstants.DEFAULT_MULTIPLE_ORDER_QUANTITY;
+
+						if (cpDefinitionInventory != null) {
+							multipleOrderQuantity = cpDefinitionInventory.getMultipleOrderQuantity();
+						}
+						%>
+
+						<aui:input ignoreRequestValue="<%= true %>" min="0.0000001" name="multipleOrderQuantity" required="<%= true %>" step="0.0000001" type="number" value="<%= multipleOrderQuantity.doubleValue() %>">
+							<aui:validator name="min">0.0000001</aui:validator>
+							<aui:validator name="number" />
 						</aui:input>
 					</div>
 				</div>
@@ -155,28 +191,36 @@ boolean shippable = BeanParamUtil.getBoolean(cpDefinition, request, "shippable",
 		</div>
 
 		<div class="col-4">
+			<c:if test='<%= FeatureFlagManagerUtil.isEnabled(cpDefinition.getCompanyId(), "LPD-10889") %>'>
+				<commerce-ui:panel
+					title='<%= LanguageUtil.get(request, "base-settings") %>'
+				>
+					<aui:input checked="<%= cpDefinitionConfigurationDisplayContext.isPurchasable() %>" data-qa-id="purchasableInput" inlineField="<%= true %>" name="purchasable" type="toggle-switch" />
+				</commerce-ui:panel>
+			</c:if>
+
 			<commerce-ui:panel
 				title='<%= LanguageUtil.get(request, "shipping") %>'
 			>
 				<aui:model-context bean="<%= cpDefinition %>" model="<%= CPDefinition.class %>" />
 
-				<aui:input checked="<%= shippable %>" name="shippable" type="toggle-switch" value="<%= shippable %>" />
+				<aui:input checked="<%= shippable %>" disabled="<%= (cpDefinition != null) && StringUtil.equalsIgnoreCase(cpDefinition.getProductTypeName(), VirtualCPTypeConstants.NAME) %>" name="shippable" type="toggle-switch" value="<%= shippable %>" />
 
 				<div class="<%= shippable ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />shippableOptions">
 					<aui:input checked='<%= BeanParamUtil.getBoolean(cpDefinition, request, "freeShipping", false) %>' inlineField="<%= true %>" name="freeShipping" type="toggle-switch" />
 
-					<aui:input checked='<%= BeanParamUtil.getBoolean(cpDefinition, request, "shipSeparately", false) %>' inlineField="<%= true %>" label="always-ship-separately" name="shipSeparately" type="toggle-switch" />
+					<aui:input checked='<%= BeanParamUtil.getBoolean(cpDefinition, request, "shipSeparately", false) %>' inlineField="<%= true %>" label="ship-separately" name="shipSeparately" type="toggle-switch" />
 
 					<aui:input name="shippingExtraPrice" suffix="<%= HtmlUtil.escape(cpDefinitionConfigurationDisplayContext.getCommerceCurrencyCode()) %>" />
+
+					<aui:input name="width" suffix="<%= HtmlUtil.escape(cpDefinitionConfigurationDisplayContext.getCPMeasurementUnitName(CPMeasurementUnitConstants.TYPE_DIMENSION)) %>" />
+
+					<aui:input name="height" suffix="<%= HtmlUtil.escape(cpDefinitionConfigurationDisplayContext.getCPMeasurementUnitName(CPMeasurementUnitConstants.TYPE_DIMENSION)) %>" />
+
+					<aui:input name="depth" suffix="<%= HtmlUtil.escape(cpDefinitionConfigurationDisplayContext.getCPMeasurementUnitName(CPMeasurementUnitConstants.TYPE_DIMENSION)) %>" />
+
+					<aui:input name="weight" suffix="<%= HtmlUtil.escape(cpDefinitionConfigurationDisplayContext.getCPMeasurementUnitName(CPMeasurementUnitConstants.TYPE_WEIGHT)) %>" />
 				</div>
-
-				<aui:input name="width" suffix="<%= HtmlUtil.escape(cpDefinitionConfigurationDisplayContext.getCPMeasurementUnitName(CPMeasurementUnitConstants.TYPE_DIMENSION)) %>" />
-
-				<aui:input name="height" suffix="<%= HtmlUtil.escape(cpDefinitionConfigurationDisplayContext.getCPMeasurementUnitName(CPMeasurementUnitConstants.TYPE_DIMENSION)) %>" />
-
-				<aui:input name="depth" suffix="<%= HtmlUtil.escape(cpDefinitionConfigurationDisplayContext.getCPMeasurementUnitName(CPMeasurementUnitConstants.TYPE_DIMENSION)) %>" />
-
-				<aui:input name="weight" suffix="<%= HtmlUtil.escape(cpDefinitionConfigurationDisplayContext.getCPMeasurementUnitName(CPMeasurementUnitConstants.TYPE_WEIGHT)) %>" />
 			</commerce-ui:panel>
 		</div>
 	</div>

@@ -1,173 +1,104 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {ClayButtonWithIcon, default as ClayButton} from '@clayui/button';
-import ClayIcon from '@clayui/icon';
-import ClayLoadingIndicator from '@clayui/loading-indicator';
-import {
-	ReactPortal,
-	useIsMounted,
-	useStateSafe,
-} from '@liferay/frontend-js-react-web';
+import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
+import {ReactPortal, useStateSafe} from '@liferay/frontend-js-react-web';
+import {Resizer} from '@liferay/layout-js-components-web';
 import classNames from 'classnames';
-import React from 'react';
+import {useId, useSessionState} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
+import React, {useRef} from 'react';
 
-import useLazy from '../../core/hooks/useLazy';
-import useLoad from '../../core/hooks/useLoad';
-import usePlugins from '../../core/hooks/usePlugins';
-import * as Actions from '../actions/index';
+import BrowserSidebar from '../../plugins/browser/components/BrowserSidebar';
+import CommentsSidebar from '../../plugins/comments/components/CommentsSidebar';
+import FragmentsSidebar from '../../plugins/fragments_and_widgets/components/FragmentsSidebar';
+import MappingSidebar from '../../plugins/mapping/components/MappingSidebar';
+import ContentsSidebar from '../../plugins/page_content/components/ContentsSidebar';
+import PageDesignOptionsSidebar from '../../plugins/page_design_options/components/PageDesignOptionsSidebar';
+import RulesSidebar from '../../plugins/page_rules/components/RulesSidebar';
+import {VIEWPORT_SIZES} from '../config/constants/viewportSizes';
 import {config} from '../config/index';
 import {useSelectItem} from '../contexts/ControlsContext';
+import {useSetOpenShortcutModal} from '../contexts/ShortcutContext';
 import {useDispatch, useSelector} from '../contexts/StoreContext';
 import selectAvailablePanels from '../selectors/selectAvailablePanels';
-import {useDropClear} from '../utils/drag-and-drop/useDragAndDrop';
-import {useId} from '../utils/useId';
+import selectItemConfigurationOpen from '../selectors/selectItemConfigurationOpen';
+import selectSidebarIsOpened from '../selectors/selectSidebarIsOpened';
+import switchSidebarPanel from '../thunks/switchSidebarPanel';
+import {useDropClear} from '../utils/drag_and_drop/useDragAndDrop';
+import isSmallResolution from '../utils/isSmallResolution';
 
-const {Suspense, useCallback, useEffect} = React;
+const {useEffect} = React;
 
-/**
- * Failure to preload is a non-critical failure, so we'll use this to swallow
- * rejected promises silently.
- */
-const swallow = [(value) => value, (_error) => undefined];
+export const MAX_SIDEBAR_WIDTH = 500;
+export const MIN_SIDEBAR_WIDTH = 280;
+export const SIDEBAR_WIDTH_RESIZE_STEP = 20;
 
-/**
- * Load the first available panel if the selected sidebar panel ID is not found.
- * This may happen because the list of panels is modified depending on the user permissions.
- *
- * @param {string} panelId
- * @param {Array} panels
- * @param {object} sidebarPanels
- */
-const getActivePanelData = ({panelId, panels, sidebarPanels}) => {
-	let sidebarPanelId = panelId;
-
-	let panel = panels.some((panel) => panel.includes(sidebarPanelId))
-		? sidebarPanels[sidebarPanelId]
-		: null;
-
-	if (!panel) {
-		sidebarPanelId = panels[0][0];
-		panel = sidebarPanels[sidebarPanelId];
+function getActiveSidebarPanel({
+	sidebarPanelId,
+	sidebarPanels,
+	sidebarPanelsMap,
+}) {
+	if (sidebarPanelsMap[sidebarPanelId]) {
+		return {sidebarPanel: sidebarPanelsMap[sidebarPanelId], sidebarPanelId};
 	}
 
-	return {panel, sidebarPanelId};
-};
+	const panel = sidebarPanels[0];
+
+	return {sidebarPanel: panel, sidebarPanelId: panel.sidebarPanelId};
+}
+
+const getOpenShortcutModalTooltipMarkup = () =>
+	`
+	<div>${Liferay.Language.get('open-keyboard-shortcuts')}</div>
+	<kbd class="c-kbd c-kbd-dark mt-1">
+		<kbd class="c-kbd">⇧</kbd>
+
+		<span class="c-kbd-separator">+</span>
+
+		<kbd class="c-kbd">?</kbd>
+	</kbd>
+`
+		.replaceAll('\n', '')
+		.replaceAll('\t', '');
 
 export default function Sidebar() {
 	const dropClearRef = useDropClear();
 	const [hasError, setHasError] = useStateSafe(false);
-	const {getInstance, register} = usePlugins();
 	const dispatch = useDispatch();
-	const isMounted = useIsMounted();
-	const load = useLoad();
 	const selectItem = useSelectItem();
+	const setOpenShortcutModal = useSetOpenShortcutModal();
+	const shortcutButtonTitleId = useId();
+	const sidebarContentId = useId();
 	const sidebarId = useId();
-	const store = useSelector((state) => state);
+	const sidebar = useSelector((state) => state.sidebar);
 
-	const panels = useSelector(selectAvailablePanels(config.panels));
-	const sidebarOpen = store.sidebar.open;
-	const {panel, sidebarPanelId} = getActivePanelData({
-		panelId: store.sidebar.panelId,
-		panels,
-		sidebarPanels: config.sidebarPanels,
-	});
-
-	const promise = panel
-		? load(sidebarPanelId, panel.pluginEntryPoint)
-		: Promise.resolve();
-
-	const app = {
-		Actions,
-		config,
-		dispatch,
-		store,
-	};
-
-	let registerPanel;
-
-	if (sidebarPanelId && panel) {
-		registerPanel = register(sidebarPanelId, promise, {app, panel});
-	}
-
-	const togglePlugin = () => {
-		if (hasError) {
-			setHasError(false);
-		}
-
-		if (registerPanel) {
-			registerPanel.then((plugin) => {
-				if (
-					plugin &&
-					typeof plugin.activate === 'function' &&
-					isMounted()
-				) {
-					plugin.activate();
-				}
-				else if (!plugin) {
-					setHasError(true);
-				}
-			});
-		}
-	};
-
-	useEffect(
-		() => {
-			if (panel) {
-				togglePlugin(panel);
-			}
-			else if (sidebarPanelId) {
-				dispatch(
-					Actions.switchSidebarPanel({
-						sidebarOpen: false,
-						sidebarPanelId: null,
-					})
-				);
-			}
-		},
-		/* eslint-disable react-hooks/exhaustive-deps */
-		[panel, sidebarOpen, sidebarPanelId]
+	const selectedViewportSize = useSelector(
+		(state) => state.selectedViewportSize
 	);
 
-	useEffect(() => {
-		const sideNavigation = Liferay.SideNavigation.instance(
-			document.querySelector('.product-menu-toggle')
-		);
+	const [sidebarWidth, setSidebarWidth] = useSessionState(
+		`${config.portletNamespace}_sidebar-width`,
+		MIN_SIDEBAR_WIDTH
+	);
 
-		if (sideNavigation) {
-			const onHandleSidebar = (open) => {
-				dispatch(
-					Actions.switchSidebarPanel({
-						sidebarOpen: open,
-					})
-				);
-			};
+	const sidebarContentRef = useRef();
+	const tabListRef = useRef();
 
-			if (!sideNavigation.visible()) {
-				onHandleSidebar(true);
-			}
+	const sidebarPanels = useSelector(
+		selectAvailablePanels(config.sidebarPanels)
+	);
+	const sidebarHidden = sidebar.hidden;
+	const sidebarOpen = selectSidebarIsOpened({sidebar});
+	const itemConfigurationOpen = selectItemConfigurationOpen({sidebar});
 
-			const sideNavigationListener = sideNavigation.on(
-				'openStart.lexicon.sidenav',
-				() => onHandleSidebar(false)
-			);
-
-			return () => {
-				sideNavigationListener.removeListener();
-			};
-		}
-	}, []);
+	const {sidebarPanel, sidebarPanelId} = getActiveSidebarPanel({
+		sidebarPanelId: sidebar.panelId,
+		sidebarPanels,
+		sidebarPanelsMap: config.sidebarPanelsMap,
+	});
 
 	useEffect(() => {
 		const wrapper = document.getElementById('wrapper');
@@ -177,24 +108,44 @@ export default function Sidebar() {
 		}
 
 		wrapper.classList.add('page-editor__wrapper');
-		wrapper.classList.toggle('page-editor__wrapper--padded', sidebarOpen);
+
+		wrapper.classList.toggle(
+			'page-editor__wrapper--padded-start',
+			sidebarOpen
+		);
+
+		wrapper.classList.toggle(
+			'page-editor__wrapper--sidebar--hidden',
+			sidebarHidden
+		);
+
+		wrapper.classList.toggle(
+			'page-editor__wrapper--padded-end',
+			itemConfigurationOpen
+		);
 
 		return () => {
 			wrapper.classList.remove('page-editor__wrapper');
-			wrapper.classList.remove('page-editor__wrapper--padded');
+			wrapper.classList.remove('page-editor__wrapper--padded-start');
+			wrapper.classList.remove('page-editor__wrapper--padded-end');
 		};
-	}, [sidebarOpen]);
+	}, [sidebarHidden, sidebarOpen, itemConfigurationOpen]);
 
-	const SidebarPanel = useLazy(
-		useCallback(({instance}) => {
-			if (typeof instance.renderSidebar === 'function') {
-				return instance.renderSidebar();
+	useEffect(() => {
+		const wrapper = document.getElementById('wrapper');
+
+		if (!wrapper || selectedViewportSize === VIEWPORT_SIZES.desktop) {
+			return;
+		}
+
+		wrapper.classList.add('overflow-hidden');
+
+		return () => {
+			if (wrapper) {
+				wrapper.classList.remove('overflow-hidden');
 			}
-			else {
-				return null;
-			}
-		}, [])
-	);
+		};
+	}, [selectedViewportSize]);
 
 	const deselectItem = (event) => {
 		if (event.target === event.currentTarget) {
@@ -205,109 +156,136 @@ export default function Sidebar() {
 	const handleClick = (panel) => {
 		const open =
 			panel.sidebarPanelId === sidebarPanelId ? !sidebarOpen : true;
-		const productMenuToggle = document.querySelector(
-			'.product-menu-toggle'
-		);
 
-		if (productMenuToggle && !sidebarOpen) {
-			Liferay.SideNavigation.hide(productMenuToggle);
-		}
+		const smallResolution = isSmallResolution();
 
 		dispatch(
-			Actions.switchSidebarPanel({
+			switchSidebarPanel({
+				itemConfigurationOpen: smallResolution
+					? false
+					: sidebar.itemConfigurationOpen,
 				sidebarOpen: open,
 				sidebarPanelId: panel.sidebarPanelId,
 			})
 		);
+
+		if (open) {
+			sidebarContentRef.current.style.visibility = 'visible';
+			sidebarContentRef.current?.focus({preventScroll: true});
+		}
 	};
 
+	const handleTabKeyDown = (event) => {
+		if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+			const tabs = Array.from(
+				tabListRef.current.querySelectorAll('button')
+			);
+
+			const positionActiveTab = tabs.indexOf(document.activeElement);
+
+			const activeTab =
+				tabs[
+					event.key === 'ArrowUp'
+						? positionActiveTab - 1
+						: positionActiveTab + 1
+				];
+
+			if (activeTab) {
+				activeTab.focus();
+			}
+		}
+	};
+
+	const shortcutButtonTitle = getOpenShortcutModalTooltipMarkup();
+
 	return (
-		<ReactPortal>
+		<ReactPortal className="cadmin">
 			<div
-				className="cadmin page-editor__sidebar page-editor__theme-adapter-forms"
+				className="page-editor__sidebar page-editor__theme-adapter-forms"
 				ref={dropClearRef}
+				style={{'--sidebar-content-width': `${sidebarWidth}px`}}
 			>
 				<div
 					className={classNames('page-editor__sidebar__buttons', {
-						light: true,
+						'page-editor__sidebar__buttons--hidden': sidebarHidden,
 					})}
-					onClick={deselectItem}
 				>
-					{panels.reduce((elements, group, groupIndex) => {
-						const buttons = group.map((panelId) => {
-							const panel = config.sidebarPanels[panelId];
-
+					<div
+						aria-orientation="vertical"
+						onClick={deselectItem}
+						onKeyDown={handleTabKeyDown}
+						ref={tabListRef}
+						role="tablist"
+					>
+						{sidebarPanels.map((panel) => {
 							const active =
-								sidebarOpen && sidebarPanelId === panelId;
-							const {
-								icon,
-								isLink,
-								label,
-								pluginEntryPoint,
-								url,
-							} = panel;
-
-							if (isLink) {
-								return (
-									<a
-										className={classNames({active})}
-										data-tooltip-align="left"
-										href={url}
-										key={panel.sidebarPanelId}
-										title={label}
-									>
-										<ClayIcon symbol={icon} />
-									</a>
-								);
-							}
-
-							const prefetch = () =>
-								load(
-									panel.sidebarPanelId,
-									pluginEntryPoint
-								).then(...swallow);
+								sidebarOpen &&
+								panel.sidebarPanelId === sidebarPanelId;
+							const {icon, label} = panel;
 
 							return (
 								<ClayButtonWithIcon
-									aria-pressed={active}
+									aria-controls={sidebarContentId}
+									aria-label={panel.label}
+									aria-selected={active}
 									className={classNames({active})}
+									data-panel-id={panel.sidebarPanelId}
 									data-tooltip-align="left"
 									displayType="unstyled"
 									id={`${sidebarId}${panel.sidebarPanelId}`}
 									key={panel.sidebarPanelId}
 									onClick={() => handleClick(panel)}
-									onFocus={prefetch}
-									onMouseEnter={prefetch}
-									small={true}
+									role="tab"
+									size="sm"
 									symbol={icon}
+									tabIndex={
+										panel.sidebarPanelId !== sidebarPanelId
+											? '-1'
+											: null
+									}
 									title={label}
 								/>
 							);
-						});
+						})}
+					</div>
 
-						// Add separator between groups.
-
-						if (groupIndex === panels.length - 1) {
-							return elements.concat(buttons);
-						}
-						else {
-							return elements.concat([
-								...buttons,
-								<hr key={`separator-${groupIndex}`} />,
-							]);
-						}
-					}, [])}
+					<ClayButtonWithIcon
+						aria-haspopup="dialog"
+						aria-labelledby={shortcutButtonTitleId}
+						className="mt-auto"
+						data-title={shortcutButtonTitle}
+						data-title-set-as-html
+						data-tooltip-align="left"
+						displayType="unstyled"
+						id={`${sidebarId}keyboard_shortcuts`}
+						onClick={() => setOpenShortcutModal(true)}
+						size="sm"
+						symbol="question-circle-full"
+					/>
 				</div>
+
+				<div className="sr-only" id={shortcutButtonTitleId}>
+					{shortcutButtonTitle}
+				</div>
+
 				<div
+					aria-label={sub(
+						Liferay.Language.get('x-panel'),
+						sidebarPanel.label
+					)}
 					className={classNames({
 						'page-editor__sidebar__content': true,
 						'page-editor__sidebar__content--open': sidebarOpen,
 						'rtl':
-							Liferay.Language.direction[
+							Liferay.Language.direction?.[
 								themeDisplay?.getLanguageId()
 							] === 'rtl',
 					})}
+					id={sidebarContentId}
 					onClick={deselectItem}
+					ref={sidebarContentRef}
+					role="tabpanel"
+					tabIndex="-1"
 				>
 					{hasError ? (
 						<div>
@@ -316,15 +294,15 @@ export default function Sidebar() {
 								displayType="secondary"
 								onClick={() => {
 									dispatch(
-										Actions.switchSidebarPanel({
+										switchSidebarPanel({
 											sidebarOpen: false,
 											sidebarPanelId:
-												panels[0] && panels[0][0],
+												config.sidebarPanels[0],
 										})
 									);
 									setHasError(false);
 								}}
-								small
+								size="sm"
 							>
 								{Liferay.Language.get('refresh')}
 							</ClayButton>
@@ -335,26 +313,48 @@ export default function Sidebar() {
 								setHasError(true);
 							}}
 						>
-							<Suspense
-								fallback={
-									<ClayLoadingIndicator
-										className="my-4"
-										small
-									/>
-								}
-							>
-								<SidebarPanel
-									getInstance={getInstance}
-									pluginId={sidebarPanelId}
-								/>
-							</Suspense>
+							<SidebarPanel
+								sidebarPanelId={sidebarPanel.sidebarPanelId}
+							/>
 						</ErrorBoundary>
 					)}
 				</div>
+
+				<Resizer
+					ariaControls={sidebarContentId}
+					ariaLabel={Liferay.Language.get('resize-sidebar')}
+					className="page-editor__sidebar__resizer"
+					maxWidth={MAX_SIDEBAR_WIDTH}
+					minWidth={MIN_SIDEBAR_WIDTH}
+					resizeStep={SIDEBAR_WIDTH_RESIZE_STEP}
+					setWidth={setSidebarWidth}
+					targetRef={sidebarContentRef}
+					width={sidebarWidth}
+				/>
 			</div>
 		</ReactPortal>
 	);
 }
+
+const PANEL_COMPONENTS = {
+	browser: BrowserSidebar,
+	comments: CommentsSidebar,
+	fragments_and_widgets: FragmentsSidebar,
+	mapping: MappingSidebar,
+	page_content: ContentsSidebar,
+	page_design_options: PageDesignOptionsSidebar,
+	page_rules: RulesSidebar,
+};
+
+const SidebarPanel = React.memo(({sidebarPanelId}) => {
+	const Component = PANEL_COMPONENTS[sidebarPanelId];
+
+	if (Component !== null) {
+		return <Component />;
+	}
+
+	return null;
+});
 
 class ErrorBoundary extends React.Component {
 	static getDerivedStateFromError(_error) {

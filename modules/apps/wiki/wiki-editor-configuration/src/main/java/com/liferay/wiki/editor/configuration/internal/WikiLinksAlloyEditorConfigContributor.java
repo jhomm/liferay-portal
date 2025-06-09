@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.editor.configuration.internal;
@@ -17,7 +8,7 @@ package com.liferay.wiki.editor.configuration.internal;
 import com.liferay.portal.kernel.editor.configuration.BaseEditorConfigContributor;
 import com.liferay.portal.kernel.editor.configuration.EditorConfigContributor;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
@@ -27,6 +18,7 @@ import com.liferay.wiki.constants.WikiPortletKeys;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Chema Balsas
@@ -34,9 +26,9 @@ import org.osgi.service.component.annotations.Component;
 @Component(
 	property = {
 		"editor.config.key=contentEditor", "editor.name=alloyeditor_creole",
-		"javax.portlet.name=" + WikiPortletKeys.WIKI,
-		"javax.portlet.name=" + WikiPortletKeys.WIKI_ADMIN,
-		"javax.portlet.name=" + WikiPortletKeys.WIKI_DISPLAY
+		"jakarta.portlet.name=" + WikiPortletKeys.WIKI,
+		"jakarta.portlet.name=" + WikiPortletKeys.WIKI_ADMIN,
+		"jakarta.portlet.name=" + WikiPortletKeys.WIKI_DISPLAY
 	},
 	service = EditorConfigContributor.class
 )
@@ -77,11 +69,11 @@ public class WikiLinksAlloyEditorConfigContributor
 				"buttons");
 
 			selectionJSONObject.put(
-				"buttons", updateButtonsJSONArray(buttonsJSONArray));
+				"buttons", _updateButtonsJSONArray(buttonsJSONArray));
 		}
 	}
 
-	protected JSONObject getWikiLinkButtonJSONObject(String buttonName) {
+	private JSONObject _getWikiLinkButtonJSONObject(String buttonName) {
 		return JSONUtil.put(
 			"cfg", JSONUtil.put("appendProtocol", false)
 		).put(
@@ -89,8 +81,8 @@ public class WikiLinksAlloyEditorConfigContributor
 		);
 	}
 
-	protected JSONArray updateButtonsJSONArray(JSONArray oldButtonsJSONArray) {
-		JSONArray newButtonsJSONArray = JSONFactoryUtil.createJSONArray();
+	private JSONArray _updateButtonsJSONArray(JSONArray oldButtonsJSONArray) {
+		JSONArray newButtonsJSONArray = _jsonFactory.createJSONArray();
 
 		for (int j = 0; j < oldButtonsJSONArray.length(); j++) {
 			JSONObject buttonJSONObject = oldButtonsJSONArray.getJSONObject(j);
@@ -101,7 +93,7 @@ public class WikiLinksAlloyEditorConfigContributor
 				if (buttonName.equals("link") ||
 					buttonName.equals("linkEdit")) {
 
-					buttonJSONObject = getWikiLinkButtonJSONObject(buttonName);
+					buttonJSONObject = _getWikiLinkButtonJSONObject(buttonName);
 
 					newButtonsJSONArray.put(buttonJSONObject);
 				}
@@ -119,7 +111,7 @@ public class WikiLinksAlloyEditorConfigContributor
 						"cfg");
 
 					if (cfgJSONObject == null) {
-						cfgJSONObject = JSONFactoryUtil.createJSONObject();
+						cfgJSONObject = _jsonFactory.createJSONObject();
 
 						buttonJSONObject.put("cfg", cfgJSONObject);
 					}
@@ -133,5 +125,8 @@ public class WikiLinksAlloyEditorConfigContributor
 
 		return newButtonsJSONArray;
 	}
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 }

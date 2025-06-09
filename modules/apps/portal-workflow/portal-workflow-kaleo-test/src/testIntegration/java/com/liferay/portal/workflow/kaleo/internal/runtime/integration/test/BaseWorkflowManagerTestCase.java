@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.internal.runtime.integration.test;
@@ -21,12 +12,16 @@ import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.workflow.WorkflowDefinition;
 import com.liferay.portal.kernel.workflow.WorkflowHandler;
 import com.liferay.portal.kernel.workflow.WorkflowInstanceManager;
+import com.liferay.portal.security.script.management.test.rule.ScriptManagementConfigurationTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.test.rule.SynchronousMailTestRule;
+import com.liferay.portal.workflow.kaleo.definition.util.WorkflowDefinitionContentUtil;
 
 import java.io.InputStream;
 import java.io.Serializable;
@@ -53,6 +48,7 @@ public abstract class BaseWorkflowManagerTestCase {
 		new AggregateTestRule(
 			new LiferayIntegrationTestRule(),
 			PermissionCheckerMethodTestRule.INSTANCE,
+			ScriptManagementConfigurationTestRule.INSTANCE,
 			SynchronousMailTestRule.INSTANCE);
 
 	protected InputStream getResourceInputStream(String name) {
@@ -64,13 +60,18 @@ public abstract class BaseWorkflowManagerTestCase {
 			"com/liferay/portal/workflow/kaleo/dependencies/" + name);
 	}
 
-	protected ServiceRegistration<WorkflowHandler<?>>
-		registryWorkflowHandler() {
+	protected String readFileToJSON(String fileName) throws Exception {
+		Class<?> clazz = getClass();
 
+		return WorkflowDefinitionContentUtil.toJSON(
+			StringUtil.read(clazz.getClassLoader(), _getBasePath() + fileName));
+	}
+
+	protected ServiceRegistrationHolder registryWorkflowHandler() {
 		return registryWorkflowHandler("Single Approver");
 	}
 
-	protected ServiceRegistration<WorkflowHandler<?>> registryWorkflowHandler(
+	protected ServiceRegistrationHolder registryWorkflowHandler(
 		String workflowDefinitionName) {
 
 		Class<?> clazz = getClass();
@@ -79,49 +80,60 @@ public abstract class BaseWorkflowManagerTestCase {
 
 		BundleContext bundleContext = bundle.getBundleContext();
 
-		return bundleContext.registerService(
-			(Class<WorkflowHandler<?>>)(Class<?>)WorkflowHandler.class,
-			(WorkflowHandler)ProxyUtil.newProxyInstance(
-				WorkflowHandler.class.getClassLoader(),
-				new Class<?>[] {WorkflowHandler.class},
-				(proxy, method, args) -> {
-					if (Objects.equals(method.getName(), "getClassName")) {
-						return clazz.getName();
-					}
+		return new ServiceRegistrationHolder(
+			bundleContext.registerService(
+				(Class<WorkflowHandler<?>>)(Class<?>)WorkflowHandler.class,
+				(WorkflowHandler)ProxyUtil.newProxyInstance(
+					WorkflowHandler.class.getClassLoader(),
+					new Class<?>[] {WorkflowHandler.class},
+					(proxy, method, args) -> {
+						if (Objects.equals(method.getName(), "getClassName")) {
+							return clazz.getName();
+						}
 
-					if (Objects.equals(method.getName(), "getType")) {
-						return StringPool.BLANK;
-					}
+						if (Objects.equals(method.getName(), "getListType") ||
+							Objects.equals(method.getName(), "getType")) {
 
-					if (Objects.equals(method.getName(), "isScopeable")) {
-						return false;
-					}
+							return StringPool.BLANK;
+						}
 
-					if (Objects.equals(
-							method.getName(), "getWorkflowDefinitionLink")) {
+						if (Objects.equals(method.getName(), "isScopeable")) {
+							return false;
+						}
 
-						return workflowDefinitionLinkLocalService.
-							updateWorkflowDefinitionLink(
-								TestPropsValues.getUserId(),
-								TestPropsValues.getCompanyId(), 0,
-								clazz.getName(), 0, 0, workflowDefinitionName,
-								1);
-					}
+						if (Objects.equals(
+								method.getName(),
+								"getWorkflowDefinitionLink")) {
 
-					if (Objects.equals(
-							method.getName(), "startWorkflowInstance")) {
+							return workflowDefinitionLinkLocalService.
+								updateWorkflowDefinitionLink(
+									TestPropsValues.getUserId(),
+									TestPropsValues.getCompanyId(), 0,
+									clazz.getName(), 0, 0,
+									workflowDefinitionName, 1);
+						}
 
-						workflowInstanceLinkLocalService.startWorkflowInstance(
-							TestPropsValues.getCompanyId(), 0,
-							TestPropsValues.getUserId(), clazz.getName(), 1,
-							(Map<String, Serializable>)args[5]);
-					}
+						if (Objects.equals(
+								method.getName(), "startWorkflowInstance")) {
 
-					return null;
-				}),
-			HashMapDictionaryBuilder.put(
-				"model.class.name=", clazz.getName()
-			).build());
+							workflowInstanceLinkLocalService.
+								startWorkflowInstance(
+									TestPropsValues.getCompanyId(), 0,
+									(Long)args[2], clazz.getName(), 1,
+									(Map<String, Serializable>)args[5]);
+						}
+
+						return null;
+					}),
+				HashMapDictionaryBuilder.put(
+					"model.class.name=", clazz.getName()
+				).build()));
+	}
+
+	protected ServiceRegistrationHolder registryWorkflowHandler(
+		WorkflowDefinition workflowDefinition) {
+
+		return registryWorkflowHandler(workflowDefinition.getName());
 	}
 
 	@Inject
@@ -133,5 +145,27 @@ public abstract class BaseWorkflowManagerTestCase {
 
 	@Inject
 	protected WorkflowInstanceManager workflowInstanceManager;
+
+	protected class ServiceRegistrationHolder implements AutoCloseable {
+
+		public ServiceRegistrationHolder(
+			ServiceRegistration<WorkflowHandler<?>> serviceRegistration) {
+
+			_serviceRegistration = serviceRegistration;
+		}
+
+		@Override
+		public void close() {
+			_serviceRegistration.unregister();
+		}
+
+		private final ServiceRegistration<WorkflowHandler<?>>
+			_serviceRegistration;
+
+	}
+
+	private String _getBasePath() {
+		return "com/liferay/portal/workflow/kaleo/dependencies/";
+	}
 
 }

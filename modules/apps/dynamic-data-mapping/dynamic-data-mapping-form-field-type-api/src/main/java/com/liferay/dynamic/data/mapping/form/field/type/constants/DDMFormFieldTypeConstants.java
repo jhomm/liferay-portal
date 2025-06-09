@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.constants;
@@ -29,6 +20,8 @@ public class DDMFormFieldTypeConstants {
 
 	public static final String DATE = "date";
 
+	public static final String DATE_TIME = "date_time";
+
 	public static final String DDM_IMAGE = "ddm-image";
 
 	public static final String DOCUMENT_LIBRARY = "document_library";
@@ -43,7 +36,11 @@ public class DDMFormFieldTypeConstants {
 
 	public static final String IMAGE = "image";
 
+	public static final String JOURNAL_ARTICLE = "journal_article";
+
 	public static final String KEY_VALUE = "key_value";
+
+	public static final String LINK_TO_LAYOUT = "link_to_layout";
 
 	public static final String LOCALIZABLE_TEXT = "localizable_text";
 

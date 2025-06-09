@@ -1,51 +1,44 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.text;
 
-import com.liferay.dynamic.data.mapping.form.field.type.BaseDDMFormFieldTypeSettingsTestCase;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldOptionsFactory;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormFieldOptions;
 import com.liferay.dynamic.data.mapping.render.DDMFormFieldRenderingContext;
+import com.liferay.dynamic.data.mapping.test.util.BaseDDMFormFieldTemplateContextContributorTestCase;
 import com.liferay.dynamic.data.mapping.test.util.DDMFormFieldOptionsTestUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.api.support.membermodification.MemberMatcher;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 /**
  * @author Carolina Barbosa
  */
-@RunWith(PowerMockRunner.class)
 public class TextDDMFormFieldTemplateContextContributorTest
-	extends BaseDDMFormFieldTypeSettingsTestCase {
+	extends BaseDDMFormFieldTemplateContextContributorTestCase {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Before
 	@Override
 	public void setUp() throws Exception {
-		super.setUp();
+		setUpLanguageUtil();
 
 		_setUpDDMFormFieldOptionsFactory();
 	}
@@ -55,7 +48,7 @@ public class TextDDMFormFieldTemplateContextContributorTest
 		Map<String, Object> parameters =
 			_textDDMFormFieldTemplateContextContributor.getParameters(
 				new DDMFormField("field", "text"),
-				new DDMFormFieldRenderingContext());
+				createDDMFormFieldRenderingContext());
 
 		Assert.assertTrue(parameters.containsKey("confirmationErrorMessage"));
 		Assert.assertTrue(parameters.containsKey("confirmationLabel"));
@@ -68,29 +61,26 @@ public class TextDDMFormFieldTemplateContextContributorTest
 		Map<String, Object> parameters =
 			_textDDMFormFieldTemplateContextContributor.getParameters(
 				new DDMFormField("field", "text"),
-				new DDMFormFieldRenderingContext());
+				createDDMFormFieldRenderingContext());
 
 		Assert.assertTrue(parameters.containsKey("autocompleteEnabled"));
 		Assert.assertTrue(parameters.containsKey("displayStyle"));
+		Assert.assertTrue(parameters.containsKey("htmlAutocompleteAttribute"));
 		Assert.assertTrue(parameters.containsKey("invalidCharacters"));
 		Assert.assertTrue(parameters.containsKey("normalizeField"));
 		Assert.assertTrue(parameters.containsKey("placeholder"));
 		Assert.assertTrue(parameters.containsKey("tooltip"));
 	}
 
-	private void _setUpDDMFormFieldOptionsFactory() throws Exception {
-		MemberMatcher.field(
-			TextDDMFormFieldTemplateContextContributor.class,
-			"ddmFormFieldOptionsFactory"
-		).set(
+	private void _setUpDDMFormFieldOptionsFactory() {
+		ReflectionTestUtil.setFieldValue(
 			_textDDMFormFieldTemplateContextContributor,
-			_ddmFormFieldOptionsFactory
-		);
+			"ddmFormFieldOptionsFactory", _ddmFormFieldOptionsFactory);
 
 		DDMFormFieldOptions ddmFormFieldOptions =
 			DDMFormFieldOptionsTestUtil.createDDMFormFieldOptions();
 
-		PowerMockito.when(
+		Mockito.when(
 			_ddmFormFieldOptionsFactory.create(
 				Mockito.any(DDMFormField.class),
 				Mockito.any(DDMFormFieldRenderingContext.class))
@@ -99,9 +89,8 @@ public class TextDDMFormFieldTemplateContextContributorTest
 		);
 	}
 
-	@Mock
-	private DDMFormFieldOptionsFactory _ddmFormFieldOptionsFactory;
-
+	private final DDMFormFieldOptionsFactory _ddmFormFieldOptionsFactory =
+		Mockito.mock(DDMFormFieldOptionsFactory.class);
 	private final TextDDMFormFieldTemplateContextContributor
 		_textDDMFormFieldTemplateContextContributor =
 			new TextDDMFormFieldTemplateContextContributor();

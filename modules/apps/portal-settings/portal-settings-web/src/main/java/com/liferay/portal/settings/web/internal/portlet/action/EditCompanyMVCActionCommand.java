@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.settings.web.internal.portlet.action;
@@ -37,7 +28,9 @@ import com.liferay.portal.kernel.exception.PhoneNumberExtensionException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.exception.WebsiteURLException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.EmailAddress;
@@ -57,6 +50,8 @@ import com.liferay.portal.kernel.service.PhoneLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.WebsiteLocalService;
 import com.liferay.portal.kernel.servlet.SessionErrors;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.url.validator.URLValidator;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.FileUtil;
@@ -69,17 +64,18 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.settings.web.internal.exception.RequiredLocaleException;
-import com.liferay.users.admin.kernel.util.UsersAdminUtil;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.ReadOnlyException;
 
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletPreferences;
-import javax.portlet.ReadOnlyException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -91,7 +87,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
 		"mvc.command.name=/portal_settings/edit_company"
 	},
 	service = MVCActionCommand.class
@@ -114,7 +110,7 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 				String redirect = ParamUtil.getString(
 					actionRequest, "redirect");
 
-				updateCompany(actionRequest);
+				_updateCompany(actionRequest);
 
 				sendRedirect(actionRequest, actionResponse, redirect);
 			}
@@ -179,17 +175,7 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 		throws Exception {
 	}
 
-	@Reference(unbind = "-")
-	protected void setCompanyService(CompanyService companyService) {
-		_companyService = companyService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDLAppLocalService(DLAppLocalService dlAppLocalService) {
-		_dlAppLocalService = dlAppLocalService;
-	}
-
-	protected void updateCompany(ActionRequest actionRequest) throws Exception {
+	private void _updateCompany(ActionRequest actionRequest) throws Exception {
 		long companyId = _portal.getCompanyId(actionRequest);
 
 		Company company = _companyService.getCompanyById(companyId);
@@ -204,7 +190,7 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 			logoBytes = FileUtil.getBytes(fileEntry.getContentStream());
 		}
 
-		User defaultUser = _userLocalService.getDefaultUser(companyId);
+		User guestUser = _userLocalService.getGuestUser(companyId);
 
 		List<Address> addresses = UsersAdminUtil.getAddresses(actionRequest);
 
@@ -238,12 +224,40 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 		UnicodeProperties unicodeProperties = PropertiesParamUtil.getProperties(
 			actionRequest, "settings--");
 
+		if (_log.isDebugEnabled()) {
+			_log.debug(
+				"Updating company properties " + unicodeProperties.toString());
+
+			_log.debug(
+				"Current complete URL: " +
+					actionRequest.getAttribute(WebKeys.CURRENT_COMPLETE_URL));
+
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
+
+			if (themeDisplay != null) {
+				_log.debug("User ID: " + themeDisplay.getUserId());
+			}
+		}
+
 		if (unicodeProperties.containsKey(PropsKeys.ADMIN_EMAIL_FROM_ADDRESS) &&
 			!Validator.isEmailAddress(
 				unicodeProperties.getProperty(
 					PropsKeys.ADMIN_EMAIL_FROM_ADDRESS))) {
 
 			throw new EmailAddressException();
+		}
+
+		String http = unicodeProperties.getProperty(PropsKeys.CDN_HOST_HTTP);
+
+		if (!Validator.isBlank(http) && !_urlValidator.isValid(http)) {
+			throw new WebsiteURLException(http);
+		}
+
+		String https = unicodeProperties.getProperty(PropsKeys.CDN_HOST_HTTPS);
+
+		if (!Validator.isBlank(https) && !_urlValidator.isValid(https)) {
+			throw new WebsiteURLException(https);
 		}
 
 		String[] discardLegacyKeys = ParamUtil.getStringValues(
@@ -260,6 +274,10 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 
 				for (String discardLegacyKey : discardLegacyKeys) {
 					if (curName.startsWith(discardLegacyKey + "_")) {
+						if (_log.isDebugEnabled()) {
+							_log.debug("Discarding property key " + curName);
+						}
+
 						portletPreferences.reset(curName);
 						unicodeProperties.remove(curName);
 					}
@@ -300,9 +318,9 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 			actionRequest, "size", company.getSize());
 
 		String languageId = ParamUtil.getString(
-			actionRequest, "languageId", defaultUser.getLanguageId());
+			actionRequest, "languageId", guestUser.getLanguageId());
 		String timeZoneId = ParamUtil.getString(
-			actionRequest, "timeZoneId", defaultUser.getTimeZoneId());
+			actionRequest, "timeZoneId", guestUser.getTimeZoneId());
 
 		_companyService.updateCompany(
 			companyId, virtualHostname, mx, homeURL, !deleteLogo, logoBytes,
@@ -330,7 +348,7 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 
 		String[] removedLanguageIds = ArrayUtil.filter(
 			LocaleUtil.toLanguageIds(
-				LanguageUtil.getCompanyAvailableLocales(companyId)),
+				_language.getCompanyAvailableLocales(companyId)),
 			languageId -> !StringUtil.contains(
 				newLanguageIds, languageId, StringPool.COMMA));
 
@@ -393,10 +411,16 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 		}
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		EditCompanyMVCActionCommand.class);
+
 	@Reference
 	private AddressLocalService _addressLocalService;
 
+	@Reference
 	private CompanyService _companyService;
+
+	@Reference
 	private DLAppLocalService _dlAppLocalService;
 
 	@Reference
@@ -406,6 +430,9 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 	private GroupLocalService _groupLocalService;
 
 	@Reference
+	private Language _language;
+
+	@Reference
 	private PhoneLocalService _phoneLocalService;
 
 	@Reference
@@ -413,6 +440,9 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 
 	@Reference
 	private PrefsProps _prefsProps;
+
+	@Reference
+	private URLValidator _urlValidator;
 
 	@Reference
 	private UserLocalService _userLocalService;

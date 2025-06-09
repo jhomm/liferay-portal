@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.github.webhook;
@@ -312,11 +303,7 @@ public class GitHubWebhookPayloadProcessor {
 	}
 
 	public boolean isValidAutopull(String repo) {
-		if (repo.startsWith("com-liferay-")) {
-			return true;
-		}
-
-		return false;
+		return repo.startsWith("com-liferay-");
 	}
 
 	public boolean isValidCIMergeFile(PullRequest pullRequest) {
@@ -716,21 +703,12 @@ public class GitHubWebhookPayloadProcessor {
 
 		string = string.trim();
 
-		if (string.isEmpty()) {
-			return true;
-		}
-
-		return false;
+		return string.isEmpty();
 	}
 
 	protected boolean isBotPush(PushEventPayload pushEventPayload) {
-		if (JenkinsResultsParserUtil.isNullOrEmpty(
-				getSubrepoPath(pushEventPayload))) {
-
-			return false;
-		}
-
-		return true;
+		return !JenkinsResultsParserUtil.isNullOrEmpty(
+			getSubrepoPath(pushEventPayload));
 	}
 
 	protected boolean isLiferayUser(String gitHubUsername) {
@@ -771,11 +749,7 @@ public class GitHubWebhookPayloadProcessor {
 	protected boolean isSynchronizeablePullRequest(PullRequest pullRequest) {
 		String receiverUsername = pullRequest.getReceiverUsername();
 
-		if (receiverUsername.equals("brianchandotcom")) {
-			return false;
-		}
-
-		return true;
+		return !receiverUsername.equals("brianchandotcom");
 	}
 
 	protected boolean isTestablePullRequest(PullRequest pullRequest) {
@@ -786,7 +760,9 @@ public class GitHubWebhookPayloadProcessor {
 		List<String> ciEnabledBranchNames = _getCIEnabledBranchNames(
 			repositoryName);
 
-		if (!ciEnabledBranchNames.contains(branchName)) {
+		if (!_acRepositories.contains(repositoryName) &&
+			!ciEnabledBranchNames.contains(branchName)) {
+
 			StringBuilder sb = new StringBuilder(4);
 
 			sb.append("Closing pull request because pulls for reference ");
@@ -1065,11 +1041,7 @@ public class GitHubWebhookPayloadProcessor {
 
 		JSONObject commitJSONObject = new JSONObject(processURL(sb.toString()));
 
-		if (!commitJSONObject.has("sha")) {
-			return false;
-		}
-
-		return true;
+		return commitJSONObject.has("sha");
 	}
 
 	protected String join(String[] array) {
@@ -1112,10 +1084,15 @@ public class GitHubWebhookPayloadProcessor {
 
 		JSONObject jsonObject = new JSONObject();
 
-		jsonObject.put("branch", branchName);
-		jsonObject.put("command", "pull");
-		jsonObject.put("pullRequestNumber", pullRequest.getNumber());
-		jsonObject.put("repo", repositoryName);
+		jsonObject.put(
+			"branch", branchName
+		).put(
+			"command", "pull"
+		).put(
+			"pullRequestNumber", pullRequest.getNumber()
+		).put(
+			"repo", repositoryName
+		);
 
 		try {
 			if (!pullRequest.isValidCIMergeFile()) {
@@ -1585,9 +1562,11 @@ public class GitHubWebhookPayloadProcessor {
 			_log.info("Sync subrepo SHA " + sha);
 		}
 
-		jsonObject.put("sha", sha);
-
-		jsonObject.put("pullRequestNumber", "0");
+		jsonObject.put(
+			"pullRequestNumber", "0"
+		).put(
+			"sha", sha
+		);
 
 		String command = "push";
 		String propertyName =
@@ -2404,6 +2383,8 @@ public class GitHubWebhookPayloadProcessor {
 	private static final Log _log = LogFactory.getLog(
 		GitHubWebhookPayloadProcessor.class);
 
+	private static final List<String> _acRepositories = Arrays.asList(
+		"com-liferay-osb-asah-private");
 	private static final Pattern _buildURLPattern = Pattern.compile(
 		"Build[\\w\\s]*started.*Job Link: <a href=\"(?<buildURL>[^\"]+)\"");
 	private static final List<String> _gauntletUsernames = Arrays.asList(
@@ -2419,7 +2400,9 @@ public class GitHubWebhookPayloadProcessor {
 		"commit = ([0-9a-f]{40})");
 	private static Set<String> _passingTestSuites;
 	private static final Pattern _passingTestSuiteStatusDescriptionPattern =
-		Pattern.compile("\"ci:test:(?<testSuiteName>[^\"]+)\"\\s*has PASSED.");
+		Pattern.compile(
+			"\"ci:test:(?<testSuiteName>[^\"]+)\"" +
+				"(?:\\s* has PASSED.|\\s* was BYPASSED.)");
 	private static final Pattern _reevaluatePattern = Pattern.compile(
 		"ci:reevaluate:(?<buildID>[\\d]+_[\\d]+)");
 	private static final Pattern _testPattern = Pattern.compile(

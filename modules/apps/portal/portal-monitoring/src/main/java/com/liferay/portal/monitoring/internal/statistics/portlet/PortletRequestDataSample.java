@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.monitoring.internal.statistics.portlet;
@@ -24,15 +15,14 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GroupThreadLocal;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.monitoring.internal.BaseDataSample;
 import com.liferay.portal.monitoring.internal.MonitorNames;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Karthik Sudarshan
@@ -48,13 +38,13 @@ public class PortletRequestDataSample extends BaseDataSample {
 		_requestType = requestType;
 
 		LiferayPortletResponse liferayPortletResponse =
-			PortalUtil.getLiferayPortletResponse(portletResponse);
+			portal.getLiferayPortletResponse(portletResponse);
 
 		Portlet portlet = liferayPortletResponse.getPortlet();
 
 		setCompanyId(portlet.getCompanyId());
 
-		setGroupId(portletRequest, portal);
+		_setGroupId(portletRequest, portal);
 		setName(portlet.getPortletName());
 		setNamespace(MonitorNames.PORTLET);
 		setUser(portletRequest.getRemoteUser());
@@ -82,16 +72,12 @@ public class PortletRequestDataSample extends BaseDataSample {
 			", requestType=", _requestType, ", ", super.toString(), "}");
 	}
 
-	protected void setGroupId(PortletRequest portletRequest, Portal portal) {
+	private void _setGroupId(PortletRequest portletRequest, Portal portal) {
 		long groupId = GroupThreadLocal.getGroupId();
 
 		if (groupId != 0) {
 			setGroupId(groupId);
 
-			return;
-		}
-
-		if (portal == null) {
 			return;
 		}
 

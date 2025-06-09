@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.image.internal.finder;
@@ -18,7 +9,6 @@ import com.liferay.adaptive.media.AMAttribute;
 import com.liferay.adaptive.media.AMDistanceComparator;
 import com.liferay.adaptive.media.AdaptiveMedia;
 import com.liferay.adaptive.media.exception.AMRuntimeException;
-import com.liferay.adaptive.media.finder.AMFinder;
 import com.liferay.adaptive.media.finder.AMQuery;
 import com.liferay.adaptive.media.image.configuration.AMImageConfigurationEntry;
 import com.liferay.adaptive.media.image.configuration.AMImageConfigurationHelper;
@@ -29,24 +19,23 @@ import com.liferay.adaptive.media.image.internal.processor.AMImage;
 import com.liferay.adaptive.media.image.mime.type.AMImageMimeTypeProvider;
 import com.liferay.adaptive.media.image.model.AMImageEntry;
 import com.liferay.adaptive.media.image.processor.AMImageAttribute;
-import com.liferay.adaptive.media.image.processor.AMImageProcessor;
 import com.liferay.adaptive.media.image.service.AMImageEntryLocalService;
 import com.liferay.adaptive.media.image.url.AMImageURLFactory;
+import com.liferay.adaptive.media.processor.AMProcessor;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.util.ContentTypes;
 
-import java.io.InputStream;
-
 import java.net.URI;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -55,16 +44,16 @@ import org.osgi.service.component.annotations.Reference;
  * @author Adolfo Pérez
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.portal.kernel.repository.model.FileVersion",
-	service = {AMFinder.class, AMImageFinder.class}
+	service = AMImageFinder.class
 )
 public class AMImageFinderImpl implements AMImageFinder {
 
 	@Override
-	public Stream<AdaptiveMedia<AMImageProcessor>> getAdaptiveMediaStream(
+	public List<AdaptiveMedia<AMProcessor<FileVersion>>> getAdaptiveMedias(
 			Function
-				<AMImageQueryBuilder, AMQuery<FileVersion, AMImageProcessor>>
+				<AMImageQueryBuilder,
+				 AMQuery<FileVersion, AMProcessor<FileVersion>>>
 					amImageQueryBuilderFunction)
 		throws PortalException {
 
@@ -76,7 +65,7 @@ public class AMImageFinderImpl implements AMImageFinder {
 		AMImageQueryBuilderImpl amImageQueryBuilderImpl =
 			new AMImageQueryBuilderImpl();
 
-		AMQuery<FileVersion, AMImageProcessor> amQuery =
+		AMQuery<FileVersion, AMProcessor<FileVersion>> amQuery =
 			amImageQueryBuilderFunction.apply(amImageQueryBuilderImpl);
 
 		if (amQuery != AMImageQueryBuilderImpl.AM_QUERY) {
@@ -89,13 +78,14 @@ public class AMImageFinderImpl implements AMImageFinder {
 		if (!_amImageMimeTypeProvider.isMimeTypeSupported(
 				fileVersion.getMimeType())) {
 
-			return Stream.empty();
+			return Collections.emptyList();
 		}
 
 		String mimeType = fileVersion.getMimeType();
 
 		if (mimeType.equals(ContentTypes.IMAGE_SVG_XML)) {
-			return Stream.of(new SVGAdaptiveMedia(fileVersion));
+			return Collections.singletonList(
+				_createRawAdaptiveMedia(fileVersion));
 		}
 
 		BiFunction<FileVersion, AMImageConfigurationEntry, URI> uriFactory =
@@ -111,26 +101,31 @@ public class AMImageFinderImpl implements AMImageFinder {
 		Predicate<AMImageConfigurationEntry> filter =
 			amImageQueryBuilderImpl.getConfigurationEntryFilter();
 
-		AMDistanceComparator<AdaptiveMedia<AMImageProcessor>>
+		List<AdaptiveMedia<AMProcessor<FileVersion>>> adaptiveMedias =
+			TransformUtil.transform(
+				amImageConfigurationEntries,
+				amImageConfigurationEntry -> {
+					if (!filter.test(amImageConfigurationEntry) ||
+						!_hasAdaptiveMedia(
+							fileVersion, amImageConfigurationEntry)) {
+
+						return null;
+					}
+
+					return _createMedia(
+						fileVersion, uriFactory, amImageConfigurationEntry);
+				});
+
+		AMDistanceComparator<AdaptiveMedia<AMProcessor<FileVersion>>>
 			amDistanceComparator =
 				amImageQueryBuilderImpl.getAMDistanceComparator();
 
-		Stream<AMImageConfigurationEntry> amImageConfigurationEntryStream =
-			amImageConfigurationEntries.stream();
+		adaptiveMedias.sort(amDistanceComparator.toComparator());
 
-		return amImageConfigurationEntryStream.filter(
-			amImageConfigurationEntry ->
-				filter.test(amImageConfigurationEntry) &&
-				_hasAdaptiveMedia(fileVersion, amImageConfigurationEntry)
-		).map(
-			amImageConfigurationEntry -> _createMedia(
-				fileVersion, uriFactory, amImageConfigurationEntry)
-		).sorted(
-			amDistanceComparator.toComparator()
-		);
+		return adaptiveMedias;
 	}
 
-	private AdaptiveMedia<AMImageProcessor> _createMedia(
+	private AdaptiveMedia<AMProcessor<FileVersion>> _createMedia(
 		FileVersion fileVersion,
 		BiFunction<FileVersion, AMImageConfigurationEntry, URI> uriFactory,
 		AMImageConfigurationEntry amImageConfigurationEntry) {
@@ -156,15 +151,17 @@ public class AMImageFinderImpl implements AMImageFinder {
 			fileVersion.getFileVersionId());
 
 		if (amImageEntry != null) {
-			AMAttribute<AMImageProcessor, Integer> imageHeightAMAttribute =
-				AMImageAttribute.AM_IMAGE_ATTRIBUTE_HEIGHT;
+			AMAttribute<AMProcessor<FileVersion>, Integer>
+				imageHeightAMAttribute =
+					AMImageAttribute.AM_IMAGE_ATTRIBUTE_HEIGHT;
 
 			properties.put(
 				imageHeightAMAttribute.getName(),
 				String.valueOf(amImageEntry.getHeight()));
 
-			AMAttribute<AMImageProcessor, Integer> imageWidthAMAttribute =
-				AMImageAttribute.AM_IMAGE_ATTRIBUTE_WIDTH;
+			AMAttribute<AMProcessor<FileVersion>, Integer>
+				imageWidthAMAttribute =
+					AMImageAttribute.AM_IMAGE_ATTRIBUTE_WIDTH;
 
 			properties.put(
 				imageWidthAMAttribute.getName(),
@@ -192,6 +189,21 @@ public class AMImageFinderImpl implements AMImageFinder {
 				amImageConfigurationEntry, fileVersion),
 			amImageAttributeMapping,
 			uriFactory.apply(fileVersion, amImageConfigurationEntry));
+	}
+
+	private AdaptiveMedia<AMProcessor<FileVersion>> _createRawAdaptiveMedia(
+		FileVersion fileVersion) {
+
+		return new AMImage(
+			() -> {
+				try {
+					return fileVersion.getContentStream(false);
+				}
+				catch (PortalException portalException) {
+					throw new AMRuntimeException.IOException(portalException);
+				}
+			},
+			AMImageAttributeMapping.fromFileVersion(fileVersion), null);
 	}
 
 	private BiFunction<FileVersion, AMImageConfigurationEntry, URI>
@@ -230,38 +242,5 @@ public class AMImageFinderImpl implements AMImageFinder {
 
 	@Reference
 	private AMImageURLFactory _amImageURLFactory;
-
-	private static class SVGAdaptiveMedia
-		implements AdaptiveMedia<AMImageProcessor> {
-
-		public SVGAdaptiveMedia(FileVersion fileVersion) {
-			_fileVersion = fileVersion;
-		}
-
-		@Override
-		public InputStream getInputStream() {
-			try {
-				return _fileVersion.getContentStream(false);
-			}
-			catch (PortalException portalException) {
-				throw new AMRuntimeException.IOException(portalException);
-			}
-		}
-
-		@Override
-		public URI getURI() {
-			return null;
-		}
-
-		@Override
-		public <V> Optional<V> getValueOptional(
-			AMAttribute<AMImageProcessor, V> amAttribute) {
-
-			return Optional.empty();
-		}
-
-		private final FileVersion _fileVersion;
-
-	}
 
 }

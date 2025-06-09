@@ -1,22 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.wab.extender.internal.adapter;
 
-import com.liferay.portal.kernel.servlet.PortletSessionListenerManager;
 import com.liferay.portal.kernel.util.HashMapDictionary;
+import com.liferay.portal.osgi.web.http.servlet.HttpServletEndpoint;
 import com.liferay.portal.osgi.web.wab.extender.internal.registration.ServletRegistrationImpl;
+
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.descriptor.JspConfigDescriptor;
+import jakarta.servlet.http.HttpServlet;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -27,19 +24,6 @@ import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Objects;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
-import javax.servlet.descriptor.JspConfigDescriptor;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
-
-import org.eclipse.equinox.http.servlet.HttpServiceServlet;
-import org.eclipse.equinox.http.servlet.HttpSessionTrackerUtil;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -53,26 +37,17 @@ import org.osgi.service.http.runtime.HttpServiceRuntimeConstants;
 /**
  * @author Raymond Augé
  */
-@Component(immediate = true, service = {})
+@Component(service = {})
 public class HttpAdapter {
 
 	@Activate
 	protected void activate(ComponentContext componentContext) {
-		_httpServiceServlet = new HttpServiceServlet() {
+		Class<?> clazz = getClass();
 
-			@Override
-			public ServletConfig getServletConfig() {
-				return _servletConfig;
-			}
-
-			@Override
-			public void init(ServletConfig servletConfig) {
-				_servletConfig = servletConfig;
-			}
-
-			private ServletConfig _servletConfig;
-
-		};
+		ServletContext servletContextProxy =
+			(ServletContext)Proxy.newProxyInstance(
+				clazz.getClassLoader(), _INTERFACES,
+				new ServletContextAdaptor(_servletContext));
 
 		ServletConfig servletConfig = new ServletConfig() {
 
@@ -81,21 +56,21 @@ public class HttpAdapter {
 				if (name.equals(
 						HttpServiceRuntimeConstants.HTTP_SERVICE_ENDPOINT)) {
 
-					return _servletContext.getContextPath() +
-						_servletContext.getInitParameter(name);
+					return servletContextProxy.getContextPath() +
+						servletContextProxy.getInitParameter(name);
 				}
 
-				return _servletContext.getInitParameter(name);
+				return servletContextProxy.getInitParameter(name);
 			}
 
 			@Override
 			public Enumeration<String> getInitParameterNames() {
-				return _servletContext.getInitParameterNames();
+				return servletContextProxy.getInitParameterNames();
 			}
 
 			@Override
 			public ServletContext getServletContext() {
-				return _servletContext;
+				return servletContextProxy;
 			}
 
 			@Override
@@ -105,16 +80,6 @@ public class HttpAdapter {
 
 		};
 
-		try {
-			_httpServiceServlet.init(servletConfig);
-		}
-		catch (ServletException servletException) {
-			_servletContext.log(
-				servletException.getMessage(), servletException);
-
-			return;
-		}
-
 		BundleContext bundleContext = componentContext.getBundleContext();
 
 		Dictionary<String, Object> properties = new HashMapDictionary<>();
@@ -123,60 +88,37 @@ public class HttpAdapter {
 		properties.put("original.bean", Boolean.TRUE.toString());
 
 		_serviceRegistration = bundleContext.registerService(
-			new String[] {
-				HttpServiceServlet.class.getName(), HttpServlet.class.getName()
-			},
-			_httpServiceServlet, properties);
+			HttpServletEndpoint.class,
+			new HttpServletEndpoint() {
 
-		PortletSessionListenerManager.addHttpSessionListener(
-			_INVALIDATEHTTPSESSION_LISTENER);
+				@Override
+				public Dictionary<String, Object> getProperties() {
+					return properties;
+				}
+
+				@Override
+				public ServletConfig getServletConfig() {
+					return servletConfig;
+				}
+
+			},
+			null);
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		PortletSessionListenerManager.removeHttpSessionListener(
-			_INVALIDATEHTTPSESSION_LISTENER);
-
 		_serviceRegistration.unregister();
 
 		_serviceRegistration = null;
-
-		_httpServiceServlet.destroy();
-
-		_httpServiceServlet = null;
-	}
-
-	@Reference(target = "(original.bean=true)", unbind = "-")
-	protected void setServletContext(ServletContext servletContext) {
-		Class<?> clazz = getClass();
-
-		_servletContext = (ServletContext)Proxy.newProxyInstance(
-			clazz.getClassLoader(), _INTERFACES,
-			new ServletContextAdaptor(servletContext));
 	}
 
 	private static final Class<?>[] _INTERFACES = new Class<?>[] {
 		ServletContext.class
 	};
 
-	private static final HttpSessionListener _INVALIDATEHTTPSESSION_LISTENER =
-		new HttpSessionListener() {
-
-			@Override
-			public void sessionCreated(HttpSessionEvent httpSessionEvent) {
-			}
-
-			@Override
-			public void sessionDestroyed(HttpSessionEvent httpSessionEvent) {
-				HttpSession httpSession = httpSessionEvent.getSession();
-
-				HttpSessionTrackerUtil.invalidate(httpSession.getId());
-			}
-
-		};
-
-	private HttpServiceServlet _httpServiceServlet;
 	private ServiceRegistration<?> _serviceRegistration;
+
+	@Reference(target = "(original.bean=true)")
 	private ServletContext _servletContext;
 
 	private static class ServletContextAdaptor implements InvocationHandler {

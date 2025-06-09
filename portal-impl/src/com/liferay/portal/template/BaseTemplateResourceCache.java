@@ -1,31 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.template;
 
-import com.liferay.portal.kernel.cache.MultiVMPool;
 import com.liferay.portal.kernel.cache.PortalCache;
 import com.liferay.portal.kernel.cache.PortalCacheException;
+import com.liferay.portal.kernel.cache.PortalCacheHelperUtil;
 import com.liferay.portal.kernel.cache.PortalCacheListener;
-import com.liferay.portal.kernel.cache.SingleVMPool;
+import com.liferay.portal.kernel.cache.PortalCacheManagerNames;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.template.StringTemplateResource;
 import com.liferay.portal.kernel.template.TemplateResource;
 import com.liferay.portal.kernel.template.TemplateResourceCache;
-import com.liferay.portal.kernel.template.URLTemplateResource;
 import com.liferay.portal.kernel.util.ProxyFactory;
+import com.liferay.portal.util.PropsValues;
 
 /**
  * @author Tina Tian
@@ -40,7 +31,6 @@ public abstract class BaseTemplateResourceCache
 		}
 
 		_multiVMPortalCache.removeAll();
-		_singleVMPortalCache.removeAll();
 	}
 
 	public <T> PortalCache<TemplateResource, T> getSecondLevelPortalCache() {
@@ -53,12 +43,7 @@ public abstract class BaseTemplateResourceCache
 			return null;
 		}
 
-		TemplateResource templateResource = _singleVMPortalCache.get(
-			templateId);
-
-		if (templateResource == null) {
-			templateResource = _multiVMPortalCache.get(templateId);
-		}
+		TemplateResource templateResource = _multiVMPortalCache.get(templateId);
 
 		if ((templateResource != null) &&
 			(templateResource != DUMMY_TEMPLATE_RESOURCE) &&
@@ -84,7 +69,9 @@ public abstract class BaseTemplateResourceCache
 
 	@Override
 	public boolean isEnabled() {
-		if (_modificationCheckInterval == 0) {
+		if (!PropsValues.TEMPLATE_ENGINE_CACHE_ENABLED ||
+			(_modificationCheckInterval == 0)) {
+
 			return false;
 		}
 
@@ -98,21 +85,16 @@ public abstract class BaseTemplateResourceCache
 		}
 
 		if (templateResource == null) {
-			_singleVMPortalCache.put(templateId, DUMMY_TEMPLATE_RESOURCE);
+			templateResource = DUMMY_TEMPLATE_RESOURCE;
 		}
-		else if (templateResource instanceof URLTemplateResource) {
-			_singleVMPortalCache.put(
-				templateId, new CacheTemplateResource(templateResource));
-		}
-		else if (templateResource instanceof CacheTemplateResource ||
-				 templateResource instanceof StringTemplateResource) {
+		else if (!(templateResource instanceof CacheTemplateResource) &&
+				 !(templateResource instanceof StringTemplateResource)) {
 
-			_multiVMPortalCache.put(templateId, templateResource);
+			templateResource = new CacheTemplateResource(templateResource);
 		}
-		else {
-			_multiVMPortalCache.put(
-				templateId, new CacheTemplateResource(templateResource));
-		}
+
+		PortalCacheHelperUtil.putWithoutReplicator(
+			_multiVMPortalCache, templateId, templateResource);
 	}
 
 	@Override
@@ -122,68 +104,29 @@ public abstract class BaseTemplateResourceCache
 		}
 
 		_multiVMPortalCache.remove(templateId);
-		_singleVMPortalCache.remove(templateId);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public void setSecondLevelPortalCache(
-		PortalCache<TemplateResource, ?> portalCache) {
-
-		if (!isEnabled()) {
-			return;
-		}
-
-		_setSecondLevelPortalCache(portalCache);
 	}
 
 	protected void destroy() {
-		_multiVMPool.removePortalCache(
+		PortalCacheHelperUtil.removePortalCache(
+			PortalCacheManagerNames.MULTI_VM,
 			_multiVMPortalCache.getPortalCacheName());
 
-		_singleVMPool.removePortalCache(
-			_singleVMPortalCache.getPortalCacheName());
-
-		_singleVMPool.removePortalCache(
+		PortalCacheHelperUtil.removePortalCache(
+			PortalCacheManagerNames.SINGLE_VM,
 			_secondLevelPortalCache.getPortalCacheName());
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *          #init(long, MultiVMPool, SingleVMPool, String, String)}
-	 */
-	@Deprecated
 	protected void init(
-		long modificationCheckInterval, MultiVMPool multiVMPool,
-		SingleVMPool singleVMPool, String portalCacheName) {
-
-		init(
-			modificationCheckInterval, multiVMPool, singleVMPool,
-			portalCacheName, null);
-	}
-
-	protected void init(
-		long modificationCheckInterval, MultiVMPool multiVMPool,
-		SingleVMPool singleVMPool, String portalCacheName,
+		long modificationCheckInterval, String portalCacheName,
 		String secondLevelPortalCacheName) {
 
 		_modificationCheckInterval = modificationCheckInterval;
-		_multiVMPool = multiVMPool;
-		_singleVMPool = singleVMPool;
 
-		_multiVMPortalCache =
-			(PortalCache<String, TemplateResource>)multiVMPool.getPortalCache(
-				portalCacheName);
-		_singleVMPortalCache =
-			(PortalCache<String, TemplateResource>)singleVMPool.getPortalCache(
-				portalCacheName);
+		_multiVMPortalCache = PortalCacheHelperUtil.getPortalCache(
+			PortalCacheManagerNames.MULTI_VM, portalCacheName);
 
-		_secondLevelPortalCache =
-			(PortalCache<TemplateResource, ?>)_singleVMPool.getPortalCache(
-				secondLevelPortalCacheName);
+		_secondLevelPortalCache = PortalCacheHelperUtil.getPortalCache(
+			PortalCacheManagerNames.SINGLE_VM, secondLevelPortalCacheName);
 
 		_setSecondLevelPortalCache(_secondLevelPortalCache);
 	}
@@ -206,19 +149,14 @@ public abstract class BaseTemplateResourceCache
 
 		_multiVMPortalCache.registerPortalCacheListener(
 			templateResourcePortalCacheListener);
-		_singleVMPortalCache.registerPortalCacheListener(
-			templateResourcePortalCacheListener);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseTemplateResourceCache.class);
 
 	private volatile long _modificationCheckInterval;
-	private MultiVMPool _multiVMPool;
 	private PortalCache<String, TemplateResource> _multiVMPortalCache;
 	private PortalCache<TemplateResource, ?> _secondLevelPortalCache;
-	private SingleVMPool _singleVMPool;
-	private PortalCache<String, TemplateResource> _singleVMPortalCache;
 
 	private class TemplateResourcePortalCacheListener
 		implements PortalCacheListener<String, TemplateResource> {

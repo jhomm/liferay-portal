@@ -1,29 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.clay.servlet.taglib;
 
 import com.liferay.frontend.taglib.clay.internal.servlet.taglib.BaseContainerTag;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyHTMLRewriterUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.util.TagResourceBundleUtil;
 
-import java.util.Set;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
 
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
+import java.util.Set;
 
 /**
  * @author Chema Balsas
@@ -43,6 +36,10 @@ public class AlertTag extends BaseContainerTag {
 		return _autoClose;
 	}
 
+	public boolean getDefaultTitleDisabled() {
+		return _defaultTitleDisabled;
+	}
+
 	public boolean getDismissible() {
 		return _dismissible;
 	}
@@ -53,6 +50,10 @@ public class AlertTag extends BaseContainerTag {
 
 	public String getMessage() {
 		return _message;
+	}
+
+	public String getSymbol() {
+		return _symbol;
 	}
 
 	public String getTitle() {
@@ -67,6 +68,10 @@ public class AlertTag extends BaseContainerTag {
 		_autoClose = autoClose;
 	}
 
+	public void setDefaultTitleDisabled(boolean defaultTitleDisabled) {
+		_defaultTitleDisabled = defaultTitleDisabled;
+	}
+
 	public void setDismissible(boolean dismissible) {
 		_dismissible = dismissible;
 	}
@@ -77,6 +82,10 @@ public class AlertTag extends BaseContainerTag {
 
 	public void setMessage(String message) {
 		_message = message;
+	}
+
+	public void setSymbol(String symbol) {
+		_symbol = symbol;
 	}
 
 	public void setTitle(String title) {
@@ -92,9 +101,11 @@ public class AlertTag extends BaseContainerTag {
 		super.cleanUp();
 
 		_autoClose = false;
+		_defaultTitleDisabled = false;
 		_dismissible = false;
 		_displayType = "info";
 		_message = null;
+		_symbol = null;
 		_title = null;
 		_variant = null;
 	}
@@ -125,17 +136,28 @@ public class AlertTag extends BaseContainerTag {
 		jspWriter.write("</div></div>");
 
 		if (_dismissible) {
-			jspWriter.write("<button class=\"close\" onclick=\"");
-			jspWriter.write("event.target.closest('[role=alert]').remove()\"");
-			jspWriter.write(" type=\"button\">");
+			StringBundler sb = new StringBundler(7);
+
+			sb.append("<button aria-label=\"");
+			sb.append(
+				LanguageUtil.get(
+					TagResourceBundleUtil.getResourceBundle(pageContext),
+					"close"));
+			sb.append("\" class=\"close\" onclick=\"");
+			sb.append("event.target.closest('[role=alert]').remove()\" ");
+			sb.append("type=\"button\">");
 
 			IconTag iconTag = new IconTag();
 
 			iconTag.setSymbol("times");
 
-			iconTag.doTag(pageContext);
+			sb.append(iconTag.doTagAsString(pageContext));
 
-			jspWriter.write("</button>");
+			sb.append("</button>");
+
+			jspWriter.write(
+				ContentSecurityPolicyHTMLRewriterUtil.rewriteInlineAttributes(
+					sb.toString(), getRequest(), false));
 		}
 
 		if (Validator.isNotNull(_variant) && _variant.equals("stripe")) {
@@ -165,15 +187,33 @@ public class AlertTag extends BaseContainerTag {
 
 		IconTag iconTag = new IconTag();
 
-		iconTag.setSymbol(_getIcon(_displayType));
+		if (Validator.isNotNull(_symbol)) {
+			iconTag.setSymbol(_symbol);
+		}
+		else {
+			iconTag.setSymbol(_getIcon(_displayType));
+		}
 
 		iconTag.doTag(pageContext);
 
 		jspWriter.write("</span></div></div><div class=\"autofit-col ");
 		jspWriter.write("autofit-col-expand\"><div class=\"autofit-section\">");
-		jspWriter.write("<strong class=\"lead\">");
-		jspWriter.write(_getTitle(_title, _displayType));
-		jspWriter.write(":</strong>");
+
+		if (_defaultTitleDisabled) {
+			if (Validator.isNotNull(_title)) {
+				jspWriter.write("<strong class=\"lead\">");
+				jspWriter.write(
+					LanguageUtil.get(
+						TagResourceBundleUtil.getResourceBundle(pageContext),
+						_title));
+				jspWriter.write("</strong>");
+			}
+		}
+		else {
+			jspWriter.write("<strong class=\"lead\">");
+			jspWriter.write(_getTitle(_title, _displayType));
+			jspWriter.write(":</strong>");
+		}
 
 		if (Validator.isNotNull(_message)) {
 			jspWriter.write(
@@ -197,9 +237,11 @@ public class AlertTag extends BaseContainerTag {
 		else if (displayType.equals("warning")) {
 			return "warning-full";
 		}
-		else {
-			return "info-circle";
+		else if (displayType.equals("secondary")) {
+			return "password-policies";
 		}
+
+		return "info-circle";
 	}
 
 	private String _getTitle(String title, String displayType) {
@@ -218,9 +260,11 @@ public class AlertTag extends BaseContainerTag {
 	private static final String _ATTRIBUTE_NAMESPACE = "clay:alert:";
 
 	private boolean _autoClose;
+	private boolean _defaultTitleDisabled;
 	private boolean _dismissible;
 	private String _displayType = "info";
 	private String _message;
+	private String _symbol;
 	private String _title;
 	private String _variant;
 

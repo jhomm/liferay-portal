@@ -1,24 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.test.util.mappings;
 
 import com.liferay.portal.kernel.search.Field;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.Objects;
 
 /**
  * @author André de Oliveira
@@ -43,14 +34,51 @@ public class NestedDDMFieldArrayUtil {
 		return field;
 	}
 
-	public static Optional<Object> getFieldValue(
-		String name, Stream<Map<String, Object>> stream) {
+	public static Field createSortableStringField(
+		String name, String valueFieldName, Object value) {
 
-		return stream.filter(
-			map -> name.equals(map.get("ddmFieldName"))
-		).map(
-			map -> map.get(map.get("ddmValueFieldName"))
-		).findAny();
+		Field field = createField(name, valueFieldName, value);
+
+		String sortableValueFieldName = Field.getSortableFieldName(
+			valueFieldName + "_String");
+
+		if (value instanceof String) {
+			field.addField(new Field(sortableValueFieldName, (String)value));
+		}
+		else {
+			field.addField(new Field(sortableValueFieldName, (String[])value));
+		}
+
+		return field;
+	}
+
+	public static Object getFieldValue(
+		String name, List<Map<String, Object>> maps) {
+
+		for (Map<String, Object> map : maps) {
+			if (Objects.equals(name, _getValue(map.get("ddmFieldName")))) {
+				Object fieldValue = _getValue(
+					map.get(_getValue(map.get("ddmValueFieldName"))));
+
+				if (fieldValue != null) {
+					return fieldValue;
+				}
+			}
+		}
+
+		return null;
+	}
+
+	private static Object _getValue(Object object) {
+		if (object instanceof List) {
+			List<?> list = (List<?>)object;
+
+			if (list.size() == 1) {
+				return list.get(0);
+			}
+		}
+
+		return object;
 	}
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.service.persistence.test;
@@ -130,6 +121,12 @@ public class CommercePriceListOrderTypeRelPersistenceTest {
 		CommercePriceListOrderTypeRel newCommercePriceListOrderTypeRel =
 			_persistence.create(pk);
 
+		newCommercePriceListOrderTypeRel.setMvccVersion(
+			RandomTestUtil.nextLong());
+
+		newCommercePriceListOrderTypeRel.setCtCollectionId(
+			RandomTestUtil.nextLong());
+
 		newCommercePriceListOrderTypeRel.setUuid(RandomTestUtil.randomString());
 
 		newCommercePriceListOrderTypeRel.setCompanyId(
@@ -164,6 +161,12 @@ public class CommercePriceListOrderTypeRelPersistenceTest {
 			_persistence.findByPrimaryKey(
 				newCommercePriceListOrderTypeRel.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCommercePriceListOrderTypeRel.getMvccVersion(),
+			newCommercePriceListOrderTypeRel.getMvccVersion());
+		Assert.assertEquals(
+			existingCommercePriceListOrderTypeRel.getCtCollectionId(),
+			newCommercePriceListOrderTypeRel.getCtCollectionId());
 		Assert.assertEquals(
 			existingCommercePriceListOrderTypeRel.getUuid(),
 			newCommercePriceListOrderTypeRel.getUuid());
@@ -271,7 +274,8 @@ public class CommercePriceListOrderTypeRelPersistenceTest {
 		getOrderByComparator() {
 
 		return OrderByComparatorFactoryUtil.create(
-			"CommercePriceListOrderTypeRel", "uuid", true,
+			"CommercePriceListOrderTypeRel", "mvccVersion", true,
+			"ctCollectionId", true, "uuid", true,
 			"commercePriceListOrderTypeRelId", true, "companyId", true,
 			"userId", true, "userName", true, "createDate", true,
 			"modifiedDate", true, "commercePriceListId", true,
@@ -607,6 +611,11 @@ public class CommercePriceListOrderTypeRelPersistenceTest {
 
 		CommercePriceListOrderTypeRel commercePriceListOrderTypeRel =
 			_persistence.create(pk);
+
+		commercePriceListOrderTypeRel.setMvccVersion(RandomTestUtil.nextLong());
+
+		commercePriceListOrderTypeRel.setCtCollectionId(
+			RandomTestUtil.nextLong());
 
 		commercePriceListOrderTypeRel.setUuid(RandomTestUtil.randomString());
 

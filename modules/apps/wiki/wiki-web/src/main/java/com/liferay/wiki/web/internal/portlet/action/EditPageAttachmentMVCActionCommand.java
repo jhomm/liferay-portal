@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.web.internal.portlet.action;
@@ -29,21 +20,20 @@ import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.document.library.kernel.exception.NoSuchFolderException;
 import com.liferay.document.library.kernel.exception.SourceFileNameException;
 import com.liferay.document.library.kernel.util.DLValidator;
-import com.liferay.dynamic.data.mapping.kernel.StorageFieldRequiredException;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.lock.DuplicateLockException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
-import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.servlet.ServletResponseConstants;
 import com.liferay.portal.kernel.servlet.SessionErrors;
@@ -59,8 +49,10 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.TempFileEntryUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.upload.UploadFileEntryHandler;
 import com.liferay.upload.UploadHandler;
 import com.liferay.upload.UploadResponseHandler;
 import com.liferay.wiki.constants.WikiConstants;
@@ -68,18 +60,16 @@ import com.liferay.wiki.constants.WikiPortletKeys;
 import com.liferay.wiki.exception.NoSuchNodeException;
 import com.liferay.wiki.exception.NoSuchPageException;
 import com.liferay.wiki.service.WikiPageService;
-import com.liferay.wiki.web.internal.WikiAttachmentsHelper;
-import com.liferay.wiki.web.internal.upload.TempAttachmentWikiUploadFileEntryHandler;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -92,23 +82,15 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.document.library.configuration.DLConfiguration",
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + WikiPortletKeys.WIKI,
-		"javax.portlet.name=" + WikiPortletKeys.WIKI_ADMIN,
-		"javax.portlet.name=" + WikiPortletKeys.WIKI_DISPLAY,
+		"jakarta.portlet.name=" + WikiPortletKeys.WIKI,
+		"jakarta.portlet.name=" + WikiPortletKeys.WIKI_ADMIN,
+		"jakarta.portlet.name=" + WikiPortletKeys.WIKI_DISPLAY,
 		"mvc.command.name=/wiki/edit_page_attachment"
 	},
 	service = MVCActionCommand.class
 )
 public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
-
-	@Reference(unbind = "-")
-	public void setWikiAttachmentsHelper(
-		WikiAttachmentsHelper wikiAttachmentsHelper) {
-
-		_wikiAttachmentsHelper = wikiAttachmentsHelper;
-	}
 
 	@Activate
 	@Modified
@@ -117,79 +99,12 @@ public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 			DLConfiguration.class, properties);
 	}
 
-	protected void addTempAttachment(
-			ActionRequest actionRequest, ActionResponse actionResponse)
-		throws Exception {
-
-		_uploadHandler.upload(
-			_tempAttachmentWikiUploadFileEntryHandler, _uploadResponseHandler,
-			actionRequest, actionResponse);
-	}
-
-	protected void deleteAttachment(
-			ActionRequest actionRequest, boolean moveToTrash)
-		throws Exception {
-
-		TrashedModel trashedModel = _wikiAttachmentsHelper.deleteAttachment(
-			actionRequest, moveToTrash);
-
-		if (moveToTrash && (trashedModel != null)) {
-			addDeleteSuccessData(
-				actionRequest,
-				HashMapBuilder.<String, Object>put(
-					Constants.CMD, Constants.REMOVE
-				).put(
-					"trashedModels", ListUtil.fromArray(trashedModel)
-				).build());
-		}
-	}
-
-	protected void deleteTempAttachment(
-			ActionRequest actionRequest, ActionResponse actionResponse)
-		throws Exception {
-
-		UploadPortletRequest uploadPortletRequest =
-			_portal.getUploadPortletRequest(actionRequest);
-
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		long nodeId = ParamUtil.getLong(uploadPortletRequest, "nodeId");
-		String fileName = ParamUtil.getString(actionRequest, "fileName");
-
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
-
-		try {
-			_wikiPageService.deleteTempFileEntry(
-				nodeId, WikiConstants.TEMP_FOLDER_NAME, fileName);
-
-			jsonObject.put("deleted", Boolean.TRUE);
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
-			}
-
-			jsonObject.put("deleted", Boolean.FALSE);
-
-			String errorMessage = themeDisplay.translate(
-				"an-unexpected-error-occurred-while-deleting-the-file");
-
-			jsonObject.put("errorMessage", errorMessage);
-		}
-
-		JSONPortletResponseUtil.writeJSON(
-			actionRequest, actionResponse, jsonObject);
-	}
-
 	@Override
 	protected void doProcessAction(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
 		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
-
-		PortletConfig portletConfig = getPortletConfig(actionRequest);
 
 		try {
 			UploadException uploadException =
@@ -214,22 +129,22 @@ public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 				throw new PortalException(throwable);
 			}
 			else if (cmd.equals(Constants.ADD_TEMP)) {
-				addTempAttachment(actionRequest, actionResponse);
+				_addTempAttachment(actionRequest, actionResponse);
 			}
 			else if (cmd.equals(Constants.DELETE)) {
-				deleteAttachment(actionRequest, false);
+				_deleteAttachment(actionRequest, false);
 			}
 			else if (cmd.equals(Constants.DELETE_TEMP)) {
-				deleteTempAttachment(actionRequest, actionResponse);
+				_deleteTempAttachment(actionRequest, actionResponse);
 			}
 			else if (cmd.equals(Constants.EMPTY_TRASH)) {
-				_wikiAttachmentsHelper.emptyTrash(actionRequest);
+				emptyTrash(actionRequest);
 			}
 			else if (cmd.equals(Constants.MOVE_TO_TRASH)) {
-				deleteAttachment(actionRequest, true);
+				_deleteAttachment(actionRequest, true);
 			}
 			else if (cmd.equals(Constants.RESTORE)) {
-				_wikiAttachmentsHelper.restoreEntries(actionRequest);
+				restoreEntries(actionRequest);
 
 				String redirect = ParamUtil.getString(
 					actionRequest, "redirect");
@@ -247,20 +162,78 @@ public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 			actionResponse.setRenderParameter("mvcPath", "/wiki/error.jsp");
 		}
 		catch (Exception exception) {
-			handleUploadException(
-				portletConfig, actionRequest, actionResponse, cmd, exception);
+			_handleUploadException(
+				actionRequest, actionResponse, cmd, exception);
 		}
+	}
+
+	private void _addTempAttachment(
+			ActionRequest actionRequest, ActionResponse actionResponse)
+		throws Exception {
+
+		_uploadHandler.upload(
+			_tempAttachmentWikiUploadFileEntryHandler, _uploadResponseHandler,
+			actionRequest, actionResponse);
+	}
+
+	private void _deleteAttachment(
+			ActionRequest actionRequest, boolean moveToTrash)
+		throws Exception {
+
+		TrashedModel trashedModel = deleteAttachment(
+			actionRequest, moveToTrash);
+
+		if (moveToTrash && (trashedModel != null)) {
+			addDeleteSuccessData(
+				actionRequest,
+				HashMapBuilder.<String, Object>put(
+					Constants.CMD, Constants.REMOVE
+				).put(
+					"trashedModels", ListUtil.fromArray(trashedModel)
+				).build());
+		}
+	}
+
+	private void _deleteTempAttachment(
+			ActionRequest actionRequest, ActionResponse actionResponse)
+		throws Exception {
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		long nodeId = ParamUtil.getLong(actionRequest, "nodeId");
+		String fileName = ParamUtil.getString(actionRequest, "fileName");
+
+		JSONObject jsonObject = _jsonFactory.createJSONObject();
+
+		try {
+			_wikiPageService.deleteTempFileEntry(
+				nodeId, WikiConstants.TEMP_FOLDER_NAME, fileName);
+
+			jsonObject.put("deleted", Boolean.TRUE);
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
+			jsonObject.put("deleted", Boolean.FALSE);
+
+			String errorMessage = themeDisplay.translate(
+				"an-unexpected-error-occurred-while-deleting-the-file");
+
+			jsonObject.put("errorMessage", errorMessage);
+		}
+
+		JSONPortletResponseUtil.writeJSON(
+			actionRequest, actionResponse, jsonObject);
 	}
 
 	/**
 	 * TODO: Remove. This should extend from EditFileEntryAction once it is
 	 * modularized.
 	 */
-	protected String[] getAllowedFileExtensions(
-			PortletConfig portletConfig, PortletRequest portletRequest,
-			PortletResponse portletResponse)
-		throws PortalException {
-
+	private String[] _getAllowedFileExtensions() throws Exception {
 		return _dlConfiguration.fileExtensions();
 	}
 
@@ -268,9 +241,9 @@ public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 	 * TODO: Remove. This should extend from EditFileEntryAction once it is
 	 * modularized.
 	 */
-	protected void handleUploadException(
-			PortletConfig portletConfig, ActionRequest actionRequest,
-			ActionResponse actionResponse, String cmd, Exception exception)
+	private void _handleUploadException(
+			ActionRequest actionRequest, ActionResponse actionResponse,
+			String cmd, Exception exception)
 		throws Exception {
 
 		if (exception instanceof AssetCategoryException ||
@@ -288,7 +261,6 @@ public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 				 exception instanceof LiferayFileItemException ||
 				 exception instanceof NoSuchFolderException ||
 				 exception instanceof SourceFileNameException ||
-				 exception instanceof StorageFieldRequiredException ||
 				 exception instanceof UploadRequestSizeException) {
 
 			if (!cmd.equals(Constants.ADD_DYNAMIC) &&
@@ -349,9 +321,7 @@ public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 				else if (exception instanceof FileExtensionException) {
 					errorMessage = themeDisplay.translate(
 						"please-enter-a-file-with-a-valid-extension-x",
-						StringUtil.merge(
-							getAllowedFileExtensions(
-								portletConfig, actionRequest, actionResponse)));
+						StringUtil.merge(_getAllowedFileExtensions()));
 					errorType =
 						ServletResponseConstants.SC_FILE_EXTENSION_EXCEPTION;
 				}
@@ -361,12 +331,16 @@ public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 					errorType = ServletResponseConstants.SC_FILE_NAME_EXCEPTION;
 				}
 				else if (exception instanceof FileSizeException) {
+					FileSizeException fileSizeException =
+						(FileSizeException)exception;
+
 					errorMessage = themeDisplay.translate(
 						"please-enter-a-file-with-a-valid-file-size-no-" +
 							"larger-than-x",
-						LanguageUtil.formatStorageSize(
-							_dlValidator.getMaxAllowableSize(),
+						_language.formatStorageSize(
+							fileSizeException.getMaxSize(),
 							themeDisplay.getLocale()));
+
 					errorType = ServletResponseConstants.SC_FILE_SIZE_EXCEPTION;
 				}
 
@@ -429,11 +403,17 @@ public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 	private DLValidator _dlValidator;
 
 	@Reference
-	private Portal _portal;
+	private JSONFactory _jsonFactory;
 
 	@Reference
-	private TempAttachmentWikiUploadFileEntryHandler
-		_tempAttachmentWikiUploadFileEntryHandler;
+	private Language _language;
+
+	@Reference
+	private Portal _portal;
+
+	private final TempAttachmentWikiUploadFileEntryHandler
+		_tempAttachmentWikiUploadFileEntryHandler =
+			new TempAttachmentWikiUploadFileEntryHandler();
 
 	@Reference
 	private UploadHandler _uploadHandler;
@@ -441,9 +421,43 @@ public class EditPageAttachmentMVCActionCommand extends BaseMVCActionCommand {
 	@Reference(target = "(upload.response.handler=multiple)")
 	private UploadResponseHandler _uploadResponseHandler;
 
-	private WikiAttachmentsHelper _wikiAttachmentsHelper;
-
 	@Reference
 	private WikiPageService _wikiPageService;
+
+	private class TempAttachmentWikiUploadFileEntryHandler
+		implements UploadFileEntryHandler {
+
+		@Override
+		public FileEntry upload(UploadPortletRequest uploadPortletRequest)
+			throws IOException, PortalException {
+
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)uploadPortletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			_dlValidator.validateFileSize(
+				themeDisplay.getScopeGroupId(),
+				uploadPortletRequest.getFileName(_PARAMETER_NAME),
+				uploadPortletRequest.getContentType(_PARAMETER_NAME),
+				uploadPortletRequest.getSize(_PARAMETER_NAME));
+
+			long nodeId = ParamUtil.getLong(
+				uploadPortletRequest.getPortletRequest(), "nodeId");
+
+			try (InputStream inputStream = uploadPortletRequest.getFileAsStream(
+					_PARAMETER_NAME)) {
+
+				return _wikiPageService.addTempFileEntry(
+					nodeId, WikiConstants.TEMP_FOLDER_NAME,
+					TempFileEntryUtil.getTempFileName(
+						uploadPortletRequest.getFileName(_PARAMETER_NAME)),
+					inputStream,
+					uploadPortletRequest.getContentType(_PARAMETER_NAME));
+			}
+		}
+
+		private static final String _PARAMETER_NAME = "file";
+
+	}
 
 }

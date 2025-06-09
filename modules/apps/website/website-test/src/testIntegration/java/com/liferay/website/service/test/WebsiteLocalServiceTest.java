@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.website.service.test;
@@ -24,6 +15,7 @@ import com.liferay.portal.kernel.service.ListTypeLocalService;
 import com.liferay.portal.kernel.service.WebsiteLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.test.rule.Inject;
@@ -54,6 +46,7 @@ public class WebsiteLocalServiceTest {
 		_user = TestPropsValues.getUser();
 
 		List<ListType> listTypes = _listTypeLocalService.getListTypes(
+			_user.getCompanyId(),
 			"com.liferay.portal.kernel.model.Contact.website");
 
 		_listType = listTypes.get(0);
@@ -62,8 +55,9 @@ public class WebsiteLocalServiceTest {
 	@Test
 	public void testAddWebsite() throws Exception {
 		_website = _websiteLocalService.addWebsite(
-			_user.getUserId(), Contact.class.getName(), _user.getContactId(),
-			_VALID_URL, _listType.getListTypeId(), true,
+			RandomTestUtil.randomString(), _user.getUserId(),
+			Contact.class.getName(), _user.getContactId(), _VALID_URL,
+			_listType.getListTypeId(), true,
 			ServiceContextTestUtil.getServiceContext());
 
 		Assert.assertNotNull(_website);
@@ -74,21 +68,23 @@ public class WebsiteLocalServiceTest {
 	@Test(expected = WebsiteURLException.class)
 	public void testAddWebsiteInvalidURL() throws Exception {
 		_website = _websiteLocalService.addWebsite(
-			_user.getUserId(), Contact.class.getName(), _user.getContactId(),
-			_INVALID_URL, _listType.getListTypeId(), true,
+			RandomTestUtil.randomString(), _user.getUserId(),
+			Contact.class.getName(), _user.getContactId(), _INVALID_URL,
+			_listType.getListTypeId(), true,
 			ServiceContextTestUtil.getServiceContext());
 	}
 
 	@Test
 	public void testUpdateWebsite() throws Exception {
 		_website = _websiteLocalService.addWebsite(
-			_user.getUserId(), Contact.class.getName(), _user.getContactId(),
-			_VALID_URL, _listType.getListTypeId(), true,
+			RandomTestUtil.randomString(), _user.getUserId(),
+			Contact.class.getName(), _user.getContactId(), _VALID_URL,
+			_listType.getListTypeId(), true,
 			ServiceContextTestUtil.getServiceContext());
 
 		_website = _websiteLocalService.updateWebsite(
-			_website.getWebsiteId(), _website.getUrl(), _website.getTypeId(),
-			false);
+			_website.getExternalReferenceCode(), _website.getWebsiteId(),
+			_website.getUrl(), _website.getListTypeId(), false);
 
 		Assert.assertFalse(_website.isPrimary());
 	}
@@ -96,13 +92,14 @@ public class WebsiteLocalServiceTest {
 	@Test(expected = WebsiteURLException.class)
 	public void testUpdateWebsiteInvalidURL() throws Exception {
 		_website = _websiteLocalService.addWebsite(
-			_user.getUserId(), Contact.class.getName(), _user.getContactId(),
-			_VALID_URL, _listType.getListTypeId(), true,
+			RandomTestUtil.randomString(), _user.getUserId(),
+			Contact.class.getName(), _user.getContactId(), _VALID_URL,
+			_listType.getListTypeId(), true,
 			ServiceContextTestUtil.getServiceContext());
 
 		_websiteLocalService.updateWebsite(
-			_website.getWebsiteId(), _INVALID_URL, _website.getTypeId(),
-			_website.isPrimary());
+			_website.getExternalReferenceCode(), _website.getWebsiteId(),
+			_INVALID_URL, _website.getListTypeId(), _website.isPrimary());
 	}
 
 	private static final String _INVALID_URL = "http://www,invalid.com";

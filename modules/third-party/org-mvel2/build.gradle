@@ -1,0 +1,25 @@
+import com.liferay.gradle.plugins.patcher.PatchTask
+
+apply plugin: "com.liferay.patcher"
+
+task patch(type: PatchTask)
+
+sourceCompatibility = "1.6"
+targetCompatibility = "1.6"
+
+dependencies {
+	api group: "com.liferay", name: "org.mvel2", version: "2.1.0.drools16.LIFERAY-PATCHED-2"
+}
+
+jarSources {
+	mustRunAfter patch
+}
+
+patch {
+	ext {
+		autoClean = false
+	}
+
+	fileNames "org/mvel2/compiler/AbstractParser.java"
+	originalLibModuleName = "org.mvel2"
+}

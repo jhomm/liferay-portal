@@ -9,8 +9,14 @@
 			<stop-one-java-process process.name="LocalProcess" />
 			<stop-one-java-process process.name="DBUpgrader" />
 
-			<delete file="${db.upgrade.client.log}" />
-			<delete file="temp.log" />
+			<exec executable="/bin/bash" logError="true" output="true">
+				<arg value="-c" />
+				<arg value="pkill -f db.upgrade.client" />
+			</exec>
+
+			<delete failonerror="false" file="${db.upgrade.client.log}" />
+			<delete failonerror="false" file="${user.home}/portal-ext.properties" />
+			<delete failonerror="false" file="temp.log" />
 		</sequential>
 	</macrodef>
 
@@ -25,13 +31,37 @@
 		</sequential>
 	</macrodef>
 
-	<macrodef name="rebuild-upgrade-database">
+	<macrodef name="get-upgrade-finished-status">
+		<attribute default="success" name="upgrade.finished.status" />
+
 		<sequential>
-			<antcall target="rebuild-legacy-database">
-				<param name="portal.version" value="6.2.5" />
-				<param name="data.archive.type" value="data-archive-polls" />
-				<param name="skip.get.testcase.database.properties" value="true" />
-			</antcall>
+			<get-database-upgrade-client-paths />
+
+			<waitfor maxwait="150" maxwaitunit="second" timeoutproperty="upgrade.status.timeout">
+				<resourcecontains
+					resource="${db.upgrade.client.log}"
+					substring="upgrade finished with result @{upgrade.finished.status}"
+				/>
+			</waitfor>
+
+			<fail if="upgrade.status.timeout" message="Unable to find expected upgrade status &quot;@{upgrade.finished.status}&quot; on the log message." />
+		</sequential>
+	</macrodef>
+
+	<macrodef name="modify-script-exit-code">
+		<sequential>
+			<get-database-upgrade-client-paths />
+
+			<replace
+				file="${db.upgrade.client.home}/db_upgrade_client${file.suffix.bat}"
+				token="exit 1"
+				value="exit 0"
+			/>
+
+			<chmod
+				file="${db.upgrade.client.home}/db_upgrade_client${file.suffix.bat}"
+				perm="a+x"
+			/>
 		</sequential>
 	</macrodef>
 
@@ -39,7 +69,7 @@
 		<sequential>
 			<exec executable="/bin/bash" logError="true" output="true">
 				<arg value="-c" />
-				<arg value="pkill -1 -f db_upgrade" />
+				<arg value="pkill -1 -f db_upgrade_client" />
 			</exec>
 
 			<exec executable="/bin/bash" logError="true" output="true">
@@ -47,21 +77,49 @@
 				<arg value="pkill -1 -f com.liferay.portal.tools.db.upgrade.client.jar" />
 			</exec>
 
-			<echo message="SIGHUP signals sent to db_upgrade script and upgrade client jar." />
+			<echo>SIGHUP signals sent to db_upgrade_client script and upgrade client jar.</echo>
 		</sequential>
 	</macrodef>
+
+	<macrodef name="wait-for-upgrade-start">
+		<sequential>
+			<get-database-upgrade-client-paths />
+
+			<waitfor maxwait="300" maxwaitunit="second" timeoutproperty="upgrade.startfailed">
+				<available file="${db.upgrade.client.log}" />
+			</waitfor>
+
+			<fail if="upgrade.startfailed" message="Upgrade has failed to start." />
+		</sequential>
+	</macrodef>
+
+	<target name="check-failed-gogoshell-connection">
+		<exec executable="/bin/bash" outputproperty="gogo.shell.content.out">
+			<redirector inputstring="telnet 127.0.0.1 11312 || true" />
+		</exec>
+
+		<echo>${gogo.shell.content.out}</echo>
+
+		<if>
+			<contains string="${gogo.shell.content.out}" substring="telnet: connect to address 127.0.0.1: Connection refused" />
+			<then>
+				<echo>'telnet: connect to address 127.0.0.1: Connection refused' is present.</echo>
+			</then>
+			<else>
+				<fail message="'telnet: connect to address 127.0.0.1: Connection refused' is not present" />
+			</else>
+		</if>
+	</target>
 
 	<target name="check-upgrade-client-additional-settings">
 		<get-database-upgrade-client-paths />
 
 		<parallel failonany="true">
 			<execute dir="${db.upgrade.client.home}" failonerror="true">
-				db_upgrade${file.suffix.bat} -j "-Dfile.encoding=UTF8 -Duser.country=US -Duser.language=en -Duser.timezone=GMT -Xmx4096m"
+				db_upgrade_client${file.suffix.bat} -j "-Dfile.encoding=UTF8 -Duser.country=US -Duser.language=en -Duser.timezone=GMT -Xmx4096m"
 			</execute>
 			<sequential>
-				<waitfor maxwait="60000">
-					<available file="${db.upgrade.client.log}" />
-				</waitfor>
+				<wait-for-upgrade-start />
 
 				<sleep seconds="5" />
 
@@ -72,7 +130,7 @@
 				<if>
 					<contains string="${jinfo.output}" substring="MaxHeapSize=4294967296" />
 					<then>
-						<echo message="Java memory was successfully set to 4GB during the upgrade process." />
+						<echo>Java memory was successfully set to 4GB during the upgrade process.</echo>
 					</then>
 					<else>
 						<fail message="Could not verify that Java memory was set to 4GB" />
@@ -80,15 +138,13 @@
 				</if>
 			</sequential>
 		</parallel>
-
-		<clean-database-upgrade-client />
 	</target>
 
 	<target name="check-upgrade-client-custom-log">
 		<get-database-upgrade-client-paths />
 
 		<execute dir="${db.upgrade.client.home}" failonerror="true">
-			db_upgrade${file.suffix.bat} -l log_file.txt
+			db_upgrade_client${file.suffix.bat} -l log_file.txt
 		</execute>
 		<if>
 			<not>
@@ -115,70 +171,18 @@
 			</then>
 		</if>
 
-		<echo message="The upgrade client custom log file was created successfully." />
+		<echo>The upgrade client custom log file was created successfully.</echo>
 
 		<delete file="${db.upgrade.client.home}/logs/log_file.txt" />
-
-		<clean-database-upgrade-client />
-	</target>
-
-	<target name="check-upgrade-client-gogoshell">
-		<get-database-upgrade-client-paths />
-
-		<parallel failonany="true">
-			<java
-				dir="${db.upgrade.client.home}"
-				fork="true"
-				jar="${db.upgrade.client.jar}"
-				timeout="900000"
-			>
-				<arg value="-s" />
-			</java>
-
-			<sequential>
-				<waitfor maxwait="900000" timeoutproperty="gogoshell.not.started">
-					<resourcecontains
-						resource="${db.upgrade.client.log}"
-						substring="Connecting to Gogo shell"
-					/>
-				</waitfor>
-
-				<sleep seconds="20" />
-
-				<if>
-					<isset property="gogoshell.not.started" />
-					<then>
-						<fail message="The Gogo shell failed to open before the test timed out." />
-					</then>
-					<elseif>
-						<resourcecontains
-							resource="${db.upgrade.client.log}"
-							substring="Unable to open Gogo shell"
-						/>
-						<then>
-							<fail message="The Gogo shell connection failed" />
-						</then>
-					</elseif>
-				</if>
-
-				<echo message="A Gogo shell opened successfully." />
-
-				<stop-one-java-process process.name="jar" />
-			</sequential>
-		</parallel>
-
-		<clean-database-upgrade-client />
 	</target>
 
 	<target name="check-upgrade-client-gogoshell-command-output">
-		<rebuild-upgrade-database />
-
 		<get-database-upgrade-client-paths />
 
 		<run-expect
 			db.upgrade.client.home="${db.upgrade.client.home}"
-			file.suffix.bat="${file.suffix.bat}"
 			expect.file="check-upgrade-client-gogoshell-command-output.expect"
+			file.suffix.bat="${file.suffix.bat}"
 		/>
 
 		<fail message="Prefix g! for command does not exist!">
@@ -191,81 +195,76 @@
 				</not>
 			</condition>
 		</fail>
-
-		<clean-database-upgrade-client />
 	</target>
 
-	<target name="check-upgrade-client-gogoshell-failed-upgrade">
-		<rebuild-upgrade-database />
-
+	<target name="check-upgrade-client-gogoshell-connection">
 		<get-database-upgrade-client-paths />
 
-		<parallel>
-			<java
-				dir="${db.upgrade.client.home}"
-				fork="true"
-				jar="${db.upgrade.client.jar}"
-				timeout="900000"
-			>
-			</java>
+		<waitfor maxwait="150" maxwaitunit="second" timeoutproperty="gogoshell.missing">
+			<resourcecontains
+				resource="${db.upgrade.client.log}"
+				substring="Connecting to Gogo shell because the upgrade failed or is incomplete"
+			/>
+		</waitfor>
 
-			<sequential>
-				<waitfor maxwait="30" maxwaitunit="second" timeoutproperty="upgrade.startfailed">
-					<available file="${db.upgrade.client.log}" />
-				</waitfor>
+		<fail if="gogoshell.missing" message="Unable to find expected Gogo shell connection message." />
 
-				<fail if="upgrade.startfailed" message="Upgrade has failed to start." />
+		<waitfor maxwait="10" maxwaitunit="second" timeoutproperty="gogoshell.timeout">
+			<resourcecontains
+				resource="${db.upgrade.client.log}"
+				substring="Type &quot;help&quot; to get available upgrade and verify commands"
+			/>
+		</waitfor>
 
-				<sql classpath="${app.server.shielded-container-lib.portal.dir}/${jdbc.mysql.driver}" driver="${database.mysql.driver}" onerror="continue" output="output.txt" password="${database.mysql.password}" print="true" url="${database.mysql.url}" userid="${database.mysql.username}">
-					<![CDATA[
-						ALTER TABLE JournalArticle DROP type_;
-					]]>
-				</sql>
+		<fail if="gogoshell.timeout" message="The Gogo shell connection did not connect as expected." />
+	</target>
 
-				<waitfor maxwait="900000" timeoutproperty="upgrade.notfailed">
-					<resourcecontains
-						resource="${db.upgrade.client.log}"
-						substring="Checking to see if all upgrades have completed... your upgrades have failed, have not started, or are still running"
-					/>
-				</waitfor>
+	<target name="check-upgrade-client-gogoshell-failed-connection-error">
+		<get-database-upgrade-client-paths />
 
-				<if>
-					<isset property="upgrade.notfailed" />
-					<then>
-						<fail message="The upgrade process failure has timed out." />
-					</then>
-				</if>
+		<if>
+			<not>
+				<available file="${selenium.output.dir.name}" type="dir" />
+			</not>
+			<then>
+				<mkdir dir="${selenium.output.dir.name}" />
+			</then>
+		</if>
 
-				<waitfor maxwait="300" maxwaitunit="second" timeoutproperty="gogoshell.timeout">
-					<resourcecontains
-						resource="${db.upgrade.client.log}"
-						substring="Type &quot;help&quot; to get available upgrade and verify commands"
-					/>
-				</waitfor>
+		<execute dir="${db.upgrade.client.home}">
+			db_upgrade_client${file.suffix.bat} run > ${selenium.output.dir.name}/gogoshell.failed.connection.output
+		</execute>
 
-				<fail if="gogoshell.timeout" message="The Gogo shell connection did not connect as expected." />
+		<loadfile
+			property="upgrade.gogoshell.failed.connection.output"
+			srcFile="${selenium.output.dir.name}/gogoshell.failed.connection.output"
+		/>
 
-				<stop-one-java-process process.name="jar" />
-			</sequential>
-		</parallel>
+		<echo>${upgrade.gogoshell.failed.connection.output}</echo>
 
-		<rebuild-upgrade-database />
+		<if>
+			<not>
+				<and>
+					<contains string="${upgrade.gogoshell.failed.connection.output}" substring="Connecting to Gogo shell because the upgrade failed or is incomplete" />
+					<contains string="${upgrade.gogoshell.failed.connection.output}" substring="java.net.ConnectException: Connection refused" />
+				</and>
+			</not>
+			<then>
+				<fail message="The upgrade client failed to print out the exception." />
+			</then>
+		</if>
 
-		<clean-database-upgrade-client />
+		<echo>The upgrade client printed out the exception successfully.</echo>
 	</target>
 
 	<target name="check-upgrade-client-gogoshell-help-output">
-		<rebuild-upgrade-database />
-
 		<get-database-upgrade-client-paths />
 
 		<run-expect
 			db.upgrade.client.home="${db.upgrade.client.home}"
-			file.suffix.bat="${file.suffix.bat}"
 			expect.file="check-upgrade-client-gogoshell-help-output.expect"
+			file.suffix.bat="${file.suffix.bat}"
 		/>
-
-		<clean-database-upgrade-client />
 	</target>
 
 	<target name="check-upgrade-client-help">
@@ -274,7 +273,7 @@
 		<local name="upgrade.help.output" />
 
 		<execute dir="${db.upgrade.client.home}" failonerror="true">
-			db_upgrade${file.suffix.bat} -h > help.output
+			db_upgrade_client${file.suffix.bat} -h > help.output
 		</execute>
 
 		<loadfile
@@ -287,7 +286,7 @@
 		<if>
 			<contains string="${upgrade.help.output}" substring="-h,--help" />
 			<then>
-				<echo message="The upgrade client help screen appeared successfully" />
+				<echo>The upgrade client help screen appeared successfully</echo>
 			</then>
 			<else>
 				<fail message="The upgrade client help screen failed to appear." />
@@ -295,8 +294,40 @@
 		</if>
 
 		<delete file="help.output" />
+	</target>
 
-		<clean-database-upgrade-client />
+	<target name="check-upgrade-client-home-ext-properties">
+		<get-database-upgrade-client-paths />
+
+		<trycatch>
+			<try>
+				<touch file="${user.home}/portal-ext.properties" />
+
+				<execute dir="${db.upgrade.client.home}" failonerror="true">
+					db_upgrade_client${file.suffix.bat} run > temp.log
+				</execute>
+
+				<loadfile
+					property="upgrade.process.output"
+					srcFile="temp.log"
+				/>
+
+				<echo>${upgrade.process.output}</echo>
+
+				<if>
+					<contains string="${upgrade.process.output}" substring="Remove ${user.home}/portal-ext.properties prior to running an upgrade to prevent possible conflicts." />
+					<then>
+						<echo>Upgrade process did not start because portal-ext.properties is in user's home directory.</echo>
+					</then>
+					<else>
+						<fail message="Upgrade client is attempting to start an upgrade process with portal-ext.properties in user's home directory." />
+					</else>
+				</if>
+			</try>
+			<finally>
+				<delete file="${user.home}/portal-ext.properties" />
+			</finally>
+		</trycatch>
 	</target>
 
 	<target name="check-upgrade-client-java-version">
@@ -305,7 +336,7 @@
 		<parallel failonany="true">
 			<execute dir="${db.upgrade.client.home}" failonerror="true">
 				JAVA_HOME=${java.jdk.7.x64.home} echo JAVA_HOME=${JAVA_HOME}
-				db_upgrade${file.suffix.bat}
+				db_upgrade_client${file.suffix.bat}
 			</execute>
 
 			<sequential>
@@ -323,39 +354,35 @@
 					<then>
 						<clean-database-upgrade-client />
 
-						<echo message="The upgrade client correctly failed to run on a version older than Java SE 8." />
+						<echo>The upgrade client correctly failed to run on a version older than Java SE 8.</echo>
 					</then>
 					<else>
 						<fail message="The upgrade client should not be able to run on versions older than Java SE 8." />
 					</else>
 				</if>
 
-				<echo message="${java.error.available}: Unsupported major.minor version" />
+				<echo>${java.error.available}: Unsupported major.minor version</echo>
 			</sequential>
 		</parallel>
-
-		<clean-database-upgrade-client />
 	</target>
 
 	<target name="check-upgrade-client-second-process">
 		<get-database-upgrade-client-paths />
 
+		<modify-script-exit-code />
+
 		<parallel failonany="true">
 			<exec executable="/bin/bash" spawn="true">
 				<arg value="-c" />
-				<arg value="${db.upgrade.client.home}/db_upgrade${file.suffix.bat}" />
+				<arg value="${db.upgrade.client.home}/db_upgrade_client${file.suffix.bat}" />
 			</exec>
 
 			<sequential>
-				<waitfor maxwait="300" maxwaitunit="second" timeoutproperty="upgrade.startfailed">
-					<available file="${db.upgrade.client.log}" />
-				</waitfor>
-
-				<fail if="upgrade.startfailed" message="Upgrade has failed to start." />
+				<wait-for-upgrade-start />
 
 				<exec executable="/bin/bash">
 					<arg value="-c" />
-					<arg value="${db.upgrade.client.home}/db_upgrade${file.suffix.bat} > temp.log" />
+					<arg value="${db.upgrade.client.home}/db_upgrade_client${file.suffix.bat} > temp.log" />
 				</exec>
 
 				<loadfile
@@ -368,7 +395,7 @@
 				<if>
 					<contains string="${upgrade.process.output}" substring="Database upgrade client is already running" />
 					<then>
-						<echo message="Second upgrade process did not start." />
+						<echo>Second upgrade process did not start.</echo>
 					</then>
 					<else>
 						<fail message="Upgrade client is attempting to start a second upgrade process." />
@@ -376,8 +403,6 @@
 				</if>
 			</sequential>
 		</parallel>
-
-		<clean-database-upgrade-client />
 	</target>
 
 	<target name="check-upgrade-client-sh-disconnect">
@@ -386,22 +411,18 @@
 		<parallel failonany="true">
 			<exec executable="/bin/bash" spawn="true">
 				<arg value="-c" />
-				<arg value="${db.upgrade.client.home}/db_upgrade${file.suffix.bat}" />
+				<arg value="${db.upgrade.client.home}/db_upgrade_client${file.suffix.bat}" />
 			</exec>
 
 			<sequential>
-				<waitfor maxwait="30" maxwaitunit="second" timeoutproperty="upgrade.startfailed">
-					<available file="${db.upgrade.client.log}" />
-				</waitfor>
-
-				<fail if="upgrade.startfailed" message="Upgrade has failed to start." />
+				<wait-for-upgrade-start />
 
 				<send-sighup-to-upgrade-process />
 
 				<waitfor maxwait="300" maxwaitunit="second" timeoutproperty="upgrade.failed">
 					<resourcecontains
 						resource="${db.upgrade.client.log}"
-						substring="Checking to see if all upgrades have completed... done"
+						substring="No pending upgrades to run"
 					/>
 				</waitfor>
 
@@ -410,72 +431,11 @@
 					srcFile="${db.upgrade.client.log}"
 				/>
 
-				<echo message="${upgrade.log.contents}" />
+				<echo>${upgrade.log.contents}</echo>
 
 				<fail if="upgrade.failed" message="Upgrade has failed." />
 			</sequential>
 		</parallel>
-
-		<clean-database-upgrade-client />
-	</target>
-
-	<target name="check-upgrade-client-upgrade-core-only">
-		<rebuild-upgrade-database />
-
-		<get-database-upgrade-client-paths />
-
-		<echo append="true" file="${db.upgrade.client.home}/portal-upgrade-ext.properties">
-upgrade.database.auto.run=false</echo>
-
-		<parallel failonany="true">
-			<java
-				dir="${db.upgrade.client.home}"
-				fork="true"
-				jar="${db.upgrade.client.jar}"
-				timeout="900000"
-			>
-			</java>
-
-			<sequential>
-				<waitfor maxwait="900000">
-					<resourcecontains
-						resource="${db.upgrade.client.log}"
-						substring="Checking to see if all upgrades have completed... your upgrades have failed, have not started, or are still running."
-					/>
-				</waitfor>
-
-				<sleep seconds="20" />
-
-				<sql classpath="${app.server.shielded-container-lib.portal.dir}/${jdbc.mysql.driver}" driver="${database.mysql.driver}" onerror="continue" output="output.txt" password="${database.mysql.password}" print="true" url="${database.mysql.url}" userid="${database.mysql.username}">
-					<![CDATA[
-						select schemaVersion from Release_ where servletContextName = 'com.liferay.journal.web';
-					]]>
-				</sql>
-
-				<loadfile
-					property="select.result"
-					srcFile="output.txt"
-				/>
-
-				<if>
-					<contains string="${select.result}" substring="0.0.1" />
-					<then>
-						<echo message="The upgrade client only upgrades core." />
-					</then>
-					<else>
-						<fail message="The upgrade client upgrades core and modules." />
-					</else>
-				</if>
-
-				<stop-one-java-process process.name="jar" />
-			</sequential>
-		</parallel>
-
-		<delete file="${db.upgrade.client.home}/portal-upgrade-ext.properties" />
-
-		<prepare-database-upgrade-configuration />
-
-		<clean-database-upgrade-client />
 	</target>
 
 	<target name="check-upgrade-client-zip-content">
@@ -502,12 +462,12 @@ upgrade.database.auto.run=false</echo>
 				/>
 			</delete>
 
-			<for list="app-server.properties,com.liferay.portal.tools.db.upgrade.client.jar,db_upgrade.bat,db_upgrade.sh,portal-upgrade-database.properties,portal-upgrade-ext.properties" param="upgrade.file">
+			<for list="app-server.properties,com.liferay.portal.tools.db.upgrade.client.jar,db_upgrade_client.bat,db_upgrade_client.sh,portal-upgrade-database.properties,portal-upgrade-ext.properties" param="upgrade.file">
 				<sequential>
 					<if>
 						<available file="${db.upgrade.client.home}/@{upgrade.file}" />
 						<then>
-							<echo message="@{upgrade.file} is present." />
+							<echo>@{upgrade.file} is present.</echo>
 						</then>
 						<else>
 							<fail message="@{upgrade.file} is not present." />
@@ -516,6 +476,16 @@ upgrade.database.auto.run=false</echo>
 				</sequential>
 			</for>
 		</sequential>
+	</target>
+
+	<target name="check-upgrade-debug-options">
+		<get-database-upgrade-client-paths />
+
+		<run-expect
+			db.upgrade.client.home="${db.upgrade.client.home}"
+			expect.file="check-upgrade-debug-options.expect"
+			file.suffix.bat="${file.suffix.bat}"
+		/>
 
 		<clean-database-upgrade-client />
 	</target>
@@ -523,14 +493,14 @@ upgrade.database.auto.run=false</echo>
 	<target name="check-upgrade-properties-app-db-set">
 		<get-database-upgrade-client-paths />
 
-		<prepare-database-upgrade-configuration />
+		<prepare-database-upgrade-properties />
 
 		<delete file="${db.upgrade.client.home}/portal-upgrade-ext.properties" />
 
 		<run-expect
 			db.upgrade.client.home="${db.upgrade.client.home}"
-			file.suffix.bat="${file.suffix.bat}"
 			expect.file="check-upgrade-properties-app-db-set.expect"
+			file.suffix.bat="${file.suffix.bat}"
 		/>
 
 		<fail message="Exception thrown, failing.">
@@ -541,21 +511,19 @@ upgrade.database.auto.run=false</echo>
 				/>
 			</condition>
 		</fail>
-
-		<clean-database-upgrade-client />
 	</target>
 
 	<target name="check-upgrade-properties-app-ext-set">
 		<get-database-upgrade-client-paths />
 
-		<prepare-database-upgrade-configuration />
+		<prepare-database-upgrade-properties />
 
 		<delete file="${db.upgrade.client.home}/portal-upgrade-database.properties" />
 
 		<run-expect
 			db.upgrade.client.home="${db.upgrade.client.home}"
-			file.suffix.bat="${file.suffix.bat}"
 			expect.file="check-upgrade-properties-app-ext-set.expect"
+			file.suffix.bat="${file.suffix.bat}"
 		/>
 
 		<fail message="Exception thrown, failing.">
@@ -566,21 +534,19 @@ upgrade.database.auto.run=false</echo>
 				/>
 			</condition>
 		</fail>
-
-		<clean-database-upgrade-client />
 	</target>
 
 	<target name="check-upgrade-properties-db-ext-set">
 		<get-database-upgrade-client-paths />
 
-		<prepare-database-upgrade-configuration />
+		<prepare-database-upgrade-properties />
 
 		<delete file="${db.upgrade.client.home}/app-server.properties" />
 
 		<run-expect
 			db.upgrade.client.home="${db.upgrade.client.home}"
-			file.suffix.bat="${file.suffix.bat}"
 			expect.file="check-upgrade-properties-db-ext-set.expect"
+			file.suffix.bat="${file.suffix.bat}"
 		/>
 
 		<fail message="Exception thrown, failing.">
@@ -591,14 +557,12 @@ upgrade.database.auto.run=false</echo>
 				/>
 			</condition>
 		</fail>
-
-		<clean-database-upgrade-client />
 	</target>
 
 	<target name="check-upgrade-properties-none-set">
 		<get-database-upgrade-client-paths />
 
-		<prepare-database-upgrade-configuration />
+		<prepare-database-upgrade-properties />
 
 		<delete file="${db.upgrade.client.home}/app-server.properties" />
 
@@ -608,8 +572,8 @@ upgrade.database.auto.run=false</echo>
 
 		<run-expect
 			db.upgrade.client.home="${db.upgrade.client.home}"
-			file.suffix.bat="${file.suffix.bat}"
 			expect.file="check-upgrade-properties-none-set.expect"
+			file.suffix.bat="${file.suffix.bat}"
 		/>
 
 		<fail message="Exception thrown, failing.">
@@ -620,7 +584,98 @@ upgrade.database.auto.run=false</echo>
 				/>
 			</condition>
 		</fail>
+	</target>
 
+	<target name="check-upgrade-status">
+		<get-upgrade-finished-status upgrade.finished.status="${upgrade.status}" />
+
+		<if>
+			<not>
+				<equals arg1="${upgrade.status}" arg2="success" />
+			</not>
+			<then>
+				<antcall inheritAll="false" target="check-upgrade-client-gogoshell-connection" />
+			</then>
+		</if>
+	</target>
+
+	<target name="clean-database-upgrade-client">
 		<clean-database-upgrade-client />
+	</target>
+
+	<target name="create-write-protected-directory">
+		<get-database-upgrade-client-paths />
+
+		<mkdir dir="${db.upgrade.client.home}/temp" />
+
+		<if>
+			<os family="windows" />
+			<then>
+				<execute>
+					cacls ${db.upgrade.client.home}/temp /e /p everyone:n
+				</execute>
+			</then>
+			<else>
+				<execute>
+					chattr +i ${db.upgrade.client.home}/temp
+				</execute>
+			</else>
+		</if>
+	</target>
+
+	<target name="delete-indexes-sql">
+		<get-test-app-server-lib-portal-dir />
+
+		<unzip
+			dest="${test.app.server.lib.portal.dir}/portal-impl"
+			src="${test.app.server.lib.portal.dir}/portal-impl.jar"
+		/>
+
+		<delete file="${test.app.server.lib.portal.dir}/portal-impl.jar" />
+
+		<delete file="${test.app.server.lib.portal.dir}/portal-impl/com/liferay/portal/tools/sql/dependencies/indexes.sql" />
+
+		<jar
+			basedir="${test.app.server.lib.portal.dir}/portal-impl"
+			destfile="${test.app.server.lib.portal.dir}/portal-impl.jar"
+		/>
+	</target>
+
+	<target name="delete-write-protected-directory">
+		<get-database-upgrade-client-paths />
+
+		<if>
+			<os family="windows" />
+			<then>
+				<execute>
+					cacls ${db.upgrade.client.home}/temp /e /p everyone:f
+				</execute>
+			</then>
+			<else>
+				<execute>
+					chattr -i ${db.upgrade.client.home}/temp
+				</execute>
+			</else>
+		</if>
+
+		<delete dir="${db.upgrade.client.home}/temp" />
+	</target>
+
+	<target name="execute-upgrade-client-gogoshell">
+		<get-database-upgrade-client-paths />
+
+		<run-expect
+			db.upgrade.client.home="${db.upgrade.client.home}"
+			expect.file="check-upgrade-client-gogo-shell-connection.expect"
+			file.suffix.bat="${file.suffix.bat}"
+		/>
+	</target>
+
+	<target name="run-upgrade-client">
+		<get-database-upgrade-client-paths />
+
+		<execute dir="${db.upgrade.client.home}">
+			db_upgrade_client${file.suffix.bat} run
+		</execute>
 	</target>
 </project>

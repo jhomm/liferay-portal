@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.resource.v1_0;
@@ -34,14 +25,16 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.vulcan.aggregation.Aggregation;
+import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import java.util.Collections;
+import jakarta.ws.rs.core.MultivaluedMap;
 
-import javax.ws.rs.core.MultivaluedMap;
+import java.util.Collections;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -63,22 +56,14 @@ public class ContentTemplateResourceImpl
 			Filter filter, Pagination pagination, Sort[] sorts)
 		throws Exception {
 
-		return getSiteContentTemplatesPage(
+		return _getContentTemplatesPage(
+			Collections.singletonMap(
+				"get",
+				addAction(
+					ActionKeys.MANAGE_LAYOUTS,
+					"getAssetLibraryContentTemplatesPage",
+					Group.class.getName(), assetLibraryId)),
 			assetLibraryId, search, aggregation, filter, pagination, sorts);
-	}
-
-	@Override
-	public ContentTemplate getContentTemplate(
-			Long siteId, String contentTemplateId)
-		throws Exception {
-
-		DDMTemplate ddmTemplate = _ddmTemplateService.getTemplate(
-			siteId, _classNameLocalService.getClassNameId(DDMStructure.class),
-			contentTemplateId);
-
-		return ContentTemplateUtil.toContentTemplate(
-			ddmTemplate, _getDtoConverterContext(ddmTemplate),
-			groupLocalService, _portal, _userLocalService);
 	}
 
 	@Override
@@ -87,17 +72,42 @@ public class ContentTemplateResourceImpl
 	}
 
 	@Override
+	public ContentTemplate getSiteContentTemplate(
+			Long siteId, String contentTemplateId)
+		throws Exception {
+
+		DDMTemplate ddmTemplate = _ddmTemplateService.getTemplate(
+			siteId, _classNameLocalService.getClassNameId(DDMStructure.class),
+			contentTemplateId);
+
+		return ContentTemplateUtil.toContentTemplate(
+			ddmTemplate, _getDTOConverterContext(ddmTemplate),
+			groupLocalService, _portal, _userLocalService);
+	}
+
+	@Override
 	public Page<ContentTemplate> getSiteContentTemplatesPage(
 			Long siteId, String search, Aggregation aggregation, Filter filter,
 			Pagination pagination, Sort[] sorts)
 		throws Exception {
 
-		return SearchUtil.search(
+		return _getContentTemplatesPage(
 			Collections.singletonMap(
 				"get",
 				addAction(
 					ActionKeys.MANAGE_LAYOUTS, "getSiteContentTemplatesPage",
 					Group.class.getName(), siteId)),
+			siteId, search, aggregation, filter, pagination, sorts);
+	}
+
+	private Page<ContentTemplate> _getContentTemplatesPage(
+			Map<String, Map<String, String>> actions, Long assetLibraryId,
+			String search, Aggregation aggregation, Filter filter,
+			Pagination pagination, Sort[] sorts)
+		throws Exception {
+
+		return SearchUtil.search(
+			actions,
 			booleanQuery -> {
 			},
 			filter, DDMTemplate.class.getName(), search, pagination,
@@ -112,7 +122,7 @@ public class ContentTemplateResourceImpl
 					_classNameLocalService.getClassNameId(
 						JournalArticle.class));
 				searchContext.setCompanyId(contextCompany.getCompanyId());
-				searchContext.setGroupIds(new long[] {siteId});
+				searchContext.setGroupIds(new long[] {assetLibraryId});
 			},
 			sorts,
 			document -> {
@@ -120,12 +130,12 @@ public class ContentTemplateResourceImpl
 					GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK)));
 
 				return ContentTemplateUtil.toContentTemplate(
-					ddmTemplate, _getDtoConverterContext(ddmTemplate),
+					ddmTemplate, _getDTOConverterContext(ddmTemplate),
 					groupLocalService, _portal, _userLocalService);
 			});
 	}
 
-	private DefaultDTOConverterContext _getDtoConverterContext(
+	private DTOConverterContext _getDTOConverterContext(
 		DDMTemplate ddmTemplate) {
 
 		return new DefaultDTOConverterContext(
@@ -134,7 +144,7 @@ public class ContentTemplateResourceImpl
 				"get",
 				addAction(
 					ActionKeys.VIEW, ddmTemplate.getTemplateId(),
-					"getContentTemplate", ddmTemplate.getUserId(),
+					"getSiteContentTemplate", ddmTemplate.getUserId(),
 					DDMTemplate.class.getName() + "-" +
 						JournalArticle.class.getName(),
 					ddmTemplate.getGroupId())),

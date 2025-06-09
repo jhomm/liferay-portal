@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.display.page.model.impl;
 
 import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
 import com.liferay.asset.display.page.model.AssetDisplayPageEntryModel;
-import com.liferay.asset.display.page.model.AssetDisplayPageEntrySoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -38,18 +28,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -185,69 +172,6 @@ public class AssetDisplayPageEntryModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static AssetDisplayPageEntry toModel(
-		AssetDisplayPageEntrySoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		AssetDisplayPageEntry model = new AssetDisplayPageEntryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setAssetDisplayPageEntryId(
-			soapModel.getAssetDisplayPageEntryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setLayoutPageTemplateEntryId(
-			soapModel.getLayoutPageTemplateEntryId());
-		model.setType(soapModel.getType());
-		model.setPlid(soapModel.getPlid());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<AssetDisplayPageEntry> toModels(
-		AssetDisplayPageEntrySoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<AssetDisplayPageEntry> models =
-			new ArrayList<AssetDisplayPageEntry>(soapModels.length);
-
-		for (AssetDisplayPageEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public AssetDisplayPageEntryModelImpl() {
 	}
 
@@ -325,152 +249,143 @@ public class AssetDisplayPageEntryModelImpl
 	public Map<String, Function<AssetDisplayPageEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<AssetDisplayPageEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, AssetDisplayPageEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			AssetDisplayPageEntry.class.getClassLoader(),
-			AssetDisplayPageEntry.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<AssetDisplayPageEntry, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<AssetDisplayPageEntry> constructor =
-				(Constructor<AssetDisplayPageEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<AssetDisplayPageEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<AssetDisplayPageEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", AssetDisplayPageEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", AssetDisplayPageEntry::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"uuid", AssetDisplayPageEntry::getUuid);
+			attributeGetterFunctions.put(
+				"assetDisplayPageEntryId",
+				AssetDisplayPageEntry::getAssetDisplayPageEntryId);
+			attributeGetterFunctions.put(
+				"groupId", AssetDisplayPageEntry::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", AssetDisplayPageEntry::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", AssetDisplayPageEntry::getUserId);
+			attributeGetterFunctions.put(
+				"userName", AssetDisplayPageEntry::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", AssetDisplayPageEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", AssetDisplayPageEntry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"classNameId", AssetDisplayPageEntry::getClassNameId);
+			attributeGetterFunctions.put(
+				"classPK", AssetDisplayPageEntry::getClassPK);
+			attributeGetterFunctions.put(
+				"layoutPageTemplateEntryId",
+				AssetDisplayPageEntry::getLayoutPageTemplateEntryId);
+			attributeGetterFunctions.put(
+				"type", AssetDisplayPageEntry::getType);
+			attributeGetterFunctions.put(
+				"plid", AssetDisplayPageEntry::getPlid);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<AssetDisplayPageEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<AssetDisplayPageEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<AssetDisplayPageEntry, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<AssetDisplayPageEntry, Object>>();
-		Map<String, BiConsumer<AssetDisplayPageEntry, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<AssetDisplayPageEntry, ?>>();
+		private static final Map
+			<String, BiConsumer<AssetDisplayPageEntry, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", AssetDisplayPageEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<AssetDisplayPageEntry, Long>)
-				AssetDisplayPageEntry::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", AssetDisplayPageEntry::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<AssetDisplayPageEntry, Long>)
-				AssetDisplayPageEntry::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", AssetDisplayPageEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<AssetDisplayPageEntry, String>)
-				AssetDisplayPageEntry::setUuid);
-		attributeGetterFunctions.put(
-			"assetDisplayPageEntryId",
-			AssetDisplayPageEntry::getAssetDisplayPageEntryId);
-		attributeSetterBiConsumers.put(
-			"assetDisplayPageEntryId",
-			(BiConsumer<AssetDisplayPageEntry, Long>)
-				AssetDisplayPageEntry::setAssetDisplayPageEntryId);
-		attributeGetterFunctions.put(
-			"groupId", AssetDisplayPageEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<AssetDisplayPageEntry, Long>)
-				AssetDisplayPageEntry::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", AssetDisplayPageEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<AssetDisplayPageEntry, Long>)
-				AssetDisplayPageEntry::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", AssetDisplayPageEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<AssetDisplayPageEntry, Long>)
-				AssetDisplayPageEntry::setUserId);
-		attributeGetterFunctions.put(
-			"userName", AssetDisplayPageEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<AssetDisplayPageEntry, String>)
-				AssetDisplayPageEntry::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", AssetDisplayPageEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<AssetDisplayPageEntry, Date>)
-				AssetDisplayPageEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", AssetDisplayPageEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<AssetDisplayPageEntry, Date>)
-				AssetDisplayPageEntry::setModifiedDate);
-		attributeGetterFunctions.put(
-			"classNameId", AssetDisplayPageEntry::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<AssetDisplayPageEntry, Long>)
-				AssetDisplayPageEntry::setClassNameId);
-		attributeGetterFunctions.put(
-			"classPK", AssetDisplayPageEntry::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK",
-			(BiConsumer<AssetDisplayPageEntry, Long>)
-				AssetDisplayPageEntry::setClassPK);
-		attributeGetterFunctions.put(
-			"layoutPageTemplateEntryId",
-			AssetDisplayPageEntry::getLayoutPageTemplateEntryId);
-		attributeSetterBiConsumers.put(
-			"layoutPageTemplateEntryId",
-			(BiConsumer<AssetDisplayPageEntry, Long>)
-				AssetDisplayPageEntry::setLayoutPageTemplateEntryId);
-		attributeGetterFunctions.put("type", AssetDisplayPageEntry::getType);
-		attributeSetterBiConsumers.put(
-			"type",
-			(BiConsumer<AssetDisplayPageEntry, Integer>)
-				AssetDisplayPageEntry::setType);
-		attributeGetterFunctions.put("plid", AssetDisplayPageEntry::getPlid);
-		attributeSetterBiConsumers.put(
-			"plid",
-			(BiConsumer<AssetDisplayPageEntry, Long>)
-				AssetDisplayPageEntry::setPlid);
+		static {
+			Map<String, BiConsumer<AssetDisplayPageEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<AssetDisplayPageEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<AssetDisplayPageEntry, Long>)
+					AssetDisplayPageEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<AssetDisplayPageEntry, Long>)
+					AssetDisplayPageEntry::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<AssetDisplayPageEntry, String>)
+					AssetDisplayPageEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"assetDisplayPageEntryId",
+				(BiConsumer<AssetDisplayPageEntry, Long>)
+					AssetDisplayPageEntry::setAssetDisplayPageEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<AssetDisplayPageEntry, Long>)
+					AssetDisplayPageEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<AssetDisplayPageEntry, Long>)
+					AssetDisplayPageEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<AssetDisplayPageEntry, Long>)
+					AssetDisplayPageEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<AssetDisplayPageEntry, String>)
+					AssetDisplayPageEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<AssetDisplayPageEntry, Date>)
+					AssetDisplayPageEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<AssetDisplayPageEntry, Date>)
+					AssetDisplayPageEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<AssetDisplayPageEntry, Long>)
+					AssetDisplayPageEntry::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<AssetDisplayPageEntry, Long>)
+					AssetDisplayPageEntry::setClassPK);
+			attributeSetterBiConsumers.put(
+				"layoutPageTemplateEntryId",
+				(BiConsumer<AssetDisplayPageEntry, Long>)
+					AssetDisplayPageEntry::setLayoutPageTemplateEntryId);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<AssetDisplayPageEntry, Integer>)
+					AssetDisplayPageEntry::setType);
+			attributeSetterBiConsumers.put(
+				"plid",
+				(BiConsumer<AssetDisplayPageEntry, Long>)
+					AssetDisplayPageEntry::setPlid);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1121,42 +1036,12 @@ public class AssetDisplayPageEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<AssetDisplayPageEntry, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<AssetDisplayPageEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<AssetDisplayPageEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply((AssetDisplayPageEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, AssetDisplayPageEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					AssetDisplayPageEntry.class, ModelWrapper.class);
 
 	}
 
@@ -1181,7 +1066,8 @@ public class AssetDisplayPageEntryModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<AssetDisplayPageEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

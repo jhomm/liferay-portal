@@ -1,40 +1,21 @@
 @import 'atlas-variables';
 
 @import 'CodeMirrorEditor';
-@import 'PortletIcon';
 @import 'PropertiesPanel';
 
-$controlMenuDesktopHeight: 56px;
-$controlMenuHeight: 48px;
-$toolbarDesktopHeight: 4rem;
+$desktopToolbarHeight: 4rem;
 $toolbarHeight: 6.875rem;
 
 .ddm_template_editor__App {
 	display: flex;
-	height: calc(100vh - #{$toolbarHeight} - #{$controlMenuHeight});
+	height: calc(
+		100vh - (var(--control-menu-container-height) + var(--toolbar-height))
+	);
 	left: 0;
 	overflow: hidden;
 	position: absolute;
-	top: $toolbarHeight;
+	top: var(--toolbar-height);
 	width: 100%;
-
-	@include media-breakpoint-up(sm) {
-		height: calc(100vh - #{$toolbarHeight} - #{$controlMenuDesktopHeight});
-	}
-
-	@include media-breakpoint-up(lg) {
-		top: $toolbarDesktopHeight;
-		height: calc(
-			100vh - #{$toolbarDesktopHeight} - #{$controlMenuDesktopHeight}
-		);
-	}
-
-	@include media-breakpoint-up(lg) {
-		top: $toolbarDesktopHeight;
-		height: calc(
-			100vh - #{$toolbarDesktopHeight} - #{$controlMenuDesktopHeight}
-		);
-	}
 
 	.alert:first-of-type {
 		margin-top: 1rem;
@@ -56,15 +37,12 @@ $toolbarHeight: 6.875rem;
 
 	&-sidebar {
 		display: flex;
-		height: calc(100vh - #{$toolbarHeight} - #{$controlMenuHeight});
+		height: calc(
+			100vh -
+				(var(--control-menu-container-height) + var(--toolbar-height))
+		);
 		position: fixed;
 		right: 0;
-
-		@include media-breakpoint-up(lg) {
-			height: calc(
-				100vh - #{$toolbarDesktopHeight} - #{$controlMenuDesktopHeight}
-			);
-		}
 
 		&-buttons {
 			align-items: center;
@@ -94,7 +72,13 @@ $toolbarHeight: 6.875rem;
 		&-content {
 			background-color: $white;
 			border-left: 1px solid $gray-300;
-			height: calc(100vh - #{$toolbarHeight} - #{$controlMenuHeight});
+			height: calc(
+				100vh -
+					(
+						var(--control-menu-container-height) +
+							var(--toolbar-height)
+					)
+			);
 			overflow-y: auto;
 			position: fixed;
 			right: 42px;
@@ -107,45 +91,18 @@ $toolbarHeight: 6.875rem;
 				transform: translateX(-100%);
 			}
 
-			@include media-breakpoint-up(lg) {
-				height: calc(
-					100vh - #{$toolbarDesktopHeight} - #{$controlMenuDesktopHeight}
-				);
-			}
-
 			&.open {
 				transform: translateX(0);
 			}
 
 			.search-icon {
 				margin-right: 12px;
+				margin-top: 0;
 			}
 		}
 
 		&-title {
 			font-size: 0.875rem;
-		}
-
-		&-collapse {
-			cursor: pointer;
-
-			.collapse-icon {
-				border: none;
-				color: $gray-600;
-				font-size: 0.7rem;
-				margin-bottom: 4px;
-				width: 100%;
-
-				&-closed {
-					.rtl & {
-						transform: rotate(-180deg);
-					}
-				}
-			}
-
-			.sheet-subtitle {
-				line-height: inherit;
-			}
 		}
 
 		&-button {
@@ -174,5 +131,13 @@ $toolbarHeight: 6.875rem;
 				}
 			}
 		}
+	}
+}
+
+body {
+	--toolbar-height: #{$toolbarHeight};
+
+	@include media-breakpoint-up(xl) {
+		--toolbar-height: #{$desktopToolbarHeight};
 	}
 }

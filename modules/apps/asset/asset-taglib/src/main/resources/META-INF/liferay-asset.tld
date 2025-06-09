@@ -11,94 +11,6 @@
 	<short-name>liferay-asset</short-name>
 	<uri>http://liferay.com/tld/asset</uri>
 	<tag>
-		<description>Deprecated as of 7.3.0, with no direct replacement.</description>
-		<name>asset-add-button</name>
-		<tag-class>com.liferay.asset.taglib.servlet.taglib.AssetAddButtonTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>addDisplayPageParameter</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>allAssetCategoryIds</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>allAssetTagNames</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>classNameIds</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>classTypeIds</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>groupIds</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>redirect</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>useDialog</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<description>Deprecated as of 7.3.0, with no direct replacement.</description>
-		<name>asset-addon-entry-display</name>
-		<tag-class>com.liferay.asset.taglib.servlet.taglib.AssetAddonEntryDisplayTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>assetAddonEntries</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<description>Deprecated as of 7.3.0, with no direct replacement.</description>
-		<name>asset-addon-entry-selector</name>
-		<tag-class>com.liferay.asset.taglib.servlet.taglib.AssetAddonEntrySelectorTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>assetAddonEntries</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>hiddenInput</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>id</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>selectedAssetAddonEntries</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>title</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
 		<name>asset-categories-available</name>
 		<tag-class>com.liferay.asset.taglib.servlet.taglib.AssetCategoriesAvailableTag</tag-class>
 		<body-content>JSP</body-content>
@@ -202,6 +114,11 @@
 		<attribute>
 			<description>Whether to restrict selection to one asset category at a time. The default value is <![CDATA[<code>false</code>]]>.</description>
 			<name>singleSelect</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>useDataCategoriesAttribute</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
@@ -314,21 +231,6 @@
 		<attribute>
 			<name>viewURL</name>
 			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>asset-entry-usages</name>
-		<tag-class>com.liferay.asset.taglib.servlet.taglib.AssetEntryUsagesTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>className</name>
-			<required>true</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>classPK</name>
-			<required>true</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 	</tag>
@@ -568,26 +470,16 @@
 		</attribute>
 	</tag>
 	<tag>
-		<name>asset-view-usages</name>
-		<tag-class>com.liferay.asset.taglib.servlet.taglib.AssetViewUsagesTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>className</name>
-			<required>true</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>classPK</name>
-			<required>true</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
 		<name>categorization-filter</name>
 		<tag-class>com.liferay.asset.taglib.servlet.taglib.CategorizationFilterTag</tag-class>
 		<body-content>JSP</body-content>
 		<attribute>
 			<name>assetType</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>groupIds</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>

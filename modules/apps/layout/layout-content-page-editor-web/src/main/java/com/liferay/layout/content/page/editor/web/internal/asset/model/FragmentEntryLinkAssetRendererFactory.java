@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.asset.model;
@@ -18,13 +9,9 @@ import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.model.BaseAssetRenderer;
 import com.liferay.asset.kernel.model.BaseAssetRendererFactory;
-import com.liferay.fragment.contributor.FragmentCollectionContributorTracker;
-import com.liferay.fragment.model.FragmentEntry;
+import com.liferay.fragment.helper.FragmentEntryLinkHelper;
 import com.liferay.fragment.model.FragmentEntryLink;
-import com.liferay.fragment.renderer.FragmentRenderer;
-import com.liferay.fragment.renderer.FragmentRendererTracker;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
-import com.liferay.fragment.service.FragmentEntryLocalService;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -35,14 +22,13 @@ import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Locale;
-import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,8 +37,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alejandro Tardín
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+	property = "jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 	service = AssetRendererFactory.class
 )
 public class FragmentEntryLinkAssetRendererFactory
@@ -128,17 +113,18 @@ public class FragmentEntryLinkAssetRendererFactory
 		public String getTitle(Locale locale) {
 			String fragmentEntryLinkContextTitle =
 				_getFragmentEntryLinkContextTitle(_fragmentEntryLink, locale);
-			String fragmentEntryLinkTitle = _getFragmentEntryLinkTitle(
-				_fragmentEntryLink, locale);
+			String fragmentEntryName =
+				_fragmentEntryLinkHelper.getFragmentEntryName(
+					_fragmentEntryLink, locale);
 
 			if (Validator.isNull(fragmentEntryLinkContextTitle)) {
-				return fragmentEntryLinkTitle;
+				return fragmentEntryName;
 			}
 
 			return _language.format(
 				locale, "x-in-x",
 				new String[] {
-					fragmentEntryLinkTitle, fragmentEntryLinkContextTitle
+					fragmentEntryName, fragmentEntryLinkContextTitle
 				});
 		}
 
@@ -191,56 +177,11 @@ public class FragmentEntryLinkAssetRendererFactory
 			false);
 	}
 
-	private String _getFragmentEntryLinkTitle(
-		FragmentEntryLink fragmentEntryLink, Locale locale) {
-
-		FragmentEntry fragmentEntry =
-			_fragmentEntryLocalService.fetchFragmentEntry(
-				fragmentEntryLink.getFragmentEntryId());
-
-		if (fragmentEntry != null) {
-			return fragmentEntry.getName();
-		}
-
-		String rendererKey = fragmentEntryLink.getRendererKey();
-
-		if (Validator.isNull(rendererKey)) {
-			return StringPool.BLANK;
-		}
-
-		Map<String, FragmentEntry> fragmentEntries =
-			_fragmentCollectionContributorTracker.getFragmentEntries();
-
-		FragmentEntry contributedFragmentEntry = fragmentEntries.get(
-			rendererKey);
-
-		if (contributedFragmentEntry != null) {
-			return contributedFragmentEntry.getName();
-		}
-
-		FragmentRenderer fragmentRenderer =
-			_fragmentRendererTracker.getFragmentRenderer(
-				fragmentEntryLink.getRendererKey());
-
-		if (fragmentRenderer != null) {
-			return fragmentRenderer.getLabel(locale);
-		}
-
-		return StringPool.BLANK;
-	}
-
 	@Reference
-	private FragmentCollectionContributorTracker
-		_fragmentCollectionContributorTracker;
+	private FragmentEntryLinkHelper _fragmentEntryLinkHelper;
 
 	@Reference
 	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
-
-	@Reference
-	private FragmentEntryLocalService _fragmentEntryLocalService;
-
-	@Reference
-	private FragmentRendererTracker _fragmentRendererTracker;
 
 	@Reference
 	private Language _language;

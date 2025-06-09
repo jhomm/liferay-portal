@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.configuration;
@@ -29,18 +20,17 @@ import com.liferay.exportimport.kernel.lar.UserIdStrategy;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,10 +38,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Akos Thurzo
  */
-@Component(
-	immediate = true,
-	service = ExportImportConfigurationParameterMapFactory.class
-)
+@Component(service = ExportImportConfigurationParameterMapFactory.class)
 public class ExportImportConfigurationParameterMapFactoryImpl
 	implements ExportImportConfigurationParameterMapFactory {
 
@@ -560,25 +547,22 @@ public class ExportImportConfigurationParameterMapFactoryImpl
 			return;
 		}
 
-		String[] parameterStagedModelTypes = parameterMap.get(
-			"stagedModelTypes");
-
-		List<String> parameterStagedModelTypesList = ListUtil.fromArray(
-			parameterStagedModelTypes);
+		List<String> parameterStagedModelTypes = ListUtil.fromArray(
+			parameterMap.get("stagedModelTypes"));
 
 		for (StagedModelType stagedModelType : stagedModelTypes) {
 			String stagedModelTypeString = stagedModelType.toString();
 
-			if (!parameterStagedModelTypesList.contains(
-					stagedModelTypeString)) {
-
-				parameterStagedModelTypesList.add(stagedModelTypeString);
+			if (parameterStagedModelTypes.contains(stagedModelTypeString)) {
+				continue;
 			}
+
+			parameterStagedModelTypes.add(stagedModelTypeString);
 		}
 
 		parameterMap.put(
 			"stagedModelTypes",
-			parameterStagedModelTypesList.toArray(new String[0]));
+			parameterStagedModelTypes.toArray(new String[0]));
 	}
 
 	/**
@@ -623,17 +607,19 @@ public class ExportImportConfigurationParameterMapFactoryImpl
 	 */
 	private void _replaceParameterMap(Map<String, String[]> parameterMap) {
 		try {
-			List<Portlet> dataSiteLevelPortlets =
-				_exportImportHelper.getDataSiteLevelPortlets(
+			List<Portlet> dataSiteAndInstanceLevelPortlets =
+				_exportImportHelper.getDataSiteAndInstanceLevelPortlets(
 					CompanyThreadLocal.getCompanyId());
 
 			boolean portletDataAll = MapUtil.getBoolean(
 				parameterMap, PortletDataHandlerKeys.PORTLET_DATA_ALL);
 
-			for (Portlet dataSiteLevelPortlet : dataSiteLevelPortlets) {
+			for (Portlet dataSiteAndInstanceLevelPortlet :
+					dataSiteAndInstanceLevelPortlets) {
+
 				String portletDataKey =
 					PortletDataHandlerKeys.PORTLET_DATA + StringPool.UNDERLINE +
-						dataSiteLevelPortlet.getRootPortletId();
+						dataSiteAndInstanceLevelPortlet.getRootPortletId();
 
 				String[] portletDataValues = parameterMap.get(portletDataKey);
 
@@ -642,13 +628,14 @@ public class ExportImportConfigurationParameterMapFactoryImpl
 					 GetterUtil.getBoolean(portletDataValues[0]))) {
 
 					_populatePortletResourceNames(
-						parameterMap, dataSiteLevelPortlet);
+						parameterMap, dataSiteAndInstanceLevelPortlet);
 
 					_populateStagedModelTypes(
-						parameterMap, dataSiteLevelPortlet);
+						parameterMap, dataSiteAndInstanceLevelPortlet);
 
 					_addModelParameter(
-						parameterMap, dataSiteLevelPortlet, portletDataAll);
+						parameterMap, dataSiteAndInstanceLevelPortlet,
+						portletDataAll);
 				}
 			}
 
@@ -664,8 +651,5 @@ public class ExportImportConfigurationParameterMapFactoryImpl
 
 	@Reference
 	private ExportImportHelper _exportImportHelper;
-
-	@Reference
-	private GroupLocalService _groupLocalService;
 
 }

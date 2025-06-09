@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.deploy.hot;
 
-import com.liferay.petra.log4j.Log4JUtil;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.configuration.ConfigurationFactoryUtil;
 import com.liferay.portal.kernel.deploy.hot.BaseHotDeployListener;
@@ -24,21 +14,19 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.plugin.PluginPackage;
 import com.liferay.portal.kernel.service.ServiceComponentLocalServiceUtil;
-import com.liferay.portal.kernel.service.configuration.ServiceComponentConfiguration;
 import com.liferay.portal.kernel.service.configuration.servlet.ServletServiceContextComponentConfiguration;
 import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.log4j.Log4JUtil;
 import com.liferay.portal.plugin.PluginPackageUtil;
 import com.liferay.util.portlet.PortletProps;
 
+import jakarta.servlet.ServletContext;
+
 import java.lang.reflect.Method;
 
-import java.net.URL;
-
 import java.util.Properties;
-
-import javax.servlet.ServletContext;
 
 /**
  * @author Jorge Ferrer
@@ -72,15 +60,6 @@ public class PluginPackageHotDeployListener extends BaseHotDeployListener {
 			throwHotDeployException(
 				hotDeployEvent, "Error unregistering plugins for ", throwable);
 		}
-	}
-
-	protected void destroyServiceComponent(
-			ServiceComponentConfiguration serviceComponentConfiguration,
-			ClassLoader classLoader)
-		throws Exception {
-
-		ServiceComponentLocalServiceUtil.destroyServiceComponent(
-			serviceComponentConfiguration, classLoader);
 	}
 
 	protected void doInvokeDeploy(HotDeployEvent hotDeployEvent)
@@ -152,32 +131,11 @@ public class PluginPackageHotDeployListener extends BaseHotDeployListener {
 
 		ServletContextPool.remove(servletContextName);
 
-		destroyServiceComponent(
-			new ServletServiceContextComponentConfiguration(servletContext),
-			hotDeployEvent.getContextClassLoader());
-
 		if (_log.isInfoEnabled()) {
 			_log.info(
 				"Plugin package " + pluginPackage.getModuleId() +
 					" unregistered successfully");
 		}
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), with no direct replacement
-	 */
-	@Deprecated
-	protected URL getPortalCacheConfigurationURL(
-		Configuration configuration, ClassLoader classLoader,
-		String configLocation) {
-
-		String cacheConfigurationLocation = configuration.get(configLocation);
-
-		if (Validator.isNull(cacheConfigurationLocation)) {
-			return null;
-		}
-
-		return classLoader.getResource(cacheConfigurationLocation);
 	}
 
 	protected void initLogger(ClassLoader classLoader) {
@@ -201,16 +159,12 @@ public class PluginPackageHotDeployListener extends BaseHotDeployListener {
 			ServletContext servletContext, ClassLoader classLoader)
 		throws Exception {
 
-		Configuration serviceBuilderPropertiesConfiguration = null;
+		Configuration serviceBuilderPropertiesConfiguration =
+			ConfigurationFactoryUtil.getConfiguration(classLoader, "service");
 
-		try {
-			serviceBuilderPropertiesConfiguration =
-				ConfigurationFactoryUtil.getConfiguration(
-					classLoader, "service");
-		}
-		catch (Exception exception) {
+		if (serviceBuilderPropertiesConfiguration == null) {
 			if (_log.isDebugEnabled()) {
-				_log.debug("Unable to read service.properties", exception);
+				_log.debug("Unable to read service.properties");
 			}
 
 			return;

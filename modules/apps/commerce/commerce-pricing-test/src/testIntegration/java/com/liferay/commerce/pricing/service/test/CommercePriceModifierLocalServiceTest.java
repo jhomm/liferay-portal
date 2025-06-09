@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.service.test;
@@ -108,7 +99,7 @@ public class CommercePriceModifierLocalServiceTest {
 			"The price modifiers has the category as a target"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -116,7 +107,7 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceModifierTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		AssetVocabulary assetVocabulary = AssetTestUtil.addVocabulary(
 			_user.getGroupId());
@@ -128,7 +119,7 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceModifier commercePriceModifier1 =
 			CommercePriceModifierTestUtil.addCommercePriceModifier(
-				catalog.getGroupId(),
+				commerceCatalog.getGroupId(),
 				CommercePriceModifierConstants.TARGET_CATEGORIES,
 				commercePriceList.getCommercePriceListId(),
 				CommercePriceModifierConstants.MODIFIER_TYPE_REPLACE, amount,
@@ -180,7 +171,7 @@ public class CommercePriceModifierLocalServiceTest {
 			"An exception shall be raised"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -188,10 +179,10 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceModifierTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		CommercePriceModifierTestUtil.addCommercePriceModifier(
-			catalog.getGroupId(),
+			commerceCatalog.getGroupId(),
 			CommercePriceModifierConstants.TARGET_PRODUCT_GROUPS,
 			commercePriceList.getCommercePriceListId(),
 			CommercePriceModifierConstants.MODIFIER_TYPE_PERCENTAGE, null,
@@ -211,7 +202,7 @@ public class CommercePriceModifierLocalServiceTest {
 			"An exception shall be raised"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -219,12 +210,12 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceModifierTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		BigDecimal amount = BigDecimal.valueOf(RandomTestUtil.randomDouble());
 
 		CommercePriceModifierTestUtil.addCommercePriceModifier(
-			catalog.getGroupId(), RandomTestUtil.randomString(),
+			commerceCatalog.getGroupId(), RandomTestUtil.randomString(),
 			commercePriceList.getCommercePriceListId(),
 			CommercePriceModifierConstants.MODIFIER_TYPE_REPLACE, amount, true);
 	}
@@ -242,7 +233,7 @@ public class CommercePriceModifierLocalServiceTest {
 			"An exception shall be raised"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -250,12 +241,12 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceModifierTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		BigDecimal amount = BigDecimal.valueOf(RandomTestUtil.randomDouble());
 
 		CommercePriceModifierTestUtil.addCommercePriceModifier(
-			catalog.getGroupId(),
+			commerceCatalog.getGroupId(),
 			CommercePriceModifierConstants.TARGET_PRODUCT_GROUPS,
 			commercePriceList.getCommercePriceListId(),
 			RandomTestUtil.randomString(), amount, true);
@@ -273,7 +264,7 @@ public class CommercePriceModifierLocalServiceTest {
 			"The price modifier has target catalog"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -281,13 +272,13 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceModifierTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		BigDecimal amount = BigDecimal.valueOf(RandomTestUtil.randomDouble());
 
 		CommercePriceModifier commercePriceModifier1 =
 			CommercePriceModifierTestUtil.addCommercePriceModifier(
-				catalog.getGroupId(),
+				commerceCatalog.getGroupId(),
 				commercePriceList.getCommercePriceListId(),
 				CommercePriceModifierConstants.MODIFIER_TYPE_REPLACE, amount,
 				true);
@@ -321,7 +312,7 @@ public class CommercePriceModifierLocalServiceTest {
 			"An exception shall be raised"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -329,12 +320,12 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceModifierTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		BigDecimal amount = BigDecimal.valueOf(RandomTestUtil.randomDouble());
 
 		CommercePriceModifierTestUtil.addCommercePriceModifier(
-			catalog.getGroupId(), null,
+			commerceCatalog.getGroupId(), null,
 			CommercePriceModifierConstants.TARGET_PRODUCTS,
 			commercePriceList.getCommercePriceListId(),
 			CommercePriceModifierConstants.MODIFIER_TYPE_REPLACE, amount, true);
@@ -357,7 +348,7 @@ public class CommercePriceModifierLocalServiceTest {
 			"The price modifiers has the pricing class as a target"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -365,9 +356,10 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceModifierTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
-		CPInstance cpInstance = CPTestUtil.addCPInstance(catalog.getGroupId());
+		CPInstance cpInstance = CPTestUtil.addCPInstance(
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -385,7 +377,7 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceModifier commercePriceModifier1 =
 			CommercePriceModifierTestUtil.addCommercePriceModifier(
-				catalog.getGroupId(),
+				commerceCatalog.getGroupId(),
 				CommercePriceModifierConstants.TARGET_PRODUCT_GROUPS,
 				commercePriceList.getCommercePriceListId(),
 				CommercePriceModifierConstants.MODIFIER_TYPE_REPLACE, amount,
@@ -455,7 +447,7 @@ public class CommercePriceModifierLocalServiceTest {
 			"The price modifiers has the catalog product as a target"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -463,9 +455,10 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceModifierTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
-		CPInstance cpInstance = CPTestUtil.addCPInstance(catalog.getGroupId());
+		CPInstance cpInstance = CPTestUtil.addCPInstance(
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -473,7 +466,7 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceModifier commercePriceModifier1 =
 			CommercePriceModifierTestUtil.addCommercePriceModifier(
-				catalog.getGroupId(),
+				commerceCatalog.getGroupId(),
 				CommercePriceModifierConstants.TARGET_PRODUCTS,
 				commercePriceList.getCommercePriceListId(),
 				CommercePriceModifierConstants.MODIFIER_TYPE_REPLACE, amount,
@@ -528,7 +521,7 @@ public class CommercePriceModifierLocalServiceTest {
 			"The price modifier is deleted and the old rels are deleted"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -536,9 +529,10 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceModifierTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
-		CPInstance cpInstance = CPTestUtil.addCPInstance(catalog.getGroupId());
+		CPInstance cpInstance = CPTestUtil.addCPInstance(
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -546,7 +540,7 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceModifier commercePriceModifier1 =
 			CommercePriceModifierTestUtil.addCommercePriceModifier(
-				catalog.getGroupId(),
+				commerceCatalog.getGroupId(),
 				CommercePriceModifierConstants.TARGET_PRODUCTS,
 				commercePriceList.getCommercePriceListId(),
 				CommercePriceModifierConstants.MODIFIER_TYPE_REPLACE, amount,
@@ -598,7 +592,7 @@ public class CommercePriceModifierLocalServiceTest {
 			"The price modifier target is updated and the old rels are deleted"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -606,9 +600,10 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceModifierTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
-		CPInstance cpInstance = CPTestUtil.addCPInstance(catalog.getGroupId());
+		CPInstance cpInstance = CPTestUtil.addCPInstance(
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -616,7 +611,7 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceModifier commercePriceModifier1 =
 			CommercePriceModifierTestUtil.addCommercePriceModifier(
-				catalog.getGroupId(),
+				commerceCatalog.getGroupId(),
 				CommercePriceModifierConstants.TARGET_PRODUCTS,
 				commercePriceList.getCommercePriceListId(),
 				CommercePriceModifierConstants.MODIFIER_TYPE_REPLACE, amount,
@@ -645,7 +640,7 @@ public class CommercePriceModifierLocalServiceTest {
 
 		CommercePriceModifier commercePriceModifier2 =
 			CommercePriceModifierTestUtil.updateCommercePriceModifier(
-				catalog.getGroupId(),
+				commerceCatalog.getGroupId(),
 				commercePriceModifier1.getCommercePriceModifierId(),
 				CommercePriceModifierConstants.TARGET_PRODUCT_GROUPS);
 

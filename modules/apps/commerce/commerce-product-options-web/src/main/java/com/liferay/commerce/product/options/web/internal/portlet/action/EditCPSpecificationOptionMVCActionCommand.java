@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.options.web.internal.portlet.action;
@@ -26,15 +17,14 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.StringUtil;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -43,43 +33,14 @@ import org.osgi.service.component.annotations.Reference;
  * @author Andrea Di Giorgi
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_SPECIFICATION_OPTIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_SPECIFICATION_OPTIONS,
 		"mvc.command.name=/cp_specification_options/edit_cp_specification_option"
 	},
 	service = MVCActionCommand.class
 )
 public class EditCPSpecificationOptionMVCActionCommand
 	extends BaseMVCActionCommand {
-
-	protected void deleteCPSpecificationOptions(ActionRequest actionRequest)
-		throws Exception {
-
-		long[] deleteCPSpecificationOptionIds = null;
-
-		long cpSpecificationOptionId = ParamUtil.getLong(
-			actionRequest, "cpSpecificationOptionId");
-
-		if (cpSpecificationOptionId > 0) {
-			deleteCPSpecificationOptionIds = new long[] {
-				cpSpecificationOptionId
-			};
-		}
-		else {
-			deleteCPSpecificationOptionIds = StringUtil.split(
-				ParamUtil.getString(
-					actionRequest, "deleteCPSpecificationOptionIds"),
-				0L);
-		}
-
-		for (long deleteCPSpecificationOptionId :
-				deleteCPSpecificationOptionIds) {
-
-			_cpSpecificationOptionService.deleteCPSpecificationOption(
-				deleteCPSpecificationOptionId);
-		}
-	}
 
 	@Override
 	protected void doProcessAction(
@@ -90,12 +51,12 @@ public class EditCPSpecificationOptionMVCActionCommand
 
 		try {
 			if (cmd.equals(Constants.DELETE)) {
-				deleteCPSpecificationOptions(actionRequest);
+				_deleteCPSpecificationOptions(actionRequest);
 			}
 			else if (cmd.equals(Constants.ADD) ||
 					 cmd.equals(Constants.UPDATE)) {
 
-				updateCPSpecificationOption(actionRequest);
+				_updateCPSpecificationOption(actionRequest);
 			}
 		}
 		catch (Exception exception) {
@@ -122,7 +83,33 @@ public class EditCPSpecificationOptionMVCActionCommand
 		}
 	}
 
-	protected CPSpecificationOption updateCPSpecificationOption(
+	private void _deleteCPSpecificationOptions(ActionRequest actionRequest)
+		throws Exception {
+
+		long[] deleteCPSpecificationOptionIds = null;
+
+		long cpSpecificationOptionId = ParamUtil.getLong(
+			actionRequest, "cpSpecificationOptionId");
+
+		if (cpSpecificationOptionId > 0) {
+			deleteCPSpecificationOptionIds = new long[] {
+				cpSpecificationOptionId
+			};
+		}
+		else {
+			deleteCPSpecificationOptionIds = ParamUtil.getLongValues(
+				actionRequest, "rowIds");
+		}
+
+		for (long deleteCPSpecificationOptionId :
+				deleteCPSpecificationOptionIds) {
+
+			_cpSpecificationOptionService.deleteCPSpecificationOption(
+				deleteCPSpecificationOptionId);
+		}
+	}
+
+	private CPSpecificationOption _updateCPSpecificationOption(
 			ActionRequest actionRequest)
 		throws Exception {
 
@@ -131,12 +118,14 @@ public class EditCPSpecificationOptionMVCActionCommand
 
 		long cpOptionCategoryId = ParamUtil.getLong(
 			actionRequest, "CPOptionCategoryId");
-		Map<Locale, String> titleMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> titleMap = _localization.getLocalizationMap(
 			actionRequest, "title");
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(actionRequest, "description");
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			actionRequest, "description");
 		boolean facetable = ParamUtil.getBoolean(actionRequest, "facetable");
 		String key = ParamUtil.getString(actionRequest, "key");
+		double priority = ParamUtil.getDouble(actionRequest, "priority");
+		boolean visible = ParamUtil.getBoolean(actionRequest, "visible");
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			CPSpecificationOption.class.getName(), actionRequest);
@@ -149,8 +138,8 @@ public class EditCPSpecificationOptionMVCActionCommand
 
 			cpSpecificationOption =
 				_cpSpecificationOptionService.addCPSpecificationOption(
-					cpOptionCategoryId, titleMap, descriptionMap, facetable,
-					key, serviceContext);
+					null, cpOptionCategoryId, null, titleMap, descriptionMap,
+					facetable, key, priority, visible, serviceContext);
 		}
 		else {
 
@@ -158,8 +147,9 @@ public class EditCPSpecificationOptionMVCActionCommand
 
 			cpSpecificationOption =
 				_cpSpecificationOptionService.updateCPSpecificationOption(
-					cpSpecificationOptionId, cpOptionCategoryId, titleMap,
-					descriptionMap, facetable, key, serviceContext);
+					null, cpSpecificationOptionId, cpOptionCategoryId, null,
+					titleMap, descriptionMap, facetable, key, priority, visible,
+					serviceContext);
 		}
 
 		return cpSpecificationOption;
@@ -167,5 +157,8 @@ public class EditCPSpecificationOptionMVCActionCommand
 
 	@Reference
 	private CPSpecificationOptionService _cpSpecificationOptionService;
+
+	@Reference
+	private Localization _localization;
 
 }

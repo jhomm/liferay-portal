@@ -1,20 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.internal;
 
-import com.liferay.petra.function.UnsafeRunnable;
+import com.liferay.batch.engine.internal.security.permission.LiberalPermissionChecker;
+import com.liferay.batch.engine.internal.util.ItemIndexThreadLocal;
+import com.liferay.petra.function.UnsafeSupplier;
+import com.liferay.portal.kernel.audit.AuditRequestThreadLocal;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
@@ -26,24 +20,38 @@ import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
  */
 public class BatchEngineTaskExecutorUtil {
 
-	public static void execute(
-			UnsafeRunnable<Throwable> unsafeRunnable, User user)
+	public static <T> T execute(
+			boolean checkPermissions,
+			UnsafeSupplier<T, Throwable> unsafeSupplier, User user)
 		throws Throwable {
+
+		AuditRequestThreadLocal auditRequestThreadLocal =
+			AuditRequestThreadLocal.getAuditThreadLocal();
+
+		auditRequestThreadLocal.setRealUserEmailAddress(user.getEmailAddress());
+		auditRequestThreadLocal.setRealUserId(user.getUserId());
 
 		PermissionChecker permissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
 
-		PermissionThreadLocal.setPermissionChecker(
-			PermissionCheckerFactoryUtil.create(user));
+		if (checkPermissions) {
+			PermissionThreadLocal.setPermissionChecker(
+				PermissionCheckerFactoryUtil.create(user));
+		}
+		else {
+			PermissionThreadLocal.setPermissionChecker(
+				new LiberalPermissionChecker(user));
+		}
 
 		String name = PrincipalThreadLocal.getName();
 
 		PrincipalThreadLocal.setName(user.getUserId());
 
 		try {
-			unsafeRunnable.run();
+			return unsafeSupplier.get();
 		}
 		finally {
+			ItemIndexThreadLocal.clear();
 			PermissionThreadLocal.setPermissionChecker(permissionChecker);
 			PrincipalThreadLocal.setName(name);
 		}

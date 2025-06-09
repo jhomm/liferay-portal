@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service.impl;
@@ -26,11 +17,12 @@ import com.liferay.message.boards.model.MBThread;
 import com.liferay.message.boards.service.MBCategoryLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
 import com.liferay.message.boards.service.base.MBMessageServiceBaseImpl;
-import com.liferay.message.boards.service.permission.MBDiscussionPermission;
 import com.liferay.message.boards.util.comparator.MessageCreateDateComparator;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
+import com.liferay.portal.kernel.comment.DiscussionPermission;
 import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
@@ -48,8 +40,9 @@ import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermi
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -101,13 +94,12 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 
 		User user = getGuestOrUser();
 
-		MBDiscussionPermission.check(
+		_discussionPermission.checkAddPermission(
 			getPermissionChecker(), user.getCompanyId(),
-			serviceContext.getScopeGroupId(), className, classPK,
-			ActionKeys.ADD_DISCUSSION);
+			serviceContext.getScopeGroupId(), className, classPK);
 
 		return mbMessageLocalService.addDiscussionMessage(
-			user.getUserId(), null, groupId, className, classPK, threadId,
+			null, user.getUserId(), null, groupId, className, classPK, threadId,
 			parentMessageId, subject, body, serviceContext);
 	}
 
@@ -233,7 +225,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 		MBMessage parentMessage = mbMessagePersistence.findByPrimaryKey(
 			parentMessageId);
 
-		checkReplyToPermission(
+		_checkReplyToPermission(
 			parentMessage.getGroupId(), parentMessage.getCategoryId(),
 			parentMessageId);
 
@@ -323,8 +315,8 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 
 	@Override
 	public void deleteDiscussionMessage(long messageId) throws PortalException {
-		MBDiscussionPermission.check(
-			getPermissionChecker(), messageId, ActionKeys.DELETE_DISCUSSION);
+		_discussionPermission.checkDeletePermission(
+			getPermissionChecker(), messageId);
 
 		mbMessageLocalService.deleteDiscussionMessage(messageId);
 	}
@@ -400,21 +392,18 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 			long groupId, long categoryId, int status, int start, int end)
 		throws PortalException {
 
-		List<MBMessage> messages = new ArrayList<>();
-
-		List<MBMessage> categoryMessages =
+		return TransformUtil.transform(
 			mbMessageLocalService.getCategoryMessages(
-				groupId, categoryId, status, start, end);
+				groupId, categoryId, status, start, end),
+			message -> {
+				if (_messageModelResourcePermission.contains(
+						getPermissionChecker(), message, ActionKeys.VIEW)) {
 
-		for (MBMessage message : categoryMessages) {
-			if (_messageModelResourcePermission.contains(
-					getPermissionChecker(), message, ActionKeys.VIEW)) {
+					return message;
+				}
 
-				messages.add(message);
-			}
-		}
-
-		return messages;
+				return null;
+			});
 	}
 
 	@Override
@@ -459,7 +448,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 		int lastIntervalStart = 0;
 		boolean listNotExhausted = true;
 		MessageCreateDateComparator comparator =
-			new MessageCreateDateComparator(false);
+			MessageCreateDateComparator.getInstance(false);
 
 		while ((messages.size() < max) && listNotExhausted) {
 			List<MBMessage> messageList =
@@ -483,7 +472,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 			}
 		}
 
-		return exportToRSS(
+		return _exportToRSS(
 			name, description, type, version, displayStyle, feedURL, entryURL,
 			messages, themeDisplay);
 	}
@@ -537,7 +526,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 		int lastIntervalStart = 0;
 		boolean listNotExhausted = true;
 		MessageCreateDateComparator comparator =
-			new MessageCreateDateComparator(false);
+			MessageCreateDateComparator.getInstance(false);
 
 		while ((messages.size() < max) && listNotExhausted) {
 			List<MBMessage> messageList =
@@ -561,7 +550,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 			}
 		}
 
-		return exportToRSS(
+		return _exportToRSS(
 			name, description, type, version, displayStyle, feedURL, entryURL,
 			messages, themeDisplay);
 	}
@@ -593,7 +582,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 		int lastIntervalStart = 0;
 		boolean listNotExhausted = true;
 		MessageCreateDateComparator comparator =
-			new MessageCreateDateComparator(false);
+			MessageCreateDateComparator.getInstance(false);
 
 		while ((messages.size() < max) && listNotExhausted) {
 			List<MBMessage> messageList =
@@ -617,7 +606,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 			}
 		}
 
-		return exportToRSS(
+		return _exportToRSS(
 			name, description, type, version, displayStyle, feedURL, entryURL,
 			messages, themeDisplay);
 	}
@@ -640,7 +629,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 		int lastIntervalStart = 0;
 		boolean listNotExhausted = true;
 		MessageCreateDateComparator comparator =
-			new MessageCreateDateComparator(false);
+			MessageCreateDateComparator.getInstance(false);
 
 		while ((messages.size() < max) && listNotExhausted) {
 			List<MBMessage> messageList =
@@ -664,9 +653,48 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 			}
 		}
 
-		return exportToRSS(
+		return _exportToRSS(
 			name, description, type, version, displayStyle, feedURL, entryURL,
 			messages, themeDisplay);
+	}
+
+	@Override
+	public List<MBMessage> getGroupUserMessageBoardMessagesActivity(
+			long groupId, long userId, int start, int end)
+		throws PortalException {
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), userId, ActionKeys.VIEW);
+
+		return mbMessageLocalService.getGroupUserMessageBoardMessagesActivity(
+			groupId, userId, start, end);
+	}
+
+	@Override
+	public int getGroupUserMessageBoardMessagesActivityCount(
+			long groupId, long userId)
+		throws PortalException {
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), userId, ActionKeys.VIEW);
+
+		return mbMessageLocalService.
+			getGroupUserMessageBoardMessagesActivityCount(groupId, userId);
+	}
+
+	@Override
+	public MBMessage getMBMessageByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		MBMessage mbMessage =
+			mbMessageLocalService.getMBMessageByExternalReferenceCode(
+				externalReferenceCode, groupId);
+
+		_messageModelResourcePermission.check(
+			getPermissionChecker(), mbMessage, ActionKeys.VIEW);
+
+		return mbMessage;
 	}
 
 	@Override
@@ -750,7 +778,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 				ActionKeys.VIEW)) {
 
 			MessageCreateDateComparator comparator =
-				new MessageCreateDateComparator(false);
+				MessageCreateDateComparator.getInstance(false);
 
 			List<MBMessage> threadMessages =
 				mbMessageLocalService.getThreadMessages(
@@ -776,7 +804,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 			}
 		}
 
-		return exportToRSS(
+		return _exportToRSS(
 			name, description, type, version, displayStyle, feedURL, entryURL,
 			messages, themeDisplay);
 	}
@@ -824,7 +852,8 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 	}
 
 	@Override
-	public void updateAnswer(long messageId, boolean answer, boolean cascade)
+	public MBMessage updateAnswer(
+			long messageId, boolean answer, boolean cascade)
 		throws PortalException {
 
 		MBMessage message = mbMessagePersistence.findByPrimaryKey(messageId);
@@ -833,7 +862,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 			getPermissionChecker(), message.getRootMessageId(),
 			ActionKeys.UPDATE);
 
-		mbMessageLocalService.updateAnswer(messageId, answer, cascade);
+		return mbMessageLocalService.updateAnswer(messageId, answer, cascade);
 	}
 
 	@Override
@@ -842,8 +871,8 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 			String body, ServiceContext serviceContext)
 		throws PortalException {
 
-		MBDiscussionPermission.check(
-			getPermissionChecker(), messageId, ActionKeys.UPDATE_DISCUSSION);
+		_discussionPermission.checkUpdatePermission(
+			getPermissionChecker(), messageId);
 
 		return mbMessageLocalService.updateDiscussionMessage(
 			getUserId(), messageId, className, classPK, subject, body,
@@ -866,7 +895,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 			_messageModelResourcePermission.contains(
 				getPermissionChecker(), message, ActionKeys.UPDATE)) {
 
-			checkReplyToPermission(
+			_checkReplyToPermission(
 				message.getGroupId(), message.getCategoryId(),
 				message.getParentMessageId());
 		}
@@ -909,7 +938,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 			priority, allowPingbacks, serviceContext);
 	}
 
-	protected void checkReplyToPermission(
+	private void _checkReplyToPermission(
 			long groupId, long categoryId, long parentMessageId)
 		throws PortalException {
 
@@ -939,7 +968,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 		}
 	}
 
-	protected String exportToRSS(
+	private String _exportToRSS(
 		String name, String description, String type, double version,
 		String displayStyle, String feedURL, String entryURL,
 		List<MBMessage> messages, ThemeDisplay themeDisplay) {
@@ -971,7 +1000,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 
 			if (displayStyle.equals(RSSUtil.DISPLAY_STYLE_ABSTRACT)) {
 				value = StringUtil.shorten(
-					HtmlUtil.extractText(message.getBody()),
+					_htmlParser.extractText(message.getBody()),
 					PropsValues.MESSAGE_BOARDS_RSS_ABSTRACT_LENGTH,
 					StringPool.BLANK);
 			}
@@ -1033,7 +1062,13 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 	private CompanyLocalService _companyLocalService;
 
 	@Reference
+	private DiscussionPermission _discussionPermission;
+
+	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private HtmlParser _htmlParser;
 
 	@Reference
 	private Language _language;

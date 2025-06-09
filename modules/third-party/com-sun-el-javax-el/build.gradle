@@ -1,0 +1,30 @@
+import com.liferay.gradle.plugins.patcher.PatchTask
+
+apply plugin: "com.liferay.patcher"
+
+task patch(type: PatchTask)
+
+dependencies {
+	compileOnly group: "org.glassfish", name: "javax.el", transitive: false, version: "3.0.1-b12"
+}
+
+jarSources {
+	mustRunAfter patch
+}
+
+patch {
+	ext {
+		autoClean = false
+	}
+
+	fileNames "com/sun/el/parser/AstIdentifier.java"
+	fileNames "com/sun/el/parser/ELParser.java"
+	fileNames "com/sun/el/parser/ELParser.jjt"
+	fileNames "com/sun/el/parser/ELParserTokenManager.java"
+	fileNames "javax/el/BeanELResolver.java"
+	originalLibModuleName = "javax.el"
+}
+
+processResources {
+	mustRunAfter patch
+}

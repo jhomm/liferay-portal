@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.search;
@@ -30,10 +21,10 @@ import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.util.GetterUtil;
 
-import java.util.Locale;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.util.Locale;
 
 /**
  * @author Leonardo Barros
@@ -80,10 +71,9 @@ public class DDMFormInstanceIndexer extends BaseIndexer<DDMFormInstance> {
 	@Override
 	protected void doReindex(DDMFormInstance ddmFormInstance) throws Exception {
 		indexWriterHelper.updateDocument(
-			getSearchEngineId(), ddmFormInstance.getCompanyId(),
-			getDocument(ddmFormInstance), isCommitImmediately());
+			ddmFormInstance.getCompanyId(), getDocument(ddmFormInstance));
 
-		reindexRecords(ddmFormInstance);
+		_reindexRecords(ddmFormInstance);
 	}
 
 	@Override
@@ -98,10 +88,14 @@ public class DDMFormInstanceIndexer extends BaseIndexer<DDMFormInstance> {
 	protected void doReindex(String[] ids) throws Exception {
 		long companyId = GetterUtil.getLong(ids[0]);
 
-		reindexFormInstances(companyId);
+		_reindexFormInstances(companyId);
 	}
 
-	protected void reindexFormInstances(long companyId) throws Exception {
+	protected DDMFormInstanceLocalService ddmFormInstanceLocalService;
+	protected IndexerRegistry indexerRegistry;
+	protected IndexWriterHelper indexWriterHelper;
+
+	private void _reindexFormInstances(long companyId) throws Exception {
 		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
 			ddmFormInstanceLocalService.getIndexableActionableDynamicQuery();
 
@@ -124,12 +118,11 @@ public class DDMFormInstanceIndexer extends BaseIndexer<DDMFormInstance> {
 					}
 				}
 			});
-		indexableActionableDynamicQuery.setSearchEngineId(getSearchEngineId());
 
 		indexableActionableDynamicQuery.performActions();
 	}
 
-	protected void reindexRecords(DDMFormInstance ddmFormInstance)
+	private void _reindexRecords(DDMFormInstance ddmFormInstance)
 		throws Exception {
 
 		Indexer<DDMFormInstanceRecord> indexer =
@@ -137,10 +130,6 @@ public class DDMFormInstanceIndexer extends BaseIndexer<DDMFormInstance> {
 
 		indexer.reindex(ddmFormInstance.getFormInstanceRecords());
 	}
-
-	protected DDMFormInstanceLocalService ddmFormInstanceLocalService;
-	protected IndexerRegistry indexerRegistry;
-	protected IndexWriterHelper indexWriterHelper;
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMFormInstanceIndexer.class);

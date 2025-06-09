@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.notification.service.persistence.impl;
@@ -21,7 +12,9 @@ import com.liferay.commerce.notification.model.impl.CommerceNotificationTemplate
 import com.liferay.commerce.notification.model.impl.CommerceNotificationTemplateModelImpl;
 import com.liferay.commerce.notification.service.persistence.CommerceNotificationTemplatePersistence;
 import com.liferay.commerce.notification.service.persistence.CommerceNotificationTemplateUtil;
+import com.liferay.commerce.notification.service.persistence.impl.constants.CommercePersistenceConstants;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
@@ -30,6 +23,7 @@ import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
@@ -45,11 +39,9 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -59,6 +51,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import javax.sql.DataSource;
+
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * The persistence implementation for the commerce notification template service.
  *
@@ -67,8 +66,11 @@ import java.util.Set;
  * </p>
  *
  * @author Alessio Antonio Rendina
+ * @deprecated
  * @generated
  */
+@Component(service = CommerceNotificationTemplatePersistence.class)
+@Deprecated
 public class CommerceNotificationTemplatePersistenceImpl
 	extends BasePersistenceImpl<CommerceNotificationTemplate>
 	implements CommerceNotificationTemplatePersistence {
@@ -187,7 +189,7 @@ public class CommerceNotificationTemplatePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceNotificationTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceNotificationTemplate commerceNotificationTemplate :
@@ -583,7 +585,7 @@ public class CommerceNotificationTemplatePersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -638,7 +640,6 @@ public class CommerceNotificationTemplatePersistenceImpl
 		"(commerceNotificationTemplate.uuid IS NULL OR commerceNotificationTemplate.uuid = '')";
 
 	private FinderPath _finderPathFetchByUUID_G;
-	private FinderPath _finderPathCountByUUID_G;
 
 	/**
 	 * Returns the commerce notification template where uuid = &#63; and groupId = &#63; or throws a <code>NoSuchNotificationTemplateException</code> if it could not be found.
@@ -716,7 +717,7 @@ public class CommerceNotificationTemplatePersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
+				_finderPathFetchByUUID_G, finderArgs, this);
 		}
 
 		if (result instanceof CommerceNotificationTemplate) {
@@ -825,62 +826,14 @@ public class CommerceNotificationTemplatePersistenceImpl
 	 */
 	@Override
 	public int countByUUID_G(String uuid, long groupId) {
-		uuid = Objects.toString(uuid, "");
+		CommerceNotificationTemplate commerceNotificationTemplate =
+			fetchByUUID_G(uuid, groupId);
 
-		FinderPath finderPath = _finderPathCountByUUID_G;
-
-		Object[] finderArgs = new Object[] {uuid, groupId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_COMMERCENOTIFICATIONTEMPLATE_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
-				}
-
-				queryPos.add(groupId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (commerceNotificationTemplate == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_UUID_G_UUID_2 =
@@ -999,7 +952,7 @@ public class CommerceNotificationTemplatePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceNotificationTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceNotificationTemplate commerceNotificationTemplate :
@@ -1422,7 +1375,7 @@ public class CommerceNotificationTemplatePersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, companyId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1579,7 +1532,7 @@ public class CommerceNotificationTemplatePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceNotificationTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceNotificationTemplate commerceNotificationTemplate :
@@ -2015,7 +1968,9 @@ public class CommerceNotificationTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceNotificationTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceNotificationTemplateModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceNotificationTemplateModelImpl.ORDER_BY_SQL);
@@ -2218,7 +2173,9 @@ public class CommerceNotificationTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceNotificationTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceNotificationTemplateModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceNotificationTemplateModelImpl.ORDER_BY_SQL);
@@ -2293,7 +2250,7 @@ public class CommerceNotificationTemplatePersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -2485,7 +2442,7 @@ public class CommerceNotificationTemplatePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceNotificationTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceNotificationTemplate commerceNotificationTemplate :
@@ -2949,7 +2906,9 @@ public class CommerceNotificationTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceNotificationTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceNotificationTemplateModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceNotificationTemplateModelImpl.ORDER_BY_SQL);
@@ -3159,7 +3118,9 @@ public class CommerceNotificationTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceNotificationTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceNotificationTemplateModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceNotificationTemplateModelImpl.ORDER_BY_SQL);
@@ -3239,7 +3200,7 @@ public class CommerceNotificationTemplatePersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, enabled};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -3450,7 +3411,7 @@ public class CommerceNotificationTemplatePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceNotificationTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceNotificationTemplate commerceNotificationTemplate :
@@ -3976,7 +3937,9 @@ public class CommerceNotificationTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceNotificationTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceNotificationTemplateModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceNotificationTemplateModelImpl.ORDER_BY_SQL);
@@ -4205,7 +4168,9 @@ public class CommerceNotificationTemplatePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceNotificationTemplateModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceNotificationTemplateModelImpl.
+						ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceNotificationTemplateModelImpl.ORDER_BY_SQL);
@@ -4293,7 +4258,7 @@ public class CommerceNotificationTemplatePersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, type, enabled};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -4572,7 +4537,6 @@ public class CommerceNotificationTemplatePersistenceImpl
 			commerceNotificationTemplateModelImpl.getGroupId()
 		};
 
-		finderCache.putResult(_finderPathCountByUUID_G, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByUUID_G, args,
 			commerceNotificationTemplateModelImpl);
@@ -4935,7 +4899,7 @@ public class CommerceNotificationTemplatePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceNotificationTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -5008,7 +4972,7 @@ public class CommerceNotificationTemplatePersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -5063,7 +5027,8 @@ public class CommerceNotificationTemplatePersistenceImpl
 	/**
 	 * Initializes the commerce notification template persistence.
 	 */
-	public void afterPropertiesSet() {
+	@Activate
+	public void activate() {
 		_valueObjectFinderCacheListThreshold = GetterUtil.getInteger(
 			PropsUtil.get(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD));
 
@@ -5101,11 +5066,6 @@ public class CommerceNotificationTemplatePersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByUUID_G",
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"uuid_", "groupId"}, true);
-
-		_finderPathCountByUUID_G = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUUID_G",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"uuid_", "groupId"}, false);
 
 		_finderPathWithPaginationFindByUuid_C = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid_C",
@@ -5188,38 +5148,47 @@ public class CommerceNotificationTemplatePersistenceImpl
 			},
 			new String[] {"groupId", "type_", "enabled"}, false);
 
-		_setCommerceNotificationTemplateUtilPersistence(this);
+		CommerceNotificationTemplateUtil.setPersistence(this);
 	}
 
-	public void destroy() {
-		_setCommerceNotificationTemplateUtilPersistence(null);
+	@Deactivate
+	public void deactivate() {
+		CommerceNotificationTemplateUtil.setPersistence(null);
 
 		entityCache.removeCache(
 			CommerceNotificationTemplateImpl.class.getName());
 	}
 
-	private void _setCommerceNotificationTemplateUtilPersistence(
-		CommerceNotificationTemplatePersistence
-			commerceNotificationTemplatePersistence) {
-
-		try {
-			Field field =
-				CommerceNotificationTemplateUtil.class.getDeclaredField(
-					"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, commerceNotificationTemplatePersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.SERVICE_CONFIGURATION_FILTER,
+		unbind = "-"
+	)
+	public void setConfiguration(Configuration configuration) {
 	}
 
-	@ServiceReference(type = EntityCache.class)
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setDataSource(DataSource dataSource) {
+		super.setDataSource(dataSource);
+	}
+
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		super.setSessionFactory(sessionFactory);
+	}
+
+	@Reference
 	protected EntityCache entityCache;
 
-	@ServiceReference(type = FinderCache.class)
+	@Reference
 	protected FinderCache finderCache;
 
 	private static final String _SQL_SELECT_COMMERCENOTIFICATIONTEMPLATE =

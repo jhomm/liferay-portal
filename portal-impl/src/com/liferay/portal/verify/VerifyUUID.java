@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.verify;
 
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
@@ -26,9 +16,6 @@ import com.liferay.portal.kernel.verify.model.VerifiableUUIDModel;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-
-import java.util.Collection;
-import java.util.Map;
 
 /**
  * @author Brian Wing Shun Chan
@@ -47,17 +34,9 @@ public class VerifyUUID extends VerifyProcess {
 
 	@Override
 	protected void doVerify() throws Exception {
-		if (!ArrayUtil.isEmpty(_verifiableUUIDModels)) {
+		if (ArrayUtil.isNotEmpty(_verifiableUUIDModels)) {
 			doVerify(_verifiableUUIDModels);
 		}
-
-		Map<String, VerifiableUUIDModel> verifiableUUIDModelsMap =
-			PortalBeanLocatorUtil.locate(VerifiableUUIDModel.class);
-
-		Collection<VerifiableUUIDModel> verifiableUUIDModels =
-			verifiableUUIDModelsMap.values();
-
-		doVerify(verifiableUUIDModels.toArray(new VerifiableUUIDModel[0]));
 	}
 
 	protected void doVerify(VerifiableUUIDModel... verifiableUUIDModels)
@@ -97,12 +76,12 @@ public class VerifyUUID extends VerifyProcess {
 			ResultSet resultSet = preparedStatement1.executeQuery();
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.autoBatch(
-					connection.prepareStatement(
-						StringBundler.concat(
-							"update ", verifiableUUIDModel.getTableName(),
-							" set uuid_ = ? where ",
-							verifiableUUIDModel.getPrimaryKeyColumnName(),
-							" = ?")))) {
+					connection,
+					StringBundler.concat(
+						"update ", verifiableUUIDModel.getTableName(),
+						" set uuid_ = ? where ",
+						verifiableUUIDModel.getPrimaryKeyColumnName(),
+						" = ?"))) {
 
 			while (resultSet.next()) {
 				long pk = resultSet.getLong(

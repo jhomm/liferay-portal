@@ -1,30 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.akismet.service.impl;
 
 import com.liferay.akismet.model.AkismetEntry;
 import com.liferay.akismet.service.base.AkismetEntryLocalServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.util.Date;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Jamie Sammons
  */
+@Component(
+	property = "model.class.name=com.liferay.akismet.model.AkismetEntry",
+	service = AopService.class
+)
 public class AkismetEntryLocalServiceImpl
 	extends AkismetEntryLocalServiceBaseImpl {
 
@@ -76,7 +74,7 @@ public class AkismetEntryLocalServiceImpl
 		return akismetEntryPersistence.update(akismetEntry);
 	}
 
-	@ServiceReference(type = ClassNameLocalService.class)
+	@Reference
 	private ClassNameLocalService _classNameLocalService;
 
 }

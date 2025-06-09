@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -17,7 +8,9 @@ package com.liferay.jenkins.results.parser;
 import java.io.IOException;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,11 +18,11 @@ import java.util.regex.Pattern;
 /**
  * @author Peter Yoo
  */
-public class ReinvokeRule {
+public class ReinvokeRule implements Comparable<ReinvokeRule> {
 
 	public static List<ReinvokeRule> getReinvokeRules() {
 		if (_reinvokeRules != null) {
-			return _reinvokeRules;
+			return new ArrayList<>(_reinvokeRules);
 		}
 
 		Properties buildProperties = null;
@@ -55,9 +48,71 @@ public class ReinvokeRule {
 					new ReinvokeRule(
 						buildProperties.getProperty(propertyName), ruleName));
 			}
+
+			Collections.sort(_reinvokeRules);
 		}
 
-		return _reinvokeRules;
+		return new ArrayList<>(_reinvokeRules);
+	}
+
+	@Override
+	public int compareTo(ReinvokeRule reinvokeRule) {
+		if (reinvokeRule == null) {
+			return -1;
+		}
+
+		int result = priority.compareTo(reinvokeRule.getPriority());
+
+		if (result != 0) {
+			return result;
+		}
+
+		return name.compareTo(reinvokeRule.getName());
+	}
+
+	@Override
+	public boolean equals(Object object) {
+		if (!(object instanceof ReinvokeRule)) {
+			return false;
+		}
+
+		ReinvokeRule reinvokeRule = (ReinvokeRule)object;
+
+		if (Objects.equals(getName(), reinvokeRule.getName()) &&
+			Objects.equals(getPriority(), reinvokeRule.getPriority())) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public int getMaximumInvocationCount() {
+		if (maximumInvocationCount != null) {
+			return maximumInvocationCount;
+		}
+
+		try {
+			Properties properties =
+				JenkinsResultsParserUtil.getBuildProperties();
+
+			String propertyName = "reinvoke.rule.max.invocation.count";
+
+			if (properties.containsKey(propertyName)) {
+				maximumInvocationCount = Integer.parseInt(
+					properties.getProperty(propertyName));
+
+				return maximumInvocationCount;
+			}
+		}
+		catch (IOException ioException) {
+			System.out.println(
+				"Unable to load reinvoke.rule.max.invocation.count");
+		}
+
+		maximumInvocationCount = _MAXIMUM_INVOCATION_COUNT;
+
+		return maximumInvocationCount;
 	}
 
 	public String getName() {
@@ -68,6 +123,19 @@ public class ReinvokeRule {
 		return notificationRecipients;
 	}
 
+	public int getPriority() {
+		return priority;
+	}
+
+	public String getReinvokeBuildPriority() {
+		return reinvokeBuildPriority;
+	}
+
+	@Override
+	public int hashCode() {
+		return name.hashCode();
+	}
+
 	public boolean matches(Build build) {
 		if (build == null) {
 			return false;
@@ -76,13 +144,24 @@ public class ReinvokeRule {
 		Matcher matcher = null;
 
 		if (axisVariablePattern != null) {
-			if (!(build instanceof AxisBuild)) {
+			String axisVariable = null;
+
+			if (build instanceof AxisBuild) {
+				AxisBuild axisBuild = (AxisBuild)build;
+
+				axisVariable = axisBuild.getAxisVariable();
+			}
+			else if (build instanceof DownstreamBuild) {
+				DownstreamBuild downstreamBuild = (DownstreamBuild)build;
+
+				axisVariable = downstreamBuild.getAxisVariable();
+			}
+
+			if (JenkinsResultsParserUtil.isNullOrEmpty(axisVariable)) {
 				return false;
 			}
 
-			AxisBuild axisBuild = (AxisBuild)build;
-
-			matcher = axisVariablePattern.matcher(axisBuild.getAxisVariable());
+			matcher = axisVariablePattern.matcher(axisVariable);
 
 			if (!matcher.find()) {
 				return false;
@@ -100,6 +179,22 @@ public class ReinvokeRule {
 
 			if (!matcher.find()) {
 				return false;
+			}
+		}
+
+		if (testSuiteNamePattern != null) {
+			TopLevelBuild topLevelBuild = build.getTopLevelBuild();
+
+			if (topLevelBuild != null) {
+				String testSuiteName = topLevelBuild.getTestSuiteName();
+
+				if (!JenkinsResultsParserUtil.isNullOrEmpty(testSuiteName)) {
+					matcher = testSuiteNamePattern.matcher(testSuiteName);
+
+					if (!matcher.find()) {
+						return false;
+					}
+				}
 			}
 		}
 
@@ -165,6 +260,12 @@ public class ReinvokeRule {
 			sb.append("\n");
 		}
 
+		if (testSuiteNamePattern != null) {
+			sb.append("testSuiteName=");
+			sb.append(testSuiteNamePattern.pattern());
+			sb.append("\n");
+		}
+
 		if (topLevelBuildJobNamePattern != null) {
 			sb.append("topLevelJobName=");
 			sb.append(topLevelBuildJobNamePattern.pattern());
@@ -177,8 +278,12 @@ public class ReinvokeRule {
 	protected Pattern axisVariablePattern;
 	protected Pattern consolePattern;
 	protected Pattern jobVariantPattern;
+	protected Integer maximumInvocationCount;
 	protected String name;
 	protected String notificationRecipients;
+	protected Integer priority = 5;
+	protected String reinvokeBuildPriority;
+	protected Pattern testSuiteNamePattern;
 	protected Pattern topLevelBuildJobNamePattern;
 
 	private ReinvokeRule(String configurations, String ruleName) {
@@ -197,8 +302,28 @@ public class ReinvokeRule {
 				continue;
 			}
 
+			if (name.equals("maximumInvocationCount")) {
+				maximumInvocationCount = Integer.valueOf(value);
+
+				continue;
+			}
+
 			if (name.equals("notificationRecipients")) {
 				notificationRecipients = value;
+
+				continue;
+			}
+
+			if (name.equals("priority")) {
+				if (JenkinsResultsParserUtil.isInteger(value)) {
+					priority = Integer.parseInt(value);
+				}
+
+				continue;
+			}
+
+			if (name.equals("reinvokeBuildPriority")) {
+				reinvokeBuildPriority = value;
 
 				continue;
 			}
@@ -223,11 +348,17 @@ public class ReinvokeRule {
 				continue;
 			}
 
+			if (name.equals("testSuiteName")) {
+				testSuiteNamePattern = pattern;
+			}
+
 			if (name.equals("topLevelJobName")) {
 				topLevelBuildJobNamePattern = pattern;
 			}
 		}
 	}
+
+	private static final int _MAXIMUM_INVOCATION_COUNT = 1;
 
 	private static List<ReinvokeRule> _reinvokeRules;
 

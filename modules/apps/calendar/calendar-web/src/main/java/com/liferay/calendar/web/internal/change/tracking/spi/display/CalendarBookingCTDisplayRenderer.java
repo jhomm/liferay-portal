@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.web.internal.change.tracking.spi.display;
@@ -22,10 +13,10 @@ import com.liferay.calendar.recurrence.Recurrence;
 import com.liferay.change.tracking.spi.display.BaseCTDisplayRenderer;
 import com.liferay.change.tracking.spi.display.CTDisplayRenderer;
 import com.liferay.change.tracking.spi.display.context.DisplayContext;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
@@ -34,15 +25,15 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.text.Format;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -50,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Cheryl Tang
  */
-@Component(immediate = true, service = CTDisplayRenderer.class)
+@Component(service = CTDisplayRenderer.class)
 public class CalendarBookingCTDisplayRenderer
 	extends BaseCTDisplayRenderer<CalendarBooking> {
 
@@ -127,7 +118,7 @@ public class CalendarBookingCTDisplayRenderer
 			timeZone = TimeZone.getTimeZone(StringPool.UTC);
 		}
 
-		Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(
+		Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(
 			displayBuilder.getLocale(), timeZone);
 
 		displayBuilder.display(
@@ -138,9 +129,9 @@ public class CalendarBookingCTDisplayRenderer
 		).display(
 			"status", calendarBooking.getStatus()
 		).display(
-			"starts", dateFormatDateTime.format(calendarBooking.getStartTime())
+			"starts", dateTimeFormat.format(calendarBooking.getStartTime())
 		).display(
-			"ends", dateFormatDateTime.format(calendarBooking.getEndTime())
+			"ends", dateTimeFormat.format(calendarBooking.getEndTime())
 		).display(
 			"location",
 			() -> {
@@ -155,15 +146,15 @@ public class CalendarBookingCTDisplayRenderer
 		).display(
 			"repeat",
 			() -> {
-				if (Validator.isNotNull(calendarBooking.getRecurrence())) {
-					Recurrence recurrence = calendarBooking.getRecurrenceObj();
-
-					Frequency frequency = recurrence.getFrequency();
-
-					return frequency.getValue();
+				if (Validator.isNull(calendarBooking.getRecurrence())) {
+					return null;
 				}
 
-				return null;
+				Recurrence recurrence = calendarBooking.getRecurrenceObj();
+
+				Frequency frequency = recurrence.getFrequency();
+
+				return frequency.getValue();
 			}
 		).display(
 			"resources",
@@ -171,29 +162,28 @@ public class CalendarBookingCTDisplayRenderer
 				List<CalendarBooking> childCalendarBookings =
 					calendarBooking.getChildCalendarBookings();
 
-				if (!childCalendarBookings.isEmpty()) {
-					StringBundler sb = new StringBundler(
-						2 * childCalendarBookings.size());
-
-					for (CalendarBooking childCalendarBooking :
-							childCalendarBookings) {
-
-						CalendarResource calendarResource =
-							childCalendarBooking.getCalendarResource();
-
-						sb.append(
-							calendarResource.getName(
-								displayBuilder.getLocale()));
-
-						sb.append(StringPool.COMMA_AND_SPACE);
-					}
-
-					sb.setIndex(sb.index() - 1);
-
-					return sb.toString();
+				if (childCalendarBookings.isEmpty()) {
+					return null;
 				}
 
-				return null;
+				StringBundler sb = new StringBundler(
+					2 * childCalendarBookings.size());
+
+				for (CalendarBooking childCalendarBooking :
+						childCalendarBookings) {
+
+					CalendarResource calendarResource =
+						childCalendarBooking.getCalendarResource();
+
+					sb.append(
+						calendarResource.getName(displayBuilder.getLocale()));
+
+					sb.append(StringPool.COMMA_AND_SPACE);
+				}
+
+				sb.setIndex(sb.index() - 1);
+
+				return sb.toString();
 			}
 		);
 	}

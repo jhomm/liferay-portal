@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.definitions.web.internal.asset;
@@ -19,17 +10,16 @@ import com.liferay.asset.kernel.model.BaseJSPAssetRenderer;
 import com.liferay.asset.util.AssetHelper;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.constants.CPWebKeys;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CommerceCatalog;
-import com.liferay.commerce.product.util.CPDefinitionHelper;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -37,20 +27,20 @@ import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Alessio Antonio Rendina
@@ -60,11 +50,15 @@ public class CPDefinitionAssetRenderer
 
 	public CPDefinitionAssetRenderer(
 		CPDefinition cpDefinition, CPDefinitionHelper cpDefinitionHelper,
-		ModelResourcePermission<CommerceCatalog> modelResourcePermission) {
+		Language language,
+		ModelResourcePermission<CommerceCatalog> modelResourcePermission,
+		Portal portal) {
 
 		_cpDefinition = cpDefinition;
 		_cpDefinitionHelper = cpDefinitionHelper;
+		_language = language;
 		_modelResourcePermission = modelResourcePermission;
+		_portal = portal;
 	}
 
 	@Override
@@ -120,18 +114,22 @@ public class CPDefinitionAssetRenderer
 
 		String summary = _cpDefinition.getDescription();
 
-		if (Validator.isNull(summary)) {
-			summary = HtmlUtil.stripHtml(
-				StringUtil.shorten(
-					_cpDefinition.getDescriptionMapAsXML(), abstractLength));
+		if (portletRequest != null) {
+			summary = _cpDefinition.getDescription(
+				_language.getLanguageId(_portal.getLocale(portletRequest)));
 		}
 
-		return summary;
+		if (Validator.isNull(summary)) {
+			summary = StringUtil.shorten(
+				_cpDefinition.getDescriptionMapAsXML(), abstractLength);
+		}
+
+		return HtmlUtil.stripHtml(summary);
 	}
 
 	@Override
 	public String getTitle(Locale locale) {
-		return _cpDefinition.getName(LanguageUtil.getLanguageId(locale));
+		return _cpDefinition.getName(_language.getLanguageId(locale));
 	}
 
 	@Override
@@ -140,13 +138,11 @@ public class CPDefinitionAssetRenderer
 			LiferayPortletResponse liferayPortletResponse)
 		throws Exception {
 
-		Group group = GroupLocalServiceUtil.fetchGroup(
-			_cpDefinition.getGroupId());
-
 		return PortletURLBuilder.create(
-			PortalUtil.getControlPanelPortletURL(
-				liferayPortletRequest, group, CPPortletKeys.CP_DEFINITIONS, 0,
-				0, PortletRequest.RENDER_PHASE)
+			_portal.getControlPanelPortletURL(
+				liferayPortletRequest,
+				GroupLocalServiceUtil.fetchGroup(_cpDefinition.getGroupId()),
+				CPPortletKeys.CP_DEFINITIONS, 0, 0, PortletRequest.RENDER_PHASE)
 		).setMVCRenderCommandName(
 			"/cp_definitions/edit_cp_definition"
 		).setParameter(
@@ -180,17 +176,28 @@ public class CPDefinitionAssetRenderer
 		LiferayPortletResponse liferayPortletResponse,
 		String noSuchEntryRedirect) {
 
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)liferayPortletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		return getURLViewInContext(themeDisplay, noSuchEntryRedirect);
+	}
+
+	@Override
+	public String getURLViewInContext(
+		ThemeDisplay themeDisplay, String noSuchEntryRedirect) {
+
 		try {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)liferayPortletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
+			if (!_cpDefinition.isApproved() || !_cpDefinition.isPublished()) {
+				return null;
+			}
 
 			return _cpDefinitionHelper.getFriendlyURL(
 				_cpDefinition.getCPDefinitionId(), themeDisplay);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return noSuchEntryRedirect;
@@ -251,7 +258,9 @@ public class CPDefinitionAssetRenderer
 
 	private final CPDefinition _cpDefinition;
 	private final CPDefinitionHelper _cpDefinitionHelper;
+	private final Language _language;
 	private final ModelResourcePermission<CommerceCatalog>
 		_modelResourcePermission;
+	private final Portal _portal;
 
 }

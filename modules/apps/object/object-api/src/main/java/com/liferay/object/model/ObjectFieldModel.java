@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model;
@@ -17,6 +8,7 @@ package com.liferay.object.model;
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.LocalizedModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
@@ -41,8 +33,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface ObjectFieldModel
-	extends BaseModel<ObjectField>, LocalizedModel, MVCCModel, ShardedModel,
-			StagedAuditedModel {
+	extends BaseModel<ObjectField>, ExternalReferenceCodeModel, LocalizedModel,
+			MVCCModel, ShardedModel, StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -96,6 +88,23 @@ public interface ObjectFieldModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this object field.
+	 *
+	 * @return the external reference code of this object field
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this object field.
+	 *
+	 * @param externalReferenceCode the external reference code of this object field
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the object field ID of this object field.
@@ -237,6 +246,21 @@ public interface ObjectFieldModel
 	public void setObjectDefinitionId(long objectDefinitionId);
 
 	/**
+	 * Returns the business type of this object field.
+	 *
+	 * @return the business type of this object field
+	 */
+	@AutoEscape
+	public String getBusinessType();
+
+	/**
+	 * Sets the business type of this object field.
+	 *
+	 * @param businessType the business type of this object field
+	 */
+	public void setBusinessType(String businessType);
+
+	/**
 	 * Returns the db column name of this object field.
 	 *
 	 * @return the db column name of this object field
@@ -265,6 +289,21 @@ public interface ObjectFieldModel
 	 * @param dbTableName the db table name of this object field
 	 */
 	public void setDBTableName(String dbTableName);
+
+	/**
+	 * Returns the db type of this object field.
+	 *
+	 * @return the db type of this object field
+	 */
+	@AutoEscape
+	public String getDBType();
+
+	/**
+	 * Sets the db type of this object field.
+	 *
+	 * @param dbType the db type of this object field
+	 */
+	public void setDBType(String dbType);
 
 	/**
 	 * Returns the indexed of this object field.
@@ -423,6 +462,27 @@ public interface ObjectFieldModel
 	public void setLabelMap(Map<Locale, String> labelMap, Locale defaultLocale);
 
 	/**
+	 * Returns the localized of this object field.
+	 *
+	 * @return the localized of this object field
+	 */
+	public boolean getLocalized();
+
+	/**
+	 * Returns <code>true</code> if this object field is localized.
+	 *
+	 * @return <code>true</code> if this object field is localized; <code>false</code> otherwise
+	 */
+	public boolean isLocalized();
+
+	/**
+	 * Sets whether this object field is localized.
+	 *
+	 * @param localized the localized of this object field
+	 */
+	public void setLocalized(boolean localized);
+
+	/**
 	 * Returns the name of this object field.
 	 *
 	 * @return the name of this object field
@@ -436,6 +496,37 @@ public interface ObjectFieldModel
 	 * @param name the name of this object field
 	 */
 	public void setName(String name);
+
+	/**
+	 * Returns the read only of this object field.
+	 *
+	 * @return the read only of this object field
+	 */
+	@AutoEscape
+	public String getReadOnly();
+
+	/**
+	 * Sets the read only of this object field.
+	 *
+	 * @param readOnly the read only of this object field
+	 */
+	public void setReadOnly(String readOnly);
+
+	/**
+	 * Returns the read only condition expression of this object field.
+	 *
+	 * @return the read only condition expression of this object field
+	 */
+	@AutoEscape
+	public String getReadOnlyConditionExpression();
+
+	/**
+	 * Sets the read only condition expression of this object field.
+	 *
+	 * @param readOnlyConditionExpression the read only condition expression of this object field
+	 */
+	public void setReadOnlyConditionExpression(
+		String readOnlyConditionExpression);
 
 	/**
 	 * Returns the relationship type of this object field.
@@ -474,19 +565,46 @@ public interface ObjectFieldModel
 	public void setRequired(boolean required);
 
 	/**
-	 * Returns the type of this object field.
+	 * Returns the state of this object field.
 	 *
-	 * @return the type of this object field
+	 * @return the state of this object field
 	 */
-	@AutoEscape
-	public String getType();
+	public boolean getState();
 
 	/**
-	 * Sets the type of this object field.
+	 * Returns <code>true</code> if this object field is state.
 	 *
-	 * @param type the type of this object field
+	 * @return <code>true</code> if this object field is state; <code>false</code> otherwise
 	 */
-	public void setType(String type);
+	public boolean isState();
+
+	/**
+	 * Sets whether this object field is state.
+	 *
+	 * @param state the state of this object field
+	 */
+	public void setState(boolean state);
+
+	/**
+	 * Returns the system of this object field.
+	 *
+	 * @return the system of this object field
+	 */
+	public boolean getSystem();
+
+	/**
+	 * Returns <code>true</code> if this object field is system.
+	 *
+	 * @return <code>true</code> if this object field is system; <code>false</code> otherwise
+	 */
+	public boolean isSystem();
+
+	/**
+	 * Sets whether this object field is system.
+	 *
+	 * @param system the system of this object field
+	 */
+	public void setSystem(boolean system);
 
 	@Override
 	public String[] getAvailableLanguageIds();
@@ -503,5 +621,9 @@ public interface ObjectFieldModel
 
 	@Override
 	public ObjectField cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

@@ -27,7 +27,17 @@
 </tr>
 <tr>
 	<td>ANY_TOGGLE_SWITCH</td>
-	<td>//label[contains(.,'${key_toggleSwitchLabel}')]//input</td>
+	<td>//label[(contains(.,'${key_toggleSwitchLabel}')) or (contains(@for,'${key_toggleSwitchLabel}'))]//input[not(@disabled)]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ANY_TOGGLE_SWITCH_DISABLED</td>
+	<td>//label[(contains(.,'${key_toggleSwitchLabel}')) or (contains(@for,'${key_toggleSwitchLabel}'))]//input[(@disabled)]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ANY_TOGGLE_SWITCH_INDEX</td>
+	<td>xpath=(//label[(contains(.,'${key_toggleSwitchLabel}')) or (contains(@for,'${key_toggleSwitchLabel}'))]//input[not(@disabled)])[${key_index}]</td>
 	<td></td>
 </tr>
 <tr>
@@ -38,6 +48,11 @@
 <tr>
 	<td>DELETE_PORTLET_DATA</td>
 	<td>//label[contains(@for,'DELETE_PORTLET_DATA')]//input</td>
+	<td></td>
+</tr>
+<tr>
+	<td>EDIT_TOGGLE</td>
+	<td>//label[contains(@class,'toggle-switch toggle-editing')]//input</td>
 	<td></td>
 </tr>
 <tr>
@@ -56,11 +71,6 @@
 	<td></td>
 </tr>
 <tr>
-	<td>INHERIT_MOBILE_DEVICE_RULES_FROM_PAGE</td>
-	<td>//*[@id="mobileDeviceRulesContent"]/div/div[1]/label/span[1]/span/span</td>
-	<td></td>
-</tr>
-<tr>
 	<td>READY_FOR_PROPAGATION</td>
 	<td>//label[contains(.,'Ready for Propagation')]//span[contains(@class,'toggle-switch-handle')]</td>
 	<td></td>
@@ -72,12 +82,17 @@
 </tr>
 <tr>
 	<td>ENABLE_SPECIFIC_TOGGLE_SWITCH</td>
-	<td>//h4[contains(.,"${key_name}")]//span[contains(@id,'toggle-switch')]</td>
+	<td>//div[contains(@class,'h4') and contains(.,"${key_name}")]//span[contains(@id,'toggle-switch')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>USE_CUSTOM_TITLE</td>
-	<td>//label[contains(.,'Use Custom Title')]//input[@type='checkbox']</td>
+	<td>ENABLE_BETA_TOGGLE_SWITCH</td>
+	<td>//*[@id="${key_featureFlag}"]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TOGGLE_SWITCH_BY_LABEL</td>
+	<td>//span[text()='${key_toggleSwitchLabel}']/preceding-sibling::input[contains(@class, 'toggle-switch')]</td>
 	<td></td>
 </tr>
 </tbody>

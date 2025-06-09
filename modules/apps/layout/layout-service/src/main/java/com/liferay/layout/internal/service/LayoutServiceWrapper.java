@@ -1,30 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.internal.service;
 
-import com.liferay.layout.util.LayoutCopyHelper;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.security.auth.GuestOrUserUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutLocalService;
-import com.liferay.portal.kernel.service.LayoutService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import org.osgi.service.component.annotations.Component;
@@ -33,23 +21,15 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Yang Cao
  */
-@Component(immediate = true, service = ServiceWrapper.class)
+@Component(service = ServiceWrapper.class)
 public class LayoutServiceWrapper
 	extends com.liferay.portal.kernel.service.LayoutServiceWrapper {
-
-	public LayoutServiceWrapper() {
-		super(null);
-	}
-
-	public LayoutServiceWrapper(LayoutService layoutService) {
-		super(layoutService);
-	}
 
 	@Override
 	public Layout publishLayout(long plid) throws Exception {
 		Layout layout = _layoutLocalService.getLayout(plid);
 
-		if (!layout.isTypeContent()) {
+		if (layout.isTypeAssetDisplay() && !layout.isTypeContent()) {
 			throw new UnsupportedOperationException(
 				"Only layouts of type content can be published");
 		}
@@ -57,14 +37,14 @@ public class LayoutServiceWrapper
 		LayoutPermissionUtil.check(
 			GuestOrUserUtil.getPermissionChecker(), layout, ActionKeys.UPDATE);
 
-		Layout draftLayout = _layoutLocalService.fetchLayout(
-			_portal.getClassNameId(Layout.class), layout.getPlid());
+		Layout draftLayout = _layoutLocalService.fetchDraftLayout(
+			layout.getPlid());
 
 		LayoutPermissionUtil.check(
 			GuestOrUserUtil.getPermissionChecker(), draftLayout,
 			ActionKeys.UPDATE);
 
-		layout = _layoutCopyHelper.copyLayout(draftLayout, layout);
+		layout = _layoutLocalService.copyLayoutContent(draftLayout, layout);
 
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
@@ -79,12 +59,6 @@ public class LayoutServiceWrapper
 	}
 
 	@Reference
-	private LayoutCopyHelper _layoutCopyHelper;
-
-	@Reference
 	private LayoutLocalService _layoutLocalService;
-
-	@Reference
-	private Portal _portal;
 
 }
